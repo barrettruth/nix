@@ -283,7 +283,7 @@ in
     settings.mainBar = {
       reload_style_on_change = true;
       layer = "top";
-      position = "top";
+      position = "bottom";
       exclusive = true;
       height = 34;
 
