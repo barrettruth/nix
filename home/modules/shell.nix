@@ -90,6 +90,15 @@ in
   ++ lib.optionals go [ "${config.xdg.dataHome}/go/bin" ]
   ++ lib.optionals node [ "${config.xdg.dataHome}/pnpm" ];
 
+  xdg.configFile."aws/config" = lib.mkIf aws {
+    text = ''
+      [default]
+      [profile barrett]
+      region = us-east-2
+      output = json
+    '';
+  };
+
   xdg.configFile."npm/npmrc" = lib.mkIf node {
     text = ''
       prefix=''${XDG_DATA_HOME}/npm

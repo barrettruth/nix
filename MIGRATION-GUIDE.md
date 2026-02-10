@@ -50,6 +50,20 @@ rm /tmp/gpg-private.asc
 By storing the same keys, the key IDs in `git.nix` stay valid, GitHub
 doesn't need updating, and git signing works immediately after restore.
 
+### Store AWS credentials in Vaultwarden
+
+Create a separate secure note entry for AWS credentials. Store each
+profile's access key ID and secret access key as fields (or in the
+note body):
+
+- `barrett` — `AKIA6ODU5IDCSC3ZGB2D`
+- `projecta10` — `AKIA6ODU5IDC3T6IVW6Y`
+- `tcf` — `AKIAVY2PGOP7SHEKVCFP`
+
+Include both the access key ID and secret access key for each profile.
+The AWS config file (region, output format) is managed declaratively
+in `shell.nix` — only the credentials are secret.
+
 ### Push this repo
 
 ```sh
@@ -234,6 +248,28 @@ gpg --edit-key A6C96C9349D2FC81 trust
 Select trust level 5 (ultimate), then `quit`. The key ID matches what's
 in `git.nix`, so git signing works immediately.
 
+#### AWS credentials
+
+Open the AWS credentials entry in Vaultwarden and create the
+credentials file. The config file (region, output) is managed by
+`shell.nix` — only the credentials are manual.
+
+```sh
+mkdir -p ~/.config/aws
+cat > ~/.config/aws/credentials << 'EOF'
+[barrett]
+aws_access_key_id = <from vaultwarden>
+aws_secret_access_key = <from vaultwarden>
+[projecta10]
+aws_access_key_id = <from vaultwarden>
+aws_secret_access_key = <from vaultwarden>
+[tcf]
+aws_access_key_id = <from vaultwarden>
+aws_secret_access_key = <from vaultwarden>
+EOF
+chmod 600 ~/.config/aws/credentials
+```
+
 #### Clean up
 
 Delete the downloaded key files from `~/Downloads/`.
@@ -274,7 +310,8 @@ sudo nixos-rebuild switch --flake .#xps15
 - Docker and libvirt
 - Systemd services and timers
 - XDG directories and MIME associations
-- Scripts symlinked to ~/.local/bin/scripts
+- Scripts in PATH via ~/nix-config/scripts
+- AWS config (region, output format)
 - Directory creation (~/dev, ~/dl, ~/img, ~/wp)
 - Cloning this repo to ~/nix-config on first activation
 - Wallpaper symlinks from the repo to ~/img/screen
@@ -287,5 +324,6 @@ sudo nixos-rebuild switch --flake .#xps15
 - Generate hardware-configuration.nix
 - Set root and user passwords
 - Restore SSH keys, GPG key, and .pem files from Vaultwarden
+- Restore AWS credentials from Vaultwarden
 - Copy fonts into nix-config/fonts/ (optional, can be done later)
 - Restore browser profile (~/.zen) if you want tabs/extensions back
