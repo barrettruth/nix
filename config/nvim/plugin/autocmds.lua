@@ -7,28 +7,6 @@ au('BufEnter', {
     group = aug,
 })
 
-au('BufWritePost', {
-    pattern = (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config'))
-        .. '/firefox/userChrome.css',
-    callback = function()
-        if not vim.tbl_contains({ 'firefox', 'zen-browser' }, vim.env.BROWSER) then
-            return
-        end
-        vim.notify(
-            'Updating firefox-based browser userChrome.css...',
-            vim.log.levels.INFO
-        )
-        local src = (vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config'))
-            .. '/firefox/userChrome.css'
-        local targets =
-            vim.fn.glob(vim.env.HOME .. '/.zen/*release*/chrome', true, true)
-        for _, dir in ipairs(targets) do
-            vim.fn.system({ 'cp', '-f', src, dir .. '/userChrome.css' })
-        end
-    end,
-    group = aug,
-})
-
 au({ 'TermOpen', 'BufWinEnter' }, {
     callback = function(args)
         if vim.bo[args.buf].buftype == 'terminal' then

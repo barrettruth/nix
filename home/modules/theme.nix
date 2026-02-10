@@ -73,13 +73,13 @@ in
     };
 
     home.file.".local/share/fonts".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/fonts";
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/fonts";
 
     home.activation.checkFonts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ ! -d "${config.home.homeDirectory}/nix-config/fonts" ] || \
-         [ -z "$(ls -A "${config.home.homeDirectory}/nix-config/fonts" 2>/dev/null)" ]; then
-        echo "WARNING: ~/nix-config/fonts is missing or empty — fonts will not be available"
-        echo "         copy your fonts into ~/nix-config/fonts/ and rebuild"
+      if [ ! -d "${config.home.homeDirectory}/.config/nix/fonts" ] || \
+         [ -z "$(ls -A "${config.home.homeDirectory}/.config/nix/fonts" 2>/dev/null)" ]; then
+        echo "WARNING: ~/.config/nix/fonts is missing or empty — fonts will not be available"
+        echo "         copy your fonts into ~/.config/nix/fonts/ and rebuild"
       fi
     '';
   };

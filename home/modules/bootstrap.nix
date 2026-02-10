@@ -7,7 +7,7 @@
 
 let
   homeDir = config.home.homeDirectory;
-  repoDir = "${homeDir}/nix-config";
+  repoDir = "${homeDir}/.config/nix";
 
   directories = [
     "dev"
@@ -26,6 +26,7 @@ in
 
   home.activation.cloneNixConfig = lib.hm.dag.entryAfter [ "createDirectories" ] ''
     if [ ! -d "${repoDir}" ]; then
+      $DRY_RUN_CMD mkdir -p "$(dirname "${repoDir}")"
       $DRY_RUN_CMD ${pkgs.git}/bin/git clone https://github.com/barrettruth/nix-config.git "${repoDir}"
     fi
   '';

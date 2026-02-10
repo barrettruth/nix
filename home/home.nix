@@ -31,7 +31,7 @@ in
     targets.genericLinux.enable = !isNixOS;
     news.display = "silent";
 
-    home.sessionPath = [ "${config.home.homeDirectory}/nix-config/scripts" ];
+    home.sessionPath = [ "${config.home.homeDirectory}/.config/nix/scripts" ];
 
     programs.home-manager.enable = true;
 
@@ -39,7 +39,7 @@ in
       Unit.Description = "Update nix flake inputs";
       Service = {
         Type = "oneshot";
-        WorkingDirectory = "%h/nix-config";
+        WorkingDirectory = "%h/.config/nix";
         ExecStart = "${pkgs.nix}/bin/nix flake update";
       };
     };

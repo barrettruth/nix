@@ -557,15 +557,15 @@ in
   };
 
   xdg.configFile."lf/previewer" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/lf/previewer";
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/previewer";
   };
 
   xdg.configFile."lf/cleaner" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/lf/cleaner";
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/cleaner";
   };
 
   xdg.configFile."lf/lf.lua".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/lf/lf.lua";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/lf.lua";
   xdg.configFile."lf/sort.py".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/lf/sort.py";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/sort.py";
 }

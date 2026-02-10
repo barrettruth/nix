@@ -53,7 +53,7 @@ in
   home.activation.linkZenProfile = lib.mkIf enableZen (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       zen_config="$HOME/.zen"
-      repo_zen="${config.home.homeDirectory}/nix-config/config/zen"
+      repo_zen="${config.home.homeDirectory}/.config/nix/config/zen"
 
       if [ ! -d "$zen_config" ]; then
         exit 0

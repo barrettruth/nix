@@ -6,6 +6,25 @@
     MANPAGER = "nvim +Man!";
   };
 
+  home.packages = with pkgs; [
+    nodejs
+    isort
+    black
+    mypy
+    stylua
+    selene
+    prettierd
+    eslint_d
+    shfmt
+    buf
+    hadolint
+    cbfmt
+    cmake-format
+    checkmake
+    cpplint
+    texlivePackages.latexindent
+  ];
+
   programs.neovim = {
     enable = true;
     defaultEditor = true;
@@ -14,5 +33,5 @@
   };
 
   xdg.configFile."nvim".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/nvim";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/nvim";
 }

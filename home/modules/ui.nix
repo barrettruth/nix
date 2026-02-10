@@ -541,5 +541,5 @@ in
   '';
 
   xdg.configFile."X11".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/X11";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/X11";
 }
