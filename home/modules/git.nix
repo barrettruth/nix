@@ -113,18 +113,12 @@
       "github.com" = {
         identityFile = "~/.ssh/id_ed25519";
       };
-      "git-server" = {
-        hostname = "git.barrettruth.com";
-        user = "ec2-user";
-        identityFile = "~/.ssh/git-keypair-old.pem";
-      };
       "lightsail" = {
         hostname = "52.87.124.139";
         user = "ec2-user";
-        identityFile = "~/.ssh/git-keypair.pem";
+        identityFile = "~/.ssh/lightsail-keypair.pem";
         extraOptions = {
           SetEnv = "TERM=xterm-256color";
-          KexAlgorithms = "+curve25519-sha256";
         };
       };
       "uva-portal" = {

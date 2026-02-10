@@ -50,12 +50,18 @@ in
     default = "midnight";
   };
 
+  options.palettes = lib.mkOption {
+    type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
+    readOnly = true;
+  };
+
   options.colors = lib.mkOption {
     type = lib.types.attrsOf lib.types.str;
     readOnly = true;
   };
 
   config = {
+    palettes = palettes;
     colors = palettes.${config.theme};
 
     home.pointerCursor = {

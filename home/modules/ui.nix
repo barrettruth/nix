@@ -11,6 +11,16 @@ let
 
   nvidia = true;
   backlightDevice = "intel_backlight";
+
+  mkWaybarTheme = palette: ''
+    * { color: ${palette.fg}; }
+    #waybar { background: ${palette.bg}; }
+    #workspaces button { color: ${palette.fg}; }
+    #workspaces button.focused,
+    #workspaces button.active { background: ${palette.bgAlt}; color: ${palette.fg}; }
+    tooltip { color: ${palette.fg}; background-color: ${palette.bgAlt}; }
+    tooltip * { color: ${palette.fg}; }
+  '';
 in
 {
   home.sessionVariables = {
@@ -385,10 +395,11 @@ in
     };
 
     style = ''
+      @import url("${config.xdg.configHome}/waybar/themes/theme.css");
+
       * {
         font-family: "Berkeley Mono", monospace;
         font-size: 15px;
-        color: ${c.fg};
       }
 
       button {
@@ -396,29 +407,15 @@ in
         border-radius: 0;
       }
 
-      #waybar {
-        background: ${c.bg};
-      }
-
       #workspaces button {
         padding: 0 10px;
-        color: ${c.fg};
-      }
-
-      #workspaces button.focused,
-      #workspaces button.active {
-        background: ${c.bgAlt};
-        color: ${c.fg};
       }
 
       tooltip {
-        color: ${c.fg};
-        background-color: ${c.bgAlt};
         text-shadow: none;
       }
 
       tooltip * {
-        color: ${c.fg};
         text-shadow: none;
       }
     '';
@@ -535,6 +532,14 @@ in
       };
     };
   };
+  xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
+  xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
+
+  home.activation.linkWaybarTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    target="${config.xdg.configHome}/waybar/themes/theme.css"
+    [ -L "$target" ] || $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/waybar/themes/${config.theme}.css" "$target"
+  '';
+
   xdg.configFile."X11".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/config/X11";
 }
