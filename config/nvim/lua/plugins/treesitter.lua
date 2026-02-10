@@ -28,30 +28,8 @@ return {
                 ),
             })
         end,
-        keys = {
-            {
-                '<leader>T',
-                function()
-                    local lang_map = { htmldjango = 'html' }
-                    local bufnr = vim.api.nvim_get_current_buf()
-                    local parser = vim.treesitter.get_parser(bufnr)
-                    local lang = parser:lang()
-                    local path = (
-                        vim.env.NVIM_APPNAME or vim.fn.stdpath('config')
-                    )
-                        .. ('/after/queries/%s/highlights.scm'):format(
-                            lang_map[lang] or lang
-                        )
-
-                    if vim.loop.fs_stat(path) then
-                        vim.fn.rename(path, path .. '.disabled')
-                    elseif vim.loop.fs_stat(path .. '.disabled') then
-                        vim.fn.rename(path .. '.disabled', path)
-                    end
-                    vim.cmd.TSBufToggle('highlight')
-                    vim.cmd.TSBufToggle('highlight')
-                end,
-            },
+        opts = {
+            auto_install = true,
         },
     },
     {
@@ -78,8 +56,6 @@ return {
             local select_maps = {
                 { 'aa', '@parameter.outer' },
                 { 'ia', '@parameter.inner' },
-                { 'ab', '@block.outer' },
-                { 'ib', '@block.inner' },
                 { 'as', '@class.outer' },
                 { 'is', '@class.inner' },
                 { 'aC', '@call.outer' },

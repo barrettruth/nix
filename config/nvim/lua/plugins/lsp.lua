@@ -11,11 +11,11 @@ return {
     },
     {
         'saghen/blink.cmp',
-        version = '1.*',
-        dependencies = { 'folke/lazydev.nvim', 'L3MON4D3/LuaSnip' },
+        build = 'cargo build --release',
+        dependencies = 'folke/lazydev.nvim',
         ---@module 'blink.cmp'
         ---@type blink.cmp.Config
-        event = { 'InsertEnter', 'CmdlineEnter' },
+        event = { 'InsertEnter', 'LspAttach' },
         config = function(_, opts)
             vim.o.pumheight = 15
             opts.completion.menu.max_height = vim.o.pumheight
@@ -56,15 +56,16 @@ return {
                 },
             },
             cmdline = {
-                completion = {
-                    menu = {
-                        auto_show = true,
-                    },
-                },
-                keymap = {
-                    ['<left>'] = false,
-                    ['<right>'] = false,
-                },
+                enabled = false,
+                --     completion = {
+                --         menu = {
+                --             auto_show = true,
+                --         },
+                --     },
+                --     keymap = {
+                --         ['<left>'] = false,
+                --         ['<right>'] = false,
+                --     },
             },
             sources = {
                 default = { 'lsp', 'path', 'snippets', 'buffer' },
@@ -79,9 +80,6 @@ return {
         },
         keys = { { '<c-n>', mode = 'i' } },
         opts_extend = { 'sources.default' },
-    },
-    {
-        'b0o/SchemaStore.nvim',
     },
     {
         'saecki/live-rename.nvim',
@@ -113,7 +111,6 @@ return {
     },
     {
         'yioneko/nvim-vtsls',
-        enabled = false,
         config = function(_, opts)
             require('vtsls').config(opts)
         end,
@@ -179,72 +176,6 @@ return {
                 end,
             },
         },
-    },
-    {
-        'pmizio/typescript-tools.nvim',
-        enabled = false,
-        opts = {
-            on_attach = function(_, bufnr)
-                bmap(
-                    { 'n', 'gD', vim.cmd.TSToolsGoToSourceDefinition },
-                    { buffer = bufnr }
-                )
-            end,
-            handlers = {
-                ['textDocument/publishDiagnostics'] = function(_, result, ctx)
-                    if not result.diagnostics then
-                        return
-                    end
-
-                    local idx = 1
-                    while idx <= #result.diagnostics do
-                        local entry = result.diagnostics[idx]
-
-                        local formatter =
-                            require('format-ts-errors')[entry.code]
-                        entry.message = formatter and formatter(entry.message)
-                            or entry.message
-
-                        if vim.tbl_contains({ 80001, 80006 }, entry.code) then
-                            table.remove(result.diagnostics, idx)
-                        else
-                            idx = idx + 1
-                        end
-                    end
-
-                    vim.lsp.diagnostic.on_publish_diagnostics(_, result, ctx)
-                end,
-            },
-
-            settings = {
-                expose_as_code_action = 'all',
-                -- tsserver_path = vim.env.XDG_DATA_HOME .. '/pnpm/tsserver',
-                tsserver_file_preferences = {
-                    includeInlayarameterNameHints = 'all',
-                    includeInlayarameterNameHintsWhenArgumentMatchesName = false,
-                    includeInlayFunctionParameterTypeHints = true,
-                    includeInlayVariableTypeHints = true,
-                    includeInlayVariableTypeHintsWhenTypeMatchesName = false,
-                    includeInlayPropertyDeclarationTypeHints = true,
-                    includeInlayFunctionLikeReturnTypeHints = true,
-                    includeInlayEnumMemberValueHints = true,
-                },
-            },
-        },
-        dependencies = {
-            'nvim-lua/plenary.nvim',
-        },
-        ft = {
-            'javascript',
-            'javascriptreact',
-            'typescript',
-            'typescriptreact',
-        },
-    },
-    {
-        'mrcjkb/rustaceanvim',
-        enabled = false,
-        ft = { 'rust' },
     },
     {
         'SmiteshP/nvim-navic',
