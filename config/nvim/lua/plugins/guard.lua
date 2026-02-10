@@ -1,8 +1,7 @@
 return {
     'nvimdev/guard.nvim',
-    -- TODO: use main repo when #76 merged
     dependencies = {
-        { dir = '~/dev/guard-collection', 'barrettruth/guard-collection' },
+        { 'nvimdev/guard-collection' },
     },
     init = function()
         vim.g.guard_config = {

@@ -111,6 +111,7 @@ return {
     },
     {
         'yioneko/nvim-vtsls',
+        enabled = false,
         config = function(_, opts)
             require('vtsls').config(opts)
         end,

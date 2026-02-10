@@ -8,8 +8,6 @@ return {
     },
     {
         'barrettruth/diffs.nvim',
-        dir = '~/dev/diffs.nvim',
-        enabled = true,
         init = function()
             vim.g.diffs = {
                 debug = false,

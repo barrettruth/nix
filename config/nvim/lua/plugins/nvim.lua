@@ -139,6 +139,7 @@ return {
         end,
     },
     {
+        enabled = false,
         'lervag/vimtex',
         init = function()
             vim.g.vimtex_view_method = 'general'
@@ -357,12 +358,5 @@ return {
             },
             scope = { enabled = false },
         },
-    },
-    {
-        'barrettruth/midnight.nvim',
-        dir = '~/dev/midnight.nvim',
-        config = function()
-            vim.cmd.colorscheme('midnight')
-        end,
     },
 }
