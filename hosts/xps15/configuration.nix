@@ -36,9 +36,9 @@
   services.pcscd.enable = true;
   i18n.defaultLocale = "en_US.UTF-8";
 
-  nix.extraOptions = {
-    experimental-features = nix-command flakes;
-  };
+  nix.extraOptions = ''
+    experimental-features = nix-command flakes
+  '';
 
   security.pam.services.hyprlock = { };
 
