@@ -16,7 +16,7 @@ let
 in
 {
   home.sessionVariables = lib.optionalAttrs enableZen {
-    BROWSER = "zen-browser";
+    BROWSER = "zen";
   }
   // lib.optionalAttrs enableClaude {
     CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";

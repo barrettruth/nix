@@ -24,6 +24,7 @@ let
 in
 {
   home.packages = with pkgs; [
+    awscli2
     pure-prompt
     xclip
     tree

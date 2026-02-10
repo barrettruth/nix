@@ -18,6 +18,7 @@ au({ 'TermOpen', 'BufWinEnter' }, {
     group = aug,
 })
 
+-- TODO: out of date (config no longer in $XDG_CONFIG_HOME/nvim)
 au('BufWritePost', {
     pattern = (
         os.getenv('XDG_CONFIG_HOME') or (os.getenv('HOME') .. '/.config')
