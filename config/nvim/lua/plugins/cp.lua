@@ -64,7 +64,6 @@ BinPackParameters: false]]
 
 return {
     'barrettruth/cp.nvim',
-    dir = '~/dev/cp.nvim',
     cmd = 'CP',
     keys = {
         { '<leader>ce', '<cmd>CP edit<cr>' },
@@ -77,8 +76,7 @@ return {
         { '[c', '<cmd>CP prev<cr>' },
     },
     dependencies = {
-        'L3MON4D3/LuaSnip',
-        'nvim-telescope/telescope.nvim',
+        'ibhagwan/fzf-lua'
     },
     config = function()
         require('cp').setup({

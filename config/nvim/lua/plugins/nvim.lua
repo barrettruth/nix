@@ -40,6 +40,7 @@ return {
     },
     {
         'lervag/vimtex',
+        enabled = false,
         init = function()
             vim.g.vimtex_view_method = 'general'
             vim.g.vimtex_compiler_method = 'latexmk'
@@ -348,11 +349,6 @@ return {
         },
     },
     {
-        'tzachar/highlight-undo.nvim',
-        config = true,
-        keys = { 'u', 'U' },
-    },
-    {
         'kana/vim-textobj-user',
         dependencies = {
             {
@@ -411,7 +407,6 @@ return {
     },
     {
         'barrettruth/midnight.nvim',
-        dir = '~/dev/midnight.nvim',
         init = function()
             vim.api.nvim_create_autocmd({ 'OptionSet' }, {
                 pattern = 'background',
