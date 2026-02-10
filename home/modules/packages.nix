@@ -17,6 +17,9 @@ in
 {
   home.sessionVariables = lib.optionalAttrs enableZen {
     BROWSER = "zen-browser";
+  }
+  // lib.optionalAttrs enableClaude {
+    CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
   };
 
   programs.mpv.enable = true;

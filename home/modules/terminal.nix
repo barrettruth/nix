@@ -7,6 +7,7 @@ in
   home.sessionVariables = {
     TERMINAL = "ghostty";
     TERM = "xterm-ghostty";
+    TERMINFO = "${config.xdg.dataHome}/terminfo";
   };
 
   programs.ghostty = {

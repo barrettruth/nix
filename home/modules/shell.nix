@@ -19,6 +19,7 @@ let
   docker = true;
   aws = true;
   psql = true;
+  tex = true;
   sqlite = true;
 in
 {
@@ -42,6 +43,12 @@ in
 
   home.sessionVariables = {
     LESSHISTFILE = "-";
+    GRADLE_USER_HOME = "${config.xdg.configHome}/gradle";
+    LIBVIRT_DEFAULT_URI = "qemu:///system";
+    MBSYNCRC = "${config.xdg.configHome}/mbsync/config";
+    PARALLEL_HOME = "${config.xdg.configHome}/parallel";
+    PASSWORD_STORE_DIR = "${config.xdg.dataHome}/pass";
+    PRETTIERD_CONFIG_HOME = "${config.xdg.stateHome}/prettierd";
   }
   // lib.optionalAttrs ripgrep {
     RIPGREP_CONFIG_PATH = "${config.xdg.configHome}/rg/config";
@@ -58,12 +65,16 @@ in
     NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/npmrc";
     NODE_REPL_HISTORY = "${config.xdg.stateHome}/node_repl_history";
     PNPM_HOME = "${config.xdg.dataHome}/pnpm";
+    PNPM_NO_UPDATE_NOTIFIER = "true";
   }
   // lib.optionalAttrs python {
     PYTHONSTARTUP = "${config.xdg.configHome}/python/pythonrc";
     PYTHON_HISTORY = "${config.xdg.stateHome}/python_history";
     PYTHONPYCACHEPREFIX = "${config.xdg.cacheHome}/python";
     PYTHONUSERBASE = "${config.xdg.dataHome}/python";
+    MYPY_CACHE_DIR = "${config.xdg.cacheHome}/mypy";
+    JUPYTER_CONFIG_DIR = "${config.xdg.configHome}/jupyter";
+    JUPYTER_PLATFORM_DIRS = "1";
   }
   // lib.optionalAttrs ocaml {
     OPAMROOT = "${config.xdg.dataHome}/opam";
@@ -74,12 +85,18 @@ in
   // lib.optionalAttrs aws {
     AWS_SHARED_CREDENTIALS_FILE = "${config.xdg.configHome}/aws/credentials";
     AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
+    BOTO_CONFIG = "${config.xdg.configHome}/boto/config";
   }
   // lib.optionalAttrs psql {
     PSQL_HISTORY = "${config.xdg.stateHome}/psql_history";
   }
   // lib.optionalAttrs sqlite {
     SQLITE_HISTORY = "${config.xdg.stateHome}/sqlite_history";
+  }
+  // lib.optionalAttrs tex {
+    TEXMFHOME = "${config.xdg.dataHome}/texmf";
+    TEXMFVAR = "${config.xdg.cacheHome}/texlive/texmf-var";
+    TEXMFCONFIG = "${config.xdg.configHome}/texlive/texmf-config";
   };
 
   home.sessionPath = [

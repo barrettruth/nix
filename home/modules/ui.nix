@@ -13,6 +13,11 @@ let
   backlightDevice = "intel_backlight";
 in
 {
+  home.sessionVariables = {
+    XINITRC = "${config.xdg.configHome}/X11/xinitrc";
+    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+  };
+
   home.packages = with pkgs; [
     wl-clipboard
     cliphist
