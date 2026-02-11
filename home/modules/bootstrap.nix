@@ -1,7 +1,6 @@
 {
   lib,
   config,
-  pkgs,
   ...
 }:
 
@@ -24,16 +23,7 @@ in
     done
   '';
 
-  home.activation.cloneNixConfig = lib.hm.dag.entryAfter [ "createDirectories" ] ''
-    if [ ! -d "${repoDir}" ]; then
-      run mkdir -p "$(dirname "${repoDir}")"
-      if ! run ${pkgs.git}/bin/git clone https://github.com/barrettruth/nix-config.git "${repoDir}" 2>&1; then
-        echo "WARNING: could not clone nix-config (network may not be ready)"
-      fi
-    fi
-  '';
-
-  home.activation.linkWallpapers = lib.hm.dag.entryAfter [ "cloneNixConfig" ] ''
+  home.activation.linkWallpapers = lib.hm.dag.entryAfter [ "createDirectories" ] ''
     src="${repoDir}/config/screen"
     dest="$HOME/img/screen"
     if [ -d "$src" ]; then
