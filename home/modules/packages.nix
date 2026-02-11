@@ -112,7 +112,7 @@ in
       }
       // lib.optionalAttrs enableSioyek {
         "application/pdf" = "sioyek.desktop";
-        "application/epub" = "sioyek.desktop";
+        "application/epub+zip" = "sioyek.desktop";
       }
       // lib.optionalAttrs enableVesktop {
         "x-scheme-handler/discord" = "vesktop.desktop";

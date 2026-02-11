@@ -309,7 +309,7 @@ in
         if [[ ! -d .venv ]]; then
           uv venv
         fi
-        source .venv/bin/activate
+        . .venv/bin/activate
       }
     '';
   };
@@ -495,8 +495,8 @@ in
     commands = {
       open = ''
         $${{
-                setsid -f xdg-open "$f" 2>/dev/null 2>&1 &
-              }}'';
+            setsid -f xdg-open "$f" 2>/dev/null 2>&1 &
+          }}'';
       sopen = ''
         $${{
                 for f in $fx; do

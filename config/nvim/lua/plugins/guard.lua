@@ -38,5 +38,9 @@ return {
         ft('make'):lint('checkmake')
         ft('cpp'):lint('cpplint')
         ft('markdown'):fmt('cbfmt'):append('prettierd')
+        ft('nix'):fmt({
+            cmd = 'nixfmt',
+            stdin = true,
+        })
     end,
 }
