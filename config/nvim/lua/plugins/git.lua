@@ -31,9 +31,9 @@ return {
         ---@type snacks.Config
         opts = { gitbrowse = {} },
         keys = {
-            { '<leader>Go', '<cmd>lua Snacks.gitbrowse()<cr>' },
-            { '<leader>Gi', '<cmd>lua Snacks.picker.gh_issue()<cr>' },
-            { '<leader>Gp', '<cmd>lua Snacks.picker.gh_pr()<cr>' },
+            { '<leader>go', '<cmd>lua Snacks.gitbrowse()<cr>' },
+            { '<leader>gi', '<cmd>lua Snacks.picker.gh_issue()<cr>' },
+            { '<leader>gp', '<cmd>lua Snacks.picker.gh_pr()<cr>' },
         },
     },
 }
