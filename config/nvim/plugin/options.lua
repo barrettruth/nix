@@ -2,18 +2,6 @@ local o, opt = vim.o, vim.opt
 
 o.autowrite = true
 
-local f, background = io.open(vim.env.HOME .. '/.zshenv', 'r'), 'light'
-if f then
-    local content = f:read('*a')
-    f:close()
-    local theme = content:match('export THEME=(%S+)')
-    background = theme
-elseif vim.env.THEME then
-    background = vim.env.THEME
-end
-
-o.background = background == 'daylight' and 'light' or 'dark'
-
 o.breakindent = true
 
 o.cursorline = true

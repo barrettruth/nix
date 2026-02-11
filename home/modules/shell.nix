@@ -415,7 +415,7 @@ in
 
       unbind ^; bind ^ last-window
 
-      unbind e; bind e neww -n 'tmux.conf' "sh -c 'nvim $XDG_CONFIG_HOME/tmux/tmux.conf; tmux source $XDG_CONFIG_HOME/tmux/tmux.conf'"
+      unbind e; bind e neww -n 'tmux.conf' "sh -c 'nvim ~/.config/nix/home/modules/shell.nix; tmux source $XDG_CONFIG_HOME/tmux/tmux.conf'"
 
       unbind H; bind H run 'mux switch 0'\; refresh -S
       unbind J; bind J run 'mux switch 1'\; refresh -S
