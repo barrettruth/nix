@@ -5,17 +5,11 @@
     ./hardware-configuration.nix
   ];
 
-  boot.loader.grub = {
+  boot.loader.systemd-boot = {
     enable = true;
-    device = "nodev";
-    efiSupport = true;
-    useOSProber = true;
-    gfxmodeEfi = "1920x1080x32";
-    gfxpayloadEfi = "keep";
     configurationLimit = 2;
   };
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.efi.efiSysMountPoint = "/boot/efi";
   boot.kernelParams = [
     "nvidia-drm.modeset=1"
     "ibt=off"
