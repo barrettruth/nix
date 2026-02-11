@@ -60,7 +60,7 @@ in
       fi
 
       profile=""
-      for d in "$zen_config"/*.Default\ \(release\); do
+      for d in "$zen_config"/*.Default\ Profile; do
         [ -d "$d" ] && profile="$d" && break
       done
 

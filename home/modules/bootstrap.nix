@@ -14,7 +14,7 @@ let
     "dl"
     "img"
     "img/screen"
-    "wp"
+    "img/wp"
   ];
 in
 {

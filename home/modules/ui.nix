@@ -38,9 +38,6 @@ in
     pamixer
     socat
     (python3.withPackages (ps: [ ps.pillow ]))
-    xinit
-    xmodmap
-    xrdb
   ];
 
   wayland.windowManager.hyprland = {
@@ -540,6 +537,4 @@ in
     $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/waybar/themes/${config.theme}.css" "$target"
   '';
 
-  xdg.configFile."X11".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/X11";
 }

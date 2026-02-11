@@ -170,7 +170,7 @@ in
 
   programs.zsh = {
     enable = true;
-    dotDir = "${config.xdg.configHome}/zsh";
+    dotDir = ".config/zsh";
 
     history = {
       path = "${config.xdg.stateHome}/zsh_history";
@@ -265,6 +265,10 @@ in
       [[ ! -r "$OPAMROOT/opam-init/init.zsh" ]] || source "$OPAMROOT/opam-init/init.zsh" > /dev/null 2> /dev/null
     '';
   };
+
+  home.activation.removeZshenvBridge = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    [ -L "$HOME/.zshenv" ] && rm "$HOME/.zshenv" || true
+  '';
 
   programs.fzf = {
     enable = true;
@@ -434,6 +438,7 @@ in
       set -g lock-after-time 300
       set -g lock-command "pipes -p 2"
 
+      set -g @resurrect-dir '~/.local/state/tmux/resurrect'
       set -g @resurrect-capture-pane-contents on
     '';
   };

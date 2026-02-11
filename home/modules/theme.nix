@@ -69,7 +69,7 @@ in
       package = pkgs.apple-cursor;
       size = 24;
       gtk.enable = true;
-      x11.enable = true;
+      x11.enable = false;
     };
 
     home.file.".local/share/fonts".source =
