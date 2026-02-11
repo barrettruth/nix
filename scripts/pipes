@@ -86,10 +86,10 @@ parse() {
                 V+=(${#sets[@]})
                 sets+=("${OPTARG:1}")
             else
-                ((OPTARG >= 0 && OPTARG < ${#sets[@]})) && V+=($OPTARG)
+                ((OPTARG >= 0 && OPTARG < ${#sets[@]})) && V+=("$OPTARG")
             fi
             ;;
-        c) [[ $OPTARG =~ ^[0-7]$ ]] && C+=($OPTARG);;
+        c) [[ $OPTARG =~ ^[0-7]$ ]] && C+=("$OPTARG");;
         f) ((f = (OPTARG > 19 && OPTARG < 101) ? OPTARG : f));;
         s) ((s = (OPTARG > 4 && OPTARG < 16) ? OPTARG : s));;
         r) ((r = (OPTARG >= 0) ? OPTARG : r));;
@@ -97,7 +97,7 @@ parse() {
         B) BOLD=0;;
         C) NOCOLOR=1;;
         K) KEEPCT=1;;
-        h) echo -e "Usage: $(basename $0) [OPTION]..."
+        h) echo -e "Usage: $(basename "$0") [OPTION]..."
             echo -e "Animated pipes terminal screensaver.\n"
             echo -e " -p [1-]\tnumber of pipes (D=1)."
             echo -e " -t [0-$((${#sets[@]} - 1))]\ttype of pipes, can be used more than once (D=0)."
@@ -115,6 +115,10 @@ parse() {
             exit 0;;
         v) echo "$(basename -- "$0") $VERSION"
             exit 0
+            ;;
+        *)
+            exit 1
+            ;;
         esac
     done
 
@@ -128,7 +132,7 @@ parse() {
 
 cleanup() {
     # clear out standard input
-    read -t 0.001 && cat </dev/stdin>/dev/null
+    read -r -t 0.001 && cat </dev/stdin>/dev/null
 
     # terminal has no smcup and rmcup capabilities
     ((FORCE_RESET)) && reset && exit 0
@@ -182,7 +186,7 @@ main() {
     # any key press exits the loop and this script
     trap 'break 2' INT
     while REPLY=; do
-        read -t 0.0$((1000 / f)) -n 1 2>/dev/null
+        read -r -t 0.0$((1000 / f)) -n 1 2>/dev/null
         case "$REPLY" in
             P) ((s = s <  15 ? s + 1 : s));;
             O) ((s = s >   3 ? s - 1 : s));;
@@ -210,7 +214,7 @@ main() {
             ((n[i] = (n[i] < 0) ? 3 : n[i] % 4))
 
             # Print:
-            tput cup ${y[i]} ${x[i]}
+            tput cup "${y[i]} ${x[i]}"
             echo -ne "\e[${BOLD}m"
             ((NOCOLOR)) && echo -ne "\e[0m" || echo -ne "\e[3${c[i]}m"
             echo -n "${sets[v[i]]:l[i]*4+n[i]:1}"

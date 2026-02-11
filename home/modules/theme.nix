@@ -89,6 +89,7 @@ in
       $DRY_RUN_CMD ln -sf "$cfg/hypr/themes/$theme.conf" "$cfg/hypr/themes/theme.conf"
       $DRY_RUN_CMD ln -sf "$cfg/waybar/themes/$theme.css" "$cfg/waybar/themes/theme.css"
       $DRY_RUN_CMD ln -sf "$cfg/rofi/themes/$theme.rasi" "$cfg/rofi/themes/theme.rasi"
+      $DRY_RUN_CMD ln -sf "$cfg/sioyek/themes/$theme.config" "$cfg/sioyek/themes/theme.config"
     '';
   };
 }

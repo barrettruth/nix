@@ -14,8 +14,6 @@ require gsettings
 themes="daylight
 midnight"
 
-# --- Selection ---
-
 if [ -n "$1" ]; then
   theme="$1"
 else
@@ -50,8 +48,6 @@ fi
 [ -z "$theme" ] && exit 1
 echo "$themes" | grep -Fxq "$theme" || exit 1
 
-# --- Platform ---
-
 case "$(uname)" in
 Linux)
   # GTK color scheme
@@ -60,7 +56,6 @@ Linux)
   daylight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' ;;
   esac
 
-  # Hyprland: runtime border colors + waybar
   if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ] && command -v hyprctl >/dev/null 2>&1; then
     case "$theme" in
     midnight)
@@ -90,6 +85,11 @@ Linux)
     [ -f "$hypr_themes/$theme.conf" ] && {
       ln -sf "$hypr_themes/$theme.conf" "$hypr_themes/theme.conf"
     }
+
+    sioyek_themes="$cfg/sioyek/themes"
+    [ -f "$sioyek_themes/$theme.config" ] && {
+      ln -sf "$sioyek_themes/$theme.config" "$sioyek_themes/theme.config"
+    }
   fi
   ;;
 Darwin)
@@ -100,16 +100,12 @@ Darwin)
   ;;
 esac
 
-# --- Cross-platform ---
-
-# Tmux
 if [ -n "$TMUX" ]; then
   tmux_themes="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/themes"
   [ -f "$tmux_themes/$theme.conf" ] && tmux source "$tmux_themes/$theme.conf"
   tmux setenv -g THEME "$theme"
 fi
 
-# Claude CLI
 if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
   CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude}/.claude.json"
   case "$theme" in
@@ -122,7 +118,6 @@ if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
   }
 fi
 
-# Neovim instances
 for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
   [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf_reload\").reload()')" 2>/dev/null || true
 done

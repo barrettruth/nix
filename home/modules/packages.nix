@@ -13,31 +13,40 @@ let
   enableSioyek = true;
   enableVesktop = true;
   enableNeovim = config.programs.neovim.enable;
+
+  sioyek-wrapped = pkgs.symlinkJoin {
+    name = "sioyek";
+    paths = [ pkgs.sioyek ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/sioyek \
+        --set QT_QPA_PLATFORM xcb
+    '';
+  };
+
+  repoDir = "${config.home.homeDirectory}/.config/nix";
 in
 {
-  home.sessionVariables =
-    lib.optionalAttrs enableZen {
-      BROWSER = "zen";
-    }
-    // lib.optionalAttrs enableClaude {
-      CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
-    };
+  home.sessionVariables = lib.mkMerge [
+    (lib.mkIf enableZen { BROWSER = "zen"; })
+    (lib.mkIf enableClaude { CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude"; })
+  ];
 
   programs.mpv.enable = true;
 
-  home.packages =
-    with pkgs;
-    [
+  home.packages = lib.mkMerge [
+    (with pkgs; [
       signal-desktop
       slack
       bitwarden-desktop
       gemini-cli
       typst
-    ]
-    ++ lib.optionals enableClaude [ claude-code ]
-    ++ lib.optionals enableZen [ zen-browser.packages.${hostPlatform}.default ]
-    ++ lib.optionals enableSioyek [ sioyek ]
-    ++ lib.optionals enableVesktop [ vesktop ];
+    ])
+    (lib.mkIf enableClaude [ pkgs.claude-code ])
+    (lib.mkIf enableZen [ zen-browser.packages.${hostPlatform}.default ])
+    (lib.mkIf enableSioyek [ sioyek-wrapped ])
+    (lib.mkIf enableVesktop [ pkgs.vesktop ])
+  ];
 
   xdg.configFile."claude/settings.json" = lib.mkIf enableClaude {
     text = builtins.toJSON {
@@ -53,21 +62,37 @@ in
   };
 
   xdg.configFile."claude/CLAUDE.md" = lib.mkIf enableClaude {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/claude/CLAUDE.md";
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/CLAUDE.md";
   };
 
   xdg.configFile."claude/rules" = lib.mkIf enableClaude {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/claude/rules";
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/rules";
   };
 
   xdg.configFile."claude/skills" = lib.mkIf enableClaude {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/claude/skills";
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/skills";
+  };
+
+  xdg.configFile."sioyek/keys_user.config" = lib.mkIf enableSioyek {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/keys_user.config";
+  };
+
+  xdg.configFile."sioyek/prefs_user.config" = lib.mkIf enableSioyek {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/prefs_user.config";
+  };
+
+  xdg.configFile."sioyek/themes/midnight.config" = lib.mkIf enableSioyek {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/themes/midnight.config";
+  };
+
+  xdg.configFile."sioyek/themes/daylight.config" = lib.mkIf enableSioyek {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/themes/daylight.config";
   };
 
   home.activation.linkZenProfile = lib.mkIf enableZen (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       zen_config="$HOME/.zen"
-      repo_zen="${config.home.homeDirectory}/.config/nix/config/zen"
+      repo_zen="${repoDir}/config/zen"
 
       if [ ! -d "$zen_config" ]; then
         exit 0
@@ -114,22 +139,22 @@ in
 
   xdg.mimeApps = {
     enable = true;
-    defaultApplications =
-      { }
-      // lib.optionalAttrs enableZen {
+    defaultApplications = lib.mkMerge [
+      (lib.mkIf enableZen {
         "x-scheme-handler/http" = "zen.desktop";
         "x-scheme-handler/https" = "zen.desktop";
         "text/html" = "zen.desktop";
-      }
-      // lib.optionalAttrs enableNeovim {
+      })
+      (lib.mkIf enableNeovim {
         "text/plain" = "nvim.desktop";
-      }
-      // lib.optionalAttrs enableSioyek {
+      })
+      (lib.mkIf enableSioyek {
         "application/pdf" = "sioyek.desktop";
         "application/epub+zip" = "sioyek.desktop";
-      }
-      // lib.optionalAttrs enableVesktop {
+      })
+      (lib.mkIf enableVesktop {
         "x-scheme-handler/discord" = "vesktop.desktop";
-      };
+      })
+    ];
   };
 }
