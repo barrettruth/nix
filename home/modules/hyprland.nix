@@ -1,12 +1,11 @@
 {
   lib,
   config,
+  isNixOS,
   ...
 }:
 
 let
-  isNixOS = builtins.pathExists /etc/NIXOS;
-
   mkHyprTheme = palette: ''
     general {
         col.active_border = rgb(${builtins.substring 1 6 palette.fg})

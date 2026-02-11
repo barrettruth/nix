@@ -2,12 +2,10 @@
   lib,
   config,
   pkgs,
+  isNixOS,
   ...
 }:
 
-let
-  isNixOS = builtins.pathExists /etc/NIXOS;
-in
 {
   imports = [
     ./modules/bootstrap.nix

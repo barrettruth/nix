@@ -1,11 +1,8 @@
 {
   lib,
+  isNixOS,
   ...
 }:
-
-let
-  isNixOS = builtins.pathExists /etc/NIXOS;
-in
 {
   services.hypridle = {
     enable = true;

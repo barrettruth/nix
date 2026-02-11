@@ -76,6 +76,7 @@
             home-manager.extraSpecialArgs = {
               inherit zen-browser;
               hostPlatform = system;
+              isNixOS = true;
             };
           }
         ];
@@ -89,6 +90,7 @@
         extraSpecialArgs = {
           inherit zen-browser;
           hostPlatform = system;
+          isNixOS = false;
         };
         modules = [ ./home/home.nix ];
       };

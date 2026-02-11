@@ -1,12 +1,10 @@
 {
   pkgs,
   lib,
+  isNixOS,
   ...
 }:
 
-let
-  isNixOS = builtins.pathExists /etc/NIXOS;
-in
 {
   home.packages = lib.mkIf isNixOS [ pkgs.hyprpaper ];
 

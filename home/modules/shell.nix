@@ -2,12 +2,12 @@
   pkgs,
   lib,
   config,
+  isNixOS,
   ...
 }:
 
 let
   c = config.colors;
-  isNixOS = builtins.pathExists /etc/NIXOS;
 
   ripgrep = config.programs.ripgrep.enable;
 

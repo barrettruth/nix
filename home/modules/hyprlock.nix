@@ -1,11 +1,9 @@
 {
   lib,
+  isNixOS,
   ...
 }:
 
-let
-  isNixOS = builtins.pathExists /etc/NIXOS;
-in
 {
   programs.hyprlock = {
     enable = true;
