@@ -73,14 +73,3 @@ vim.api.nvim_create_autocmd('WinLeave', {
         vim.wo.cursorline = false
     end,
 })
-
-vim.api.nvim_create_autocmd('BufEnter', {
-    group = aug,
-    callback = function()
-        local sw = vim.bo.shiftwidth
-        if sw <= 0 then return end
-        vim.opt_local.listchars:append({
-            leadmultispace = '│' .. string.rep(' ', sw - 1),
-        })
-    end,
-})

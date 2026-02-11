@@ -17,3 +17,6 @@ user_pref("font.name.monospace.x-western", "Berkeley Mono");
 user_pref("font.name.serif.x-math", "STIX Two Math");
 user_pref("font.name-list.serif.x-math", "STIX Two Math, Latin Modern Math, Times New Roman");
 user_pref("font.default.x-western", "sans-serif");
+
+user_pref("browser.tabs.insertAfterCurrent", true);
+user_pref("browser.tabs.insertRelatedAfterCurrent", true);
