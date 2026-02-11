@@ -27,6 +27,7 @@ in
   dconf.enable = true;
 
   home.packages = with pkgs; [
+    rofi
     wl-clipboard
     cliphist
     grim
@@ -167,8 +168,6 @@ in
       }
     '';
   };
-
-  home.packages = [ pkgs.rofi ];
 
   xdg.configFile."rofi/config.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
