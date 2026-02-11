@@ -1,4 +1,5 @@
 {
+  pkgs,
   lib,
   config,
   isNixOS,
@@ -24,6 +25,8 @@ in
       source = $XDG_CONFIG_HOME/nix/config/hypr/hyprland.conf
     '';
   };
+
+  home.packages = lib.mkIf isNixOS [ pkgs.xdg-desktop-portal-gtk ];
 
   xdg.configFile."hypr/themes/midnight.conf".text = mkHyprTheme config.palettes.midnight;
   xdg.configFile."hypr/themes/daylight.conf".text = mkHyprTheme config.palettes.daylight;
