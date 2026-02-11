@@ -140,7 +140,7 @@ pick-pane)
   ;;
 ai)
   require claude
-  spawn_or_focus ai 'claude'
+  spawn_or_focus ai 'claude --dangerously-skip-permissions'
   ;;
 code)
   require nvim

@@ -338,18 +338,16 @@ in
 
   programs.tmux = {
     enable = true;
-    shortcut = "x";
-    keyMode = "vi";
-    mouse = true;
-    escapeTime = 0;
-    historyLimit = 50000;
-    baseIndex = 1;
-    aggressiveResize = true;
-    focusEvents = true;
     sensibleOnTop = false;
 
     plugins = with pkgs.tmuxPlugins; [
-      resurrect
+      {
+        plugin = resurrect;
+        extraConfig = ''
+          set -g @resurrect-dir '${config.xdg.stateHome}/tmux/resurrect'
+          set -g @resurrect-capture-pane-contents on
+        '';
+      }
       {
         plugin = continuum;
         extraConfig = ''
@@ -360,87 +358,7 @@ in
     ];
 
     extraConfig = ''
-      set -g prefix M-x
-      unbind C-b
-      bind M-x send
-
-      set -g default-terminal "$TERM"
-      set -g default-shell "$SHELL"
-
-      set -g renumber-windows on
-      setw -g automatic-rename off
-      set -g pane-base-index 1
-
-      set -g status-position bottom
-      set -g status-interval 5
-      set -g @c ','
-      set-hook -g session-created 'run "mux bar"'
-      set-hook -g session-closed 'run "mux bar"'
-      set-hook -g client-session-changed 'run "mux bar"'
-      set-hook -g pane-mode-changed 'refresh-client -S'
-
-      set -as terminal-features ",$TERM:RGB"
-      set -as terminal-overrides ",*:U8=1"
-      set -as terminal-overrides ',*:Smulx=\E[4::%p1%dm'
-      set -as terminal-overrides ',*:Setulc=\E[58::2::%p1%{65536}%/%d::%p1%{256}%/%{255}%&%d::%p1%{255}%&%d%;m'
-
-      unbind Left; bind h selectp -L
-      unbind Down; bind j selectp -D
-      unbind Up; bind k selectp -U
-      unbind Right; bind l selectp -R
-
-      unbind :; bind : display-popup -E 'mux cmd'
-      unbind s; bind s display-popup -E 'mux pick-session'
-      unbind w; bind w display-popup -E 'mux pick-window'
-      unbind p; bind p display-popup -E 'mux pick-pane'
-
-      bind -r Left resizep -L 5
-      bind -r Right resizep -R 5
-      bind -r Up resizep -U 5
-      bind -r Down resizep -D 5
-
-      unbind c; bind c neww -c '#{pane_current_path}'
-      unbind \'; bind \' splitw -hc '#{pane_current_path}'
-      unbind \-; bind \- splitw -vc '#{pane_current_path}'
-
-      unbind y; bind y if -F '#{pane_in_mode}' 'send q' 'copy-mode'
-      unbind /; bind / if -F '#{pane_in_mode}' 'send q' 'copy-mode \; send /'
-      unbind ?; bind ? if -F '#{pane_in_mode}' 'send q' 'copy-mode \; send ?'
-
-      bind -T copy-mode-vi v send -X begin-selection
-      bind -T copy-mode-vi y send -X copy-pipe-and-cancel 'test -n "$WAYLAND_DISPLAY" && wl-copy || xclip -in -sel c'
-
-      unbind b; bind b set status\; refresh -S
-      unbind m; bind m set -g mouse\; run 'mux bar'\; refresh -S
-
-      unbind ^; bind ^ last-window
-
-      unbind e; bind e neww -n 'tmux.conf' "sh -c 'nvim ~/.config/nix/home/modules/shell.nix; tmux source $XDG_CONFIG_HOME/tmux/tmux.conf'"
-
-      unbind H; bind H run 'mux switch 0'\; refresh -S
-      unbind J; bind J run 'mux switch 1'\; refresh -S
-      unbind K; bind K run 'mux switch 2'\; refresh -S
-      unbind L; bind L run 'mux switch 3'\; refresh -S
-      unbind \$; bind \$ run 'mux switch 4'\; refresh -S
-
-      unbind Tab; bind Tab switchc -l
-
-      set-hook -g client-light-theme 'source ${config.xdg.configHome}/tmux/themes/daylight.conf'
-      set-hook -g client-dark-theme  'source ${config.xdg.configHome}/tmux/themes/midnight.conf'
-      run 'tmux source "${config.xdg.configHome}/tmux/themes/''${THEME:-${config.theme}}.conf"'
-
-      unbind A; bind A run 'mux ai'
-      unbind C; bind C run 'mux code'
-      unbind R; bind R run 'mux run'
-      unbind T; bind T run 'mux term'
-      unbind G; bind G run 'mux git'
-      unbind M; bind M run 'mux misc'
-
-      set -g lock-after-time 300
-      set -g lock-command "pipes -p 2"
-
-      set -g @resurrect-dir '${config.xdg.stateHome}/tmux/resurrect'
-      set -g @resurrect-capture-pane-contents on
+      source "$XDG_CONFIG_HOME/nix/config/tmux/tmux.conf"
     '';
   };
 
