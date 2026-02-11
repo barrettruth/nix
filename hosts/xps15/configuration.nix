@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
@@ -113,12 +113,15 @@
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
-  xdg.portal = {
+  xdg.portal = lib.mkIf config.programs.hyprland.enable {
     enable = true;
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
       xdg-desktop-portal-hyprland
     ];
+    config.common = {
+      default = [ "hyprland" "gtk" ];
+    };
   };
 
   security.sudo.enable = true;
