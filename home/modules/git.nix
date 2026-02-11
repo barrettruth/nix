@@ -48,7 +48,7 @@
     settings = {
       user = {
         name = "Barrett Ruth";
-        email = "br@barrettruth.com";
+        email = "br.barrettruth@gmail.com";
       };
       alias = {
         a = "add";

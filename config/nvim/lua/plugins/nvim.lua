@@ -1,5 +1,11 @@
 return {
     {
+        'barrettruth/midnight.nvim',
+        config = function()
+            vim.cmd.colorscheme('midnight')
+        end,
+    },
+    {
         'echasnovski/mini.pairs',
         config = true,
         event = 'InsertEnter',
@@ -328,15 +334,15 @@ return {
         },
     },
     { 'tpope/vim-abolish', event = 'VeryLazy' },
-    { 'tpope/vim-sleuth', event = 'BufReadPost' },
+    { 'tpope/vim-sleuth',  event = 'BufReadPost' },
     {
         'kylechui/nvim-surround',
         config = true,
         keys = {
-            { 'cs', mode = 'n' },
-            { 'ds', mode = 'n' },
-            { 'ys', mode = 'n' },
-            { 'yS', mode = 'n' },
+            { 'cs',  mode = 'n' },
+            { 'ds',  mode = 'n' },
+            { 'ys',  mode = 'n' },
+            { 'yS',  mode = 'n' },
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },
@@ -360,11 +366,11 @@ return {
         },
     },
     {
- 'zeybek/camouflage.nvim',
-  event = 'VeryLazy',
-  config = true,
-  keys = {
-    { '<leader>C', '<cmd>CamouflageToggle<cr>', desc = 'Toggle Camouflage' },
-  },
-  }
+        'zeybek/camouflage.nvim',
+        event = 'VeryLazy',
+        config = true,
+        keys = {
+            { '<leader>C', '<cmd>CamouflageToggle<cr>', desc = 'Toggle Camouflage' },
+        },
+    }
 }
