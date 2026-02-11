@@ -35,7 +35,6 @@ o.list = true
 opt.listchars = {
     space = ' ',
     trail = '·',
-    tab = '  ',
 }
 
 opt.matchpairs:append('<:>')

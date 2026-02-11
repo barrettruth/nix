@@ -348,30 +348,4 @@ return {
             { 'ySs', mode = 'n' },
         },
     },
-    {
-        'saghen/blink.indent',
-        opts = {
-            blocked = {
-                filetypes = {
-                    include_defaults = true,
-                    'fugitive',
-                    'markdown',
-                    'typst',
-                    'git',
-                },
-            },
-            static = {
-                char = '│',
-            },
-            scope = { enabled = false },
-        },
-    },
-    {
-        'zeybek/camouflage.nvim',
-        event = 'VeryLazy',
-        config = true,
-        keys = {
-            { '<leader>C', '<cmd>CamouflageToggle<cr>', desc = 'Toggle Camouflage' },
-        },
-    }
 }
