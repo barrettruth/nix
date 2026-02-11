@@ -18,7 +18,7 @@
       ".idea/"
       ".DS_Store"
       "Thumbs.db"
-      "CLAUDE.md",
+      "CLAUDE.md"
       ".claude/"
       "*.o"
       "*.a"
