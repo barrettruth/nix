@@ -188,7 +188,8 @@ in
       };
       urgency_low = {
         background = c.bg;
-        foreground = c.fg;
+        foreground = c.blue;
+        frame_color = c.blue;
       };
       urgency_normal = {
         background = c.bg;
