@@ -37,10 +37,6 @@
   services.pcscd.enable = true;
   i18n.defaultLocale = "en_US.UTF-8";
 
-  nix.extraOptions = ''
-    experimental-features = nix-command flakes
-  '';
-
   security.pam.services.hyprlock = { };
 
   security.doas = {
@@ -144,10 +140,16 @@
     dmidecode
   ];
 
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
+  nix.settings = {
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+    trusted-users = [
+      "root"
+      "barrett"
+    ];
+  };
 
   system.stateVersion = "24.11";
 }
