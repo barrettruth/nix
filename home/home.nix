@@ -54,5 +54,16 @@
       };
       Install.WantedBy = [ "timers.target" ];
     };
+
+    systemd.user.services.cliphist-wipe = {
+      Unit.Description = "Clear clipboard history on session end";
+      Service = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${pkgs.coreutils}/bin/true";
+        ExecStop = "${pkgs.cliphist}/bin/cliphist wipe";
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
   };
 }
