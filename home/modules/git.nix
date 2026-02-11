@@ -18,6 +18,8 @@
       ".idea/"
       ".DS_Store"
       "Thumbs.db"
+      "CLAUDE.md",
+      ".claude/"
       "*.o"
       "*.a"
       "*.so"
@@ -37,7 +39,6 @@
       ".mypy_cache/"
       "result"
       "result-*"
-      ".claude/settings.local.json"
     ];
 
     signing = {

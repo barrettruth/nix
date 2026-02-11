@@ -40,6 +40,11 @@ let
       activityFg = "#3b5bdb";
     };
   };
+  mkFzfTheme = palette: ''
+    --color=fg:${palette.fg},bg:${palette.bg},hl:${palette.accent}
+    --color=fg+:${palette.fg},bg+:${palette.bgAlt},hl+:${palette.accent}
+    --color=info:${palette.green},prompt:${palette.accent},pointer:${palette.fg},marker:${palette.green},spinner:${palette.fg}
+  '';
 in
 {
   options.theme = lib.mkOption {
@@ -83,6 +88,9 @@ in
       fi
     '';
 
+    xdg.configFile."fzf/themes/midnight".text = mkFzfTheme palettes.midnight;
+    xdg.configFile."fzf/themes/daylight".text = mkFzfTheme palettes.daylight;
+
     home.activation.linkTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       cfg="${config.xdg.configHome}"
       theme="${config.theme}"
@@ -90,6 +98,7 @@ in
       $DRY_RUN_CMD ln -sf "$cfg/waybar/themes/$theme.css" "$cfg/waybar/themes/theme.css"
       $DRY_RUN_CMD ln -sf "$cfg/rofi/themes/$theme.rasi" "$cfg/rofi/themes/theme.rasi"
       $DRY_RUN_CMD ln -sf "$cfg/sioyek/themes/$theme.config" "$cfg/sioyek/themes/theme.config"
+      $DRY_RUN_CMD ln -sf "$cfg/fzf/themes/$theme" "$cfg/fzf/themes/theme"
     '';
   };
 }
