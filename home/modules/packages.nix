@@ -51,6 +51,18 @@ in
     };
   };
 
+  xdg.configFile."claude/CLAUDE.md" = lib.mkIf enableClaude {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/claude/CLAUDE.md";
+  };
+
+  xdg.configFile."claude/rules" = lib.mkIf enableClaude {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/claude/rules";
+  };
+
+  xdg.configFile."claude/skills" = lib.mkIf enableClaude {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/claude/skills";
+  };
+
   home.activation.linkZenProfile = lib.mkIf enableZen (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       zen_config="$HOME/.zen"
