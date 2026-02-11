@@ -23,24 +23,27 @@ let
   sqlite = true;
 in
 {
-  home.packages = with pkgs; [
-    awscli2
-    pure-prompt
-    xclip
-    tree
-    jq
-    curl
-    wget
-    unzip
-    tesseract
-    gnumake
-    gcc
-    file
-    ffmpeg
-    poppler-utils
-    librsvg
-    imagemagick
-  ];
+  home.packages =
+    with pkgs;
+    [
+      awscli2
+      pure-prompt
+      xclip
+      tree
+      jq
+      curl
+      wget
+      unzip
+      tesseract
+      gnumake
+      gcc
+      file
+      ffmpeg
+      poppler-utils
+      librsvg
+      imagemagick
+    ]
+    ++ lib.optionals rust [ rustup ];
 
   home.sessionVariables = lib.mkMerge [
     {

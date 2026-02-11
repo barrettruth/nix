@@ -176,7 +176,6 @@ in
   xdg.configFile."rofi/themes/daylight.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/themes/daylight.rasi";
 
-
   services.dunst = {
     enable = true;
     settings = {

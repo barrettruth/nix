@@ -50,7 +50,6 @@ echo "$themes" | grep -Fxq "$theme" || exit 1
 
 case "$(uname)" in
 Linux)
-  # GTK color scheme
   case "$theme" in
   midnight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' ;;
   daylight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' ;;

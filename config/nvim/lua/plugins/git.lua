@@ -36,39 +36,4 @@ return {
             { '<leader>Gp', '<cmd>lua Snacks.picker.gh_pr()<cr>' },
         },
     },
-    {
-        'lewis6991/gitsigns.nvim',
-        keys = {
-            { '[g', '<cmd>Gitsigns next_hunk<cr>' },
-            { ']g', '<cmd>Gitsigns prev_hunk<cr>' },
-            { '<leader>Gb', '<cmd>Gitsigns toggle_current_line_blame<cr>' },
-            {
-                '<leader>Gs',
-                function()
-                    if vim.opt.signcolumn:get() == 'no' then
-                        prev_gitsigns_signcol = vim.opt.signcolumn:get()
-                        vim.opt.signcolumn = 'yes'
-                    else
-                        vim.opt.signcolumn = prev_gitsigns_signcol
-                    end
-                    vim.cmd.Gitsigns('toggle_signs')
-                end,
-            },
-        },
-        event = 'VeryLazy',
-        opts = {
-            current_line_blame_formatter_nc = function()
-                return {}
-            end,
-            signs = {
-                -- use boxdraw chars
-                add = { text = '│' },
-                change = { text = '│' },
-                delete = { text = '＿' },
-                topdelete = { text = '‾' },
-                changedelete = { text = '│' },
-            },
-            signcolumn = false,
-        },
-    },
 }

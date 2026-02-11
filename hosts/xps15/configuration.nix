@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -120,7 +125,10 @@
       xdg-desktop-portal-hyprland
     ];
     config.common = {
-      default = [ "hyprland" "gtk" ];
+      default = [
+        "hyprland"
+        "gtk"
+      ];
     };
   };
 
