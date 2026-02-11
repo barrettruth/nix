@@ -11,7 +11,7 @@ return {
     },
     {
         'saghen/blink.cmp',
-        build = 'cargo build --release',
+        version = '1.*',
         dependencies = 'folke/lazydev.nvim',
         ---@module 'blink.cmp'
         ---@type blink.cmp.Config
