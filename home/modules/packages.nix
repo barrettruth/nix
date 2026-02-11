@@ -15,12 +15,13 @@ let
   enableNeovim = config.programs.neovim.enable;
 in
 {
-  home.sessionVariables = lib.optionalAttrs enableZen {
-    BROWSER = "zen";
-  }
-  // lib.optionalAttrs enableClaude {
-    CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
-  };
+  home.sessionVariables =
+    lib.optionalAttrs enableZen {
+      BROWSER = "zen";
+    }
+    // lib.optionalAttrs enableClaude {
+      CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
+    };
 
   programs.mpv.enable = true;
 

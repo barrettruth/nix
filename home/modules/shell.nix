@@ -173,7 +173,7 @@ in
     dotDir = "${config.xdg.configHome}/zsh";
 
     profileExtra = ''
-      start-hyprland
+      [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ] && start-hyprland
     '';
 
     history = {
@@ -201,7 +201,10 @@ in
 
     autosuggestion = {
       enable = true;
-      strategy = [ "history" "completion" ];
+      strategy = [
+        "history"
+        "completion"
+      ];
     };
 
     completionInit = ''
