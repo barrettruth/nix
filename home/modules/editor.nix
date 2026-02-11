@@ -1,5 +1,8 @@
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 
+let
+  neovim = config.programs.neovim.enable;
+in
 {
   home.packages = with pkgs; [
     # lsp
@@ -44,7 +47,7 @@
     defaultEditor = true;
   };
 
-  home.sessionVariables = {
+  home.sessionVariables = lib.mkIf neovim {
     MANPAGER = "nvim +Man!";
   };
 
