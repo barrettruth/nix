@@ -32,6 +32,7 @@ in
       slack
       bitwarden-desktop
       gemini-cli
+      typst
     ]
     ++ lib.optionals enableClaude [ claude-code ]
     ++ lib.optionals enableZen [ zen-browser.packages.${hostPlatform}.default ]
