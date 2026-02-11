@@ -66,26 +66,20 @@ brightness)
   esac
   ;;
 volume)
-  require pactl notify-send
-  SINK="@DEFAULT_SINK@"
+  require wpctl notify-send
+  SINK="@DEFAULT_AUDIO_SINK@"
   VOL_STEP=5
-  get_vol() { pactl get-sink-volume "$SINK" | awk 'NR==1{print $5+0}'; }
+  get_vol() { wpctl get-volume "$SINK" | awk '{printf "%d", $2 * 100}'; }
 
   case "$1" in
   up)
-    vol=$(get_vol)
-    [ "$vol" -lt 100 ] && vol=$((vol + VOL_STEP))
-    [ "$vol" -gt 100 ] && vol=100
-    pactl set-sink-volume "$SINK" "${vol}%"
+    wpctl set-volume "$SINK" "${VOL_STEP}%+" --limit 1.0
     ;;
   down)
-    vol=$(get_vol)
-    vol=$((vol - VOL_STEP))
-    [ "$vol" -lt 0 ] && vol=0
-    pactl set-sink-volume "$SINK" "${vol}%"
+    wpctl set-volume "$SINK" "${VOL_STEP}%-"
     ;;
   toggle)
-    pactl set-sink-mute "$SINK" toggle
+    wpctl set-mute "$SINK" toggle
     ;;
   *)
     echo "Invalid subcommand: $1" >&2
@@ -93,11 +87,8 @@ volume)
     ;;
   esac
 
-  muted=$(pactl get-sink-mute "$SINK" | awk '{print $2}')
   vol=$(get_vol)
-  [ "$vol" -gt 100 ] && vol=100
-
-  if [ "$muted" = "yes" ]; then
+  if wpctl get-volume "$SINK" | grep -q MUTED; then
     notify-send -u low -t 2500 -r 5556 "volume: ${vol}% (muted)"
   else
     notify-send -u low -t 2500 -r 5556 "volume: ${vol}%"

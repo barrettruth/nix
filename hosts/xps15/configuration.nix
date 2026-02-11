@@ -72,6 +72,7 @@
     enable = true;
     shellInit = ''
       export ZDOTDIR="$HOME/.config/zsh"
+      export THEME="midnight"
     '';
   };
   programs.hyprland.enable = true;

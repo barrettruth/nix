@@ -72,29 +72,27 @@ keyboard)
   esac
   ;;
 audio)
-  require pactl
+  require wpctl pw-dump jq
   case "$2" in
   out)
-    sinks="$(pactl list short sinks | awk '{print $1": "$2}')"
+    sinks="$(pw-dump | jq -r '.[] | select(.info.props."media.class" == "Audio/Sink") | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")"')"
     [ -z "$sinks" ] && exit 0
-    count="$(printf "%s\n" "$sinks" | wc -l)"
     if [ "$XDG_SESSION_TYPE" = x11 ]; then
-      choice="$(printf "%s\n" "$sinks" | dmenu -i -l "$count" -p "select sink:" | cut -d: -f1)"
+      choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | dmenu -i -p "select sink:" | cut -d: -f1)"
     else
-      choice="$(printf "%s\n" "$sinks" | rofi -dmenu -i -lines "$count" -p "select sink" | cut -d: -f1)"
+      choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | rofi -dmenu -i -p "select sink" | cut -d: -f1)"
     fi
-    [ "$choice" ] && pactl set-default-sink "$choice"
+    [ "$choice" ] && wpctl set-default "$choice"
     ;;
   in)
-    sources="$(pactl list short sources | awk '{print $1": "$2}')"
+    sources="$(pw-dump | jq -r '.[] | select(.info.props."media.class" == "Audio/Source") | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")"')"
     [ -z "$sources" ] && exit 0
-    count="$(printf "%s\n" "$sources" | wc -l)"
     if [ "$XDG_SESSION_TYPE" = x11 ]; then
-      choice="$(printf "%s\n" "$sources" | dmenu -i -l "$count" -p "select source:" | cut -d: -f1)"
+      choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | dmenu -i -p "select source:" | cut -d: -f1)"
     else
-      choice="$(printf "%s\n" "$sources" | rofi -dmenu -i -lines "$count" -p "select source" | cut -d: -f1)"
+      choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | rofi -dmenu -i -p "select source" | cut -d: -f1)"
     fi
-    [ "$choice" ] && pactl set-default-source "$choice"
+    [ "$choice" ] && wpctl set-default "$choice"
     ;;
   *)
     echo "Usage: ctl audio {in|out}" >&2

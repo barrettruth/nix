@@ -43,6 +43,9 @@
       # runtime/tools
       nodejs
       websocat
+      luarocks
+      tree-sitter
+      (texlive.combine { inherit (texlive) scheme-small latexindent; })
     ];
   };
 

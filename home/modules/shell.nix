@@ -102,7 +102,6 @@ in
 
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/bin"
-    "${config.home.homeDirectory}/.local/bin/scripts"
   ]
   ++ lib.optionals rust [ "${config.xdg.dataHome}/cargo/bin" ]
   ++ lib.optionals go [ "${config.xdg.dataHome}/go/bin" ]
@@ -168,10 +167,6 @@ in
       --colors=path:fg:blue
     '';
   };
-
-  home.file.".zshenv".text = ''
-    export THEME="${config.theme}"
-  '';
 
   programs.zsh = {
     enable = true;

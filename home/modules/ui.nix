@@ -537,7 +537,7 @@ in
 
   home.activation.linkWaybarTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     target="${config.xdg.configHome}/waybar/themes/theme.css"
-    [ -L "$target" ] || $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/waybar/themes/${config.theme}.css" "$target"
+    $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/waybar/themes/${config.theme}.css" "$target"
   '';
 
   xdg.configFile."X11".source =

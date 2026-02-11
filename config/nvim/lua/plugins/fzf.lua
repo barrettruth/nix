@@ -67,7 +67,7 @@ return {
         { '<leader>fr', '<cmd>FzfLua resume<cr>' },
         {
             '<leader>fs',
-            '<cmd>FzfLua files cwd=~/.local/bin/scripts<cr>',
+            '<cmd>FzfLua files cwd=~/.config/nix/scripts<cr>',
         },
         { '<leader>GB', '<cmd>FzfLua git_branches<cr>' },
         { '<leader>Gb', '<cmd>FzfLua git_worktrees<cr>' },
