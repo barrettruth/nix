@@ -1,3 +1,4 @@
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 user_pref("browser.urlbar.shortcuts.bookmarks", false);
 user_pref("browser.urlbar.shortcuts.history", false);
 user_pref("browser.urlbar.shortcuts.tabs", false);

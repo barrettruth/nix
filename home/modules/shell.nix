@@ -173,6 +173,7 @@ in
   programs.zsh = {
     enable = true;
     dotDir = "${config.xdg.configHome}/zsh";
+    completionInit = "";
 
     profileExtra = ''
       [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ] && start-hyprland
@@ -209,69 +210,9 @@ in
       ];
     };
 
-    completionInit = ''
-      autoload -U compinit && compinit -d "$XDG_STATE_HOME/zcompdump" -u
-      zmodload zsh/complist
-      zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
-      zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-za-z}'
-    '';
-
     initContent = ''
-      export GPG_TTY=$(tty)
-      export THEME="''${THEME:-${config.theme}}"
-
-      setopt auto_cd
-      unsetopt beep notify
-      unset completealiases
-
-      bindkey -v
-      bindkey '^[[3~' delete-char
-      bindkey '^P' up-line-or-history
-      bindkey '^N' down-line-or-history
-      bindkey '^J' backward-char
-      bindkey '^K' forward-char
-
-      export PURE_PROMPT_SYMBOL=">"
-      export PURE_PROMPT_VICMD_SYMBOL="<"
-      export PURE_GIT_UP_ARROW="^"
-      export PURE_GIT_DOWN_ARROW="v"
-      export PURE_GIT_STASH_SYMBOL="="
-      export PURE_CMD_MAX_EXEC_TIME=5
-      export PURE_GIT_PULL=0
-      export PURE_GIT_UNTRACKED_DIRTY=1
-      zstyle ':prompt:pure:git:stash' show yes
-
       fpath+=("${pkgs.pure-prompt}/share/zsh/site-functions")
-      autoload -Uz promptinit && promptinit
-      prompt pure
-
-      autoload -Uz add-zle-hook-widget
-      function _cursor_shape() {
-        case $KEYMAP in
-          vicmd) echo -ne '\e[2 q' ;;
-          viins|main) echo -ne '\e[6 q' ;;
-        esac
-      }
-      function _cursor_init() { echo -ne '\e[6 q'; }
-      add-zle-hook-widget zle-keymap-select _cursor_shape
-      add-zle-hook-widget zle-line-init _cursor_init
-
-      export FZF_COMPLETION_TRIGGER=\;
-      export FZF_TMUX=1
-
-      fzf-config-widget() {
-          file="$(fd --type file --hidden . ~/.config | sed "s|$HOME|~|g" | fzf)"
-          [ -n "$file" ] || { zle reset-prompt; return; }
-          file="''${file/#\~/$HOME}"
-          BUFFER="nvim $file"
-          zle accept-line
-      }
-      zle -N fzf-config-widget
-      bindkey '^E' fzf-config-widget
-
-    ''
-    + lib.optionalString ocaml ''
-      [[ ! -r "$OPAMROOT/opam-init/init.zsh" ]] || source "$OPAMROOT/opam-init/init.zsh" > /dev/null 2> /dev/null
+      source "$XDG_CONFIG_HOME/nix/config/zsh/zshrc"
     '';
   };
 
