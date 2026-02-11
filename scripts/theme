@@ -73,10 +73,22 @@ Linux)
       ;;
     esac
 
-    waybar_themes="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/themes"
+    cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+    waybar_themes="$cfg/waybar/themes"
     [ -f "$waybar_themes/$theme.css" ] && {
       ln -sf "$waybar_themes/$theme.css" "$waybar_themes/theme.css"
       pkill -USR2 waybar
+    }
+
+    rofi_themes="$cfg/rofi/themes"
+    [ -f "$rofi_themes/$theme.rasi" ] && {
+      ln -sf "$rofi_themes/$theme.rasi" "$rofi_themes/theme.rasi"
+    }
+
+    hypr_themes="$cfg/hypr/themes"
+    [ -f "$hypr_themes/$theme.conf" ] && {
+      ln -sf "$hypr_themes/$theme.conf" "$hypr_themes/theme.conf"
     }
   fi
   ;;

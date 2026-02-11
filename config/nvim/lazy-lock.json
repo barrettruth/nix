@@ -12,6 +12,7 @@
   "lazydev.nvim": { "branch": "main", "commit": "5231c62aa83c2f8dc8e7ba957aa77098cda1257d" },
   "live-rename.nvim": { "branch": "main", "commit": "3a3cddf23b89a17992f9ca67afc5858077769462" },
   "markdown-preview.nvim": { "branch": "master", "commit": "a923f5fc5ba36a3b17e289dc35dc17f66d0548ee" },
+  "midnight.nvim": { "branch": "main", "commit": "130a1899c2d5a0af431f3e41eeac429e90ea1d09" },
   "mini.ai": { "branch": "main", "commit": "9eae720f2b20f6ad28cbfa0ddc524e10dc2c3201" },
   "mini.bufremove": { "branch": "main", "commit": "10857aa39160c127694151828914df3131ba83b6" },
   "mini.misc": { "branch": "main", "commit": "b647b64321c34d4868d158282bb89e49f0d6838b" },

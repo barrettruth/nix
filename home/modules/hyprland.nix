@@ -218,8 +218,4 @@ in
   xdg.configFile."hypr/themes/midnight.conf".text = mkHyprTheme config.palettes.midnight;
   xdg.configFile."hypr/themes/daylight.conf".text = mkHyprTheme config.palettes.daylight;
 
-  home.activation.linkHyprTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    target="${config.xdg.configHome}/hypr/themes/theme.conf"
-    $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/hypr/themes/${config.theme}.conf" "$target"
-  '';
 }

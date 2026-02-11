@@ -176,10 +176,6 @@ in
   xdg.configFile."rofi/themes/daylight.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/themes/daylight.rasi";
 
-  home.activation.linkRofiTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    target="${config.xdg.configHome}/rofi/themes/theme.rasi"
-    $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/rofi/themes/${config.theme}.rasi" "$target"
-  '';
 
   services.dunst = {
     enable = true;
@@ -211,10 +207,5 @@ in
   };
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
-
-  home.activation.linkWaybarTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    target="${config.xdg.configHome}/waybar/themes/theme.css"
-    $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/waybar/themes/${config.theme}.css" "$target"
-  '';
 
 }

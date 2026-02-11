@@ -1,5 +1,12 @@
 return {
     {
+        'barrettruth/midnight.nvim',
+        enabled = true,
+        config = function()
+            vim.cmd.colorscheme('midnight')
+        end,
+    },
+    {
         'echasnovski/mini.pairs',
         config = true,
         event = 'InsertEnter',
