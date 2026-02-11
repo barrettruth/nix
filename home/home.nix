@@ -33,10 +33,6 @@
     home.sessionPath = [ "${config.home.homeDirectory}/.config/nix/scripts" ];
 
     programs.home-manager.enable = true;
-    programs.zen.enable = true;
-    programs.sioyek.enable = true;
-    programs.vesktop.enable = true;
-    programs.claude.enable = true;
 
     systemd.user.services.nix-flake-update = {
       Unit.Description = "Update nix flake inputs";
