@@ -36,7 +36,7 @@ in
 
   home.packages = lib.mkMerge [
     (with pkgs; [
-      signal-desktop
+      # signal-desktop
       slack
       bitwarden-desktop
       gemini-cli
