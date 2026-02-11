@@ -54,6 +54,11 @@
     ];
   };
 
+  environment.etc."gitconfig".text = ''
+    [safe]
+      directory = /home/barrett/.config/nix
+  '';
+
   environment.binsh = "${pkgs.dash}/bin/dash";
 
   users.users.barrett = {
