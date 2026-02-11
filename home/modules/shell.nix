@@ -42,70 +42,72 @@ in
     imagemagick
   ];
 
-  home.sessionVariables = {
-    LESSHISTFILE = "-";
-    GRADLE_USER_HOME = "${config.xdg.configHome}/gradle";
-    LIBVIRT_DEFAULT_URI = "qemu:///system";
-    MBSYNCRC = "${config.xdg.configHome}/mbsync/config";
-    PARALLEL_HOME = "${config.xdg.configHome}/parallel";
-    PASSWORD_STORE_DIR = "${config.xdg.dataHome}/pass";
-    PRETTIERD_CONFIG_HOME = "${config.xdg.stateHome}/prettierd";
-  }
-  // lib.optionalAttrs ripgrep {
-    RIPGREP_CONFIG_PATH = "${config.xdg.configHome}/rg/config";
-  }
-  // lib.optionalAttrs rust {
-    CARGO_HOME = "${config.xdg.dataHome}/cargo";
-    RUSTUP_HOME = "${config.xdg.dataHome}/rustup";
-  }
-  // lib.optionalAttrs go {
-    GOPATH = "${config.xdg.dataHome}/go";
-    GOMODCACHE = "${config.xdg.cacheHome}/go/mod";
-  }
-  // lib.optionalAttrs node {
-    NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/npmrc";
-    NODE_REPL_HISTORY = "${config.xdg.stateHome}/node_repl_history";
-    PNPM_HOME = "${config.xdg.dataHome}/pnpm";
-    PNPM_NO_UPDATE_NOTIFIER = "true";
-  }
-  // lib.optionalAttrs python {
-    PYTHONSTARTUP = "${config.xdg.configHome}/python/pythonrc";
-    PYTHON_HISTORY = "${config.xdg.stateHome}/python_history";
-    PYTHONPYCACHEPREFIX = "${config.xdg.cacheHome}/python";
-    PYTHONUSERBASE = "${config.xdg.dataHome}/python";
-    MYPY_CACHE_DIR = "${config.xdg.cacheHome}/mypy";
-    JUPYTER_CONFIG_DIR = "${config.xdg.configHome}/jupyter";
-    JUPYTER_PLATFORM_DIRS = "1";
-  }
-  // lib.optionalAttrs ocaml {
-    OPAMROOT = "${config.xdg.dataHome}/opam";
-  }
-  // lib.optionalAttrs docker {
-    DOCKER_CONFIG = "${config.xdg.configHome}/docker";
-  }
-  // lib.optionalAttrs aws {
-    AWS_SHARED_CREDENTIALS_FILE = "${config.xdg.configHome}/aws/credentials";
-    AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
-    BOTO_CONFIG = "${config.xdg.configHome}/boto/config";
-  }
-  // lib.optionalAttrs psql {
-    PSQL_HISTORY = "${config.xdg.stateHome}/psql_history";
-  }
-  // lib.optionalAttrs sqlite {
-    SQLITE_HISTORY = "${config.xdg.stateHome}/sqlite_history";
-  }
-  // lib.optionalAttrs tex {
-    TEXMFHOME = "${config.xdg.dataHome}/texmf";
-    TEXMFVAR = "${config.xdg.cacheHome}/texlive/texmf-var";
-    TEXMFCONFIG = "${config.xdg.configHome}/texlive/texmf-config";
-  };
+  home.sessionVariables = lib.mkMerge [
+    {
+      LESSHISTFILE = "-";
+      GRADLE_USER_HOME = "${config.xdg.configHome}/gradle";
+      LIBVIRT_DEFAULT_URI = "qemu:///system";
+      MBSYNCRC = "${config.xdg.configHome}/mbsync/config";
+      PARALLEL_HOME = "${config.xdg.configHome}/parallel";
+      PASSWORD_STORE_DIR = "${config.xdg.dataHome}/pass";
+      PRETTIERD_CONFIG_HOME = "${config.xdg.stateHome}/prettierd";
+    }
+    (lib.mkIf ripgrep {
+      RIPGREP_CONFIG_PATH = "${config.xdg.configHome}/rg/config";
+    })
+    (lib.mkIf rust {
+      CARGO_HOME = "${config.xdg.dataHome}/cargo";
+      RUSTUP_HOME = "${config.xdg.dataHome}/rustup";
+    })
+    (lib.mkIf go {
+      GOPATH = "${config.xdg.dataHome}/go";
+      GOMODCACHE = "${config.xdg.cacheHome}/go/mod";
+    })
+    (lib.mkIf node {
+      NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/npmrc";
+      NODE_REPL_HISTORY = "${config.xdg.stateHome}/node_repl_history";
+      PNPM_HOME = "${config.xdg.dataHome}/pnpm";
+      PNPM_NO_UPDATE_NOTIFIER = "true";
+    })
+    (lib.mkIf python {
+      PYTHONSTARTUP = "${config.xdg.configHome}/python/pythonrc";
+      PYTHON_HISTORY = "${config.xdg.stateHome}/python_history";
+      PYTHONPYCACHEPREFIX = "${config.xdg.cacheHome}/python";
+      PYTHONUSERBASE = "${config.xdg.dataHome}/python";
+      MYPY_CACHE_DIR = "${config.xdg.cacheHome}/mypy";
+      JUPYTER_CONFIG_DIR = "${config.xdg.configHome}/jupyter";
+      JUPYTER_PLATFORM_DIRS = "1";
+    })
+    (lib.mkIf ocaml {
+      OPAMROOT = "${config.xdg.dataHome}/opam";
+    })
+    (lib.mkIf docker {
+      DOCKER_CONFIG = "${config.xdg.configHome}/docker";
+    })
+    (lib.mkIf aws {
+      AWS_SHARED_CREDENTIALS_FILE = "${config.xdg.configHome}/aws/credentials";
+      AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
+      BOTO_CONFIG = "${config.xdg.configHome}/boto/config";
+    })
+    (lib.mkIf psql {
+      PSQL_HISTORY = "${config.xdg.stateHome}/psql_history";
+    })
+    (lib.mkIf sqlite {
+      SQLITE_HISTORY = "${config.xdg.stateHome}/sqlite_history";
+    })
+    (lib.mkIf tex {
+      TEXMFHOME = "${config.xdg.dataHome}/texmf";
+      TEXMFVAR = "${config.xdg.cacheHome}/texlive/texmf-var";
+      TEXMFCONFIG = "${config.xdg.configHome}/texlive/texmf-config";
+    })
+  ];
 
-  home.sessionPath = [
-    "${config.home.homeDirectory}/.local/bin"
-  ]
-  ++ lib.optionals rust [ "${config.xdg.dataHome}/cargo/bin" ]
-  ++ lib.optionals go [ "${config.xdg.dataHome}/go/bin" ]
-  ++ lib.optionals node [ "${config.xdg.dataHome}/pnpm" ];
+  home.sessionPath = lib.mkMerge [
+    [ "${config.home.homeDirectory}/.local/bin" ]
+    (lib.mkIf rust [ "${config.xdg.dataHome}/cargo/bin" ])
+    (lib.mkIf go [ "${config.xdg.dataHome}/go/bin" ])
+    (lib.mkIf node [ "${config.xdg.dataHome}/pnpm" ])
+  ];
 
   xdg.configFile."aws/config" = lib.mkIf aws {
     text = ''
@@ -437,134 +439,14 @@ in
       set -g lock-after-time 300
       set -g lock-command "pipes -p 2"
 
-      set -g @resurrect-dir '~/.local/state/tmux/resurrect'
+      set -g @resurrect-dir '${config.xdg.stateHome}/tmux/resurrect'
       set -g @resurrect-capture-pane-contents on
     '';
   };
 
-  xdg.configFile."tmux/themes/midnight.conf".text = ''
-    set -g status-bg '#121212'
-    set -g status-fg '#e0e0e0'
-    set -g window-status-style fg='#e0e0e0'
-    set -g window-status-current-style fg='#e0e0e0'
-    set -g window-status-bell-style fg='#ff6b6b',bg='#121212',bold
-    set -g window-status-activity-style fg='#7aa2f7',bg='#121212',bold
-    set -g pane-border-style fg='#3d3d3d'
-    set -g pane-active-border-style fg='#e0e0e0'
-    set -g copy-mode-selection-style fg='#121212',bg='yellow'
-    set -g copy-mode-current-match-style fg='#121212',bg='yellow'
-    set -g copy-mode-match-style 'reverse'
-  '';
+  xdg.configFile."tmux/themes/midnight.conf".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/tmux/themes/midnight.conf";
+  xdg.configFile."tmux/themes/daylight.conf".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/tmux/themes/daylight.conf";
 
-  xdg.configFile."tmux/themes/daylight.conf".text = ''
-    set -g status-bg '#f5f5f5'
-    set -g status-fg '#1a1a1a'
-    set -g window-status-style fg='#1a1a1a'
-    set -g window-status-current-style fg='#1a1a1a'
-    set -g window-status-bell-style fg='#c7254e',bg='#f5f5f5',bold
-    set -g window-status-activity-style fg='#3b5bdb',bg='#f5f5f5',bold
-    set -g pane-border-style fg='#e8e8e8'
-    set -g pane-active-border-style fg='#1a1a1a'
-    set -g copy-mode-selection-style fg='#f5f5f5',bg='yellow'
-    set -g copy-mode-current-match-style fg='#f5f5f5',bg='yellow'
-    set -g copy-mode-match-style 'reverse'
-  '';
-
-  programs.lf = {
-    enable = true;
-    settings = {
-      drawbox = true;
-      number = true;
-      relativenumber = true;
-      hidden = true;
-      shell = "zsh";
-      icons = false;
-      incsearch = true;
-      scrolloff = 4;
-      tabstop = 2;
-      smartcase = true;
-      dircounts = true;
-      info = "size";
-      ratios = "1:2:3";
-      timefmt = "2006-01-02 15:04:05 -0700";
-      previewer = "~/.config/lf/previewer";
-      cleaner = "~/.config/lf/cleaner";
-    };
-
-    commands = {
-      open = ''
-        $${{
-            setsid -f xdg-open "$f" 2>/dev/null 2>&1 &
-          }}'';
-      sopen = ''
-        $${{
-                for f in $fx; do
-                   setsid -f xdg-open "$f" >/dev/null 2>&1 &
-                done
-              }}'';
-      rmd = ''
-        $${{
-                set -f
-                while IFS= read -r dir; do
-                    rmdir -v -- "$dir"
-                done <<< "$fx"
-              }}'';
-      rmf = ''
-        $${{
-                set -f
-                while IFS= read -r file; do
-                    rm -v -- "$file"
-                done <<< "$fx"
-              }}'';
-      resize = ''
-        %{{
-                w=$(tmux display-message -p '#{pane_width}' || tput cols)
-                if [ $w -le 62 ]; then
-                    lf -remote "send $id set ratios 1:4"
-                    lf -remote "send $id set nopreview"
-                elif [ $w -le 80 ]; then
-                    lf -remote "send $id set ratios 1:2:2"
-                elif [ $w -le 100 ]; then
-                    lf -remote "send $id set ratios 1:2:3"
-                else
-                    lf -remote "send $id set ratios 2:4:5"
-                fi
-              }}'';
-      on-init = ''
-        %{{
-                lf -remote "send $id resize"
-              }}'';
-    };
-
-    keybindings = {
-      "<c-o>" = ":sopen; quit";
-      "." = "set hidden!";
-      "ad" = "push $mkdir<space>";
-      "af" = "push $touch<space>";
-      "xd" = "rmd";
-      "xf" = "rmf";
-      "H" = "jump-prev";
-      "L" = "jump-next";
-      "<c-t>" = ''$lf -remote "send $id select $(fzf)"'';
-      "zz" = "push :z<space>";
-    };
-
-    extraConfig = ''
-      set shellopts '-eu'
-      set ifs "\n"
-    '';
-  };
-
-  xdg.configFile."lf/previewer" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/previewer";
-  };
-
-  xdg.configFile."lf/cleaner" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/cleaner";
-  };
-
-  xdg.configFile."lf/lf.lua".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/lf.lua";
-  xdg.configFile."lf/sort.py".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/lf/sort.py";
 }

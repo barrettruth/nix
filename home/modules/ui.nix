@@ -35,7 +35,7 @@ in
     brightnessctl
     pamixer
     socat
-    glib
+    glib.bin
     gsettings-desktop-schemas
     (python3.withPackages (ps: [ ps.pillow ]))
   ];
@@ -168,88 +168,19 @@ in
     '';
   };
 
-  programs.rofi = {
-    enable = true;
-    package = pkgs.rofi;
-    font = "Berkeley Mono 15";
-    extraConfig = {
-      show-icons = false;
-    };
-    theme =
-      let
-        inherit (config.lib.formats.rasi) mkLiteral;
-      in
-      {
-        "*" = {
-          selected-normal-foreground = mkLiteral "${c.fg}";
-          foreground = mkLiteral "${c.fg}";
-          normal-foreground = mkLiteral "@foreground";
-          alternate-normal-background = mkLiteral "${c.bg}";
-          background = mkLiteral "${c.bgAlt}";
-          alternate-normal-foreground = mkLiteral "@foreground";
-          normal-background = mkLiteral "@background";
-          selected-normal-background = mkLiteral "${c.accent}";
-          border-color = mkLiteral "${c.fgAlt}";
-          spacing = 2;
-          separatorcolor = mkLiteral "@foreground";
-          background-color = mkLiteral "rgba ( 0, 0, 0, 0 % )";
-        };
-        window = {
-          background-color = mkLiteral "@background";
-          border = 1;
-          padding = 5;
-        };
-        mainbox = {
-          border = 0;
-          padding = 0;
-        };
-        listview = {
-          fixed-height = 0;
-          border = mkLiteral "2px 0px 0px";
-          border-color = mkLiteral "@separatorcolor";
-          spacing = mkLiteral "2px";
-          scrollbar = false;
-          padding = mkLiteral "2px 0px 0px";
-        };
-        element = {
-          border = 0;
-          padding = mkLiteral "1px";
-        };
-        element-text = {
-          background-color = mkLiteral "inherit";
-          text-color = mkLiteral "inherit";
-        };
-        "element.normal.normal" = {
-          background-color = mkLiteral "@normal-background";
-          text-color = mkLiteral "@normal-foreground";
-        };
-        "element.selected.normal" = {
-          background-color = mkLiteral "@selected-normal-background";
-          text-color = mkLiteral "@selected-normal-foreground";
-        };
-        "element.alternate.normal" = {
-          background-color = mkLiteral "@alternate-normal-background";
-          text-color = mkLiteral "@alternate-normal-foreground";
-        };
-        inputbar = {
-          spacing = 0;
-          text-color = mkLiteral "@normal-foreground";
-          padding = mkLiteral "1px";
-          children = map mkLiteral [
-            "prompt"
-            "textbox-prompt-colon"
-            "entry"
-            "case-indicator"
-          ];
-        };
-        textbox-prompt-colon = {
-          expand = false;
-          str = ":";
-          margin = mkLiteral "0px 0.3em 0em 0em";
-          text-color = mkLiteral "@normal-foreground";
-        };
-      };
-  };
+  home.packages = [ pkgs.rofi ];
+
+  xdg.configFile."rofi/config.rasi".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
+  xdg.configFile."rofi/themes/midnight.rasi".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/themes/midnight.rasi";
+  xdg.configFile."rofi/themes/daylight.rasi".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/themes/daylight.rasi";
+
+  home.activation.linkRofiTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    target="${config.xdg.configHome}/rofi/themes/theme.rasi"
+    $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/rofi/themes/${config.theme}.rasi" "$target"
+  '';
 
   services.dunst = {
     enable = true;
