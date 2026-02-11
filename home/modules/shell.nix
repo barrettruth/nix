@@ -172,6 +172,10 @@ in
     enable = true;
     dotDir = "${config.xdg.configHome}/zsh";
 
+    profileExtra = ''
+      start-hyprland
+    '';
+
     history = {
       path = "${config.xdg.stateHome}/zsh_history";
       size = 2000;
@@ -370,15 +374,6 @@ in
       set-hook -g client-session-changed 'run "mux bar"'
       set-hook -g pane-mode-changed 'refresh-client -S'
 
-      set -g status-bg '${c.bg}'
-      set -g status-fg '${c.fg}'
-      set -g window-status-style fg='${c.fg}'
-      set -g window-status-current-style fg='${c.fg}'
-      set -g window-status-bell-style fg='${c.bellFg}',bg='${c.bg}',bold
-      set -g window-status-activity-style fg='${c.activityFg}',bg='${c.bg}',bold
-      set -g pane-border-style fg='${c.border}'
-      set -g pane-active-border-style fg='${c.fg}'
-
       set -as terminal-features ",$TERM:RGB"
       set -as terminal-overrides ",*:U8=1"
       set -as terminal-overrides ',*:Smulx=\E[4::%p1%dm'
@@ -427,6 +422,7 @@ in
 
       set-hook -g client-light-theme 'source ${config.xdg.configHome}/tmux/themes/daylight.conf'
       set-hook -g client-dark-theme  'source ${config.xdg.configHome}/tmux/themes/midnight.conf'
+      run 'tmux source "${config.xdg.configHome}/tmux/themes/''${THEME:-${config.theme}}.conf"'
 
       unbind A; bind A run 'mux ai'
       unbind C; bind C run 'mux code'

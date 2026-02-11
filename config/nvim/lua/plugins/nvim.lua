@@ -359,4 +359,12 @@ return {
             scope = { enabled = false },
         },
     },
+    {
+ 'zeybek/camouflage.nvim',
+  event = 'VeryLazy',
+  config = true,
+  keys = {
+    { '<leader>C', '<cmd>CamouflageToggle<cr>', desc = 'Toggle Camouflage' },
+  },
+  }
 }

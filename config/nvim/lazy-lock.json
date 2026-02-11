@@ -1,6 +1,7 @@
 {
   "blink.cmp": { "branch": "main", "commit": "4b18c32adef2898f95cdef6192cbd5796c1a332d" },
   "blink.indent": { "branch": "main", "commit": "9c80820ca77218a8d28e70075d6f44a1609911fe" },
+  "camouflage.nvim": { "branch": "main", "commit": "96f561cb4d0ff39f64a9e4ff7150d72d4efc526a" },
   "cp.nvim": { "branch": "main", "commit": "029ea125b97320ff5c2884bf84bf5aa4e7077c79" },
   "dial.nvim": { "branch": "master", "commit": "f2634758455cfa52a8acea6f142dcd6271a1bf57" },
   "diffs.nvim": { "branch": "main", "commit": "4ce1e1786a9bd724fda5ab4aba528b64a790b11f" },

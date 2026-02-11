@@ -16,6 +16,10 @@ in
     ./modules/terminal.nix
     ./modules/git.nix
     ./modules/editor.nix
+    ./modules/hyprland.nix
+    ./modules/hyprlock.nix
+    ./modules/hypridle.nix
+    ./modules/hyprpaper.nix
     ./modules/ui.nix
     ./modules/packages.nix
   ];

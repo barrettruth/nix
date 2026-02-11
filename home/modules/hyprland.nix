@@ -1,0 +1,225 @@
+{
+  lib,
+  config,
+  ...
+}:
+
+let
+  isNixOS = builtins.pathExists /etc/NIXOS;
+  nvidia = true;
+
+  mkHyprTheme = palette: ''
+    general {
+        col.active_border = rgb(${builtins.substring 1 6 palette.fg})
+        col.inactive_border = rgb(${builtins.substring 1 6 palette.bg})
+    }
+  '';
+in
+{
+  wayland.windowManager.hyprland = {
+    enable = true;
+    package = lib.mkIf (!isNixOS) null;
+    portalPackage = lib.mkIf (!isNixOS) null;
+    systemd.enable = isNixOS;
+
+    extraConfig = ''
+      exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland THEME
+      exec-once = systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland THEME
+
+      monitor=,preferred,auto,1
+
+      env = XDG_CURRENT_DESKTOP,Hyprland
+      env = XDG_SESSION_TYPE,wayland
+      env = ELECTRON_OZONE_PLATFORM_HINT,wayland
+      env = GTK_USE_PORTAL,1
+      env = OZONE_PLATFORM,wayland
+      env = QT_QPA_PLATFORM,wayland
+      env = GDK_BACKEND,wayland,x11
+      env = SDL_VIDEODRIVER,wayland
+    ''
+    + lib.optionalString nvidia ''
+      env = LIBVA_DRIVER_NAME,nvidia
+      env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+      env = NVD_BACKEND,direct
+      env = GBM_BACKEND,nvidia-drm
+      env = GSK_RENDERER,ngl
+      env = __NV_PRIME_RENDER_OFFLOAD,1
+      env = __VK_LAYER_NV_optimus,NVIDIA_only
+    ''
+    + ''
+
+      env = XCURSOR_SIZE,24
+      env = HYPRCURSOR_SIZE,24
+      env = HYPRCURSOR_THEME,Apple_Cursor
+    ''
+    + lib.optionalString nvidia ''
+      cursor {
+          no_hardware_cursors = true
+      }
+    ''
+    + ''
+
+      general {
+          gaps_in = 0
+          gaps_out = 0
+          border_size = 5
+          layout = master
+          resize_on_border = true
+      }
+
+      source = ${config.xdg.configHome}/hypr/themes/theme.conf
+
+      master {
+          new_status = slave
+          new_on_top = false
+          mfact = 0.50
+      }
+
+      decoration {
+          rounding = 0
+          active_opacity = 1.0
+          inactive_opacity = 1.0
+          blur {
+              enabled = false
+          }
+      }
+
+      animations {
+          enabled = false
+      }
+
+      input {
+          kb_layout = us,us
+          kb_variant = ,colemak
+          follow_mouse = 1
+          sensitivity = 0
+          touchpad {
+              tap-to-click = false
+          }
+          repeat_delay = 300
+          repeat_rate = 50
+      }
+
+      exec-once = dunst
+      exec-once = wl-paste --watch cliphist store
+      exec-once = hyprpaper
+      exec-once = hypridle
+      exec-once = hypr windowrules
+      exec-once = hypr spawnfocus --ws 1 ''${TERMINAL} -e mux
+      exec-once = hypr spawnfocus --ws 2 ''${BROWSER}
+
+      bindul = , XF86AudioRaiseVolume, exec, hypr volume up
+      bindul = , XF86AudioLowerVolume, exec, hypr volume down
+      bindul = , XF86AudioMute, exec, hypr volume toggle
+
+      bindul = , XF86MonBrightnessUp, exec, hypr brightness up
+      bindul = , XF86MonBrightnessDown, exec, hypr brightness down
+
+      bind = ALT, SPACE, exec, rofi -show run
+      bind = ALT, TAB, workspace, previous
+      bind = ALT, A, cyclenext
+      bind = ALT, B, exec, pkill -USR1 waybar || waybar
+      bind = ALT, D, layoutmsg, swapnext
+      bind = ALT, F, cyclenext, prev
+      bind = ALT, H, resizeactive, -15 0
+      bind = ALT, J, resizeactive, 0 15
+      bind = ALT, K, resizeactive, 0 -15
+      bind = ALT, L, resizeactive, 15 0
+      bind = ALT, Q, killactive,
+      bind = ALT, U, layoutmsg, swapprev
+
+      bind = ALT CTRL, Z, exec, hypr pull ''${BROWSER}
+      bind = ALT CTRL, D, exec, hypr pull discord
+      bind = ALT CTRL, S, exec, hypr pull signal-desktop
+      bind = ALT CTRL, T, exec, hypr pull ''${TERMINAL}
+      bind = ALT CTRL, V, exec, hypr pull vesktop
+      bind = ALT CTRL, Y, exec, hypr pull sioyek
+      bind = ALT CTRL, E, exec, hypr pull element-desktop
+
+      bind = ALT SHIFT, T, exec, hypr spawnfocus --ws 1 ''${TERMINAL}
+      bind = ALT SHIFT, Z, exec, hypr spawnfocus --ws 2 ''${BROWSER} --ozone-platform=wayland
+      bind = ALT SHIFT, D, exec, hypr spawnfocus --ws 5 discord
+      bind = ALT SHIFT, E, exec, hypr spawnfocus --ws 6 element-desktop
+      bind = ALT SHIFT, F, togglefloating
+      bind = ALT SHIFT, Q, exec, hypr exit
+      bind = ALT SHIFT, R, exec, hyprctl reload && notify-send -u low 'hyprland reloaded'
+      bind = ALT SHIFT, S, exec, hypr spawnfocus --ws 6 signal-desktop
+      bind = ALT SHIFT, V, exec, hypr spawnfocus --ws 5 vesktop
+      bind = ALT SHIFT, Y, exec, hypr spawnfocus --ws 3 sioyek
+
+      bind = , XF86Tools, submap, scripts
+      submap = scripts
+
+      bind = , A, exec, ctl audio out
+      bind = , C, exec, sh -lc 'cliphist list | rofi -dmenu -p "copy to clipboard" --lines 15 | cliphist decode | wl-copy'
+      bind = , F, exec, [float; fullscreen] ghostty -e lf
+      bind = , K, exec, ctl keyboard toggle
+      bind = , O, exec, ctl ocr
+      bind = , P, exec, hypr pull
+      bind = , S, exec, ctl screenshot
+      bind = , T, exec, theme
+
+      bind = , catchall, submap, reset
+      submap = reset
+
+      misc {
+          force_default_wallpaper = 0
+          disable_hyprland_logo = true
+      }
+
+      bind = ALT, 1, workspace, 1
+      bind = ALT, 2, workspace, 2
+      bind = ALT, 3, workspace, 3
+      bind = ALT, 4, workspace, 4
+      bind = ALT, 5, workspace, 5
+      bind = ALT, 6, workspace, 6
+      bind = ALT, 7, workspace, 7
+      bind = ALT, 8, workspace, 8
+      bind = ALT, 9, workspace, 9
+
+      bind = ALT SHIFT, 1, movetoworkspace, 1
+      bind = ALT SHIFT, 2, movetoworkspace, 2
+      bind = ALT SHIFT, 3, movetoworkspace, 3
+      bind = ALT SHIFT, 4, movetoworkspace, 4
+      bind = ALT SHIFT, 5, movetoworkspace, 5
+      bind = ALT SHIFT, 6, movetoworkspace, 6
+      bind = ALT SHIFT, 7, movetoworkspace, 7
+      bind = ALT SHIFT, 8, movetoworkspace, 8
+      bind = ALT SHIFT, 9, movetoworkspace, 9
+
+      bind = ALT CTRL, 1, movetoworkspacesilent, 1
+      bind = ALT CTRL, 2, movetoworkspacesilent, 2
+      bind = ALT CTRL, 3, movetoworkspacesilent, 3
+      bind = ALT CTRL, 4, movetoworkspacesilent, 4
+      bind = ALT CTRL, 5, movetoworkspacesilent, 5
+      bind = ALT CTRL, 6, movetoworkspacesilent, 6
+      bind = ALT CTRL, 7, movetoworkspacesilent, 7
+      bind = ALT CTRL, 8, movetoworkspacesilent, 8
+      bind = ALT CTRL, 9, movetoworkspacesilent, 9
+
+      workspace = w[tv1], gapsout:0, gapsin:0
+      workspace = f[1], gapsout:0, gapsin:0
+      windowrule = match:float 0, match:workspace w[tv1], border_size 0
+      windowrule = match:float 0, match:workspace w[tv1], rounding 0
+      windowrule = match:float 0, match:workspace f[1],   border_size 0
+      windowrule = match:float 0, match:workspace f[1],   rounding 0
+
+      windowrule = match:class ^(xdg-desktop-portal-gtk)$, float on
+      windowrule = match:class ^(xdg-desktop-portal-gtk)$, size monitor_w * 0.5 monitor_h * 0.6
+      windowrule = match:class ^(xdg-desktop-portal-kde)$, float on
+      windowrule = match:class ^(xdg-desktop-portal-kde)$, size monitor_w * 0.5 monitor_h * 0.6
+      windowrule = match:class ^(xdg-desktop-portal-hyprland)$, float on
+      windowrule = match:class ^(xdg-desktop-portal-hyprland)$, size monitor_w * 0.5 monitor_h * 0.6
+
+      windowrule = match:class ^([Ss]ioyek)$, tile on
+    '';
+  };
+
+  xdg.configFile."hypr/themes/midnight.conf".text = mkHyprTheme config.palettes.midnight;
+  xdg.configFile."hypr/themes/daylight.conf".text = mkHyprTheme config.palettes.daylight;
+
+  home.activation.linkHyprTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    target="${config.xdg.configHome}/hypr/themes/theme.conf"
+    $DRY_RUN_CMD ln -sf "${config.xdg.configHome}/hypr/themes/${config.theme}.conf" "$target"
+  '';
+}

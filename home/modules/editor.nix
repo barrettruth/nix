@@ -1,11 +1,6 @@
 { pkgs, config, ... }:
 
 {
-  home.sessionVariables = {
-    EDITOR = "nvim";
-    MANPAGER = "nvim +Man!";
-  };
-
   home.packages = with pkgs; [
     # lsp
     bash-language-server
@@ -47,8 +42,10 @@
   programs.neovim = {
     enable = true;
     defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
+  };
+
+  home.sessionVariables = {
+    MANPAGER = "nvim +Man!";
   };
 
   xdg.configFile."nvim".source =

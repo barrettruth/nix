@@ -80,6 +80,7 @@
       export THEME="midnight"
     '';
   };
+  services.getty.autologinUser = "barrett";
   programs.hyprland.enable = true;
 
   hardware.nvidia = {
