@@ -1,4 +1,10 @@
 #!/bin/sh
+# X11 utilities -- only usable under X11 sessions
+
+[ "$XDG_SESSION_TYPE" = "x11" ] || {
+  echo "x: requires X11 session (current: ${XDG_SESSION_TYPE:-unknown})" >&2
+  exit 1
+}
 
 require() {
   for cmd in "$@"; do

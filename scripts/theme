@@ -9,16 +9,18 @@ require() {
   done
 }
 
+require gsettings
+
 themes="daylight
 midnight"
 
-as_list="$(printf "%s\n" "$themes" | awk 'NF{printf "\"%s\",", $0}' | sed 's/,$//')"
+# --- Selection ---
 
-case "$(uname)" in
-Linux)
-  if [ -n "$1" ]; then
-    theme="$1"
-  else
+if [ -n "$1" ]; then
+  theme="$1"
+else
+  case "$(uname)" in
+  Linux)
     if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
       require rofi
       theme="$(printf "%s\n" "$themes" | rofi -dmenu -p 'theme')"
@@ -26,23 +28,13 @@ Linux)
       require dmenu
       theme="$(printf "%s\n" "$themes" | dmenu -p 'select theme: ')"
     fi
-  fi
-  ;;
-Darwin)
-  if [ -n "$1" ]; then
-    theme="$1"
-  else
+    ;;
+  Darwin)
+    as_list="$(printf "%s\n" "$themes" | awk 'NF{printf "\"%s\",", $0}' | sed 's/,$//')"
     theme="$(
       osascript <<EOF
 set theList to {$as_list}
-
-set chosenTheme to (choose from list theList ¬
-  with title "Theme" ¬
-  with prompt "Pick a theme" ¬
-  OK button name "Apply" ¬
-  cancel button name "Cancel" ¬
-  without empty selection allowed)
-
+set chosenTheme to (choose from list theList with title "Theme" with prompt "Pick a theme" OK button name "Apply" cancel button name "Cancel" without empty selection allowed)
 if chosenTheme is false then
   return ""
 else
@@ -50,85 +42,75 @@ else
 end if
 EOF
     )"
-  fi
-  ;;
-*)
-  exit 1
-  ;;
-esac
+    ;;
+  *) exit 1 ;;
+  esac
+fi
 
 [ -z "$theme" ] && exit 1
 echo "$themes" | grep -Fxq "$theme" || exit 1
 
+# --- Platform ---
+
 case "$(uname)" in
 Linux)
-  if command -v gsettings >/dev/null 2>&1; then
+  # GTK color scheme
+  case "$theme" in
+  midnight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' ;;
+  daylight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' ;;
+  esac
+
+  # Hyprland: runtime border colors + waybar
+  if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ] && command -v hyprctl >/dev/null 2>&1; then
     case "$theme" in
     midnight)
-      gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+      hyprctl keyword general:col.active_border "rgb(e0e0e0)"
+      hyprctl keyword general:col.inactive_border "rgb(121212)"
       ;;
     daylight)
-      gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
+      hyprctl keyword general:col.active_border "rgb(1a1a1a)"
+      hyprctl keyword general:col.inactive_border "rgb(f5f5f5)"
       ;;
-    *) ;;
     esac
+
+    waybar_themes="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/themes"
+    [ -f "$waybar_themes/$theme.css" ] && {
+      ln -sf "$waybar_themes/$theme.css" "$waybar_themes/theme.css"
+      pkill -USR2 waybar
+    }
   fi
-
-  [ "$XDG_SESSION_TYPE" = "wayland" ] && {
-    if [ "$XDG_CURRENT_DESKTOP" = 'Hyprland' ]; then
-      current_theme=$(readlink "$XDG_CONFIG_HOME/hypr/theme.conf" 2>/dev/null | awk -F/ '{print $NF}' | sed 's/\.conf$//')
-      if [ "$current_theme" != "$theme" ]; then
-        ln -sf "$XDG_CONFIG_HOME/hypr/themes/$theme.conf" "$XDG_CONFIG_HOME/hypr/theme.conf"
-        ln -sf "$XDG_CONFIG_HOME/waybar/themes/$theme.css" "$XDG_CONFIG_HOME/waybar/themes/theme.css"
-        hyprctl reload
-        pkill -USR1 waybar
-        pkill -USR1 waybar
-      fi
-    elif [ "$XDG_CURRENT_DESKTOP" = 'sway' ]; then
-      current_theme=$(readlink "$XDG_CONFIG_HOME/sway/themes/theme" 2>/dev/null | sed 's|.*/||')
-      if [ "$current_theme" != "$theme" ]; then
-        test -f "$XDG_CONFIG_HOME/sway/themes/theme" && ln -sf "$XDG_CONFIG_HOME/sway/themes/$theme" "$XDG_CONFIG_HOME/sway/themes/theme"
-        swaymsg reload
-      fi
-    fi
-  }
-
-  test -d "$XDG_CONFIG_HOME/rofi/themes" && ln -sf "$XDG_CONFIG_HOME/rofi/themes/$theme.rasi" "$XDG_CONFIG_HOME/rofi/themes/theme.rasi"
   ;;
 Darwin)
   case "$theme" in
-  daylight)
-    osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to false' 2>/dev/null || true
-    ;;
-  midnight)
-    osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to true' 2>/dev/null || true
-    ;;
+  daylight) osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to false' 2>/dev/null || true ;;
+  midnight) osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to true' 2>/dev/null || true ;;
   esac
   ;;
 esac
 
-test -d "$XDG_CONFIG_HOME/fzf/themes" && ln -sf "$XDG_CONFIG_HOME/fzf/themes/$theme" "$XDG_CONFIG_HOME/fzf/themes/theme"
-test -d "$XDG_CONFIG_HOME/rg/themes" && ln -sf "$XDG_CONFIG_HOME/rg/themes/$theme" "$XDG_CONFIG_HOME/rg/themes/theme"
-test -d "$XDG_CONFIG_HOME/sioyek/themes" && ln -sf "$XDG_CONFIG_HOME/sioyek/themes/$theme.config" "$XDG_CONFIG_HOME/sioyek/themes/theme.config"
-test -d "$XDG_CONFIG_HOME/task/themes" && ln -sf "$XDG_CONFIG_HOME/task/themes/$theme.theme" "$XDG_CONFIG_HOME/task/themes/theme.theme"
+# --- Cross-platform ---
 
-if command -v claude >/dev/null 2>&1; then
-  CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json"
-  claude_theme='light'
-  case "$theme" in
-  daylight)
-    claude_theme='light'
-    ;;
-  midnight)
-    claude_theme='dark'
-    ;;
-  esac
-  test -f "$CLAUDE_CONFIG" && jq ".theme=\"$claude_theme\"" "$CLAUDE_CONFIG" >"$CLAUDE_CONFIG.tmp" && mv "$CLAUDE_CONFIG.tmp" "$CLAUDE_CONFIG"
+# Tmux
+if [ -n "$TMUX" ]; then
+  tmux_themes="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/themes"
+  [ -f "$tmux_themes/$theme.conf" ] && tmux source "$tmux_themes/$theme.conf"
+  tmux setenv -g THEME "$theme"
 fi
 
-test -f ~/.zshenv && sed -i "s|^\(export THEME=\).*|\1$theme|" ~/.zshenv
-[ -n "$TMUX" ] && tmux setenv -g THEME "$theme"
+# Claude CLI
+if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude}/.claude.json"
+  case "$theme" in
+  midnight) claude_theme='dark' ;;
+  daylight) claude_theme='light' ;;
+  esac
+  [ -f "$CLAUDE_CONFIG" ] && {
+    jq ".theme=\"$claude_theme\"" "$CLAUDE_CONFIG" > "$CLAUDE_CONFIG.tmp" &&
+    mv "$CLAUDE_CONFIG.tmp" "$CLAUDE_CONFIG"
+  }
+fi
 
-for socket in /tmp/nvim-*.sock; do
-  test -S "$socket" && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf_reload\").reload()')" 2>/dev/null || true
+# Neovim instances
+for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
+  [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf_reload\").reload()')" 2>/dev/null || true
 done

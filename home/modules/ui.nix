@@ -24,9 +24,10 @@ let
 in
 {
   home.sessionVariables = {
-    XINITRC = "${config.xdg.configHome}/X11/xinitrc";
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
   };
+
+  dconf.enable = true;
 
   home.packages = with pkgs; [
     wl-clipboard
@@ -37,6 +38,8 @@ in
     brightnessctl
     pamixer
     socat
+    glib
+    gsettings-desktop-schemas
     (python3.withPackages (ps: [ ps.pillow ]))
   ];
 

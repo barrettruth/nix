@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Requires python3 with Pillow (provided by home-manager packages)
 
 import os
 import random
@@ -8,7 +9,7 @@ import sys
 try:
     from PIL import Image, ImageDraw
 except ImportError:
-    print("wp: missing dependency: pillow (pip install pillow)", file=sys.stderr)
+    print("wp: missing dependency: pillow (should be in home-manager python3 package)", file=sys.stderr)
     sys.exit(1)
 
 HOME = os.environ["HOME"]
