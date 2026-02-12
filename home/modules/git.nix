@@ -6,6 +6,8 @@
 }:
 
 {
+  home.packages = [ pkgs.pre-commit ];
+
   programs.git = {
     enable = true;
     lfs.enable = true;

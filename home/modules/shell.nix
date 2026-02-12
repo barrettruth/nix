@@ -48,6 +48,8 @@ in
   home.sessionVariables = lib.mkMerge [
     {
       LESSHISTFILE = "-";
+      WGETRC = "${config.xdg.configHome}/wgetrc";
+      LUAROCKS_CONFIG = "${config.xdg.configHome}/luarocks/config.lua";
       GRADLE_USER_HOME = "${config.xdg.configHome}/gradle";
       LIBVIRT_DEFAULT_URI = "qemu:///system";
       MBSYNCRC = "${config.xdg.configHome}/mbsync/config";
@@ -172,6 +174,17 @@ in
       --colors=path:fg:blue
     '';
   };
+
+  xdg.configFile."wgetrc".text = ''
+    hsts_file = ${config.xdg.stateHome}/wget-hsts
+  '';
+
+  xdg.configFile."luarocks/config.lua".text = ''
+    rocks_trees = {
+      { name = "user", root = (os_getenv("XDG_DATA_HOME") or (home .. "/.local/share")) .. "/luarocks" };
+      { name = "system", root = "/usr" };
+    }
+  '';
 
   programs.zsh = {
     enable = true;

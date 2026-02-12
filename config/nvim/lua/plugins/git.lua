@@ -1,6 +1,3 @@
----@type string|nil
-local prev_gitsigns_signcol = nil
-
 return {
     {
         'tpope/vim-fugitive',
@@ -9,9 +6,10 @@ return {
     {
         dir = '~/dev/diffs.nvim',
         'barrettruth/diffs.nvim',
+        enabled = true,
         init = function()
             vim.g.diffs = {
-                debug = false,
+                debug = true,
                 hide_prefix = true,
                 highlights = {
                     vim = {

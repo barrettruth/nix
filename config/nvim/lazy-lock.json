@@ -2,6 +2,7 @@
   "blink.cmp": { "branch": "main", "commit": "4b18c32adef2898f95cdef6192cbd5796c1a332d" },
   "cp.nvim": { "branch": "main", "commit": "029ea125b97320ff5c2884bf84bf5aa4e7077c79" },
   "dial.nvim": { "branch": "master", "commit": "f2634758455cfa52a8acea6f142dcd6271a1bf57" },
+  "diffs.nvim": { "branch": "main", "commit": "330e2bc9b89ebcc52b77a9fa960541c0cfbca81d" },
   "fzf-lua": { "branch": "main", "commit": "fb8c50ba62a0daa433b7ac2b78834f318322b879" },
   "guard-collection": { "branch": "main", "commit": "ea1d770284473bc4976a787d61d5eb781a87d899" },
   "guard.nvim": { "branch": "main", "commit": "addb8d2f40662b8b62d60dd7d18f503beb2332e7" },
