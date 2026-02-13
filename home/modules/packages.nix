@@ -13,9 +13,9 @@ let
   neovim = config.programs.neovim.enable;
   zen = true;
   sioyek = true;
-  # vesktop = true;
+  vesktop = true;
   claude = true;
-  # signal = true;
+  signal = true;
 
   sioyek-wrapped = pkgs.symlinkJoin {
     name = "sioyek";

@@ -15,7 +15,7 @@ get_scope() {
   _path=$(tmux display-message -p '#{pane_current_path}')
   case "$_path" in
     "$HOME") printf '~' ;;
-    *) printf '%s' "${_path##*/}" ;;
+    *) basename "$_path" ;;
   esac
 }
 
