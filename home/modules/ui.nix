@@ -188,12 +188,12 @@ in
       };
       urgency_low = {
         background = c.bg;
-        foreground = c.blue;
-        frame_color = c.blue;
+        foreground = c.fg;
       };
       urgency_normal = {
         background = c.bg;
-        foreground = c.fg;
+        foreground = c.blue;
+        frame_color = c.blue;
       };
       urgency_critical = {
         background = c.bg;
