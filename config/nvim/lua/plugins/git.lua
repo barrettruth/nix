@@ -5,11 +5,11 @@ return {
     },
     {
         dir = '~/dev/diffs.nvim',
-        'barrettruth/diffs.nvim',
         enabled = true,
         init = function()
             vim.g.diffs = {
-                debug = true,
+                -- debug = '/tmp/diffs.log',
+                filetypes = { 'fugitive', 'git', 'gitcommit', 'diff' },
                 hide_prefix = true,
                 highlights = {
                     vim = {

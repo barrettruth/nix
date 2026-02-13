@@ -77,6 +77,7 @@
         sm = "submodule";
         st = "stash";
         sw = "switch";
+        t = "tag";
         wt = "worktree";
       };
       init.defaultBranch = "main";

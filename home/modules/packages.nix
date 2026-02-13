@@ -13,8 +13,9 @@ let
   neovim = config.programs.neovim.enable;
   zen = true;
   sioyek = true;
-  vesktop = true;
+  # vesktop = true;
   claude = true;
+  # signal = true;
 
   sioyek-wrapped = pkgs.symlinkJoin {
     name = "sioyek";
@@ -41,11 +42,13 @@ in
       bitwarden-desktop
       gemini-cli
       typst
+      libreoffice-fresh
     ]
     ++ lib.optionals zen [ zen-browser.packages.${hostPlatform}.default ]
     ++ lib.optionals sioyek [ sioyek-wrapped ]
-    ++ lib.optionals vesktop [ pkgs.vesktop ]
+    # ++ lib.optionals vesktop [ pkgs.vesktop ]
     ++ lib.optionals claude [ pkgs.claude-code ];
+    ++ lib.optionals signal [ pkgs.signal-desktop ]
 
   xdg.configFile."claude/settings.json" = lib.mkIf claude {
     text = builtins.toJSON {
@@ -151,9 +154,9 @@ in
         "application/pdf" = "sioyek.desktop";
         "application/epub+zip" = "sioyek.desktop";
       })
-      (lib.mkIf vesktop {
-        "x-scheme-handler/discord" = "vesktop.desktop";
-      })
+      # (lib.mkIf vesktop {
+      #   "x-scheme-handler/discord" = "vesktop.desktop";
+      # })
     ];
   };
 }
