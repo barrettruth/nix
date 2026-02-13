@@ -12,10 +12,10 @@ require() {
 require tmux
 
 get_scope() {
-  _wname=$(tmux display-message -p '#{window_name}')
-  case "$_wname" in
-    ai@*|code@*|git@*|run@*|term@*|misc@*) printf '%s' "${_wname#*@}" ;;
-    *) printf '%s' "$_wname" ;;
+  _path=$(tmux display-message -p '#{pane_current_path}')
+  case "$_path" in
+    "$HOME") printf '~' ;;
+    *) printf '%s' "${_path##*/}" ;;
   esac
 }
 

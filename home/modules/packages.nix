@@ -43,11 +43,12 @@ in
       gemini-cli
       typst
       libreoffice-fresh
+      glab
     ]
     ++ lib.optionals zen [ zen-browser.packages.${hostPlatform}.default ]
     ++ lib.optionals sioyek [ sioyek-wrapped ]
     ++ lib.optionals vesktop [ pkgs.vesktop ]
-    ++ lib.optionals claude [ pkgs.claude-code ];
+    ++ lib.optionals claude [ pkgs.claude-code ]
     ++ lib.optionals signal [ pkgs.signal-desktop ];
 
   xdg.configFile."claude/settings.json" = lib.mkIf claude {
