@@ -1,7 +1,7 @@
 @import "themes/theme.rasi"
 
 configuration {
-  font: "Berkeley Mono 15";
+  font: "SF Pro Display 15";
 }
 
 listview {

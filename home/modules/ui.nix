@@ -153,7 +153,6 @@ in
       @import url("${config.xdg.configHome}/waybar/themes/theme.css");
 
       * {
-        font-family: "Berkeley Mono", monospace;
         font-size: 15px;
       }
 
@@ -187,7 +186,7 @@ in
     enable = true;
     settings = {
       global = {
-        font = "Berkeley Mono 15";
+        font = "SF Pro Display 15";
         frame_color = c.fgAlt;
         separator_color = "frame";
         background = c.bg;
