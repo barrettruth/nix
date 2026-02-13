@@ -48,7 +48,7 @@ in
     ++ lib.optionals sioyek [ sioyek-wrapped ]
     ++ lib.optionals vesktop [ pkgs.vesktop ]
     ++ lib.optionals claude [ pkgs.claude-code ];
-    ++ lib.optionals signal [ pkgs.signal-desktop ]
+    ++ lib.optionals signal [ pkgs.signal-desktop ];
 
   xdg.configFile."claude/settings.json" = lib.mkIf claude {
     text = builtins.toJSON {
