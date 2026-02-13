@@ -52,6 +52,18 @@
       Install.WantedBy = [ "timers.target" ];
     };
 
+    systemd.user.services.theme-apply = {
+      Unit = {
+        Description = "Apply theme on login";
+        After = [ "graphical-session.target" ];
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.bash}/bin/bash -lc '${config.home.homeDirectory}/.config/nix/scripts/theme ${config.theme}'";
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
+
     systemd.user.services.cliphist-wipe = {
       Unit.Description = "Clear clipboard history on session end";
       Service = {
