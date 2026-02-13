@@ -302,16 +302,17 @@ windowrules)
       window_id="${data%%,*}"
       window_title="${data#*,}"
       window_title=$(echo "$window_title" | tr '[:upper:]' '[:lower:]')
-      case "$window_title" in
-      *'extension: (bitwarden password manager) - bitwarden'*)
-        hyprctl --batch "dispatch setfloating address:0x$window_id; dispatch centerwindow address:0x$window_id"
-        ;;
-      *'sign in - google accounts '*)
-        hyprctl --batch "dispatch setfloating address:0x$window_id; \
-                     dispatch resizewindowpixel exact 30% 70%,address:0x$window_id; \
-                     dispatch centerwindow address:0x$window_id"
-        ;;
-      esac
+      # NOTE: has been buggy recently
+      # case "$window_title" in
+      # *'extension: (bitwarden password manager) - bitwarden'*)
+      #   hyprctl --batch "dispatch setfloating address:0x$window_id; dispatch centerwindow address:0x$window_id"
+      #   ;;
+      # *'sign in - google accounts '*)
+      #   hyprctl --batch "dispatch setfloating address:0x$window_id; \
+      #                dispatch resizewindowpixel exact 30% 70%,address:0x$window_id; \
+      #                dispatch centerwindow address:0x$window_id"
+      #   ;;
+      # esac
       ;;
     esac
   done

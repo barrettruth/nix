@@ -92,8 +92,6 @@ confirm() {
 
 case "$1" in
 bar)
-  session=$(tmux display-message -p '#S')
-  [ "$session" ] || exit
   if [ "$(tmux show-options -gv mouse)" = "on" ]; then
     indicator='#{?pane_in_mode,[mouse#{@c}copy],[mouse]}'
   else
@@ -114,8 +112,7 @@ bar)
     else
       key='?'
     fi
-    star=""
-    [ "$sname" = "$session" ] && star="*"
+    star="#{?#{==:#S,$sname},*,}"
     [ -n "$bar_content" ] && bar_content="$bar_content │ "
     bar_content="$bar_content#[range=session|${sid}]$key:$sname$star#[norange]"
     i=$((i + 1))
