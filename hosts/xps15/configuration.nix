@@ -134,6 +134,12 @@
 
   security.sudo.enable = true;
 
+  fonts.fontconfig.defaultFonts = {
+    sansSerif = [ "SF Pro Display" ];
+    monospace = [ "Berkeley Mono" ];
+    serif = [ "Times New Roman" ];
+  };
+
   environment.systemPackages = with pkgs; [
     vim
     wget

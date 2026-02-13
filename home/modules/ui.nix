@@ -24,7 +24,14 @@ in
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
   };
 
-  dconf.enable = true;
+  dconf = {
+    enable = true;
+    settings."org/gnome/desktop/interface" = {
+      font-name = "SF Pro Display 11";
+      document-font-name = "SF Pro Display 11";
+      monospace-font-name = "Berkeley Mono 11";
+    };
+  };
 
   home.packages = with pkgs; [
     rofi

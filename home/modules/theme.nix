@@ -77,6 +77,14 @@ in
       x11.enable = false;
     };
 
+    gtk = {
+      enable = true;
+      font = {
+        name = "SF Pro Display";
+        size = 11;
+      };
+    };
+
     home.file.".local/share/fonts".source =
       config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/fonts";
 
