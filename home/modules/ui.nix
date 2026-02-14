@@ -96,7 +96,7 @@ in
       };
 
       "hyprland/language" = {
-        format = " [{}]";
+        format = "󰌌 {}";
         format-en = "en";
         format-en-colemak = "cmk";
         tooltip-format = "{long}";
@@ -139,10 +139,11 @@ in
       };
 
       network = {
-        format-wifi = "󰤨 {essid}";
+        format-wifi = "{icon} {essid}";
         format-ethernet = "󰈀 {ifname}";
         format-disconnected = "󰤭 off";
         format-disabled = "󰤭 off";
+        format-icons = ["󰤟" "󰤢" "󰤥" "󰤨"];
         interval = 10;
         tooltip-format-wifi = "{signalStrength}% · {ipaddr}";
         tooltip-format-ethernet = "{ipaddr}/{cidr}";
@@ -151,20 +152,9 @@ in
 
       battery = {
         format = "{icon} {capacity}%";
-        format-charging = "󰂄 {capacity}%";
-        format-full = "󰁹 {capacity}%";
-        format-icons = [
-          "󰁺"
-          "󰁻"
-          "󰁼"
-          "󰁽"
-          "󰁾"
-          "󰁿"
-          "󰂀"
-          "󰂁"
-          "󰂂"
-          "󰁹"
-        ];
+        format-charging = " {capacity}%";
+        format-full = " {capacity}%";
+        format-icons = ["" "" "" "" ""];
         states = {
           hi = 30;
           mid = 20;
