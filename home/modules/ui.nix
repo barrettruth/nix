@@ -12,7 +12,7 @@ let
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; }
-    #workspaces button.active { background: ${palette.bgAlt}; }
+    #workspaces button { background: transparent; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
@@ -159,7 +159,7 @@ in
       };
 
       clock = {
-        format = "{:%a %d %b  %H:%M:%S}";
+        format = "{:%a %d/%m/%Y  %H:%M:%S}";
         interval = 1;
         tooltip-format = "{:%A, %d %B %Y\nTimezone: %Z}";
       };
@@ -177,24 +177,18 @@ in
       }
 
       #workspaces button {
-        padding: 0 6px;
+        padding: 0 10px;
         min-width: 24px;
       }
 
-      #language {
-        padding: 0 8px;
-      }
-
+      #language,
       #privacy,
       #tray,
       #pulseaudio,
       #network,
-      #battery {
-        padding: 0 12px;
-      }
-
+      #battery,
       #clock {
-        padding: 0 14px 0 12px;
+        padding: 0 10px;
       }
 
       #window {
