@@ -19,7 +19,6 @@ let
     #network.disconnected { color: ${palette.fgAlt}; }
     #battery.charging { color: ${palette.green}; }
     #battery.lo, #battery.ultralo { color: ${palette.red}; }
-    #idle_inhibitor.activated { color: ${palette.accent}; }
     #language { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
     tooltip * { color: ${palette.fg}; }
@@ -41,6 +40,7 @@ in
 
   home.packages = with pkgs; [
     nerd-fonts.symbols-only
+    psmisc
     rofi
     wl-clipboard
     cliphist
@@ -67,7 +67,6 @@ in
       modules-left = [ "hyprland/workspaces" "hyprland/language" ];
       modules-center = [ "hyprland/window" ];
       modules-right = [
-        "idle_inhibitor"
         "privacy"
         "tray"
         "pulseaudio"
@@ -80,22 +79,14 @@ in
         format = "{id}";
         disable-scroll = true;
         all-outputs = true;
+        tooltip = true;
       };
 
       "hyprland/language" = {
-        format = "{}";
+        format = " {}";
         format-en = "en";
         format-en-colemak = "cmk";
-      };
-
-      idle_inhibitor = {
-        format = "{icon}";
-        format-icons = {
-          activated = "󰅶";
-          deactivated = "󰛊";
-        };
-        tooltip-format-activated = "idle inhibitor on";
-        tooltip-format-deactivated = "idle inhibitor off";
+        tooltip-format = "{long}";
       };
 
       privacy = {
@@ -106,12 +97,12 @@ in
       tray = {
         icon-size = 16;
         spacing = 8;
+        tooltip = true;
       };
 
       "hyprland/window" = {
         format = "{}";
         separate-outputs = true;
-        max-length = 60;
         rewrite = { };
       };
 
@@ -154,6 +145,8 @@ in
           on-charging-100 = "notify-send -u low 'battery 100%'";
         };
         interval = 30;
+        tooltip = true;
+        tooltip-format = "{capacity}% · {timeTo}";
       };
 
       clock = {
@@ -183,7 +176,6 @@ in
         padding: 0 8px;
       }
 
-      #idle_inhibitor,
       #privacy,
       #tray,
       #pulseaudio,
@@ -214,8 +206,10 @@ in
         width = 600;
         height = 400;
         opacity = 1.0;
+        search_icon = false;
       };
       behavior.animate = false;
+      status_bar.enable = false;
     };
     launchers = [
       { name = "App Launcher"; type = "app_launcher"; priority = 1; args = {}; }
