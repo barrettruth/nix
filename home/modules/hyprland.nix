@@ -14,6 +14,14 @@ let
     }
   '';
 
+  cursor = config.home.pointerCursor;
+
+  cursorEnv = lib.optionalString (cursor != null) ''
+    env = XCURSOR_SIZE,${toString cursor.size}
+    env = HYPRCURSOR_SIZE,${toString cursor.size}
+    env = HYPRCURSOR_THEME,${cursor.name}
+  '';
+
   nvidiaEnv = lib.optionalString (hostConfig.gpu == "nvidia") ''
     env = LIBVA_DRIVER_NAME,nvidia
     env = __GLX_VENDOR_LIBRARY_NAME,nvidia
@@ -32,7 +40,7 @@ in
     systemd.enable = hostConfig.isNixOS;
 
     extraConfig = ''
-      ${nvidiaEnv}
+      ${cursorEnv}${nvidiaEnv}
       source = $XDG_CONFIG_HOME/nix/config/hypr/hyprland.conf
     '';
   };
