@@ -13,6 +13,7 @@ let
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; }
     #workspaces button { background: transparent; }
+    #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
