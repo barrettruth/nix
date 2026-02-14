@@ -80,7 +80,7 @@ in
       };
 
       "hyprland/language" = {
-        format = " {}";
+        format = " [{}]";
         format-en = "en";
         format-en-colemak = "cmk";
         tooltip-format = "{long}";
