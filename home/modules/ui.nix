@@ -13,14 +13,11 @@ let
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; }
     #workspaces button { color: ${palette.fgAlt}; background: transparent; }
-    #workspaces button.active { color: ${palette.fg}; box-shadow: inset 0 -2px ${palette.accent}; }
+    #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
     #window { color: ${palette.fgAlt}; }
     #pulseaudio.muted { color: ${palette.fgAlt}; }
     #network.disconnected { color: ${palette.fgAlt}; }
-    #battery.lo, #battery.ultralo { color: ${palette.red}; }
-    #language { color: ${palette.fg}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
-    tooltip * { color: ${palette.fg}; }
   '';
 in
 {
