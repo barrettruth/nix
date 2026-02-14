@@ -163,6 +163,35 @@ in
         border-radius: 0;
         min-height: 0;
       }
+
+      #workspaces button {
+        padding: 0 6px;
+        min-width: 24px;
+      }
+
+      #language {
+        padding: 0 8px;
+      }
+
+      #privacy,
+      #tray,
+      #pulseaudio,
+      #network,
+      #battery {
+        padding: 0 12px;
+      }
+
+      #clock {
+        padding: 0 14px 0 12px;
+      }
+
+      #window {
+        padding: 0 16px;
+      }
+
+      tooltip {
+        border-radius: 4px;
+      }
     '';
   };
 
