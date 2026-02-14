@@ -53,11 +53,11 @@ brightness)
   case "$1" in
   up)
     brightnessctl set "$BRIGHT_STEP"%+
-    notify-send -u low -t 2500 -r 5555 "brightness $(brightnessctl get | awk -v max="$max_brightness" '{printf "%d%%", $1*100/max}')"
+    notify-send -t 2500 -r 5555 "brightness $(brightnessctl get | awk -v max="$max_brightness" '{printf "%d%%", $1*100/max}')"
     ;;
   down)
     brightnessctl set "$BRIGHT_STEP"%-
-    notify-send -u low -t 2500 -r 5555 "brightness $(brightnessctl get | awk -v max="$max_brightness" '{printf "%d%%", $1*100/max}')"
+    notify-send -t 2500 -r 5555 "brightness $(brightnessctl get | awk -v max="$max_brightness" '{printf "%d%%", $1*100/max}')"
     ;;
   *)
     echo "Invalid subcommand: $1" >&2
@@ -89,9 +89,9 @@ volume)
 
   vol=$(get_vol)
   if wpctl get-volume "$SINK" | grep -q MUTED; then
-    notify-send -u low -t 2500 -r 5556 "volume: ${vol}% (muted)"
+    notify-send -t 2500 -r 5556 "volume: ${vol}% (muted)"
   else
-    notify-send -u low -t 2500 -r 5556 "volume: ${vol}%"
+    notify-send -t 2500 -r 5556 "volume: ${vol}%"
   fi
   ;;
 pull)
