@@ -206,7 +206,6 @@ in
       }
 
       #workspaces button:hover {
-        box-shadow: none;
         transition: none;
       }
 
