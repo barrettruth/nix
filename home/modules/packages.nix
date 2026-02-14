@@ -3,7 +3,7 @@
   lib,
   config,
   zen-browser,
-  hostPlatform,
+  hostConfig,
   ...
 }:
 
@@ -39,17 +39,21 @@ in
     with pkgs;
     [
       slack
-      bitwarden-desktop
       gemini-cli
       typst
-      libreoffice-fresh
       glab
     ]
-    ++ lib.optionals zen [ zen-browser.packages.${hostPlatform}.default ]
-    ++ lib.optionals sioyek [ sioyek-wrapped ]
-    ++ lib.optionals vesktop [ pkgs.vesktop ]
+    ++ lib.optionals hostConfig.isLinux [
+      bitwarden-desktop
+      libreoffice-fresh
+    ]
+    ++ lib.optionals zen [ zen-browser.packages.${hostConfig.platform}.default ]
+    ++ lib.optionals sioyek [
+      (if hostConfig.isLinux then sioyek-wrapped else pkgs.sioyek)
+    ]
+    ++ lib.optionals (vesktop && hostConfig.isLinux) [ pkgs.vesktop ]
     ++ lib.optionals claude [ pkgs.claude-code ]
-    ++ lib.optionals signal [ pkgs.signal-desktop ];
+    ++ lib.optionals (signal && hostConfig.isLinux) [ pkgs.signal-desktop ];
 
   xdg.configFile."claude/settings.json" = lib.mkIf claude {
     text = builtins.toJSON {
@@ -92,7 +96,7 @@ in
     source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/themes/daylight.config";
   };
 
-  home.activation.linkZenProfile = lib.mkIf zen (
+  home.activation.linkZenProfile = lib.mkIf (zen && hostConfig.isLinux) (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       zen_config="$HOME/.zen"
       repo_zen="${repoDir}/config/zen"
@@ -135,12 +139,14 @@ in
     ''
   );
 
-  xdg.configFile."electron-flags.conf".text = ''
-    --enable-features=WaylandWindowDecorations
-    --ozone-platform-hint=auto
-  '';
+  xdg.configFile."electron-flags.conf" = lib.mkIf hostConfig.isLinux {
+    text = ''
+      --enable-features=WaylandWindowDecorations
+      --ozone-platform-hint=auto
+    '';
+  };
 
-  xdg.mimeApps = {
+  xdg.mimeApps = lib.mkIf hostConfig.isLinux {
     enable = true;
     defaultApplications = lib.mkMerge [
       (lib.mkIf zen {
@@ -155,9 +161,9 @@ in
         "application/pdf" = "sioyek.desktop";
         "application/epub+zip" = "sioyek.desktop";
       })
-      # (lib.mkIf vesktop {
-      #   "x-scheme-handler/discord" = "vesktop.desktop";
-      # })
+      (lib.mkIf vesktop {
+        "x-scheme-handler/discord" = "vesktop.desktop";
+      })
     ];
   };
 }

@@ -24,48 +24,93 @@
       ...
     }:
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfreePredicate =
-          pkg:
-          builtins.elem (nixpkgs.lib.getName pkg) [
-            "slack"
-            "claude-code"
-            "claude"
-            "nvidia-x11"
-            "nvidia-settings"
-            "apple_cursor"
-          ];
-        overlays = [
-          neovim-nightly.overlays.default
-          claude-code.overlays.default
-        ];
+      overlays = [
+        neovim-nightly.overlays.default
+        claude-code.overlays.default
+      ];
+
+      sharedUnfree = [
+        "slack"
+        "claude-code"
+        "claude"
+        "apple_cursor"
+      ];
+
+      mkPkgs =
+        system: extraUnfree:
+        import nixpkgs {
+          inherit system;
+          config.allowUnfreePredicate =
+            pkg:
+            builtins.elem (nixpkgs.lib.getName pkg) (sharedUnfree ++ extraUnfree);
+          inherit overlays;
+        };
+
+      xps15Config = {
+        isNixOS = true;
+        isLinux = true;
+        isDarwin = false;
+        gpu = "nvidia";
+        backlightDevice = "intel_backlight";
+        platform = "x86_64-linux";
       };
+
+      macConfig = {
+        isNixOS = false;
+        isLinux = false;
+        isDarwin = true;
+        gpu = "apple";
+        backlightDevice = null;
+        platform = "aarch64-darwin";
+      };
+
+      macWorkConfig = {
+        isNixOS = false;
+        isLinux = false;
+        isDarwin = true;
+        gpu = "apple";
+        backlightDevice = null;
+        platform = "aarch64-darwin";
+      };
+
+      linuxWorkConfig = {
+        isNixOS = false;
+        isLinux = true;
+        isDarwin = false;
+        gpu = null;
+        backlightDevice = null;
+        platform = "x86_64-linux";
+      };
+
+      mkHome =
+        hostConfig:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = mkPkgs hostConfig.platform [ ];
+          extraSpecialArgs = {
+            inherit zen-browser hostConfig;
+          };
+          modules = [ ./home/home.nix ];
+        };
     in
     {
-      formatter.${system} = pkgs.nixfmt-tree;
+      formatter.x86_64-linux = (mkPkgs "x86_64-linux" [ ]).nixfmt-tree;
 
       nixosConfigurations.xps15 = nixpkgs.lib.nixosSystem {
         modules = [
           nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
           ./hosts/xps15/configuration.nix
           {
-            nixpkgs.hostPlatform = system;
-            nixpkgs.overlays = [
-              neovim-nightly.overlays.default
-              claude-code.overlays.default
-            ];
+            nixpkgs.hostPlatform = "x86_64-linux";
+            nixpkgs.overlays = overlays;
             nixpkgs.config.allowUnfreePredicate =
               pkg:
-              builtins.elem (nixpkgs.lib.getName pkg) [
-                "slack"
-                "claude-code"
-                "claude"
-                "nvidia-x11"
-                "nvidia-settings"
-                "apple_cursor"
-              ];
+              builtins.elem (nixpkgs.lib.getName pkg) (
+                sharedUnfree
+                ++ [
+                  "nvidia-x11"
+                  "nvidia-settings"
+                ]
+              );
           }
           home-manager.nixosModules.home-manager
           {
@@ -75,8 +120,7 @@
             home-manager.users.barrett = import ./home/home.nix;
             home-manager.extraSpecialArgs = {
               inherit zen-browser;
-              hostPlatform = system;
-              isNixOS = true;
+              hostConfig = xps15Config;
             };
           }
         ];
@@ -85,14 +129,10 @@
         };
       };
 
-      homeConfigurations.barrett = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        extraSpecialArgs = {
-          inherit zen-browser;
-          hostPlatform = system;
-          isNixOS = false;
-        };
-        modules = [ ./home/home.nix ];
+      homeConfigurations = {
+        "barrett@mac" = mkHome macConfig;
+        "barrett@mac-work" = mkHome macWorkConfig;
+        "barrett@linux-work" = mkHome linuxWorkConfig;
       };
     };
 }

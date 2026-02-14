@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  hostConfig,
   ...
 }:
 
@@ -8,13 +9,16 @@ let
   homeDir = config.home.homeDirectory;
   repoDir = "${homeDir}/.config/nix";
 
-  directories = [
-    "dev"
-    "dl"
-    "img"
-    "img/screen"
-    "img/wp"
-  ];
+  directories =
+    [
+      "dev"
+      "dl"
+      "img"
+    ]
+    ++ lib.optionals hostConfig.isLinux [
+      "img/screen"
+      "img/wp"
+    ];
 in
 {
   home.activation.createDirectories = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -29,15 +33,17 @@ in
     done
   '';
 
-  home.activation.linkWallpapers = lib.hm.dag.entryAfter [ "createDirectories" ] ''
-    src="${repoDir}/config/screen"
-    dest="$HOME/img/screen"
-    if [ -d "$src" ]; then
-      for f in "$src"/*; do
-        [ -f "$f" ] || continue
-        name=$(basename "$f")
-        [ -L "$dest/$name" ] || $DRY_RUN_CMD ln -sf "$f" "$dest/$name"
-      done
-    fi
-  '';
+  home.activation.linkWallpapers = lib.mkIf hostConfig.isLinux (
+    lib.hm.dag.entryAfter [ "createDirectories" ] ''
+      src="${repoDir}/config/screen"
+      dest="$HOME/img/screen"
+      if [ -d "$src" ]; then
+        for f in "$src"/*; do
+          [ -f "$f" ] || continue
+          name=$(basename "$f")
+          [ -L "$dest/$name" ] || $DRY_RUN_CMD ln -sf "$f" "$dest/$name"
+        done
+      fi
+    ''
+  );
 }

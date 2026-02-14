@@ -2,7 +2,7 @@
   pkgs,
   lib,
   config,
-  isNixOS,
+  hostConfig,
   ...
 }:
 
@@ -28,7 +28,6 @@ in
     [
       awscli2
       pure-prompt
-      xclip
       tree
       jq
       curl
@@ -43,6 +42,7 @@ in
       librsvg
       imagemagick
     ]
+    ++ lib.optionals hostConfig.isLinux [ xclip ]
     ++ lib.optionals rust [ rustup ];
 
   home.sessionVariables = lib.mkMerge [
@@ -191,7 +191,7 @@ in
     dotDir = "${config.xdg.configHome}/zsh";
     completionInit = "";
 
-    profileExtra = ''
+    profileExtra = lib.mkIf hostConfig.isLinux ''
       [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ] && start-hyprland
     '';
 

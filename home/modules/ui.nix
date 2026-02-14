@@ -2,12 +2,12 @@
   pkgs,
   lib,
   config,
+  hostConfig,
   ...
 }:
 
 let
   c = config.colors;
-  backlightDevice = "intel_backlight";
 
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
@@ -62,13 +62,14 @@ in
         "hyprland/window"
       ];
       modules-center = [ ];
-      modules-right = [
-        "backlight"
-        "pulseaudio"
-        "network"
-        "battery"
-        "clock"
-      ];
+      modules-right =
+        lib.optional (hostConfig.backlightDevice != null) "backlight"
+        ++ [
+          "pulseaudio"
+          "network"
+          "battery"
+          "clock"
+        ];
 
       "hyprland/workspaces" = {
         disable-scroll = true;
@@ -114,8 +115,8 @@ in
         tooltip-format-disconnected = "Network: disconnected";
       };
 
-      backlight = {
-        device = backlightDevice;
+      backlight = lib.mkIf (hostConfig.backlightDevice != null) {
+        device = hostConfig.backlightDevice;
         format = "brightness:{percent}% │ ";
         signal = 1;
         tooltip = false;

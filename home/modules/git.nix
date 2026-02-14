@@ -2,6 +2,7 @@
   lib,
   config,
   pkgs,
+  hostConfig,
   ...
 }:
 
@@ -139,7 +140,7 @@
 
   programs.gpg.enable = true;
 
-  services.gpg-agent = {
+  services.gpg-agent = lib.mkIf hostConfig.isLinux {
     enable = true;
     defaultCacheTtl = 3600;
     maxCacheTtl = 7200;

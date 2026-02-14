@@ -2,7 +2,7 @@
   pkgs,
   lib,
   config,
-  isNixOS,
+  hostConfig,
   ...
 }:
 
@@ -13,21 +13,32 @@ let
         col.inactive_border = rgb(${builtins.substring 1 6 palette.bg})
     }
   '';
+
+  nvidiaEnv = lib.optionalString (hostConfig.gpu == "nvidia") ''
+    env = LIBVA_DRIVER_NAME,nvidia
+    env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+    env = NVD_BACKEND,direct
+    env = GBM_BACKEND,nvidia-drm
+    env = GSK_RENDERER,ngl
+    env = __NV_PRIME_RENDER_OFFLOAD,1
+    env = __VK_LAYER_NV_optimus,NVIDIA_only
+  '';
 in
 {
   wayland.windowManager.hyprland = {
     enable = true;
-    package = lib.mkIf (!isNixOS) null;
-    portalPackage = lib.mkIf (!isNixOS) null;
-    systemd.enable = isNixOS;
+    package = lib.mkIf (!hostConfig.isNixOS) null;
+    portalPackage = lib.mkIf (!hostConfig.isNixOS) null;
+    systemd.enable = hostConfig.isNixOS;
 
     extraConfig = ''
+      ${nvidiaEnv}
       source = $XDG_CONFIG_HOME/nix/config/hypr/hyprland.conf
     '';
   };
 
   home.packages =
-    lib.optionals isNixOS [
+    lib.optionals hostConfig.isNixOS [
       pkgs.xdg-desktop-portal-gtk
       pkgs.hyprpaper
     ]

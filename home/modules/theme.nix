@@ -2,6 +2,7 @@
   lib,
   config,
   pkgs,
+  hostConfig,
   ...
 }:
 
@@ -69,7 +70,7 @@ in
     palettes = palettes;
     colors = palettes.${config.theme};
 
-    home.pointerCursor = {
+    home.pointerCursor = lib.mkIf hostConfig.isLinux {
       name = "macOS";
       package = pkgs.apple-cursor;
       size = 24;
@@ -77,7 +78,7 @@ in
       x11.enable = false;
     };
 
-    gtk = {
+    gtk = lib.mkIf hostConfig.isLinux {
       enable = true;
       font = {
         name = "SF Pro Display";
@@ -85,8 +86,10 @@ in
       };
     };
 
-    home.file.".local/share/fonts".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/fonts";
+    home.file.".local/share/fonts" = lib.mkIf hostConfig.isLinux {
+      source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/fonts";
+    };
 
     home.activation.checkFonts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       if [ ! -d "${config.home.homeDirectory}/.config/nix/fonts" ] || \
@@ -102,9 +105,11 @@ in
     home.activation.linkTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       cfg="${config.xdg.configHome}"
       theme="${config.theme}"
-      $DRY_RUN_CMD ln -sf "$cfg/hypr/themes/$theme.conf" "$cfg/hypr/themes/theme.conf"
-      $DRY_RUN_CMD ln -sf "$cfg/waybar/themes/$theme.css" "$cfg/waybar/themes/theme.css"
-      $DRY_RUN_CMD ln -sf "$cfg/rofi/themes/$theme.rasi" "$cfg/rofi/themes/theme.rasi"
+      ${lib.optionalString hostConfig.isLinux ''
+        $DRY_RUN_CMD ln -sf "$cfg/hypr/themes/$theme.conf" "$cfg/hypr/themes/theme.conf"
+        $DRY_RUN_CMD ln -sf "$cfg/waybar/themes/$theme.css" "$cfg/waybar/themes/theme.css"
+        $DRY_RUN_CMD ln -sf "$cfg/rofi/themes/$theme.rasi" "$cfg/rofi/themes/theme.rasi"
+      ''}
       $DRY_RUN_CMD ln -sf "$cfg/sioyek/themes/$theme.config" "$cfg/sioyek/themes/theme.config"
       $DRY_RUN_CMD ln -sf "$cfg/fzf/themes/$theme" "$cfg/fzf/themes/theme"
     '';
