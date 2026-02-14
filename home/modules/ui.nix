@@ -99,8 +99,9 @@ in
       "hyprland/language" = {
         format = "󰌌";
         tooltip = true;
-        tooltip-format = "{long}";
+        tooltip-format = "Keyboard Layout: {long}";
         on-click = "ctl keyboard toggle";
+        on-click-right = "ctl keyboard pick";
       };
 
       privacy = {
@@ -133,8 +134,9 @@ in
         };
         signal = 1;
         tooltip = true;
-        tooltip-format = "{volume}%";
+        tooltip-format = "Sink: {desc}\nLevel: {volume}%";
         on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+        on-click-right = "ctl audio out";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
       };
@@ -146,9 +148,10 @@ in
         format-disabled = "󰖪";
         interval = 10;
         tooltip = true;
-        tooltip-format-wifi = "{essid} · {signalStrength}%";
+        tooltip-format-wifi = "SSID: {essid}\nStrength: {signalStrength}%\nIP: {ipaddr}";
         tooltip-format-ethernet = "{ifname} · {ipaddr}";
         tooltip-format-disconnected = "disconnected";
+        on-click = "rfkill toggle wifi";
       };
 
       battery = {
@@ -171,7 +174,7 @@ in
         };
         interval = 30;
         tooltip = true;
-        tooltip-format = "{capacity}% · {timeTo}";
+        tooltip-format = "Capacity: {capacity}%\n{timeTo}";
       };
 
       clock = {

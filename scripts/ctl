@@ -65,8 +65,23 @@ keyboard)
       fi
     fi
     ;;
+  pick)
+    require fuzzel
+    choice=$(printf 'QWERTY\nDvorak\nColemak' | fuzzel --dmenu --prompt="keyboard:  " --lines=3 --no-icons)
+    [ -z "$choice" ] && exit 0
+    case "$choice" in
+    QWERTY) variant="" ;;
+    Dvorak) variant="dvorak" ;;
+    Colemak) variant="colemak" ;;
+    esac
+    if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
+      hyprctl keyword input:kb_layout "us,us"
+      hyprctl keyword input:kb_variant ",$variant"
+      hyprctl switchxkblayout current 1
+    fi
+    ;;
   *)
-    echo "Usage: ctl keyboard {toggle}" >&2
+    echo "Usage: ctl keyboard {toggle|pick}" >&2
     exit 1
     ;;
   esac
