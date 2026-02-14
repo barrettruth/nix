@@ -156,8 +156,8 @@ run)
   require nvim
   spawn_or_focus run 'nvim -c "lua require([[config.tmux]]).run([[run]])"'
   ;;
-term)
-  spawn_or_focus term
+shell)
+  spawn_or_focus shell
   ;;
 misc)
   spawn_or_focus misc
