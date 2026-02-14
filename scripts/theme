@@ -94,6 +94,11 @@ Linux)
     [ -f "$fzf_themes/$theme" ] && {
       ln -sf "$fzf_themes/$theme" "$fzf_themes/theme"
     }
+
+    walker_themes="$cfg/walker/themes"
+    [ -d "$walker_themes/$theme" ] && {
+      ln -sfn "$walker_themes/$theme" "$walker_themes/active"
+    }
   fi
   ;;
 Darwin)

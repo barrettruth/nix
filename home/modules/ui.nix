@@ -176,6 +176,17 @@ in
     '';
   };
 
+  programs.walker = {
+    enable = true;
+    runAsService = true;
+    config.theme = "active";
+  };
+
+  xdg.configFile."walker/themes/midnight".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/walker/themes/midnight";
+  xdg.configFile."walker/themes/daylight".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/walker/themes/daylight";
+
   xdg.configFile."rofi/config.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
   xdg.configFile."rofi/themes/midnight.rasi".source =
