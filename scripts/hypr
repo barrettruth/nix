@@ -95,7 +95,7 @@ volume)
   fi
   ;;
 pull)
-  require hyprctl jq rofi
+  require hyprctl jq fuzzel
   APP="$1"
   case "$APP" in
   google-chrome | google-chrome-stable) CLASS="google-chrome" ;;
@@ -147,7 +147,7 @@ pull)
 
     [ -z "$ROFI_LINES" ] && exit 0
 
-    SELECTED=$(echo "$ROFI_LINES" | rofi -dmenu -i -p "pull window")
+    SELECTED=$(echo "$ROFI_LINES" | fuzzel --dmenu --prompt="pull:  ")
 
     [ -z "$SELECTED" ] && exit 0
 
@@ -160,7 +160,7 @@ pull)
   hyprctl dispatch focuswindow "address:${WIN_ADDR}"
   ;;
 spawnfocus)
-  require hyprctl jq rofi socat
+  require hyprctl jq fuzzel socat
   WS=""
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -222,7 +222,7 @@ spawnfocus)
   elif [ "$WIN_COUNT" -eq 1 ]; then
     WIN_ADDR=$(echo "$WIN_ADDRS" | awk -F'\t' '{print $3}')
   elif [ "$WIN_COUNT" -gt 1 ]; then
-    SELECTED=$(echo "$WIN_ADDRS" | awk -F'\t' '{print $1 ": " $2 "\t" $3}' | rofi -dmenu -i -p "select window")
+    SELECTED=$(echo "$WIN_ADDRS" | awk -F'\t' '{print $1 ": " $2 "\t" $3}' | fuzzel --dmenu --prompt="window:  ")
 
     if [ -z "$SELECTED" ]; then
       exit 0

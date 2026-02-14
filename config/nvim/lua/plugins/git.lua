@@ -82,7 +82,7 @@ return {
                         enabled = true,
                     },
                     intra = {
-                        enabled = true,
+                        enabled = false,
                         max_lines = 500,
                     },
                 },

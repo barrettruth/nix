@@ -53,7 +53,6 @@ in
     nerd-fonts.symbols-only
     psmisc
     fuzzel
-    rofi
     wl-clipboard
     cliphist
     grim
@@ -226,13 +225,6 @@ in
       }
     '';
   };
-
-  xdg.configFile."rofi/config.rasi".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
-  xdg.configFile."rofi/themes/midnight.rasi".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/themes/midnight.rasi";
-  xdg.configFile."rofi/themes/daylight.rasi".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/themes/daylight.rasi";
 
   services.dunst = {
     enable = true;
