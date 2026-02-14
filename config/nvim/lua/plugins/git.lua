@@ -61,10 +61,6 @@ return {
     {
         dir = '~/dev/diffs.nvim',
         enabled = true,
-        dependencies = {
-            'NeogitOrg/neogit',
-            'sindrets/diffview.nvim',
-        },
         init = function()
             vim.g.diffs = {
                 fugitive = true,
@@ -82,23 +78,6 @@ return {
                 },
             }
         end,
-    },
-    {
-        'NeogitOrg/neogit',
-        dependencies = {
-            'nvim-lua/plenary.nvim',
-            'sindrets/diffview.nvim',
-        },
-        cmd = 'Neogit',
-        opts = {
-            integrations = {
-                diffview = true,
-            },
-        },
-    },
-    {
-        'sindrets/diffview.nvim',
-        cmd = { 'DiffviewOpen', 'DiffviewFileHistory' },
     },
     {
         'ibhagwan/fzf-lua',

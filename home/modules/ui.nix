@@ -51,7 +51,7 @@ in
   };
 
   home.packages = with pkgs; [
-    nerd-fonts.symbols-only
+    nerd-fonts.jetbrains-mono
     papirus-icon-theme
     psmisc
     fuzzel
@@ -189,7 +189,7 @@ in
       @import url("${config.xdg.configHome}/waybar/themes/theme.css");
 
       * {
-        font-family: "Symbols Nerd Font", "SF Pro Display", sans-serif;
+        font-family: "JetBrainsMono Nerd Font", "SF Pro Display", sans-serif;
         font-size: 14px;
         border: none;
         border-radius: 0;
