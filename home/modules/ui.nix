@@ -124,8 +124,8 @@ in
       };
 
       pulseaudio = {
-        format = "{icon} {volume}%";
-        format-muted = "󰖁 muted";
+        format = "{icon}  {volume}%";
+        format-muted = "󰖁  muted";
         format-icons = {
           default = [
             "󰕿"
@@ -268,6 +268,10 @@ in
         background = c.bg;
         foreground = c.red;
         frame_color = c.red;
+      };
+      hypr = {
+        appname = "hypr";
+        icon_position = "off";
       };
     };
   };

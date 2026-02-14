@@ -119,33 +119,6 @@ return {
         },
     },
     {
-        'iamcco/markdown-preview.nvim',
-        build = 'pnpm up && cd app && pnpm install',
-        ft = { 'markdown' },
-        config = function()
-            vim.cmd([[
-                function OpenMarkdownPreview(url)
-                    exec "silent !$BROWSER -n --args " . a:url
-                endfunction
-            ]])
-            vim.g.mkdp_auto_close = 0
-            vim.g.mkdp_browserfunc = 'OpenMarkdownPreview'
-            vim.api.nvim_create_autocmd('FileType', {
-                pattern = 'markdown',
-                callback = function(opts)
-                    bmap(
-                        { 'n', '<leader>m', vim.cmd.MarkdownPreviewToggle },
-                        { buffer = opts.buf }
-                    )
-                end,
-                group = vim.api.nvim_create_augroup(
-                    'AMarkdownKeybind',
-                    { clear = true }
-                ),
-            })
-        end,
-    },
-    {
         enabled = false,
         'lervag/vimtex',
         init = function()
