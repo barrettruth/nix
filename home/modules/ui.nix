@@ -11,9 +11,9 @@ let
 
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
-    window#waybar { background: ${palette.bg}; border-top: 4px solid ${palette.bgAlt}; }
+    window#waybar { background: ${palette.bg}; border-bottom: 4px solid ${palette.bgAlt}; }
     #workspaces button { background: transparent; }
-    #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
+    #workspaces button.active { box-shadow: inset 0 2px ${palette.accent}; }
     #workspaces button:hover { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
@@ -72,8 +72,8 @@ in
     settings.mainBar = {
       reload_style_on_change = true;
       layer = "top";
-      position = "bottom";
-      exclusive = true;
+      position = "top";
+      exclusive = false;
       height = 38;
 
       modules-left = [ "hyprland/workspaces" ];
