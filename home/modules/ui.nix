@@ -179,6 +179,13 @@ in
       #workspaces button {
         padding: 0 10px;
         min-width: 24px;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      #workspaces button:hover {
+        background: transparent;
+        box-shadow: none;
       }
 
       #language,
