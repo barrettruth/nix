@@ -12,7 +12,6 @@ let
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; }
-    #workspaces button.active { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
