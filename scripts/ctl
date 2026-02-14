@@ -125,7 +125,7 @@ brightness)
   bar=""
   i=0; while [ "$i" -lt "$filled" ]; do bar="${bar}━"; i=$((i + 1)); done
   i=0; while [ "$i" -lt "$empty" ]; do bar="${bar}─"; i=$((i + 1)); done
-  notify-send -a ctl -t 2500 -r 5555 "☼  $bar"
+  notify-send -a ctl -t 2500 -r 5555 "󰃠  $bar"
   ;;
 volume)
   require wpctl notify-send

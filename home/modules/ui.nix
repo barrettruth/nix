@@ -79,9 +79,9 @@ in
       modules-left = [ "hyprland/workspaces" ];
       modules-center = [ "hyprland/window" ];
       modules-right = [
+        "tray"
         "hyprland/language"
         "privacy"
-        "tray"
         "pulseaudio"
         "network"
         "battery"
@@ -99,7 +99,7 @@ in
       "hyprland/language" = {
         format = "󰌌";
         tooltip = true;
-        tooltip-format = "Keyboard Layout: {long}";
+        tooltip-format = "Layout: {}";
         on-click = "ctl keyboard next";
         on-click-right = "ctl keyboard pick";
       };
@@ -134,7 +134,7 @@ in
         };
         signal = 1;
         tooltip = true;
-        tooltip-format = "Sink: {desc}\nLevel: {volume}%";
+        tooltip-format = "Volume: {volume}%\nOutput: {desc}";
         on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         on-click-right = "ctl audio out";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
@@ -148,7 +148,7 @@ in
         format-disabled = "󰖪";
         interval = 10;
         tooltip = true;
-        tooltip-format-wifi = "SSID: {essid}\nStrength: {signalStrength}%\nIP: {ipaddr}";
+        tooltip-format-wifi = "SSID: {essid}\nDown: {bandwidthDownBits}\nUp: {bandwidthUpBits}\nIP: {ipaddr}";
         tooltip-format-ethernet = "{ifname} · {ipaddr}";
         tooltip-format-disconnected = "disconnected";
         on-click = "rfkill toggle wifi";
@@ -205,8 +205,8 @@ in
 
       #workspaces button {
         font-family: "SF Pro Display", sans-serif;
-        padding: 0 10px;
-        min-width: 24px;
+        padding: 0 7px;
+        min-width: 20px;
         background: transparent;
         box-shadow: none;
         transition: none;
