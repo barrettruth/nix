@@ -96,9 +96,9 @@ in
       };
 
       "hyprland/language" = {
-        format = "󰌌 {}";
-        format-en = "en";
-        format-en-colemak = "cmk";
+        format = "[{}]";
+        format-en = "QWERTY";
+        format-en-colemak = "Colemak";
         tooltip-format = "{long}";
         on-click = "ctl keyboard toggle";
       };
@@ -170,7 +170,7 @@ in
         };
         interval = 30;
         tooltip = true;
-        tooltip-format = "{capacity}% · {timeTo}";
+        tooltip-format = "{timeTo}";
       };
 
       clock = {
