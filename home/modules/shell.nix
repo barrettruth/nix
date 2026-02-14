@@ -270,6 +270,9 @@ in
     enable = true;
     enableZshIntegration = true;
     nix-direnv.enable = true;
+    config.global = {
+      hide_env_diff = true;
+    }
     stdlib = ''
       layout_uv() {
         if [[ ! -d .venv ]]; then

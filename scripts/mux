@@ -173,13 +173,9 @@ cmd)
   query=$(printf '%s' "$result" | head -1)
   action=$(printf '%s' "$result" | sed -n '2p')
   [ $rc -eq 130 ] && exit
-  if [ -n "$action" ]; then
-    case "$query" in
-    "$action "*)
-      tmux $query
-      exit
-      ;;
-    esac
+  if [ -n "$query" ] && [ "$query" != "$action" ]; then
+    tmux $query
+  elif [ -n "$action" ]; then
     case "$action" in
     switch-client) pick_session ;;
     select-window) pick_window ;;
@@ -228,8 +224,6 @@ cmd)
       ;;
     *) tmux "$action" ;;
     esac
-  elif [ -n "$query" ]; then
-    tmux $query
   fi
   ;;
 *)
