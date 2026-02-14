@@ -12,6 +12,7 @@ let
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; }
+    #workspaces button.active { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
@@ -103,7 +104,11 @@ in
         format = "{icon} {volume}%";
         format-muted = "󰝟 muted";
         format-icons = {
-          default = [ "󰕿" "󰖀" "󰕾" ];
+          default = [
+            "󰕿"
+            "󰖀"
+            "󰕾"
+          ];
         };
         signal = 1;
         tooltip-format = "{desc}";
@@ -123,7 +128,18 @@ in
         format = "{icon} {capacity}%";
         format-charging = "󰂄 {capacity}%";
         format-full = "󰁹 {capacity}%";
-        format-icons = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
+        format-icons = [
+          "󰁺"
+          "󰁻"
+          "󰁼"
+          "󰁽"
+          "󰁾"
+          "󰁿"
+          "󰂀"
+          "󰂁"
+          "󰂂"
+          "󰁹"
+        ];
         states = {
           hi = 30;
           mid = 20;
