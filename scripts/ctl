@@ -91,7 +91,8 @@ audio)
     if [ "$XDG_SESSION_TYPE" = x11 ]; then
       choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | dmenu -i -p "select sink:" | cut -d: -f1)"
     else
-      choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | fuzzel --dmenu --prompt="sink:  " | cut -d: -f1)"
+      count=$(printf "%s\n" "$sinks" | wc -l)
+      choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | fuzzel --dmenu --prompt="sink:  " --lines="$count" | cut -d: -f1)"
     fi
     [ "$choice" ] && wpctl set-default "$choice"
     ;;
@@ -101,7 +102,8 @@ audio)
     if [ "$XDG_SESSION_TYPE" = x11 ]; then
       choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | dmenu -i -p "select source:" | cut -d: -f1)"
     else
-      choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | fuzzel --dmenu --prompt="source:  " | cut -d: -f1)"
+      count=$(printf "%s\n" "$sources" | wc -l)
+      choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | fuzzel --dmenu --prompt="source:  " --lines="$count" | cut -d: -f1)"
     fi
     [ "$choice" ] && wpctl set-default "$choice"
     ;;
