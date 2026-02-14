@@ -14,6 +14,7 @@ let
     window#waybar { background: ${palette.bg}; }
     #workspaces button { background: transparent; }
     #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
+    #workspaces button:hover { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
@@ -51,6 +52,7 @@ in
 
   home.packages = with pkgs; [
     nerd-fonts.symbols-only
+    papirus-icon-theme
     psmisc
     fuzzel
     wl-clipboard
@@ -146,7 +148,6 @@ in
         interval = 10;
         tooltip-format-wifi = "{signalStrength}% · {ipaddr}";
         tooltip-format-ethernet = "{ipaddr}/{cidr}";
-        on-click = "ctl audio out";
       };
 
       battery = {
@@ -175,7 +176,7 @@ in
       clock = {
         format = " {:%a %d/%m/%Y  %H:%M:%S}";
         interval = 1;
-        tooltip-format = "{:%A, %d %B %Y\nTimezone: %Z}";
+        tooltip = false;
       };
 
       "custom/power" = {
@@ -206,7 +207,6 @@ in
       }
 
       #workspaces button:hover {
-        background: transparent;
         box-shadow: none;
       }
 
@@ -254,7 +254,6 @@ in
         ellipsize = "end";
         icon_position = "left";
         max_icon_size = 32;
-        format = "<b>%s</b>\\n%b";
       };
       urgency_low = {
         background = c.bg;
