@@ -123,7 +123,7 @@ in
 
       pulseaudio = {
         format = "{icon} {volume}%";
-        format-muted = "󰝟 muted";
+        format-muted = "󰖁 muted";
         format-icons = {
           default = [
             "󰕿"
@@ -139,11 +139,10 @@ in
       };
 
       network = {
-        format-wifi = "{icon} {essid}";
+        format-wifi = "󰖩 {essid}";
         format-ethernet = "󰈀 {ifname}";
-        format-disconnected = "󰤭 off";
-        format-disabled = "󰤭 off";
-        format-icons = ["󰤟" "󰤢" "󰤥" "󰤨"];
+        format-disconnected = "󰖪 off";
+        format-disabled = "󰖪 off";
         interval = 10;
         tooltip-format-wifi = "{signalStrength}% · {ipaddr}";
         tooltip-format-ethernet = "{ipaddr}/{cidr}";
@@ -174,13 +173,13 @@ in
       };
 
       clock = {
-        format = "{:%a %d/%m/%Y  %H:%M:%S}";
+        format = " {:%a %d/%m/%Y  %H:%M:%S}";
         interval = 1;
         tooltip-format = "{:%A, %d %B %Y\nTimezone: %Z}";
       };
 
       "custom/power" = {
-        format = "⏻";
+        format = "󰐥";
         tooltip = true;
         tooltip-format = "power menu";
         on-click = "ctl power";
