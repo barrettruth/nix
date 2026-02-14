@@ -100,7 +100,7 @@ in
         format = "󰌌";
         tooltip = true;
         tooltip-format = "Keyboard Layout: {long}";
-        on-click = "ctl keyboard toggle";
+        on-click = "ctl keyboard next";
         on-click-right = "ctl keyboard pick";
       };
 
@@ -152,6 +152,7 @@ in
         tooltip-format-ethernet = "{ifname} · {ipaddr}";
         tooltip-format-disconnected = "disconnected";
         on-click = "rfkill toggle wifi";
+        on-click-right = "ctl wifi pick";
       };
 
       battery = {
@@ -282,6 +283,7 @@ in
       ctl = {
         appname = "ctl";
         icon_position = "off";
+        horizontal_padding = 28;
       };
     };
   };

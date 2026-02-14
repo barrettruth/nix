@@ -45,24 +45,20 @@ ocr)
   ;;
 keyboard)
   case "$2" in
-  toggle)
+  next)
     if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
       if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
         hyprctl switchxkblayout current next
       elif [ "$XDG_CURRENT_DESKTOP" = "sway" ]; then
-        if swaymsg -t get_inputs | grep -qi "Colemak"; then
-          swaymsg input type:keyboard xkb_variant "''"
-        else
-          swaymsg input type:keyboard xkb_variant colemak
-        fi
+        swaymsg input type:keyboard xkb_switch_layout next
       fi
     else
       current="$(setxkbmap -query | awk '/variant/{print $2}')"
-      if [ "$current" = "colemak" ]; then
-        setxkbmap -layout us
-      else
-        setxkbmap -layout us -variant colemak
-      fi
+      case "$current" in
+      "") setxkbmap -layout us -variant dvorak ;;
+      dvorak) setxkbmap -layout us -variant colemak ;;
+      *) setxkbmap -layout us ;;
+      esac
     fi
     ;;
   pick)
@@ -75,13 +71,13 @@ keyboard)
     Colemak) variant="colemak" ;;
     esac
     if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
-      hyprctl keyword input:kb_layout "us,us"
+      hyprctl keyword input:kb_layout "us,us,us"
       hyprctl keyword input:kb_variant ",$variant"
       hyprctl switchxkblayout current 1
     fi
     ;;
   *)
-    echo "Usage: ctl keyboard {toggle|pick}" >&2
+    echo "Usage: ctl keyboard {next|pick}" >&2
     exit 1
     ;;
   esac
@@ -159,6 +155,32 @@ volume)
   fi
   notify-send -a ctl -t 2500 -r 5556 "$icon  $bar"
   ;;
+wifi)
+  case "$2" in
+  pick)
+    require fuzzel
+    station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
+    [ -z "$station" ] && { echo "ctl: no wifi device found" >&2; exit 1; }
+    iwctl station "$station" scan 2>/dev/null
+    sleep 1
+    networks=$(iwctl station "$station" get-networks 2>/dev/null | \
+      sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
+      awk 'NR>4 && /\S/' | \
+      sed 's/^[[:space:]>]*//' | \
+      sed 's/[[:space:]]\{3,\}.*//' | \
+      sed 's/[[:space:]]*$//' | \
+      grep -v '^-')
+    [ -z "$networks" ] && exit 0
+    ssid=$(printf '%s\n' "$networks" | fuzzel --dmenu --prompt="wifi:  " --no-icons)
+    [ -z "$ssid" ] && exit 0
+    iwctl station "$station" connect "$ssid"
+    ;;
+  *)
+    echo "Usage: ctl wifi {pick}" >&2
+    exit 1
+    ;;
+  esac
+  ;;
 power)
   require fuzzel
   lock="󰌾   Lock"
@@ -176,7 +198,7 @@ power)
   esac
   ;;
 *)
-  echo "Usage: ctl {screenshot|ocr|keyboard|audio|brightness|volume|power}" >&2
+  echo "Usage: ctl {screenshot|ocr|keyboard|audio|wifi|brightness|volume|power}" >&2
   exit 1
   ;;
 esac
