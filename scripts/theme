@@ -85,6 +85,11 @@ Linux)
       ln -sf "$hypr_themes/$theme.conf" "$hypr_themes/theme.conf"
     }
 
+    sherlock_themes="$cfg/sherlock/themes"
+    [ -f "$sherlock_themes/$theme.css" ] && {
+      ln -sf "$sherlock_themes/$theme.css" "$cfg/sherlock/main.css"
+    }
+
     sioyek_themes="$cfg/sioyek/themes"
     [ -f "$sioyek_themes/$theme.config" ] && {
       ln -sf "$sioyek_themes/$theme.config" "$sioyek_themes/theme.config"

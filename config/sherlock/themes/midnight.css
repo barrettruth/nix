@@ -1,0 +1,35 @@
+:root {
+    --background: #121212;
+    --foreground: #2d2d2d;
+    --text: #e0e0e0;
+    --border: #3d3d3d;
+    --tag-background: rgba(102, 102, 102, 0.3);
+    --tag-color: #7aa2f7;
+    --error: #ff6b6b;
+    --warning: #e5c07b;
+    --success: #98c379;
+}
+
+* {
+    font-family: "SF Pro Display", sans-serif;
+}
+
+window:not(#backdrop) {
+    border-radius: 0;
+}
+
+.tile {
+    border-radius: 0;
+}
+
+.tag {
+    border-radius: 0;
+}
+
+#shortcut-holder {
+    border-radius: 0;
+}
+
+#context-menu {
+    border-radius: 0;
+}

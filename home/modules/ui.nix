@@ -206,6 +206,28 @@ in
     '';
   };
 
+  programs.sherlock = {
+    enable = true;
+    systemd.enable = true;
+    settings = {
+      appearance = {
+        width = 600;
+        height = 400;
+        opacity = 1.0;
+      };
+      behavior.animate = false;
+    };
+    launchers = [
+      { name = "App Launcher"; type = "app_launcher"; priority = 1; args = {}; }
+      { name = "Calculator"; type = "calculation"; priority = 2; args = {}; }
+    ];
+  };
+
+  xdg.configFile."sherlock/themes/midnight.css".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/sherlock/themes/midnight.css";
+  xdg.configFile."sherlock/themes/daylight.css".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/sherlock/themes/daylight.css";
+
   xdg.configFile."rofi/config.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
   xdg.configFile."rofi/themes/midnight.rasi".source =
