@@ -150,8 +150,8 @@ in
         tooltip = true;
         tooltip-format-wifi = "SSID: {essid}\nDown: {bandwidthDownBits}\nUp: {bandwidthUpBits}\nIP: {ipaddr}";
         tooltip-format-ethernet = "{ifname} · {ipaddr}";
-        tooltip-format-disconnected = "disconnected";
-        on-click = "ctl wifi toggle";
+        tooltip-format-disconnected = "Wireless LAN disconnected";
+        on-click = "rfkill toggle wlan";
         on-click-right = "ctl wifi pick";
       };
 
