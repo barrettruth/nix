@@ -159,6 +159,16 @@ volume)
   ;;
 wifi)
   case "$2" in
+  toggle)
+    require notify-send
+    rfkill toggle wifi
+    sleep 0.5
+    if rfkill list wifi | grep -q 'Soft blocked: yes'; then
+      notify-send -a ctl -t 2500 -r 5557 "󰖪  wifi disconnected"
+    else
+      notify-send -a ctl -t 2500 -r 5557 "󰖩  wifi connected"
+    fi
+    ;;
   pick)
     require fuzzel
     station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
@@ -173,12 +183,13 @@ wifi)
       sed 's/[[:space:]]*$//' | \
       grep -v '^-')
     [ -z "$networks" ] && exit 0
-    ssid=$(printf '%s\n' "$networks" | fuzzel --dmenu --prompt="wifi:  " --no-icons)
+    count=$(printf '%s\n' "$networks" | wc -l)
+    ssid=$(printf '%s\n' "$networks" | fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count")
     [ -z "$ssid" ] && exit 0
     iwctl station "$station" connect "$ssid"
     ;;
   *)
-    echo "Usage: ctl wifi {pick}" >&2
+    echo "Usage: ctl wifi {toggle|pick}" >&2
     exit 1
     ;;
   esac
