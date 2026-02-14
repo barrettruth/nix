@@ -3,7 +3,6 @@
   config,
   pkgs,
   hostConfig,
-  walker,
   ...
 }:
 
@@ -19,7 +18,6 @@
       ./modules/packages.nix
     ]
     ++ lib.optionals hostConfig.isLinux [
-      walker.homeManagerModules.default
       ./modules/hyprland.nix
       ./modules/ui.nix
     ];

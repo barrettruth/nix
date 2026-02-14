@@ -11,11 +11,17 @@ let
 
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
-    #waybar { background: ${palette.bg}; }
-    #workspaces button { color: ${palette.fg}; }
-    #workspaces button.focused,
-    #workspaces button.active { background: ${palette.bgAlt}; color: ${palette.fg}; }
-    tooltip { color: ${palette.fg}; background-color: ${palette.bgAlt}; }
+    window#waybar { background: ${palette.bg}; }
+    #workspaces button { color: ${palette.fgAlt}; background: transparent; }
+    #workspaces button.active { color: ${palette.fg}; box-shadow: inset 0 -2px ${palette.accent}; }
+    #window { color: ${palette.fgAlt}; }
+    #pulseaudio.muted { color: ${palette.fgAlt}; }
+    #network.disconnected { color: ${palette.fgAlt}; }
+    #battery.charging { color: ${palette.green}; }
+    #battery.lo, #battery.ultralo { color: ${palette.red}; }
+    #idle_inhibitor.activated { color: ${palette.accent}; }
+    #language { color: ${palette.fgAlt}; }
+    tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
     tooltip * { color: ${palette.fg}; }
   '';
 in
@@ -34,6 +40,7 @@ in
   };
 
   home.packages = with pkgs; [
+    nerd-fonts.symbols-only
     rofi
     wl-clipboard
     cliphist
@@ -55,77 +62,84 @@ in
       layer = "top";
       position = "bottom";
       exclusive = true;
-      height = 34;
+      height = 38;
 
-      modules-left = [
-        "hyprland/workspaces"
-        "hyprland/window"
+      modules-left = [ "hyprland/workspaces" "hyprland/language" ];
+      modules-center = [ "hyprland/window" ];
+      modules-right = [
+        "idle_inhibitor"
+        "privacy"
+        "tray"
+        "pulseaudio"
+        "network"
+        "battery"
+        "clock"
       ];
-      modules-center = [ ];
-      modules-right =
-        lib.optional (hostConfig.backlightDevice != null) "backlight"
-        ++ [
-          "pulseaudio"
-          "network"
-          "battery"
-          "clock"
-        ];
 
       "hyprland/workspaces" = {
+        format = "{id}";
         disable-scroll = true;
         all-outputs = true;
+      };
+
+      "hyprland/language" = {
+        format = "{}";
+        format-en = "en";
+        format-en-colemak = "cmk";
+      };
+
+      idle_inhibitor = {
         format = "{icon}";
         format-icons = {
-          "1" = "i";
-          "2" = "ii";
-          "3" = "iii";
-          "4" = "iv";
-          "5" = "v";
-          "6" = "vi";
-          "7" = "vii";
-          "8" = "viii";
-          "9" = "ix";
+          activated = "󰅶";
+          deactivated = "󰛊";
         };
+        tooltip-format-activated = "idle inhibitor on";
+        tooltip-format-deactivated = "idle inhibitor off";
+      };
+
+      privacy = {
+        icon-size = 14;
+        icon-spacing = 6;
+      };
+
+      tray = {
+        icon-size = 16;
+        spacing = 8;
       };
 
       "hyprland/window" = {
-        format = " {} [{}]";
+        format = "{}";
         separate-outputs = true;
-        max-length = 80;
+        max-length = 60;
         rewrite = { };
       };
 
       pulseaudio = {
-        format = "volume:{volume}% │ ";
-        format-muted = "volume:{volume}% (muted) │ ";
-        interval = 2;
+        format = "{icon} {volume}%";
+        format-muted = "󰝟 muted";
+        format-icons = {
+          default = [ "󰕿" "󰖀" "󰕾" ];
+        };
         signal = 1;
-        tooltip-format = "Audio Output: {desc}";
+        tooltip-format = "{desc}";
       };
 
       network = {
-        format-wifi = "wifi:{essid} │ ";
-        format-ethernet = "eth:{interface} │ ";
-        format-disconnected = "wifi:off │ ";
-        format-disabled = "network:disabled";
+        format-wifi = "󰤨 {essid}";
+        format-ethernet = "󰈀 {ifname}";
+        format-disconnected = "󰤭 off";
+        format-disabled = "󰤭 off";
         interval = 10;
-        signal = 1;
-        tooltip-format-wifi = "Signal: {signalStrength}%\nIP: {ipaddr}/{cidr}";
-        tooltip-format-ethernet = "IP: {ipaddr}/{cidr}\nGateway: {gwaddr}";
-        tooltip-format-disconnected = "Network: disconnected";
-      };
-
-      backlight = lib.mkIf (hostConfig.backlightDevice != null) {
-        device = hostConfig.backlightDevice;
-        format = "brightness:{percent}% │ ";
-        signal = 1;
-        tooltip = false;
+        tooltip-format-wifi = "{signalStrength}% · {ipaddr}";
+        tooltip-format-ethernet = "{ipaddr}/{cidr}";
       };
 
       battery = {
-        format = "battery:-{capacity}% │ ";
-        format-charging = "battery:+{capacity}% │ ";
-        format-full = "battery:{capacity}% │ ";
+        format = "{icon} {capacity}%";
+        format-charging = "󰂄 {capacity}%";
+        format-full = "󰁹 {capacity}%";
+        format-icons = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
         states = {
           hi = 30;
           mid = 20;
@@ -140,11 +154,10 @@ in
           on-charging-100 = "notify-send -u low 'battery 100%'";
         };
         interval = 30;
-        signal = 1;
       };
 
       clock = {
-        format = "{:%H:%M:%S %d/%m/%Y} ";
+        format = "{:%a %d %b  %H:%M:%S}";
         interval = 1;
         tooltip-format = "{:%A, %d %B %Y\nTimezone: %Z}";
       };
@@ -154,38 +167,44 @@ in
       @import url("${config.xdg.configHome}/waybar/themes/theme.css");
 
       * {
-        font-size: 15px;
-      }
-
-      button {
+        font-family: "Symbols Nerd Font", "SF Pro Display", sans-serif;
+        font-size: 14px;
         border: none;
         border-radius: 0;
+        min-height: 0;
       }
 
       #workspaces button {
-        padding: 0 10px;
+        padding: 0 6px;
+        min-width: 24px;
+      }
+
+      #language {
+        padding: 0 8px;
+      }
+
+      #idle_inhibitor,
+      #privacy,
+      #tray,
+      #pulseaudio,
+      #network,
+      #battery {
+        padding: 0 12px;
+      }
+
+      #clock {
+        padding: 0 14px 0 12px;
+      }
+
+      #window {
+        padding: 0 16px;
       }
 
       tooltip {
-        text-shadow: none;
-      }
-
-      tooltip * {
-        text-shadow: none;
+        border-radius: 4px;
       }
     '';
   };
-
-  programs.walker = {
-    enable = true;
-    runAsService = true;
-    config.theme = "active";
-  };
-
-  xdg.configFile."walker/themes/midnight".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/walker/themes/midnight";
-  xdg.configFile."walker/themes/daylight".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/walker/themes/daylight";
 
   xdg.configFile."rofi/config.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
