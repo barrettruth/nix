@@ -252,8 +252,8 @@ in
         height = "(0, 120)";
         origin = "top-right";
         offset = "16x16";
-        padding = 21;
-        horizontal_padding = 25;
+        padding = 10;
+        horizontal_padding = 12;
         frame_width = 1;
         frame_color = c.border;
         separator_color = "frame";
@@ -287,7 +287,7 @@ in
         icon_position = "off";
         width = 300;
         height = 50;
-        padding = 12;
+        padding = 6;
         format = "%s";
       };
     };
