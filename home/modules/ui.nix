@@ -11,7 +11,7 @@ let
 
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
-    window#waybar { background: ${palette.bg}; border-top: 1px solid ${palette.bgAlt}; }
+    window#waybar { background: ${palette.bg}; border-top: 2px solid ${palette.bgAlt}; }
     #workspaces button { background: transparent; }
     #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
     #workspaces button:hover { background: ${palette.bgAlt}; }
@@ -252,8 +252,8 @@ in
         height = "(0, 120)";
         origin = "top-right";
         offset = "16x16";
-        padding = 16;
-        horizontal_padding = 20;
+        padding = 21;
+        horizontal_padding = 25;
         frame_width = 1;
         frame_color = c.border;
         separator_color = "frame";
@@ -285,7 +285,10 @@ in
       ctl = {
         appname = "ctl";
         icon_position = "off";
-        horizontal_padding = 28;
+        width = 300;
+        height = 50;
+        padding = 12;
+        format = "%s";
       };
     };
   };
