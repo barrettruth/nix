@@ -134,7 +134,7 @@ in
           ];
         };
         signal = 1;
-        tooltip-format = "{desc}";
+        tooltip = false;
         on-click = "pamixer -t";
         on-scroll-up = "pamixer -i 5";
         on-scroll-down = "pamixer -d 5";
@@ -146,8 +146,7 @@ in
         format-disconnected = "󰖪 off";
         format-disabled = "󰖪 off";
         interval = 10;
-        tooltip-format-wifi = "{signalStrength}% · {ipaddr}";
-        tooltip-format-ethernet = "{ipaddr}/{cidr}";
+        tooltip = false;
       };
 
       battery = {
@@ -169,8 +168,7 @@ in
           on-charging-100 = "notify-send -u low 'battery 100%'";
         };
         interval = 30;
-        tooltip = true;
-        tooltip-format = "{timeTo}";
+        tooltip = false;
       };
 
       clock = {
@@ -204,10 +202,12 @@ in
         min-width: 24px;
         background: transparent;
         box-shadow: none;
+        transition: none;
       }
 
       #workspaces button:hover {
         box-shadow: none;
+        transition: none;
       }
 
       #language,
