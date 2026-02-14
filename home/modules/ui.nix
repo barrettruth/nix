@@ -11,7 +11,7 @@ let
 
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
-    window#waybar { background: ${palette.bg}; border-bottom: 2px solid ${palette.bgAlt}; }
+    window#waybar { background: ${palette.bg}; border-bottom: 1px solid ${palette.bgAlt}; }
     #workspaces button { background: transparent; }
     #workspaces button.active { box-shadow: inset 0 2px ${palette.accent}; }
     #workspaces button:hover { background: ${palette.bgAlt}; }
