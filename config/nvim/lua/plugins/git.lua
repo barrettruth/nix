@@ -67,15 +67,9 @@ return {
         },
         init = function()
             vim.g.diffs = {
-                filetypes = {
-                    'fugitive',
-                    'git',
-                    'gitcommit',
-                    'diff',
-                    'NeogitStatus',
-                    'NeogitCommitView',
-                    'NeogitDiffView',
-                },
+                fugitive = true,
+                neogit = true,
+                extra_filetypes = { 'diff' },
                 hide_prefix = true,
                 highlights = {
                     vim = {
