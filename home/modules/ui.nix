@@ -18,7 +18,7 @@ let
     #pulseaudio.muted { color: ${palette.fgAlt}; }
     #network.disconnected { color: ${palette.fgAlt}; }
     #battery.lo, #battery.ultralo { color: ${palette.red}; }
-    #language { color: ${palette.fgAlt}; }
+    #language { color: ${palette.fg}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
     tooltip * { color: ${palette.fg}; }
   '';
@@ -66,12 +66,12 @@ in
       modules-left = [ "hyprland/workspaces" ];
       modules-center = [ "hyprland/window" ];
       modules-right = [
+        "hyprland/language"
         "privacy"
         "tray"
         "pulseaudio"
         "network"
         "battery"
-        "hyprland/language"
         "clock"
       ];
 
@@ -197,30 +197,6 @@ in
       }
     '';
   };
-
-  programs.sherlock = {
-    enable = true;
-    systemd.enable = true;
-    settings = {
-      appearance = {
-        width = 600;
-        height = 400;
-        opacity = 1.0;
-        search_icon = false;
-      };
-      behavior.animate = false;
-      status_bar.enable = false;
-    };
-    launchers = [
-      { name = "App Launcher"; type = "app_launcher"; priority = 1; args = {}; }
-      { name = "Calculator"; type = "calculation"; priority = 2; args = {}; }
-    ];
-  };
-
-  xdg.configFile."sherlock/themes/midnight.css".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/sherlock/themes/midnight.css";
-  xdg.configFile."sherlock/themes/daylight.css".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/sherlock/themes/daylight.css";
 
   xdg.configFile."rofi/config.rasi".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/rofi/config.rasi";
