@@ -61,7 +61,6 @@ in
     slurp
     libnotify
     brightnessctl
-    pamixer
     socat
     glib.bin
     gsettings-desktop-schemas
@@ -135,9 +134,9 @@ in
         };
         signal = 1;
         tooltip = false;
-        on-click = "pamixer -t";
-        on-scroll-up = "pamixer -i 5";
-        on-scroll-down = "pamixer -d 5";
+        on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+        on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
+        on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
       };
 
       network = {
@@ -269,8 +268,8 @@ in
         foreground = c.red;
         frame_color = c.red;
       };
-      hypr = {
-        appname = "hypr";
+      ctl = {
+        appname = "ctl";
         icon_position = "off";
       };
     };
