@@ -80,7 +80,7 @@ in
       modules-center = [ "hyprland/window" ];
       modules-right = [
         "tray"
-        "hyprland/language"
+        "custom/keyboard"
         "privacy"
         "pulseaudio"
         "network"
@@ -96,7 +96,9 @@ in
         tooltip = true;
       };
 
-      "hyprland/language" = {
+      "custom/keyboard" = {
+        exec = "hyprctl devices -j | jq -r '.keyboards[] | select(.main) | .active_keymap' 2>/dev/null || echo 'unknown'";
+        interval = 1;
         format = "󰌌";
         tooltip = true;
         tooltip-format = "Layout: {}";
@@ -148,8 +150,8 @@ in
         format-disabled = "󰖪";
         interval = 10;
         tooltip = true;
-        tooltip-format-wifi = "SSID: {essid}\nDown: {bandwidthDownBits}\nUp: {bandwidthUpBits}\nIP: {ipaddr}";
-        tooltip-format-ethernet = "{ifname} · {ipaddr}";
+        tooltip-format-wifi = "SSID: {essid}\nSignal: {signalStrength}%\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}\nIP: {ipaddr}";
+        tooltip-format-ethernet = "Interface: {ifname}\nIP: {ipaddr}/{cidr}\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}";
         tooltip-format-disconnected = "Wireless LAN disconnected";
         on-click = "rfkill toggle wlan";
         on-click-right = "ctl wifi pick";
@@ -216,7 +218,7 @@ in
         transition: none;
       }
 
-      #language,
+      #custom-keyboard,
       #privacy,
       #tray,
       #pulseaudio,
