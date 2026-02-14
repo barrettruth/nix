@@ -17,7 +17,6 @@ let
     #window { color: ${palette.fgAlt}; }
     #pulseaudio.muted { color: ${palette.fgAlt}; }
     #network.disconnected { color: ${palette.fgAlt}; }
-    #battery.charging { color: ${palette.green}; }
     #battery.lo, #battery.ultralo { color: ${palette.red}; }
     #language { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
@@ -64,7 +63,7 @@ in
       exclusive = true;
       height = 38;
 
-      modules-left = [ "hyprland/workspaces" "hyprland/language" ];
+      modules-left = [ "hyprland/workspaces" ];
       modules-center = [ "hyprland/window" ];
       modules-right = [
         "privacy"
@@ -72,6 +71,7 @@ in
         "pulseaudio"
         "network"
         "battery"
+        "hyprland/language"
         "clock"
       ];
 
