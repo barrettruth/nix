@@ -12,7 +12,7 @@ let
   directories =
     [
       "dev"
-      "dl"
+      "Downloads"
       "img"
     ]
     ++ lib.optionals hostConfig.isLinux [
