@@ -151,8 +151,8 @@ in
 
       battery = {
         format = "{icon} {capacity}%";
-        format-charging = " {capacity}%";
-        format-full = " {capacity}%";
+        format-charging = "{icon} {capacity}%";
+        format-full = "{icon} {capacity}%";
         format-icons = ["" "" "" "" ""];
         states = {
           hi = 30;
@@ -189,7 +189,7 @@ in
       @import url("${config.xdg.configHome}/waybar/themes/theme.css");
 
       * {
-        font-family: "JetBrainsMono Nerd Font", "SF Pro Display", sans-serif;
+        font-family: "SF Pro Display", "JetBrainsMono Nerd Font", sans-serif;
         font-size: 14px;
         border: none;
         border-radius: 0;
