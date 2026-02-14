@@ -16,7 +16,7 @@ screenshot)
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
     require grim slurp wl-copy
-    grim -g "$(slurp)" "$file" && wl-copy < "$file"
+    grim -g "$(slurp)" "$file" && wl-copy <"$file"
   else
     require maim xclip
     maim -s "$file" && xclip -selection clipboard -t image/png -i "$file" &
@@ -33,13 +33,13 @@ ocr)
       region="$(slurp)"
       [ -n "$region" ] || exit 0
       grim -g "$region" "$file" &&
-      tesseract -l eng "$file" - 2>/dev/null | wl-copy
+        tesseract -l eng "$file" - 2>/dev/null | wl-copy
     ) </dev/null >/dev/null 2>&1 &
   else
     require maim xclip
     (
       maim -s "$file" &&
-      tesseract -l eng "$file" - 2>/dev/null | xclip -selection clipboard -in
+        tesseract -l eng "$file" - 2>/dev/null | xclip -selection clipboard -in
     ) </dev/null >/dev/null 2>&1 &
   fi
   ;;
@@ -100,8 +100,24 @@ audio)
     ;;
   esac
   ;;
+power)
+  require fuzzel
+  lock="󰌾   Lock"
+  suspend="󰒲   Suspend"
+  logout="󰍃   Logout"
+  reboot="󰜉   Reboot"
+  shutdown="󰐥   Shutdown"
+  chosen="$(printf '%s\n' "$lock" "$suspend" "$logout" "$reboot" "$shutdown" | fuzzel --dmenu --hide-prompt --lines=5 --width=20 --no-icons)"
+  case "$chosen" in
+  "$lock") hyprlock ;;
+  "$suspend") systemctl suspend ;;
+  "$logout") hyprctl dispatch exit ;;
+  "$reboot") systemctl reboot ;;
+  "$shutdown") systemctl poweroff ;;
+  esac
+  ;;
 *)
-  echo "Usage: ctl {screenshot|ocr|keyboard|audio}" >&2
+  echo "Usage: ctl {screenshot|ocr|keyboard|audio|power}" >&2
   exit 1
   ;;
 esac

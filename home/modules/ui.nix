@@ -85,6 +85,7 @@ in
         "network"
         "battery"
         "clock"
+        "custom/power"
       ];
 
       "hyprland/workspaces" = {
@@ -99,6 +100,7 @@ in
         format-en = "en";
         format-en-colemak = "cmk";
         tooltip-format = "{long}";
+        on-click = "ctl keyboard toggle";
       };
 
       privacy = {
@@ -110,6 +112,7 @@ in
         icon-size = 16;
         spacing = 8;
         tooltip = true;
+        show-passive-items = true;
       };
 
       "hyprland/window" = {
@@ -130,6 +133,9 @@ in
         };
         signal = 1;
         tooltip-format = "{desc}";
+        on-click = "pamixer -t";
+        on-scroll-up = "pamixer -i 5";
+        on-scroll-down = "pamixer -d 5";
       };
 
       network = {
@@ -140,6 +146,7 @@ in
         interval = 10;
         tooltip-format-wifi = "{signalStrength}% · {ipaddr}";
         tooltip-format-ethernet = "{ipaddr}/{cidr}";
+        on-click = "ctl audio out";
       };
 
       battery = {
@@ -181,6 +188,13 @@ in
         interval = 1;
         tooltip-format = "{:%A, %d %B %Y\nTimezone: %Z}";
       };
+
+      "custom/power" = {
+        format = "⏻";
+        tooltip = true;
+        tooltip-format = "power menu";
+        on-click = "ctl power";
+      };
     };
 
     style = ''
@@ -195,6 +209,7 @@ in
       }
 
       #workspaces button {
+        font-family: "SF Pro Display", sans-serif;
         padding: 0 10px;
         min-width: 24px;
         background: transparent;
@@ -212,7 +227,8 @@ in
       #pulseaudio,
       #network,
       #battery,
-      #clock {
+      #clock,
+      #custom-power {
         padding: 0 10px;
       }
 
@@ -230,28 +246,41 @@ in
     enable = true;
     settings = {
       global = {
-        font = "SF Pro Display 15";
-        frame_color = c.fgAlt;
+        font = "SF Pro Display 13";
+        width = "(0, 400)";
+        height = "(0, 120)";
+        origin = "top-right";
+        offset = "16x16";
+        padding = 16;
+        horizontal_padding = 20;
+        frame_width = 1;
+        frame_color = c.border;
         separator_color = "frame";
+        separator_height = 1;
+        gap_size = 8;
+        corner_radius = 0;
         background = c.bg;
         foreground = c.fg;
+        alignment = "left";
+        ellipsize = "end";
+        icon_position = "left";
+        max_icon_size = 32;
+        format = "<b>%s</b>\\n%b";
       };
       urgency_low = {
         background = c.bg;
-        foreground = c.blue;
-        frame_color = c.blue;
+        foreground = c.fg;
+        frame_color = c.border;
       };
       urgency_normal = {
         background = c.bg;
         foreground = c.fg;
+        frame_color = c.border;
       };
       urgency_critical = {
         background = c.bg;
         foreground = c.red;
         frame_color = c.red;
-      };
-      experimental = {
-        per_monitor_dpi = true;
       };
     };
   };
