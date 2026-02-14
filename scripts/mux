@@ -24,14 +24,14 @@ spawn_or_focus() {
   name="${1}@${scope}"
   cmd="$2"
 
-  if tmux list-windows -F '#{window_name}' | grep -Fx "$name" >/dev/null; then
-    tmux select-window -t "${name}"
+  idx=$(tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }')
+
+  if [ -n "$idx" ]; then
+    tmux select-window -t ":${idx}"
+  elif [ -n "$cmd" ]; then
+    tmux new-window -c '#{pane_current_path}' -n "${name}" "$cmd"
   else
-    if [ -n "$cmd" ]; then
-      tmux new-window -c '#{pane_current_path}' -n "${name}" "$cmd"
-    else
-      tmux new-window -c '#{pane_current_path}' -n "${name}"
-    fi
+    tmux new-window -c '#{pane_current_path}' -n "${name}"
   fi
 }
 

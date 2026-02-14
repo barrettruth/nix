@@ -11,7 +11,7 @@ let
 
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
-    window#waybar { background: ${palette.bg}; }
+    window#waybar { background: ${palette.bg}; border-top: 1px solid ${palette.bgAlt}; }
     #workspaces button { background: transparent; }
     #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
     #workspaces button:hover { background: ${palette.bgAlt}; }
@@ -97,9 +97,8 @@ in
       };
 
       "hyprland/language" = {
-        format = "[{}]";
-        format-en = "QWERTY";
-        format-en-colemak = "Colemak";
+        format = "󰌌";
+        tooltip = true;
         tooltip-format = "{long}";
         on-click = "ctl keyboard toggle";
       };
@@ -123,8 +122,8 @@ in
       };
 
       pulseaudio = {
-        format = "{icon}  {volume}%";
-        format-muted = "󰖁  muted";
+        format = "{icon}";
+        format-muted = "󰖁";
         format-icons = {
           default = [
             "󰕿"
@@ -133,25 +132,29 @@ in
           ];
         };
         signal = 1;
-        tooltip = false;
+        tooltip = true;
+        tooltip-format = "{volume}%";
         on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
       };
 
       network = {
-        format-wifi = "󰖩 {essid}";
-        format-ethernet = "󰈀 {ifname}";
-        format-disconnected = "󰖪 off";
-        format-disabled = "󰖪 off";
+        format-wifi = "󰖩";
+        format-ethernet = "󰈀";
+        format-disconnected = "󰖪";
+        format-disabled = "󰖪";
         interval = 10;
-        tooltip = false;
+        tooltip = true;
+        tooltip-format-wifi = "{essid} · {signalStrength}%";
+        tooltip-format-ethernet = "{ifname} · {ipaddr}";
+        tooltip-format-disconnected = "disconnected";
       };
 
       battery = {
-        format = "{icon} {capacity}%";
-        format-charging = "{icon} {capacity}%";
-        format-full = "{icon} {capacity}%";
+        format = "{icon}";
+        format-charging = "{icon}";
+        format-full = "{icon}";
         format-icons = ["" "" "" "" ""];
         states = {
           hi = 30;
@@ -167,7 +170,8 @@ in
           on-charging-100 = "notify-send -u low 'battery 100%'";
         };
         interval = 30;
-        tooltip = false;
+        tooltip = true;
+        tooltip-format = "{capacity}% · {timeTo}";
       };
 
       clock = {
@@ -224,7 +228,11 @@ in
       }
 
       tooltip {
-        border-radius: 4px;
+        border-radius: 0;
+      }
+
+      #custom-power {
+        padding: 0 16px 0 10px;
       }
     '';
   };
