@@ -17,6 +17,23 @@ let
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
+
+  hexToFuzzel = hex: "${builtins.substring 1 6 hex}ff";
+
+  mkFuzzelTheme = palette: ''
+    [colors]
+    background=${hexToFuzzel palette.bg}
+    text=${hexToFuzzel palette.fg}
+    prompt=${hexToFuzzel palette.fgAlt}
+    placeholder=${hexToFuzzel palette.fgAlt}
+    input=${hexToFuzzel palette.fg}
+    match=${hexToFuzzel palette.accent}
+    selection=${hexToFuzzel palette.bgAlt}
+    selection-text=${hexToFuzzel palette.fg}
+    selection-match=${hexToFuzzel palette.accent}
+    border=${hexToFuzzel palette.border}
+    counter=${hexToFuzzel palette.fgAlt}
+  '';
 in
 {
   home.sessionVariables = {
@@ -35,6 +52,7 @@ in
   home.packages = with pkgs; [
     nerd-fonts.symbols-only
     psmisc
+    fuzzel
     rofi
     wl-clipboard
     cliphist
@@ -247,5 +265,10 @@ in
   };
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
+
+  xdg.configFile."fuzzel/fuzzel.ini".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/fuzzel/fuzzel.ini";
+  xdg.configFile."fuzzel/themes/midnight.ini".text = mkFuzzelTheme config.palettes.midnight;
+  xdg.configFile."fuzzel/themes/daylight.ini".text = mkFuzzelTheme config.palettes.daylight;
 
 }
