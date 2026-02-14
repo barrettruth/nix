@@ -12,11 +12,8 @@ let
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; }
-    #workspaces button { color: ${palette.fgAlt}; background: transparent; }
-    #workspaces button.active { box-shadow: inset 0 -2px ${palette.accent}; }
+    #workspaces button.active { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
-    #pulseaudio.muted { color: ${palette.fgAlt}; }
-    #network.disconnected { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
 in
