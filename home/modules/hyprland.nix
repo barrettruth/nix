@@ -106,6 +106,7 @@ in
         outer_color = rgb(ffffff)
         inner_color = rgba(00000000)
         font_color = rgb(ffffff)
+        font_family = Berkeley Mono
         rounding = 0
         placeholder_text =
         position = 0, 0
