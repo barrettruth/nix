@@ -85,13 +85,13 @@ in
 
   xdg.configFile."hypr/hypridle.conf".text = ''
     general {
-      lock_cmd = wp lock && hyprlock
+      lock_cmd = ctl wallpaper lock && hyprlock
       after_sleep_cmd = hyprctl dispatch dpms on
     }
 
     listener {
       timeout = 300
-      on-timeout = wp lock && hyprlock
+      on-timeout = ctl wallpaper lock && hyprlock
     }
 
     listener {
