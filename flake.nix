@@ -8,7 +8,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-    neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
     hyprland.url = "github:hyprwm/Hyprland";
@@ -19,7 +18,6 @@
       nixpkgs,
       home-manager,
       nixos-hardware,
-      neovim-nightly,
       zen-browser,
       claude-code,
       hyprland,
@@ -27,7 +25,6 @@
     }:
     let
       overlays = [
-        neovim-nightly.overlays.default
         claude-code.overlays.default
       ];
 

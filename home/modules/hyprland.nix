@@ -45,13 +45,7 @@ in
         hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland
       else
         pkgs.hyprland;
-    portalPackage =
-      if !hostConfig.isNixOS then
-        null
-      else if hyprland != null then
-        hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
-      else
-        pkgs.xdg-desktop-portal-hyprland;
+    portalPackage = null;
     systemd.enable = hostConfig.isNixOS;
 
     extraConfig = ''

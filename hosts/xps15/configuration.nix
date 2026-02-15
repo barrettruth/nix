@@ -58,6 +58,7 @@ in
   environment.etc."gitconfig".text = ''
     [safe]
       directory = /home/barrett/.config/nix
+      directory = /home/barrett/.cache/nix/tarball-cache
   '';
 
   environment.binsh = "${pkgs.dash}/bin/dash";

@@ -176,7 +176,16 @@ wifi)
     count=$(printf '%s\n' "$networks" | wc -l)
     ssid=$(printf '%s\n' "$networks" | fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count")
     [ -z "$ssid" ] && exit 0
-    iwctl station "$station" connect "$ssid"
+    known=$(iwctl known-networks list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g')
+    if printf '%s' "$known" | grep -qF "$ssid"; then
+      iwctl station "$station" connect "$ssid"
+    elif iwctl station "$station" get-networks 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | grep -F "$ssid" | grep -qi "open"; then
+      iwctl station "$station" connect "$ssid"
+    else
+      pass=$(printf '' | fuzzel --dmenu --prompt="passphrase:  " --no-icons --password --lines=0)
+      [ -z "$pass" ] && exit 0
+      iwctl station "$station" connect "$ssid" --passphrase "$pass"
+    fi
     ;;
   *)
     echo "Usage: ctl wifi {pick}" >&2
