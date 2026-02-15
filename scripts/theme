@@ -101,7 +101,7 @@ Linux)
     [ -f "$dunst_themes/$theme.conf" ] && {
       mkdir -p "$cfg/dunst/dunstrc.d"
       ln -sf "$dunst_themes/$theme.conf" "$cfg/dunst/dunstrc.d/theme.conf"
-      killall dunst 2>/dev/null; dunst &
+      killall -w dunst 2>/dev/null; dunst &
     }
 
   fi

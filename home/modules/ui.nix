@@ -286,7 +286,7 @@ in
         width = "(0, 400)";
         height = "(0, 120)";
         origin = "top-right";
-        offset = "16x16";
+        offset = "(16, 16)";
         padding = 10;
         horizontal_padding = 10;
         frame_width = 3;
