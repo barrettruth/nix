@@ -109,6 +109,7 @@ in
         font_family = Berkeley Mono
         check_color = rgb(98c379)
         fail_color = rgb(ff6b6b)
+        fail_text = $FAIL
         rounding = 0
         placeholder_text =
         position = 0, 0
