@@ -266,12 +266,12 @@ return {
                 end,
             },
             keymaps = {
-                ['<C-h>'] = false,
-                ['<C-t>'] = false,
-                ['<C-l>'] = false,
-                ['<C-r>'] = 'actions.refresh',
-                ['<C-s>'] = { 'actions.select', opts = { vertical = true } },
-                ['<C-x>'] = { 'actions.select', opts = { horizontal = true } },
+                ['<c-h>'] = false,
+                ['<c-t>'] = false,
+                ['<c-l>'] = false,
+                ['<c-r>'] = 'actions.refresh',
+                ['<c-s>'] = { 'actions.select', opts = { vertical = true } },
+                ['<c-x>'] = { 'actions.select', opts = { horizontal = true } },
                 ['q'] = function()
                     local ok, bufremove = pcall(require, 'mini.bufremove')
                     if ok then

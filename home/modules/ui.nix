@@ -266,7 +266,7 @@ in
         offset = "16x16";
         padding = 10;
         horizontal_padding = 10;
-        frame_width = 1;
+        frame_width = 3;
         frame_color = c.border;
         separator_color = "frame";
         separator_height = 1;
