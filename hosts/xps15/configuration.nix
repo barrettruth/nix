@@ -7,6 +7,9 @@
 
 let
   tuigreet = lib.getExe pkgs.greetd.tuigreet;
+  loginShell = pkgs.writeShellScript "login-shell" ''
+    exec $(getent passwd $(id -un) | cut -d: -f7) -l
+  '';
 in
 {
   imports = [
@@ -108,7 +111,7 @@ in
     enable = true;
     vt = 1;
     settings.default_session = {
-      command = "${tuigreet} --time --asterisks --cmd 'sh -c \"exec $(getent passwd $(id -un) | cut -d: -f7) -l\"' --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
+      command = "${tuigreet} --time --asterisks --cmd ${loginShell} --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
       user = "greeter";
     };
   };
