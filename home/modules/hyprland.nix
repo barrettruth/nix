@@ -7,10 +7,12 @@
 }:
 
 let
+  hex = color: builtins.substring 1 6 color;
+
   mkHyprTheme = palette: ''
     general {
-        col.active_border = rgb(${builtins.substring 1 6 palette.fg})
-        col.inactive_border = rgb(${builtins.substring 1 6 palette.bg})
+        col.active_border = rgb(${hex palette.fg})
+        col.inactive_border = rgb(${hex palette.bg})
     }
   '';
 
@@ -67,7 +69,7 @@ in
     splash = false
   '';
 
-  xdg.configFile."hypr/hyprlock.conf".text = ''
+  xdg.configFile."hypr/hyprlock.conf".text = let c = config.colors; in ''
     general {
       hide_cursor = true
       grace = 0
@@ -80,6 +82,46 @@ in
 
     animations {
       enabled = false
+    }
+
+    label {
+      monitor =
+      text = $TIME
+      font_size = 64
+      font_family = Berkeley Mono
+      color = rgb(${hex c.fg})
+      position = 0, 200
+      halign = center
+      valign = center
+    }
+
+    label {
+      monitor =
+      text = cmd[86400] date '+%A, %d %b'
+      font_size = 20
+      font_family = Berkeley Mono
+      color = rgb(${hex c.fgAlt})
+      position = 0, 120
+      halign = center
+      valign = center
+    }
+
+    input-field {
+      monitor =
+      size = 300, 50
+      outline_thickness = 2
+      dots_size = 0.25
+      dots_spacing = 0.3
+      dots_center = true
+      outer_color = rgb(${hex c.border})
+      inner_color = rgb(${hex c.bgAlt})
+      font_color = rgb(${hex c.fg})
+      font_family = Berkeley Mono
+      fade_on_empty = true
+      placeholder_text =
+      position = 0, -20
+      halign = center
+      valign = center
     }
   '';
 
