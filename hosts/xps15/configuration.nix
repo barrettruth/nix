@@ -24,7 +24,7 @@ in
     device = "nodev";
     useOSProber = true;
     configurationLimit = 2;
-    fontSize = 64;
+    fontSize = 128;
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelParams = [
