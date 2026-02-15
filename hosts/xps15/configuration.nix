@@ -101,6 +101,15 @@
     wireplumber.enable = true;
   };
 
+  services.greetd = {
+    enable = true;
+    vt = 1;
+    settings.default_session = {
+      command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --remember --remember-session --cmd Hyprland";
+      user = "greeter";
+    };
+  };
+
   services.openssh.enable = true;
 
   virtualisation.docker.enable = true;
