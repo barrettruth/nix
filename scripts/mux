@@ -118,9 +118,11 @@ bar)
     i=$((i + 1))
   done
   set +f
-  left=' #[align=left list=on]#{W:#[range=window|#{window_index}]#{window_index}:#{window_name}#{window_flags}#[norange]#{?window_end_flag,, │ }}#[nolist]'
-  right="#[align=right]$indicator $bar_content "
-  tmux set -g 'status-format[0]' "$left$right"
+  tmux set -g status-left ' '
+  tmux set -g window-status-format '#[range=window|#{window_index}]#{window_index}:#{window_name}#{window_flags}#[norange]'
+  tmux set -g window-status-current-format '#[range=window|#{window_index}]#{window_index}:#{window_name}#{window_flags}#[norange]'
+  tmux set -g window-status-separator ' │ '
+  tmux set -g status-right "$indicator $bar_content "
   ;;
 switch)
   session="$(tmux ls -F '#S' | tail -n "+$(($2 + 1))" | head -1)"
