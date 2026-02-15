@@ -311,8 +311,38 @@ in
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
-  xdg.configFile."fuzzel/fuzzel.ini".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/fuzzel/fuzzel.ini";
+  xdg.configFile."fuzzel/fuzzel.ini".text = ''
+    include=${config.xdg.configHome}/fuzzel/themes/theme.ini
+
+    [main]
+    font=SF Pro Display:size=12,Symbols Nerd Font:size=12
+    prompt=""
+    width=50
+    lines=10
+    horizontal-pad=24
+    vertical-pad=20
+    inner-pad=12
+    line-height=24
+    letter-spacing=0
+    icons-enabled=yes
+    icon-theme=Papirus
+    image-size-ratio=0.5
+    layer=overlay
+    anchor=center
+    match-mode=fzf
+    dpi-aware=auto
+    hide-before-typing=no
+    match-counter=no
+
+    [border]
+    width=2
+    radius=0
+    selection-radius=0
+
+    [dmenu]
+    mode=text
+    exit-immediately-if-empty=no
+  '';
   xdg.configFile."fuzzel/themes/midnight.ini".text = mkFuzzelTheme config.palettes.midnight;
   xdg.configFile."fuzzel/themes/daylight.ini".text = mkFuzzelTheme config.palettes.daylight;
 

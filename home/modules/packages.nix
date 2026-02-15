@@ -17,6 +17,63 @@ let
   claude = true;
   signal = true;
 
+  hexDigit =
+    c:
+    {
+      "0" = 0; "1" = 1; "2" = 2; "3" = 3; "4" = 4;
+      "5" = 5; "6" = 6; "7" = 7; "8" = 8; "9" = 9;
+      "a" = 10; "b" = 11; "c" = 12; "d" = 13; "e" = 14; "f" = 15;
+    }
+    .${c};
+
+  hexByte = hex: offset:
+    hexDigit (builtins.substring offset 1 hex) * 16
+    + hexDigit (builtins.substring (offset + 1) 1 hex);
+
+  pad3 =
+    n:
+    if n < 10 then "00${toString n}"
+    else if n < 100 then "0${toString n}"
+    else toString n;
+
+  byteToFloat =
+    n:
+    let
+      scaled = (n * 1000 + 127) / 255;
+    in
+    "${toString (scaled / 1000)}.${pad3 (scaled - (scaled / 1000) * 1000)}";
+
+  hexToRgb =
+    hex:
+    "${byteToFloat (hexByte hex 1)} ${byteToFloat (hexByte hex 3)} ${byteToFloat (hexByte hex 5)}";
+
+  mkSioyekTheme =
+    palette: isDark:
+    ''
+      background_color ${hexToRgb palette.bg}
+      custom_background_color ${hexToRgb palette.bg}
+      text_highlight_color ${hexToRgb palette.bgAlt}
+      visual_mark_color ${hexToRgb palette.bgAlt} 1.0
+      custom_text_color ${hexToRgb palette.fg}
+      ui_text_color ${hexToRgb palette.fg}
+      ui_selected_text_color ${hexToRgb palette.fg}
+      link_highlight_color ${hexToRgb palette.accent}
+      search_highlight_color ${hexToRgb palette.accent}
+      synctex_highlight_color ${hexToRgb palette.accent}
+      highlight_color_a ${hexToRgb palette.blue}
+      highlight_color_b ${hexToRgb palette.green}
+      highlight_color_c ${hexToRgb palette.yellow}
+      highlight_color_d ${hexToRgb palette.red}
+      highlight_color_e ${hexToRgb palette.magenta}
+      highlight_color_f ${hexToRgb palette.cyan}
+      highlight_color_g ${hexToRgb palette.yellow}
+      ui_background_color ${hexToRgb palette.bg}
+      ui_selected_background_color ${hexToRgb palette.accent}
+      status_bar_color ${hexToRgb palette.bg}
+      status_bar_text_color ${hexToRgb palette.fg}
+    ''
+    + lib.optionalString isDark "startup_commands toggle_dark_mode\n";
+
   sioyek-wrapped = pkgs.symlinkJoin {
     name = "sioyek";
     paths = [ pkgs.sioyek ];
@@ -81,19 +138,50 @@ in
   };
 
   xdg.configFile."sioyek/keys_user.config" = lib.mkIf sioyek {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/keys_user.config";
+    text = ''
+      previous_page k
+      next_page j
+
+      move_down J
+      move_up K
+      move_left l
+      move_right h
+
+      zoom_in =
+      zoom_out -
+
+      fit_to_page_height_smart s
+      fit_to_page_width S
+
+      toggle_presentation_mode T
+      toggle_dark_mode d
+      toggle_statusbar b
+
+      close_window q
+    '';
   };
 
   xdg.configFile."sioyek/prefs_user.config" = lib.mkIf sioyek {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/prefs_user.config";
+    text = ''
+      wheel_zoom_on_cursor 1
+      startup_commands toggle_presentation_mode; show_statusbar 0
+
+      page_separator_width 10
+      should_launch_new_window 1
+
+      source ${config.xdg.configHome}/sioyek/themes/theme.config
+
+      font_size 18
+      status_bar_font_size 18
+    '';
   };
 
   xdg.configFile."sioyek/themes/midnight.config" = lib.mkIf sioyek {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/themes/midnight.config";
+    text = mkSioyekTheme config.palettes.midnight true;
   };
 
   xdg.configFile."sioyek/themes/daylight.config" = lib.mkIf sioyek {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/sioyek/themes/daylight.config";
+    text = mkSioyekTheme config.palettes.daylight false;
   };
 
   home.activation.linkZenProfile = lib.mkIf (zen && hostConfig.isLinux) (
