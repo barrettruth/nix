@@ -11,22 +11,6 @@ let
   loginShell = pkgs.writeShellScript "login-shell" ''
     exec $(getent passwd $(id -un) | cut -d: -f7) -l
   '';
-  grubTheme = pkgs.runCommand "grub-theme" { } ''
-    mkdir -p $out
-    cat > $out/theme.txt << 'EOF'
-    desktop-color: "#000000"
-
-    + boot_menu {
-      left = 30%
-      top = 30%
-      width = 40%
-      height = 40%
-      item_color = "#999999"
-      selected_item_color = "#ffffff"
-      icon_width = 0
-    }
-    EOF
-  '';
 in
 {
   imports = [
@@ -40,7 +24,7 @@ in
     device = "nodev";
     useOSProber = true;
     configurationLimit = 2;
-    theme = grubTheme;
+    fontSize = 32;
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelParams = [
