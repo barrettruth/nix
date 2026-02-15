@@ -97,7 +97,7 @@ in
 
       input-field {
         monitor =
-        size = 500, 50
+        size = 600, 50
         outline_thickness = 2
         dots_text_format = *
         dots_size = 0.9
