@@ -342,4 +342,8 @@ in
   xdg.configFile."fuzzel/themes/midnight.ini".text = mkFuzzelTheme config.palettes.midnight;
   xdg.configFile."fuzzel/themes/daylight.ini".text = mkFuzzelTheme config.palettes.daylight;
 
+  systemd.user.services.waybar = lib.mkIf config.programs.waybar.enable {
+    Unit.Description = lib.mkForce "Waybar (masked)";
+    Install.WantedBy = lib.mkForce [ ];
+  };
 }
