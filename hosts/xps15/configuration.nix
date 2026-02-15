@@ -5,6 +5,9 @@
   ...
 }:
 
+let
+  tuigreet = lib.getExe pkgs.greetd.tuigreet;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -105,7 +108,7 @@
     enable = true;
     vt = 1;
     settings.default_session = {
-      command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --remember --remember-session --cmd Hyprland";
+      command = "${tuigreet} --time --asterisks --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
       user = "greeter";
     };
   };

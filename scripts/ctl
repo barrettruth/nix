@@ -192,23 +192,34 @@ media)
     notify-send -a ctl -t 2500 "Recording saved to ~${file#"$HOME"}"
     exit 0
   fi
-  require fuzzel grim slurp wl-copy wf-recorder
+  if pgrep -x fuzzel >/dev/null 2>&1; then
+    pkill -x fuzzel
+    exit 0
+  fi
+  require fuzzel grim slurp wl-copy wf-recorder hyprctl jq
   ss_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   rec_dir="${XDG_VIDEOS_DIR:-$HOME/Videos}"
   mkdir -p "$ss_dir" "$rec_dir"
-  desktop="   Capture Desktop"
-  area="   Capture Area"
+  cap_desktop="   Capture Desktop"
+  cap_area="   Capture Area"
+  cap_window="   Capture Window"
   rec_desktop="   Record Desktop"
   rec_area="   Record Area"
-  chosen="$(printf '%s\n' "$desktop" "$area" "$rec_desktop" "$rec_area" | fuzzel --dmenu --hide-prompt --lines=4 --width=25 --no-icons)"
+  rec_window="   Record Window"
+  chosen="$(printf '%s\n' "$cap_desktop" "$cap_area" "$cap_window" "$rec_desktop" "$rec_area" "$rec_window" | fuzzel --dmenu --hide-prompt --lines=6 --width=25 --no-icons)"
   case "$chosen" in
-  "$desktop")
+  "$cap_desktop")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
     grim "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
-  "$area")
+  "$cap_area")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
     grim -g "$(slurp)" "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
+    ;;
+  "$cap_window")
+    geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+    file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
+    grim -g "$geom" "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$rec_desktop")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
@@ -221,6 +232,13 @@ media)
     echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "Recording started"
     wf-recorder -g "$(slurp)" -f "$file" &
+    ;;
+  "$rec_window")
+    geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+    file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
+    echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    notify-send -a ctl -t 2500 "Recording started"
+    wf-recorder -g "$geom" -f "$file" &
     ;;
   esac
   ;;
