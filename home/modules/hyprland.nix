@@ -77,40 +77,19 @@ in
 
     background {
       monitor =
-      path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
+      color = rgb(${hex c.bg})
     }
 
     animations {
       enabled = false
     }
 
-    label {
-      monitor =
-      text = $TIME
-      font_size = 64
-      font_family = Berkeley Mono
-      color = rgb(${hex c.fg})
-      position = 0, 200
-      halign = center
-      valign = center
-    }
-
-    label {
-      monitor =
-      text = cmd[86400] date '+%A, %d %b'
-      font_size = 20
-      font_family = Berkeley Mono
-      color = rgb(${hex c.fgAlt})
-      position = 0, 120
-      halign = center
-      valign = center
-    }
-
     input-field {
       monitor =
       size = 300, 50
       outline_thickness = 2
-      dots_size = 0.25
+      dots_text_format = *
+      dots_size = 0.4
       dots_spacing = 0.3
       dots_center = true
       outer_color = rgb(${hex c.border})
@@ -119,7 +98,7 @@ in
       font_family = Berkeley Mono
       fade_on_empty = true
       placeholder_text =
-      position = 0, -20
+      position = 0, 0
       halign = center
       valign = center
     }
