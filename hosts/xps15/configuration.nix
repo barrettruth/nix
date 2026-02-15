@@ -25,7 +25,6 @@ in
     useOSProber = true;
     configurationLimit = 2;
     gfxmodeEfi = "3840x2400,auto";
-    font = builtins.path { path = /home/barrett/.config/nix/fonts/berkeley-mono/BerkeleyMono-Regular.ttf; };
     fontSize = 36;
   };
   boot.loader.efi.canTouchEfiVariables = true;
