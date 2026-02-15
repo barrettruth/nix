@@ -108,7 +108,7 @@ in
     enable = true;
     vt = 1;
     settings.default_session = {
-      command = "${tuigreet} --time --asterisks --cmd '${lib.getExe config.users.users.barrett.shell} --login' --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
+      command = "${tuigreet} --time --asterisks --cmd 'sh -c \"exec $(getent passwd $(id -un) | cut -d: -f7) -l\"' --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
       user = "greeter";
     };
   };
