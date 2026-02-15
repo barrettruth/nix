@@ -97,6 +97,13 @@ Linux)
       ln -sf "$fuzzel_themes/$theme.ini" "$fuzzel_themes/theme.ini"
     }
 
+    dunst_themes="$cfg/dunst/themes"
+    [ -f "$dunst_themes/$theme.conf" ] && {
+      mkdir -p "$cfg/dunst/dunstrc.d"
+      ln -sf "$dunst_themes/$theme.conf" "$cfg/dunst/dunstrc.d/theme.conf"
+      killall dunst 2>/dev/null; dunst &
+    }
+
   fi
   ;;
 Darwin)
