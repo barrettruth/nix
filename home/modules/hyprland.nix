@@ -77,7 +77,7 @@ in
 
     background {
       monitor =
-      color = rgb(${hex c.bg})
+      path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
     }
 
     animations {
@@ -87,16 +87,17 @@ in
     input-field {
       monitor =
       size = 300, 50
-      outline_thickness = 2
+      outline_thickness = 0
       dots_text_format = *
       dots_size = 0.4
       dots_spacing = 0.3
       dots_center = true
-      outer_color = rgb(${hex c.border})
-      inner_color = rgb(${hex c.bgAlt})
+      outer_color = rgba(00000000)
+      inner_color = rgba(00000000)
       font_color = rgb(${hex c.fg})
       font_family = Berkeley Mono
       fade_on_empty = true
+      rounding = -1
       placeholder_text =
       position = 0, 0
       halign = center
