@@ -85,7 +85,7 @@ in
   programs.hyprland = {
     enable = true;
     package = hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    portalPackage = null;
+    portalPackage = pkgs.xdg-desktop-portal-hyprland;
   };
 
   hardware.bluetooth.enable = true;
@@ -131,7 +131,6 @@ in
     enable = true;
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
-      xdg-desktop-portal-hyprland
     ];
     config.common = {
       default = [
