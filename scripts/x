@@ -33,7 +33,7 @@ bg)
   require xrandr feh
   randr="$(xrandr | rg ' connected ')"
   mons="$(echo "$randr" | wc -l)"
-  wpdir="$HOME"/img/wp
+  wpdir="$HOME"/Pictures/wp
 
   [ "$1" ] && bgone="$1" || bgone="$wpdir"/one/cliff.jpg
   cmd="feh --no-fehbg --bg-fill $bgone"

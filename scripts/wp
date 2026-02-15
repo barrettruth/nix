@@ -13,7 +13,7 @@ except ImportError:
     sys.exit(1)
 
 HOME = os.environ["HOME"]
-DIR = f"{HOME}/img/screen"
+DIR = f"{HOME}/Pictures/Screensavers"
 os.makedirs(DIR, exist_ok=True)
 
 

@@ -11,7 +11,7 @@ require() {
 
 case "$1" in
 screenshot)
-  dir="$HOME/img/ss"
+  dir="$HOME/Pictures/Screenshots"
   mkdir -p "$dir"
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
@@ -24,7 +24,7 @@ screenshot)
   ;;
 ocr)
   require tesseract
-  dir="$HOME/img/ss"
+  dir="$HOME/Pictures/Screenshots"
   mkdir -p "$dir"
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
@@ -184,6 +184,43 @@ wifi)
     ;;
   esac
   ;;
+media)
+  if pgrep -x wf-recorder >/dev/null 2>&1; then
+    pkill -INT wf-recorder
+    notify-send -a ctl -t 2500 "recording saved"
+    exit 0
+  fi
+  require fuzzel grim slurp wl-copy wf-recorder hyprctl jq
+  ss_dir="$HOME/Pictures/Screenshots"
+  rec_dir="$HOME/Pictures/Recordings"
+  mkdir -p "$ss_dir" "$rec_dir"
+  desktop="   Capture Desktop"
+  area="   Capture Area"
+  rec_desktop="   Record Desktop"
+  rec_window="   Record Window"
+  chosen="$(printf '%s\n' "$desktop" "$area" "$rec_desktop" "$rec_window" | fuzzel --dmenu --hide-prompt --lines=4 --width=25 --no-icons)"
+  case "$chosen" in
+  "$desktop")
+    file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
+    grim "$file" && wl-copy < "$file"
+    ;;
+  "$area")
+    file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
+    grim -g "$(slurp)" "$file" && wl-copy < "$file"
+    ;;
+  "$rec_desktop")
+    file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
+    notify-send -a ctl -t 2500 "recording started"
+    wf-recorder -f "$file" &
+    ;;
+  "$rec_window")
+    geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+    file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
+    notify-send -a ctl -t 2500 "recording started"
+    wf-recorder -g "$geom" -f "$file" &
+    ;;
+  esac
+  ;;
 power)
   require fuzzel
   lock="󰌾   Lock"
@@ -201,7 +238,7 @@ power)
   esac
   ;;
 *)
-  echo "Usage: ctl {screenshot|ocr|keyboard|audio|wifi|brightness|volume|power}" >&2
+  echo "Usage: ctl {screenshot|ocr|keyboard|audio|wifi|brightness|volume|media|power}" >&2
   exit 1
   ;;
 esac

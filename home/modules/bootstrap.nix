@@ -13,17 +13,18 @@ let
     [
       "dev"
       "Downloads"
-      "img"
+      "Pictures"
     ]
     ++ lib.optionals hostConfig.isLinux [
-      "img/screen"
-      "img/wp"
+      "Pictures/Screensavers"
+      "Pictures/Screenshots"
+      "Pictures/wp"
     ];
 in
 {
   home.activation.createDirectories = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     for dir in ${lib.concatStringsSep " " directories}; do
-      $DRY_RUN_CMD mkdir -p "$HOME/$dir"
+      run mkdir -p "$HOME/$dir"
     done
   '';
 
@@ -36,12 +37,12 @@ in
   home.activation.linkWallpapers = lib.mkIf hostConfig.isLinux (
     lib.hm.dag.entryAfter [ "createDirectories" ] ''
       src="${repoDir}/config/screen"
-      dest="$HOME/img/screen"
+      dest="$HOME/Pictures/Screensavers"
       if [ -d "$src" ]; then
         for f in "$src"/*; do
           [ -f "$f" ] || continue
           name=$(basename "$f")
-          [ -L "$dest/$name" ] || $DRY_RUN_CMD ln -sf "$f" "$dest/$name"
+          [ -L "$dest/$name" ] || run ln -sf "$f" "$dest/$name"
         done
       fi
     ''

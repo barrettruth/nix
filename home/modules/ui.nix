@@ -62,6 +62,7 @@ in
     cliphist
     grim
     slurp
+    wf-recorder
     libnotify
     brightnessctl
     socat
