@@ -101,7 +101,7 @@ let
 in
 {
   home.sessionVariables = lib.mkMerge [
-    (lib.mkIf zen { BROWSER = "zen"; })
+    (lib.mkIf zen { BROWSER = "zen-beta"; })
     (lib.mkIf claude { CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude"; })
   ];
 
@@ -253,9 +253,9 @@ in
     enable = true;
     defaultApplications = lib.mkMerge [
       (lib.mkIf zen {
-        "x-scheme-handler/http" = "zen.desktop";
-        "x-scheme-handler/https" = "zen.desktop";
-        "text/html" = "zen.desktop";
+        "x-scheme-handler/http" = "zen-beta.desktop";
+        "x-scheme-handler/https" = "zen-beta.desktop";
+        "text/html" = "zen-beta.desktop";
       })
       (lib.mkIf neovim {
         "text/plain" = "nvim.desktop";
