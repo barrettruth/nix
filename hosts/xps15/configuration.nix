@@ -11,11 +11,8 @@ let
   loginShell = pkgs.writeShellScript "login-shell" ''
     exec $(getent passwd $(id -un) | cut -d: -f7) -l
   '';
-  grubTheme = pkgs.runCommand "grub-theme" {
-    nativeBuildInputs = [ pkgs.grub2 ];
-  } ''
+  grubTheme = pkgs.runCommand "grub-theme" { } ''
     mkdir -p $out
-    grub-mkfont -s 32 -o $out/font.pf2 ${../../fonts/berkeley-mono/BerkeleyMono-Regular.ttf}
     cat > $out/theme.txt << 'EOF'
     desktop-color: "#000000"
 
@@ -44,8 +41,6 @@ in
     useOSProber = true;
     configurationLimit = 2;
     theme = grubTheme;
-    font = ../../fonts/berkeley-mono/BerkeleyMono-Regular.ttf;
-    fontSize = 24;
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelParams = [
