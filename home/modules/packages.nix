@@ -20,21 +20,37 @@ let
   hexDigit =
     c:
     {
-      "0" = 0; "1" = 1; "2" = 2; "3" = 3; "4" = 4;
-      "5" = 5; "6" = 6; "7" = 7; "8" = 8; "9" = 9;
-      "a" = 10; "b" = 11; "c" = 12; "d" = 13; "e" = 14; "f" = 15;
+      "0" = 0;
+      "1" = 1;
+      "2" = 2;
+      "3" = 3;
+      "4" = 4;
+      "5" = 5;
+      "6" = 6;
+      "7" = 7;
+      "8" = 8;
+      "9" = 9;
+      "a" = 10;
+      "b" = 11;
+      "c" = 12;
+      "d" = 13;
+      "e" = 14;
+      "f" = 15;
     }
     .${c};
 
-  hexByte = hex: offset:
-    hexDigit (builtins.substring offset 1 hex) * 16
-    + hexDigit (builtins.substring (offset + 1) 1 hex);
+  hexByte =
+    hex: offset:
+    hexDigit (builtins.substring offset 1 hex) * 16 + hexDigit (builtins.substring (offset + 1) 1 hex);
 
   pad3 =
     n:
-    if n < 10 then "00${toString n}"
-    else if n < 100 then "0${toString n}"
-    else toString n;
+    if n < 10 then
+      "00${toString n}"
+    else if n < 100 then
+      "0${toString n}"
+    else
+      toString n;
 
   byteToFloat =
     n:
@@ -44,8 +60,7 @@ let
     "${toString (scaled / 1000)}.${pad3 (scaled - (scaled / 1000) * 1000)}";
 
   hexToRgb =
-    hex:
-    "${byteToFloat (hexByte hex 1)} ${byteToFloat (hexByte hex 3)} ${byteToFloat (hexByte hex 5)}";
+    hex: "${byteToFloat (hexByte hex 1)} ${byteToFloat (hexByte hex 3)} ${byteToFloat (hexByte hex 5)}";
 
   mkSioyekTheme =
     palette: isDark:

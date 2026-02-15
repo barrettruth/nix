@@ -3,6 +3,7 @@
   lib,
   config,
   hostConfig,
+  hyprland ? null,
   ...
 }:
 
@@ -37,8 +38,20 @@ in
 {
   wayland.windowManager.hyprland = {
     enable = true;
-    package = lib.mkIf (!hostConfig.isNixOS) null;
-    portalPackage = lib.mkIf (!hostConfig.isNixOS) null;
+    package =
+      if !hostConfig.isNixOS then
+        null
+      else if hyprland != null then
+        hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland
+      else
+        pkgs.hyprland;
+    portalPackage =
+      if !hostConfig.isNixOS then
+        null
+      else if hyprland != null then
+        hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
+      else
+        pkgs.xdg-desktop-portal-hyprland;
     systemd.enable = hostConfig.isNixOS;
 
     extraConfig = ''
@@ -69,39 +82,43 @@ in
     splash = false
   '';
 
-  xdg.configFile."hypr/hyprlock.conf".text = let c = config.colors; in ''
-    general {
-      hide_cursor = true
-      grace = 0
-    }
+  xdg.configFile."hypr/hyprlock.conf".text =
+    let
+      c = config.colors;
+    in
+    ''
+      general {
+        hide_cursor = true
+        grace = 0
+      }
 
-    background {
-      monitor =
-      path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
-    }
+      background {
+        monitor =
+        path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
+      }
 
-    animations {
-      enabled = false
-    }
+      animations {
+        enabled = false
+      }
 
-    input-field {
-      monitor =
-      size = 300, 50
-      outline_thickness = 0
-      dots_text_format = *
-      dots_size = 0.9
-      dots_spacing = 0.3
-      dots_center = true
-      outer_color = rgba(00000000)
-      inner_color = rgba(00000000)
-      font_color = rgb(ffffff)
-      rounding = -1
-      placeholder_text =
-      position = 0, 0
-      halign = center
-      valign = center
-    }
-  '';
+      input-field {
+        monitor =
+        size = 300, 50
+        outline_thickness = 0
+        dots_text_format = *
+        dots_size = 0.9
+        dots_spacing = 0.3
+        dots_center = true
+        outer_color = rgba(00000000)
+        inner_color = rgba(00000000)
+        font_color = rgb(ffffff)
+        rounding = -1
+        placeholder_text =
+        position = 0, 0
+        halign = center
+        valign = center
+      }
+    '';
 
   xdg.configFile."hypr/hypridle.conf".text = ''
     general {
