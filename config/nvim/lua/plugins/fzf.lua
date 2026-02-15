@@ -18,7 +18,7 @@ return {
         local ok, fzf_reload = pcall(require, 'config.fzf_reload')
         if ok then
             fzf_reload.setup(opts)
-            fzf_reload.reload(true)
+            fzf_reload.reload()
         end
     end,
     keys = {
