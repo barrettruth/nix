@@ -33,6 +33,7 @@
         "claude-code"
         "claude"
         "apple_cursor"
+        "graphite-cli"
       ];
 
       mkPkgs =
