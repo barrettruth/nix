@@ -61,7 +61,7 @@ in
   xdg.configFile."hypr/hyprpaper.conf".text = ''
     wallpaper {
       monitor =
-      path = ${config.home.homeDirectory}/Pictures/Screensavers/wallpaper.jpg
+      path = ${config.xdg.userDirs.pictures}/Screensavers/wallpaper.jpg
     }
 
     splash = false
@@ -75,7 +75,7 @@ in
 
     background {
       monitor =
-      path = ${config.home.homeDirectory}/Pictures/Screensavers/lock.jpg
+      path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
     }
 
     animations {

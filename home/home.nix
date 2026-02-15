@@ -7,32 +7,51 @@
 }:
 
 {
-  imports =
-    [
-      ./modules/bootstrap.nix
-      ./modules/theme.nix
-      ./modules/shell.nix
-      ./modules/terminal.nix
-      ./modules/git.nix
-      ./modules/editor.nix
-      ./modules/packages.nix
-    ]
-    ++ lib.optionals hostConfig.isLinux [
-      ./modules/hyprland.nix
-      ./modules/ui.nix
-    ];
+  imports = [
+    ./modules/bootstrap.nix
+    ./modules/theme.nix
+    ./modules/shell.nix
+    ./modules/terminal.nix
+    ./modules/git.nix
+    ./modules/editor.nix
+    ./modules/packages.nix
+  ]
+  ++ lib.optionals hostConfig.isLinux [
+    ./modules/hyprland.nix
+    ./modules/ui.nix
+  ];
 
   config = {
     theme = "midnight";
 
     home.username = "barrett";
     home.homeDirectory =
-      if hostConfig.isDarwin
-      then "/Users/${config.home.username}"
-      else "/home/${config.home.username}";
+      if hostConfig.isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}";
     home.stateVersion = "24.11";
 
     xdg.enable = true;
+    xdg.userDirs = lib.mkIf hostConfig.isLinux {
+      enable = true;
+      createDirectories = true;
+      desktop = "${config.home.homeDirectory}/Desktop";
+      documents = "${config.home.homeDirectory}/Documents";
+      download = "${config.home.homeDirectory}/Downloads";
+      music = "${config.home.homeDirectory}/Music";
+      pictures = "${config.home.homeDirectory}/Pictures";
+      publicShare = "${config.home.homeDirectory}/Public";
+      templates = "${config.home.homeDirectory}/Templates";
+      videos = "${config.home.homeDirectory}/Videos";
+    };
+    home.sessionVariables = lib.mkIf hostConfig.isLinux {
+      XDG_DESKTOP_DIR = config.xdg.userDirs.desktop;
+      XDG_DOCUMENTS_DIR = config.xdg.userDirs.documents;
+      XDG_DOWNLOAD_DIR = config.xdg.userDirs.download;
+      XDG_MUSIC_DIR = config.xdg.userDirs.music;
+      XDG_PICTURES_DIR = config.xdg.userDirs.pictures;
+      XDG_PUBLICSHARE_DIR = config.xdg.userDirs.publicShare;
+      XDG_TEMPLATES_DIR = config.xdg.userDirs.templates;
+      XDG_VIDEOS_DIR = config.xdg.userDirs.videos;
+    };
     targets.genericLinux.enable = hostConfig.isLinux && !hostConfig.isNixOS;
     news.display = "silent";
 

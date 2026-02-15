@@ -88,8 +88,7 @@ in
     };
 
     home.file.".local/share/fonts" = lib.mkIf hostConfig.isLinux {
-      source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/fonts";
+      source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/fonts";
     };
 
     home.activation.checkFonts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

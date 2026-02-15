@@ -11,7 +11,7 @@ require() {
 
 case "$1" in
 screenshot)
-  dir="$HOME/Pictures/Screenshots"
+  dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   mkdir -p "$dir"
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
@@ -24,7 +24,7 @@ screenshot)
   ;;
 ocr)
   require tesseract
-  dir="$HOME/Pictures/Screenshots"
+  dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   mkdir -p "$dir"
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
@@ -187,37 +187,40 @@ wifi)
 media)
   if pgrep -x wf-recorder >/dev/null 2>&1; then
     pkill -INT wf-recorder
-    notify-send -a ctl -t 2500 "recording saved"
+    file=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
+    rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    notify-send -a ctl -t 2500 "Recording saved to ~${file#"$HOME"}"
     exit 0
   fi
-  require fuzzel grim slurp wl-copy wf-recorder hyprctl jq
-  ss_dir="$HOME/Pictures/Screenshots"
-  rec_dir="$HOME/Pictures/Recordings"
+  require fuzzel grim slurp wl-copy wf-recorder
+  ss_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+  rec_dir="${XDG_VIDEOS_DIR:-$HOME/Videos}"
   mkdir -p "$ss_dir" "$rec_dir"
   desktop="   Capture Desktop"
   area="   Capture Area"
   rec_desktop="   Record Desktop"
-  rec_window="   Record Window"
-  chosen="$(printf '%s\n' "$desktop" "$area" "$rec_desktop" "$rec_window" | fuzzel --dmenu --hide-prompt --lines=4 --width=25 --no-icons)"
+  rec_area="   Record Area"
+  chosen="$(printf '%s\n' "$desktop" "$area" "$rec_desktop" "$rec_area" | fuzzel --dmenu --hide-prompt --lines=4 --width=25 --no-icons)"
   case "$chosen" in
   "$desktop")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim "$file" && wl-copy < "$file"
+    grim "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$area")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim -g "$(slurp)" "$file" && wl-copy < "$file"
+    grim -g "$(slurp)" "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$rec_desktop")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    notify-send -a ctl -t 2500 "recording started"
+    echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    notify-send -a ctl -t 2500 "Recording started"
     wf-recorder -f "$file" &
     ;;
-  "$rec_window")
-    geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+  "$rec_area")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    notify-send -a ctl -t 2500 "recording started"
-    wf-recorder -g "$geom" -f "$file" &
+    echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    notify-send -a ctl -t 2500 "Recording started"
+    wf-recorder -g "$(slurp)" -f "$file" &
     ;;
   esac
   ;;

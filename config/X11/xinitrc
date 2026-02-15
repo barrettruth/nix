@@ -8,7 +8,7 @@ fi
 
 x setup
 x mon
-x bg ~/Pictures/wp/one/progress.jpg ~/Pictures/wp/one/lilies.jpg
+x bg "${XDG_PICTURES_DIR:-$HOME/Pictures}/wp/one/progress.jpg" "${XDG_PICTURES_DIR:-$HOME/Pictures}/wp/one/lilies.jpg"
 setxkbmap -layout us -variant colemak &
 pgrep -u "$USER" -f clipmenud >/dev/null || clipmenud &
 # dwmblocks &

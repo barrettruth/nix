@@ -170,7 +170,13 @@ in
         format = "{icon}";
         format-charging = "{icon}";
         format-full = "{icon}";
-        format-icons = ["" "" "" "" ""];
+        format-icons = [
+          ""
+          ""
+          ""
+          ""
+          ""
+        ];
         states = {
           hi = 30;
           mid = 20;

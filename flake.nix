@@ -41,8 +41,7 @@
         import nixpkgs {
           inherit system;
           config.allowUnfreePredicate =
-            pkg:
-            builtins.elem (nixpkgs.lib.getName pkg) (sharedUnfree ++ extraUnfree);
+            pkg: builtins.elem (nixpkgs.lib.getName pkg) (sharedUnfree ++ extraUnfree);
           inherit overlays;
         };
 
