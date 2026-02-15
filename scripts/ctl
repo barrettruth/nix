@@ -192,10 +192,7 @@ media)
     notify-send -a ctl -t 2500 "Recording saved to ~${file#"$HOME"}"
     exit 0
   fi
-  if pgrep -x fuzzel >/dev/null 2>&1; then
-    pkill -x fuzzel
-    exit 0
-  fi
+  pkill -x fuzzel 2>/dev/null && exit 0
   require fuzzel grim slurp wl-copy wf-recorder hyprctl jq
   ss_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   rec_dir="${XDG_VIDEOS_DIR:-$HOME/Videos}"
@@ -206,7 +203,7 @@ media)
   rec_desktop="   Record Desktop"
   rec_area="   Record Area"
   rec_window="   Record Window"
-  chosen="$(printf '%s\n' "$cap_desktop" "$cap_area" "$cap_window" "$rec_desktop" "$rec_area" "$rec_window" | fuzzel --dmenu --hide-prompt --lines=6 --width=25 --no-icons)"
+  chosen="$(printf '%s\n' "$cap_desktop" "$cap_area" "$cap_window" "$rec_desktop" "$rec_area" "$rec_window" | fuzzel --dmenu --hide-prompt --lines=6 --width=25 --no-icons 2>/dev/null)"
   case "$chosen" in
   "$cap_desktop")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"

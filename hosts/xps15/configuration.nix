@@ -108,7 +108,7 @@ in
     enable = true;
     vt = 1;
     settings.default_session = {
-      command = "${tuigreet} --time --asterisks --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
+      command = "${tuigreet} --time --asterisks --cmd '${pkgs.zsh}/bin/zsh --login' --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
       user = "greeter";
     };
   };
