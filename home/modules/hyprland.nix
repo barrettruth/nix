@@ -94,9 +94,7 @@ in
       dots_center = true
       outer_color = rgba(00000000)
       inner_color = rgba(00000000)
-      font_color = rgb(000000)
-      font_family = Berkeley Mono
-      fade_on_empty = true
+      font_color = rgb(ffffff)
       rounding = -1
       placeholder_text =
       position = 0, 0
