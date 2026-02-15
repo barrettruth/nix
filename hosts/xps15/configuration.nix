@@ -110,7 +110,7 @@ in
   services.greetd = {
     enable = true;
     settings.default_session = {
-      command = "${tuigreet} --time --asterisks --cmd ${loginShell} --theme 'border=dark-gray;text=white;prompt=blue;time=dark-gray;action=dark-gray;button=blue;container=black;input=white'";
+      command = "${tuigreet} --time --asterisks --cmd ${loginShell}";
       user = "greeter";
     };
   };

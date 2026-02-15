@@ -32,25 +32,19 @@
     xdg.enable = true;
     xdg.userDirs = lib.mkIf hostConfig.isLinux {
       enable = true;
-      createDirectories = true;
-      desktop = "${config.home.homeDirectory}/Desktop";
-      documents = "${config.home.homeDirectory}/Documents";
+      createDirectories = false;
       download = "${config.home.homeDirectory}/Downloads";
-      music = "${config.home.homeDirectory}/Music";
       pictures = "${config.home.homeDirectory}/Pictures";
-      publicShare = "${config.home.homeDirectory}/Public";
-      templates = "${config.home.homeDirectory}/Templates";
-      videos = "${config.home.homeDirectory}/Videos";
+      # desktop = "${config.home.homeDirectory}/Desktop";
+      # documents = "${config.home.homeDirectory}/Documents";
+      # music = "${config.home.homeDirectory}/Music";
+      # publicShare = "${config.home.homeDirectory}/Public";
+      # templates = "${config.home.homeDirectory}/Templates";
+      # videos = "${config.home.homeDirectory}/Videos";
     };
     home.sessionVariables = lib.mkIf hostConfig.isLinux {
-      XDG_DESKTOP_DIR = config.xdg.userDirs.desktop;
-      XDG_DOCUMENTS_DIR = config.xdg.userDirs.documents;
       XDG_DOWNLOAD_DIR = config.xdg.userDirs.download;
-      XDG_MUSIC_DIR = config.xdg.userDirs.music;
       XDG_PICTURES_DIR = config.xdg.userDirs.pictures;
-      XDG_PUBLICSHARE_DIR = config.xdg.userDirs.publicShare;
-      XDG_TEMPLATES_DIR = config.xdg.userDirs.templates;
-      XDG_VIDEOS_DIR = config.xdg.userDirs.videos;
     };
     targets.genericLinux.enable = hostConfig.isLinux && !hostConfig.isNixOS;
     news.display = "silent";
