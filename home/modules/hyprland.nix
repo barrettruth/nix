@@ -98,12 +98,12 @@ in
       input-field {
         monitor =
         size = 600, 50
-        outline_thickness = 2
+        outline_thickness = 0
         dots_text_format = *
         dots_size = 0.9
         dots_spacing = 0.3
         dots_center = true
-        outer_color = rgb(ffffff)
+        outer_color = rgba(00000000)
         inner_color = rgba(00000000)
         font_color = rgb(ffffff)
         font_family = Berkeley Mono
