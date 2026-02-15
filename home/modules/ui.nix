@@ -129,6 +129,7 @@ in
 
       "hyprland/window" = {
         format = "{}";
+        max-length = 40;
         separate-outputs = true;
         rewrite = { };
       };
