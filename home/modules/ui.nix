@@ -301,9 +301,6 @@ in
       ctl = {
         appname = "ctl";
         icon_position = "off";
-        width = 300;
-        height = 50;
-        padding = 6;
         format = "%s";
       };
     };
