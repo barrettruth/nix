@@ -41,6 +41,7 @@ in
       poppler-utils
       librsvg
       imagemagick
+      graphite-cli
     ]
     ++ lib.optionals hostConfig.isLinux [ xclip ]
     ++ lib.optionals rust [ rustup ];
