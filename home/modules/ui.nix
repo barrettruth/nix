@@ -73,11 +73,7 @@ in
 
   programs.waybar = {
     enable = true;
-    package = pkgs.waybar.overrideAttrs (old: {
-      postInstall = (old.postInstall or "") + ''
-        rm -rf $out/share/systemd
-      '';
-    });
+    systemd.enable = false;
     settings.mainBar = {
       reload_style_on_change = true;
       layer = "top";
