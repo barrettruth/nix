@@ -267,8 +267,8 @@ in
         height = "(0, 120)";
         origin = "top-right";
         offset = "16x16";
-        padding = 8;
-        horizontal_padding = 9;
+        padding = 10;
+        horizontal_padding = 10;
         frame_width = 1;
         frame_color = c.border;
         separator_color = "frame";
