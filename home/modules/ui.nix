@@ -37,9 +37,12 @@ let
   '';
 in
 {
-  home.sessionVariables = {
-    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
-  };
+  home.sessionVariables = lib.mkMerge [
+    { QT_AUTO_SCREEN_SCALE_FACTOR = "1"; }
+    (lib.mkIf config.gtk.enable {
+      GTK_RC_FILES = "${config.xdg.configHome}/gtk-2.0/gtkrc";
+    })
+  ];
 
   dconf = {
     enable = true;
@@ -69,6 +72,11 @@ in
 
   programs.waybar = {
     enable = true;
+    package = pkgs.waybar.overrideAttrs (old: {
+      postInstall = (old.postInstall or "") + ''
+        rm -rf $out/share/systemd
+      '';
+    });
     settings.mainBar = {
       reload_style_on_change = true;
       layer = "top";
