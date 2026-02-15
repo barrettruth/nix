@@ -107,6 +107,8 @@ in
         inner_color = rgba(00000000)
         font_color = rgb(ffffff)
         font_family = Berkeley Mono
+        check_color = rgb(98c379)
+        fail_color = rgb(ff6b6b)
         rounding = 0
         placeholder_text =
         position = 0, 0

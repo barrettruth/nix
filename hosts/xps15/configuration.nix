@@ -24,7 +24,7 @@ in
     device = "nodev";
     useOSProber = true;
     configurationLimit = 2;
-    gfxmodeEfi = "3840x2400,auto";
+    gfxmodeEfi = "1920x1200,auto";
     fontSize = 36;
   };
   boot.loader.efi.canTouchEfiVariables = true;
