@@ -89,7 +89,7 @@ in
       size = 300, 50
       outline_thickness = 0
       dots_text_format = *
-      dots_size = 0.6
+      dots_size = 0.7
       dots_spacing = 0.3
       dots_center = true
       outer_color = rgba(00000000)
