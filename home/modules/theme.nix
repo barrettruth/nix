@@ -109,6 +109,8 @@ in
         $DRY_RUN_CMD ln -sf "$cfg/hypr/themes/$theme.conf" "$cfg/hypr/themes/theme.conf"
         $DRY_RUN_CMD ln -sf "$cfg/waybar/themes/$theme.css" "$cfg/waybar/themes/theme.css"
         $DRY_RUN_CMD ln -sf "$cfg/fuzzel/themes/$theme.ini" "$cfg/fuzzel/themes/theme.ini"
+        $DRY_RUN_CMD mkdir -p "$cfg/dunst/dunstrc.d"
+        $DRY_RUN_CMD ln -sf "$cfg/dunst/themes/$theme.conf" "$cfg/dunst/dunstrc.d/theme.conf"
       ''}
       $DRY_RUN_CMD ln -sf "$cfg/sioyek/themes/$theme.config" "$cfg/sioyek/themes/theme.config"
       $DRY_RUN_CMD ln -sf "$cfg/fzf/themes/$theme" "$cfg/fzf/themes/theme"

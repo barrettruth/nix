@@ -47,6 +47,7 @@ in
 
   home.sessionVariables = lib.mkMerge [
     {
+      FZF_DEFAULT_OPTS_FILE = "${config.xdg.configHome}/fzf/themes/theme";
       LESSHISTFILE = "-";
       WGETRC = "${config.xdg.configHome}/wgetrc";
       LUAROCKS_CONFIG = "${config.xdg.configHome}/luarocks/config.lua";
@@ -246,9 +247,6 @@ in
       "--bind=ctrl-b:half-page-up"
       "--no-scrollbar"
       "--no-info"
-      "--color=fg:${c.fg},bg:${c.bg},hl:${c.accent}"
-      "--color=fg+:${c.fg},bg+:${c.bgAlt},hl+:${c.accent}"
-      "--color=info:${c.green},prompt:${c.accent},pointer:${c.fg},marker:${c.green},spinner:${c.fg}"
     ];
     changeDirWidgetCommand = "fd --type d --hidden";
     fileWidgetCommand = "rg --files --hidden";

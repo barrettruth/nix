@@ -35,6 +35,29 @@ let
     border=${hexToFuzzel palette.border}
     counter=${hexToFuzzel palette.fgAlt}
   '';
+
+  mkDunstTheme = palette: ''
+    [global]
+    frame_color = "${palette.border}"
+    separator_color = "frame"
+    background = "${palette.bg}"
+    foreground = "${palette.fg}"
+
+    [urgency_low]
+    background = "${palette.bg}"
+    foreground = "${palette.fg}"
+    frame_color = "${palette.border}"
+
+    [urgency_normal]
+    background = "${palette.bg}"
+    foreground = "${palette.fg}"
+    frame_color = "${palette.border}"
+
+    [urgency_critical]
+    background = "${palette.bg}"
+    foreground = "${palette.red}"
+    frame_color = "${palette.red}"
+  '';
 in
 {
   home.sessionVariables = lib.mkMerge [
@@ -267,32 +290,13 @@ in
         padding = 10;
         horizontal_padding = 10;
         frame_width = 3;
-        frame_color = c.border;
-        separator_color = "frame";
         separator_height = 1;
         gap_size = 8;
         corner_radius = 0;
-        background = c.bg;
-        foreground = c.fg;
         alignment = "left";
         ellipsize = "end";
         icon_position = "left";
         max_icon_size = 32;
-      };
-      urgency_low = {
-        background = c.bg;
-        foreground = c.fg;
-        frame_color = c.border;
-      };
-      urgency_normal = {
-        background = c.bg;
-        foreground = c.fg;
-        frame_color = c.border;
-      };
-      urgency_critical = {
-        background = c.bg;
-        foreground = c.red;
-        frame_color = c.red;
       };
       ctl = {
         appname = "ctl";
@@ -304,6 +308,8 @@ in
       };
     };
   };
+  xdg.configFile."dunst/themes/midnight.conf".text = mkDunstTheme config.palettes.midnight;
+  xdg.configFile."dunst/themes/daylight.conf".text = mkDunstTheme config.palettes.daylight;
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
