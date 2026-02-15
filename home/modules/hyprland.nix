@@ -97,14 +97,14 @@ in
 
       input-field {
         monitor =
-        size = 300, 50
+        size = 500, 50
         outline_thickness = 2
         dots_text_format = *
         dots_size = 0.9
         dots_spacing = 0.3
         dots_center = true
         outer_color = rgb(ffffff)
-        inner_color = rgb(000000)
+        inner_color = rgba(00000000)
         font_color = rgb(ffffff)
         rounding = 0
         placeholder_text =
