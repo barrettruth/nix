@@ -189,6 +189,7 @@ media)
     pkill -INT wf-recorder
     file=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
     rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    printf '%s' "$file" | wl-copy
     notify-send -a ctl -t 2500 "Recording saved to ~${file#"$HOME"}"
     exit 0
   fi
