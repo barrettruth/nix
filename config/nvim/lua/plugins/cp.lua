@@ -127,6 +127,7 @@ end
 
 return {
     'barrettruth/cp.nvim',
+    dir = '~/dev/cp.nvim',
     cmd = 'CP',
     keys = {
         { '<leader>ce', '<cmd>CP edit<cr>' },
