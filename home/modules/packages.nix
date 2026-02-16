@@ -113,6 +113,7 @@ in
       slack
       gemini-cli
       typst
+      typstyle
       glab
     ]
     ++ lib.optionals hostConfig.isLinux [
