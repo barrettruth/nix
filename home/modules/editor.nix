@@ -44,7 +44,7 @@ in
     luarocks
     tree-sitter
     nixfmt-tree
-    (texlive.combine { inherit (texlive) scheme-small latexindent; })
+    (texlive.combine { inherit (texlive) scheme-small latexindent latexmk; })
   ];
 
   programs.neovim = {

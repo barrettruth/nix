@@ -119,15 +119,12 @@ return {
         },
     },
     {
-        enabled = false,
         'lervag/vimtex',
+        lazy = false,
         init = function()
-            vim.g.vimtex_view_method = 'general'
-            vim.g.vimtex_compiler_method = 'latexmk'
-            vim.g.vimtex_callback_progpath = '/usr/bin/nvim'
+            vim.g.vimtex_view_method = 'sioyek'
             vim.g.vimtex_quickfix_mode = 0
         end,
-        ft = { 'plaintext', 'tex' },
     },
     {
         'monaqa/dial.nvim',

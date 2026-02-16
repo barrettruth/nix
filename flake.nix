@@ -109,6 +109,7 @@
                   "nvidia-x11"
                   "nvidia-settings"
                   "tailscale"
+                  "libfprint-2-tod1-goodix"
                 ]
               );
           }
