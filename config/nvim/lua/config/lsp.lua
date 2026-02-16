@@ -80,12 +80,15 @@ function M.on_attach(client, bufnr)
 end
 
 function M.format(opts)
-    local ok, guard = pcall(require, 'guard')
+    local ok, ft_handler = pcall(require, 'guard.filetype')
     if ok then
-        guard.fmt()
-    else
-        vim.lsp.buf.format(opts or { async = true })
+        local conf = ft_handler[vim.bo.filetype]
+        if conf and conf.formatter and #conf.formatter > 0 then
+            require('guard').fmt()
+            return
+        end
     end
+    vim.lsp.buf.format(opts or { async = true })
 end
 
 return M
