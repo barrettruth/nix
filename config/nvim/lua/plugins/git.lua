@@ -164,7 +164,7 @@ return {
         init = function()
             vim.g.diffs = {
                 fugitive = true,
-                neogit = true,
+                neogit = false,
                 extra_filetypes = { 'diff' },
                 hide_prefix = true,
                 highlights = {
@@ -172,7 +172,7 @@ return {
                         enabled = true,
                     },
                     intra = {
-                        enabled = false,
+                        enabled = true,
                         max_lines = 500,
                     },
                 },

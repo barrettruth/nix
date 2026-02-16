@@ -124,10 +124,10 @@ in
       after_sleep_cmd = hyprctl dispatch dpms on
     }
 
-    listener {
-      timeout = 300
-      on-timeout = ctl wallpaper lock && hyprlock
-    }
+    # listener {
+    #   timeout = 300
+    #   on-timeout = ctl wallpaper lock && hyprlock
+    # }
 
     listener {
       timeout = 600
