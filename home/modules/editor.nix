@@ -43,7 +43,16 @@ in
     luarocks
     tree-sitter
     nixfmt-tree
-    (texlive.combine { inherit (texlive) scheme-small latexindent latexmk lastpage pgf collection-fontsrecommended; })
+    (texlive.combine {
+      inherit (texlive)
+        scheme-small
+        latexindent
+        latexmk
+        lastpage
+        pgf
+        collection-fontsrecommended
+        ;
+    })
   ];
 
   programs.neovim = {

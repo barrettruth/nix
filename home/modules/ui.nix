@@ -313,8 +313,8 @@ in
     include ${config.xdg.configHome}/dunst/themes/theme.conf
   '';
 
-  systemd.user.services.dunst.Service.ExecStart = lib.mkForce
-    "${pkgs.dunst}/bin/dunst -config ${config.xdg.configHome}/dunst/config";
+  systemd.user.services.dunst.Service.ExecStart =
+    lib.mkForce "${pkgs.dunst}/bin/dunst -config ${config.xdg.configHome}/dunst/config";
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
