@@ -8,9 +8,8 @@ return {
         end,
     },
     {
-        'barrettruth/nvim-nonicons',
         dir = '~/dev/nonicons',
-        'nvim-tree/nvim-web-devicons',
+        dependencies = { 'nvim-tree/nvim-web-devicons' },
         opts = {},
     },
     {

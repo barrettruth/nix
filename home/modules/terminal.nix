@@ -14,6 +14,7 @@ in
     enable = true;
     settings = {
       font-family = "Berkeley Mono";
+      font-codepoint-map = "U+f101-U+f25c=nonicons";
       font-feature = "-calt";
       font-size = 20;
       adjust-cell-height = "10%";
