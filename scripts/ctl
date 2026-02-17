@@ -412,8 +412,17 @@ power)
   "$shutdown") systemctl poweroff ;;
   esac
   ;;
+idle)
+  require notify-send
+  if pkill hypridle; then
+    notify-send -a ctl -t 2500 'idle off'
+  else
+    hypridle &
+    notify-send -a ctl -t 2500 'idle on'
+  fi
+  ;;
 *)
-  echo "Usage: ctl {screenshot|ocr|keyboard|audio|wifi|brightness|volume|media|wallpaper|power}" >&2
+  echo "Usage: ctl {screenshot|ocr|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle}" >&2
   exit 1
   ;;
 esac
