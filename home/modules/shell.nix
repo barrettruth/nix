@@ -215,7 +215,6 @@ in
       la = "ll -R";
       g = "git";
       nv = "nvim";
-      pe = "printenv";
     };
 
     syntaxHighlighting.enable = true;
