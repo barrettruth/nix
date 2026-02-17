@@ -99,7 +99,9 @@ Linux)
 
     dunst_themes="$cfg/dunst/themes"
     [ -f "$dunst_themes/$theme.conf" ] && {
-      ln -sf "$dunst_themes/$theme.conf" "$dunst_themes/theme.conf"
+      mkdir -p "$cfg/dunst/dunstrc.d"
+      ln -sf "$dunst_themes/$theme.conf" "$cfg/dunst/dunstrc.d/theme.conf"
+      pkill -x dunst 2>/dev/null; sleep 0.2
       systemctl --user restart dunst
     }
 

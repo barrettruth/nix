@@ -280,34 +280,30 @@ in
 
   services.dunst = {
     enable = true;
-    settings = { };
-  };
-  xdg.configFile."dunst/dunstrc" = lib.mkForce {
-    text = ''
-      include ${config.xdg.configHome}/dunst/themes/theme.conf
-
-      [global]
-      font = SF Pro Display 13
-      width = (0, 400)
-      height = (0, 120)
-      origin = top-right
-      offset = (16, 16)
-      padding = 10
-      horizontal_padding = 10
-      frame_width = 3
-      separator_height = 1
-      gap_size = 8
-      corner_radius = 0
-      alignment = left
-      ellipsize = end
-      icon_position = left
-      max_icon_size = 32
-
-      [ctl]
-      appname = ctl
-      icon_position = off
-      format = %s
-    '';
+    settings = {
+      global = {
+        font = "SF Pro Display 13";
+        width = "(0, 400)";
+        height = "(0, 120)";
+        origin = "top-right";
+        offset = "(16, 16)";
+        padding = 10;
+        horizontal_padding = 10;
+        frame_width = 3;
+        separator_height = 1;
+        gap_size = 8;
+        corner_radius = 0;
+        alignment = "left";
+        ellipsize = "end";
+        icon_position = "left";
+        max_icon_size = 32;
+      };
+      ctl = {
+        appname = "ctl";
+        icon_position = "off";
+        format = "%s";
+      };
+    };
   };
   xdg.configFile."dunst/themes/midnight.conf".text = mkDunstTheme config.palettes.midnight;
   xdg.configFile."dunst/themes/daylight.conf".text = mkDunstTheme config.palettes.daylight;
