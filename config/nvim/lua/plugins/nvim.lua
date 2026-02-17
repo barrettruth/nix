@@ -1,6 +1,7 @@
 return {
     {
         'barrettruth/midnight.nvim',
+        dir = '~/dev/midnight.nvim',
         enabled = true,
         config = function()
             vim.cmd.colorscheme('midnight')
@@ -305,15 +306,15 @@ return {
         },
     },
     { 'tpope/vim-abolish', event = 'VeryLazy' },
-    { 'tpope/vim-sleuth',  event = 'BufReadPost' },
+    { 'tpope/vim-sleuth', event = 'BufReadPost' },
     {
         'kylechui/nvim-surround',
         config = true,
         keys = {
-            { 'cs',  mode = 'n' },
-            { 'ds',  mode = 'n' },
-            { 'ys',  mode = 'n' },
-            { 'yS',  mode = 'n' },
+            { 'cs', mode = 'n' },
+            { 'ds', mode = 'n' },
+            { 'ys', mode = 'n' },
+            { 'yS', mode = 'n' },
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },

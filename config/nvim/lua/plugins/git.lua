@@ -185,7 +185,8 @@ return {
             {
                 '<leader>go',
                 with_forge(function(forge)
-                    local branch = vim.trim(vim.fn.system('git branch --show-current'))
+                    local branch =
+                        vim.trim(vim.fn.system('git branch --show-current'))
                     forge.browse(file_loc(), branch)
                 end),
                 mode = { 'n', 'v' },

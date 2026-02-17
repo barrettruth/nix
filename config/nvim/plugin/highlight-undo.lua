@@ -15,7 +15,13 @@ for _, key in ipairs({ 'u', '<C-r>', 'U' }) do
                     if not api.nvim_buf_is_valid(buf) then
                         return
                     end
-                    vim.hl.range(buf, ns, 'HighlightUndo', { sr, sc }, { er, ec })
+                    vim.hl.range(
+                        buf,
+                        ns,
+                        'HighlightUndo',
+                        { sr, sc },
+                        { er, ec }
+                    )
                     vim.defer_fn(function()
                         if api.nvim_buf_is_valid(buf) then
                             api.nvim_buf_clear_namespace(buf, ns, 0, -1)

@@ -10,18 +10,26 @@ return {
             lsp_as_default_formatter = true,
         }
     end,
+    keys = {
+        { 'gF', '<cmd>Guard fmt<CR>', mode = { 'n', 'x' } },
+    },
     config = function()
         local ft = require('guard.filetype')
 
-        ft('python'):fmt({
-            cmd = 'isort',
-            args = { '--profile', 'black', '-' },
-            stdin = true,
-        }):append('black'):lint('mypy')
+        ft('python')
+            :fmt({
+                cmd = 'isort',
+                args = { '--profile', 'black', '-' },
+                stdin = true,
+            })
+            :append('black')
+            :lint('mypy')
 
         ft('lua'):fmt('stylua'):lint('selene')
 
-        ft('javascript,javascriptreact,typescript,typescriptreact'):fmt('prettierd'):lint('eslint_d')
+        ft('javascript,javascriptreact,typescript,typescriptreact')
+            :fmt('prettierd')
+            :lint('eslint_d')
         ft('css,graphql,html,json,jsonc,mdx,yaml'):fmt('prettierd')
 
         ft('sh,bash,zsh'):fmt({

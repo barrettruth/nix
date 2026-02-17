@@ -44,7 +44,7 @@ in
     luarocks
     tree-sitter
     nixfmt-tree
-    (texlive.combine { inherit (texlive) scheme-small latexindent latexmk; })
+    (texlive.combine { inherit (texlive) scheme-small latexindent latexmk lastpage pgf collection-fontsrecommended; })
   ];
 
   programs.neovim = {
@@ -58,4 +58,9 @@ in
 
   xdg.configFile."nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/nvim";
+
+  xdg.configFile."latexmk/latexmkrc".text = ''
+    $out_dir = "build";
+    $pdf_mode = 1;
+  '';
 }

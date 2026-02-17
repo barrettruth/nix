@@ -73,7 +73,8 @@ local cpp_single = cpp_base .. [[  solve();
   return 0;
 }  // }}}]]
 
-local cpp_multi = cpp_base .. [[  u32 tc = 1;
+local cpp_multi = cpp_base
+    .. [[  u32 tc = 1;
   std::cin >> tc;
   for (u32 t = 0; t < tc; ++t) {
     solve();
@@ -211,10 +212,10 @@ return {
                     require('cp.helpers').clearcol(buf)
                 end,
                 before_run = function(_)
-                    require('config.lsp').format({ async = true })
+                    require('config.lsp').format()
                 end,
                 before_debug = function(_)
-                    require('config.lsp').format({ async = true })
+                    require('config.lsp').format()
                 end,
                 setup_code = function(state)
                     vim.opt_local.winbar = ''
@@ -234,9 +235,13 @@ return {
                     local platform = state.get_platform()
                     insert_template(buf, lang, platform)
 
-                    local clang_format_path = vim.fn.getcwd() .. '/.clang-format'
+                    local clang_format_path = vim.fn.getcwd()
+                        .. '/.clang-format'
                     if vim.fn.filereadable(clang_format_path) == 0 then
-                        vim.fn.writefile(vim.split(clang_format, '\n'), clang_format_path)
+                        vim.fn.writefile(
+                            vim.split(clang_format, '\n'),
+                            clang_format_path
+                        )
                     end
                 end,
             },

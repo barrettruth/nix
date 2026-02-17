@@ -5,6 +5,6 @@ vim.filetype.add({
     },
     filename = {
         ['requirements.txt'] = 'config',
-        dunstrc = 'dosini'
+        dunstrc = 'dosini',
     },
 })

@@ -9,7 +9,13 @@ return {
         local relnum = vim.v.relnum
         local hl = relnum == 0 and 'CursorLineNr' or 'LineNr'
 
-        local marks = vim.api.nvim_buf_get_extmarks(0, -1, { lnum - 1, 0 }, { lnum - 1, 0 }, { details = true })
+        local marks = vim.api.nvim_buf_get_extmarks(
+            0,
+            -1,
+            { lnum - 1, 0 },
+            { lnum - 1, 0 },
+            { details = true }
+        )
         for _, mark in ipairs(marks) do
             if mark[4] and mark[4].number_hl_group then
                 hl = mark[4].number_hl_group

@@ -128,7 +128,6 @@ function M.foldexpr()
     return tostring(max_level)
 end
 
-
 function M.setup()
     vim.opt.fillchars:append({
         fold = ' ',
