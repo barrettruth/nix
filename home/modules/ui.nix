@@ -280,41 +280,37 @@ in
 
   services.dunst = {
     enable = true;
-    settings = {
-      global = {
-        font = "SF Pro Display 13";
-        width = "(0, 400)";
-        height = "(0, 120)";
-        origin = "top-right";
-        offset = "(16, 16)";
-        padding = 10;
-        horizontal_padding = 10;
-        frame_width = 3;
-        separator_height = 1;
-        gap_size = 8;
-        corner_radius = 0;
-        alignment = "left";
-        ellipsize = "end";
-        icon_position = "left";
-        max_icon_size = 32;
-      };
-      ctl = {
-        appname = "ctl";
-        icon_position = "off";
-        format = "%s";
-      };
-    };
+    settings = { };
+  };
+  xdg.configFile."dunst/dunstrc" = lib.mkForce {
+    text = ''
+      [global]
+      font = SF Pro Display 13
+      width = (0, 400)
+      height = (0, 120)
+      origin = top-right
+      offset = (16, 16)
+      padding = 10
+      horizontal_padding = 10
+      frame_width = 3
+      separator_height = 1
+      gap_size = 8
+      corner_radius = 0
+      alignment = left
+      ellipsize = end
+      icon_position = left
+      max_icon_size = 32
+
+      [ctl]
+      appname = ctl
+      icon_position = off
+      format = %s
+
+      include ${config.xdg.configHome}/dunst/themes/theme.conf
+    '';
   };
   xdg.configFile."dunst/themes/midnight.conf".text = mkDunstTheme config.palettes.midnight;
   xdg.configFile."dunst/themes/daylight.conf".text = mkDunstTheme config.palettes.daylight;
-
-  xdg.configFile."dunst/config".text = ''
-    include ${config.xdg.configHome}/dunst/dunstrc
-    include ${config.xdg.configHome}/dunst/themes/theme.conf
-  '';
-
-  systemd.user.services.dunst.Service.ExecStart =
-    lib.mkForce "${pkgs.dunst}/bin/dunst -config ${config.xdg.configHome}/dunst/config";
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
