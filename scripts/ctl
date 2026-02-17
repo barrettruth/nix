@@ -22,27 +22,6 @@ screenshot)
     maim -s "$file" && xclip -selection clipboard -t image/png -i "$file" &
   fi
   ;;
-ocr)
-  require tesseract
-  dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
-  mkdir -p "$dir"
-  file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
-  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-    require grim slurp wl-copy
-    (
-      region="$(slurp)"
-      [ -n "$region" ] || exit 0
-      grim -g "$region" "$file" &&
-      tesseract -l eng "$file" - 2>/dev/null | wl-copy
-    ) </dev/null >/dev/null 2>&1 &
-  else
-    require maim xclip
-    (
-      maim -s "$file" &&
-      tesseract -l eng "$file" - 2>/dev/null | xclip -selection clipboard -in
-    ) </dev/null >/dev/null 2>&1 &
-  fi
-  ;;
 keyboard)
   case "$2" in
   next)
@@ -203,7 +182,7 @@ media)
     exit 0
   fi
   pkill -x fuzzel 2>/dev/null && exit 0
-  require fuzzel grim slurp wl-copy wf-recorder hyprctl jq
+  require fuzzel grim slurp wl-copy wf-recorder hyprctl jq tesseract
   ss_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   rec_dir="${XDG_VIDEOS_DIR:-$HOME/Videos}"
   mkdir -p "$ss_dir" "$rec_dir"
@@ -213,7 +192,8 @@ media)
   rec_desktop="   Record Screen"
   rec_area="   Record Area"
   rec_window="   Record Window"
-  chosen="$(printf '%s\n' "$cap_desktop" "$cap_area" "$cap_window" "$rec_desktop" "$rec_area" "$rec_window" | fuzzel --dmenu --hide-prompt --lines=6 --width=25 --no-icons 2>/dev/null)"
+  ocr_area="   OCR Area"
+  chosen="$(printf '%s\n' "$cap_desktop" "$cap_area" "$cap_window" "$rec_desktop" "$rec_area" "$rec_window" "$ocr_area" | fuzzel --dmenu --hide-prompt --lines=7 --width=25 --no-icons 2>/dev/null)"
   case "$chosen" in
   "$cap_desktop")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
@@ -246,6 +226,12 @@ media)
     echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "Recording started"
     wf-recorder -g "$geom" -f "$file" &
+    ;;
+  "$ocr_area")
+    file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
+    region="$(slurp)" || exit 0
+    [ -n "$region" ] || exit 0
+    grim -g "$region" "$file" && tesseract -l eng "$file" - 2>/dev/null | wl-copy
     ;;
   esac
   ;;
@@ -424,7 +410,7 @@ idle)
   fi
   ;;
 *)
-  echo "Usage: ctl {screenshot|ocr|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle}" >&2
   exit 1
   ;;
 esac

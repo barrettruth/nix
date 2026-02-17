@@ -35,12 +35,12 @@
       createDirectories = false;
       download = "${config.home.homeDirectory}/Downloads";
       pictures = "${config.home.homeDirectory}/Pictures";
-      # desktop = "${config.home.homeDirectory}/Desktop";
-      # documents = "${config.home.homeDirectory}/Documents";
-      # music = "${config.home.homeDirectory}/Music";
-      # publicShare = "${config.home.homeDirectory}/Public";
-      # templates = "${config.home.homeDirectory}/Templates";
-      # videos = "${config.home.homeDirectory}/Videos";
+      desktop = "${config.home.homeDirectory}/Desktop";
+      documents = "${config.home.homeDirectory}/Documents";
+      music = "${config.home.homeDirectory}/Music";
+      publicShare = "${config.home.homeDirectory}/Public";
+      templates = "${config.home.homeDirectory}/Templates";
+      videos = "${config.home.homeDirectory}/Videos";
     };
     home.sessionVariables = lib.mkIf hostConfig.isLinux {
       XDG_DOWNLOAD_DIR = config.xdg.userDirs.download;
