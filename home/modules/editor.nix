@@ -40,7 +40,6 @@ in
 
     # runtime/tools
     nodejs
-    websocat
     luarocks
     tree-sitter
     nixfmt-tree
