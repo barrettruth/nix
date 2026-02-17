@@ -119,7 +119,7 @@
       "jetson-nano" = {
         hostname = "100.95.16.119";
         user = "charlie";
-      }
+      };
       "lightsail" = {
         hostname = "52.87.124.139";
         user = "ec2-user";
