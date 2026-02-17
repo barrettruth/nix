@@ -284,6 +284,8 @@ in
   };
   xdg.configFile."dunst/dunstrc" = lib.mkForce {
     text = ''
+      include ${config.xdg.configHome}/dunst/themes/theme.conf
+
       [global]
       font = SF Pro Display 13
       width = (0, 400)
@@ -305,8 +307,6 @@ in
       appname = ctl
       icon_position = off
       format = %s
-
-      include ${config.xdg.configHome}/dunst/themes/theme.conf
     '';
   };
   xdg.configFile."dunst/themes/midnight.conf".text = mkDunstTheme config.palettes.midnight;
