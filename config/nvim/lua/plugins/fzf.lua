@@ -76,7 +76,7 @@ return {
     opts = {
         files = {
             cmd = vim.env.FZF_CTRL_T_COMMAND,
-            file_icons = false,
+            file_icons = true,
             no_header_i = true,
         },
         fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
@@ -84,7 +84,7 @@ return {
             ''
         ),
         grep = {
-            file_icons = false,
+            file_icons = true,
             no_header_i = true,
             RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
         },
