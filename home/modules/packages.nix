@@ -14,7 +14,6 @@ let
   zen = true;
   sioyek = true;
   vesktop = true;
-  claude = true;
   signal = true;
 
   hexDigit =
@@ -100,10 +99,7 @@ let
   };
 in
 {
-  home.sessionVariables = lib.mkMerge [
-    (lib.mkIf zen { BROWSER = "zen-beta"; })
-    (lib.mkIf claude { CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude"; })
-  ];
+  home.sessionVariables = lib.mkIf zen { BROWSER = "zen-beta"; };
 
   programs.mpv.enable = true;
 
@@ -125,33 +121,7 @@ in
       (if hostConfig.isLinux then sioyek-wrapped else pkgs.sioyek)
     ]
     ++ lib.optionals (vesktop && hostConfig.isLinux) [ pkgs.vesktop ]
-    ++ lib.optionals claude [ pkgs.claude-code ]
     ++ lib.optionals (signal && hostConfig.isLinux) [ pkgs.signal-desktop ];
-
-  xdg.configFile."claude/settings.json" = lib.mkIf claude {
-    text = builtins.toJSON {
-      permissions.defaultMode = "acceptEdits";
-      network_access = true;
-      allowed_domains = [
-        "github.com"
-        "raw.githubusercontent.com"
-        "api.github.com"
-      ];
-      tools.web_fetch = true;
-    };
-  };
-
-  xdg.configFile."claude/CLAUDE.md" = lib.mkIf claude {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/CLAUDE.md";
-  };
-
-  xdg.configFile."claude/rules" = lib.mkIf claude {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/rules";
-  };
-
-  xdg.configFile."claude/skills" = lib.mkIf claude {
-    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/skills";
-  };
 
   xdg.configFile."sioyek/keys_user.config" = lib.mkIf sioyek {
     text = ''

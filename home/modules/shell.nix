@@ -8,9 +8,11 @@
 
 let
   c = config.colors;
+  repoDir = "${config.home.homeDirectory}/.config/nix";
 
   ripgrep = config.programs.ripgrep.enable;
 
+  claude = true;
   rust = true;
   go = true;
   node = true;
@@ -44,7 +46,8 @@ in
       graphite-cli
     ]
     ++ lib.optionals hostConfig.isLinux [ xclip ]
-    ++ lib.optionals rust [ rustup ];
+    ++ lib.optionals rust [ rustup ]
+    ++ lib.optionals claude [ claude-code ];
 
   home.sessionVariables = lib.mkMerge [
     {
@@ -106,6 +109,9 @@ in
       TEXMFHOME = "${config.xdg.dataHome}/texmf";
       TEXMFVAR = "${config.xdg.cacheHome}/texlive/texmf-var";
       TEXMFCONFIG = "${config.xdg.configHome}/texlive/texmf-config";
+    })
+    (lib.mkIf claude {
+      CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
     })
   ];
 
@@ -319,6 +325,31 @@ in
     extraConfig = ''
       source "$XDG_CONFIG_HOME/nix/config/tmux/tmux.conf"
     '';
+  };
+
+  xdg.configFile."claude/settings.json" = lib.mkIf claude {
+    text = builtins.toJSON {
+      permissions.defaultMode = "acceptEdits";
+      network_access = true;
+      allowed_domains = [
+        "github.com"
+        "raw.githubusercontent.com"
+        "api.github.com"
+      ];
+      tools.web_fetch = true;
+    };
+  };
+
+  xdg.configFile."claude/CLAUDE.md" = lib.mkIf claude {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/CLAUDE.md";
+  };
+
+  xdg.configFile."claude/rules" = lib.mkIf claude {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/rules";
+  };
+
+  xdg.configFile."claude/skills" = lib.mkIf claude {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/skills";
   };
 
   xdg.configFile."tmux/themes/midnight.conf".source =

@@ -45,11 +45,11 @@ export FZF_COMPLETION_TRIGGER=\;
 export FZF_TMUX=1
 
 fzf-config-widget() {
-    file="$(fd --type file --hidden . "$XDG_CONFIG_HOME"/nix | sed "s|$HOME|~|g" | fzf)"
+    local file="$(FZF_CTRL_T_COMMAND="fd --type file --hidden . \"$XDG_CONFIG_HOME\"/nix | sed \"s|$HOME|~|g\"" __fzf_select)"
     [ -n "$file" ] || { zle reset-prompt; return; }
-    file="${file/#\~/$HOME}"
-    BUFFER="nvim $file"
-    zle accept-line
+    file="${file/#\\~/~}"
+    LBUFFER+="$file"
+    zle reset-prompt
 }
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
