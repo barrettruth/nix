@@ -307,6 +307,14 @@ in
   };
   xdg.configFile."dunst/themes/midnight.conf".text = mkDunstTheme config.palettes.midnight;
   xdg.configFile."dunst/themes/daylight.conf".text = mkDunstTheme config.palettes.daylight;
+
+  xdg.configFile."dunst/config".text = ''
+    include ${config.xdg.configHome}/dunst/dunstrc
+    include ${config.xdg.configHome}/dunst/themes/theme.conf
+  '';
+
+  systemd.user.services.dunst.Service.ExecStart = lib.mkForce
+    "${pkgs.dunst}/bin/dunst -config ${config.xdg.configHome}/dunst/config";
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
