@@ -96,10 +96,7 @@ in
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
       [[ ''${BLE_VERSION-} ]] && ble-attach
     '';
-    loginShellInit = ''
-      [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ] && start-hyprland
-    '';
-  };
+};
   programs.hyprland = {
     enable = true;
     package = hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
