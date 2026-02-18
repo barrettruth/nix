@@ -37,6 +37,6 @@ return {
         return ' '
     end,
     statuscolumn = function()
-        return '%{%v:lua.require("config.lines.statuscolumn").fold()%}%s%=%{%v:lua.require("config.lines.statuscolumn").num()%} '
+        return '%s%{%v:lua.require("config.lines.statuscolumn").fold()%}%=%{%v:lua.require("config.lines.statuscolumn").num()%} '
     end,
 }
