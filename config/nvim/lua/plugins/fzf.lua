@@ -36,7 +36,7 @@ return {
                 end
             end,
         },
-        { '<c-l>', '<cmd>FzfLua live_grep<cr>' },
+        { '<c-l>',      '<cmd>FzfLua live_grep<cr>' },
         { '<leader>f/', '<cmd>FzfLua search_history<cr>' },
         { '<leader>f:', '<cmd>FzfLua command_history<cr>' },
         { '<leader>fa', '<cmd>FzfLua autocmds<cr>' },
@@ -70,8 +70,8 @@ return {
         },
         { '<leader>gb', '<cmd>FzfLua git_branches<cr>' },
         { '<leader>gw', '<cmd>FzfLua git_worktrees<cr>' },
-        { 'gq', '<cmd>FzfLua quickfix<cr>' },
-        { 'gl', '<cmd>FzfLua loclist<cr>' },
+        { 'gq',         '<cmd>FzfLua quickfix<cr>' },
+        { 'gl',         '<cmd>FzfLua loclist<cr>' },
     },
     opts = {
         file_icon_padding = ' ',
@@ -133,6 +133,7 @@ return {
         git = {
             files = {
                 cmd = 'git ls-files --cached --others --exclude-standard',
+                git_icons = false,
             },
             worktrees = {
                 fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')

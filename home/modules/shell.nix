@@ -232,7 +232,7 @@ in
         truncate_to_repo = false;
       };
       git_branch = {
-        format = "[$branch]($style)";
+        format = "[$branch]($style) ";
         style = "242";
       };
       git_status = {

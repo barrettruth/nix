@@ -3,7 +3,7 @@ for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
 done
 unset _hm
 
-shopt -s autocd histappend
+shopt -s autocd globstar histappend
 
 HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/bash_history"
 HISTSIZE=2000
