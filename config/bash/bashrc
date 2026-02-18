@@ -16,9 +16,9 @@ export FZF_COMPLETION_TRIGGER=';'
 export FZF_TMUX=1
 
 eval "$(fzf --bash)"
-eval "$(zoxide init bash)"
 eval "$(direnv hook bash)"
 eval "$(starship init bash)"
+eval "$(zoxide init bash)"
 
 fzf-config-widget() {
   local file
