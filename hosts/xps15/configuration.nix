@@ -91,9 +91,7 @@ in
       export THEME="midnight"
     '';
     interactiveShellInit = ''
-      source "${pkgs.blesh}/share/blesh/ble.sh" --noattach
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
-      [[ ''${BLE_VERSION-} ]] && ble-attach
     '';
 };
   programs.hyprland = {
