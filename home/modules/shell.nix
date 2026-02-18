@@ -7,6 +7,8 @@
 }:
 
 let
+  repoDir = "${config.home.homeDirectory}/.config/nix";
+
   ripgrep = config.programs.ripgrep.enable;
 
   claude = true;
@@ -191,6 +193,11 @@ in
     }
   '';
 
+  documentation = {
+    enable = true;
+    man.enable = true;
+  };
+
   programs.zsh = {
     enable = true;
     dotDir = "${config.xdg.configHome}/zsh";
@@ -265,11 +272,6 @@ in
   programs.zoxide = {
     enable = true;
     enableZshIntegration = true;
-  };
-
-  documentation = {
-    enable = true;
-    man.enable = true;
   };
 
   programs.direnv = {
@@ -358,5 +360,4 @@ in
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/tmux/themes/midnight.conf";
   xdg.configFile."tmux/themes/daylight.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/tmux/themes/daylight.conf";
-
 }
