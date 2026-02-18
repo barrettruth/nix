@@ -193,10 +193,7 @@ in
     }
   '';
 
-  documentation = {
-    enable = true;
-    man.enable = true;
-  };
+  programs.man.enable = true;
 
   programs.zsh = {
     enable = true;
