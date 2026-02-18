@@ -44,8 +44,8 @@ in
     nodejs
     luarocks
     tree-sitter
-    tree-sitter-cli
     nixfmt-tree
+    biber
     (texlive.combine {
       inherit (texlive)
         scheme-small
