@@ -1,0 +1,39 @@
+for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
+  [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
+done
+unset _hm
+
+shopt -s autocd histappend
+
+HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/bash_history"
+HISTSIZE=2000
+HISTFILESIZE=2000
+HISTCONTROL=ignoreboth:erasedups
+
+alias ls='eza'
+alias l='ls --color=auto --group-directories-first'
+alias ll='l -alF'
+alias la='ll -R'
+alias g='git'
+alias nv='nvim'
+
+export GPG_TTY=$(tty)
+export THEME="${THEME:-midnight}"
+export FZF_COMPLETION_TRIGGER=';'
+export FZF_TMUX=1
+
+eval "$(fzf --bash)"
+eval "$(zoxide init bash)"
+eval "$(direnv hook bash)"
+eval "$(starship init bash)"
+
+fzf-config-widget() {
+  local file
+  file="$(FZF_CTRL_T_COMMAND="fd --type file --hidden . \"$XDG_CONFIG_HOME\"/nix | sed \"s|$HOME|~|g\"" fzf --reverse)" || return
+  file="${file/#\~/$HOME}"
+  READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}${file}${READLINE_LINE:$READLINE_POINT}"
+  READLINE_POINT=$(( READLINE_POINT + ${#file} ))
+}
+bind -x '"\C-e": fzf-config-widget'
+
+[ -r "$OPAMROOT/opam-init/init.sh" ] && . "$OPAMROOT/opam-init/init.sh" > /dev/null 2> /dev/null

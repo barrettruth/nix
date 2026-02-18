@@ -28,7 +28,6 @@ in
     with pkgs;
     [
       awscli2
-      pure-prompt
       tree
       jq
       curl
@@ -193,58 +192,62 @@ in
     }
   '';
 
-  programs.zsh = {
+  programs.bash = lib.mkIf (!hostConfig.isNixOS) {
     enable = true;
-    dotDir = "${config.xdg.configHome}/zsh";
-    completionInit = "";
-
-    profileExtra = lib.mkIf hostConfig.isLinux ''
-      [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ] && start-hyprland
-    '';
-
-    history = {
-      path = "${config.xdg.stateHome}/zsh_history";
-      size = 2000;
-      save = 2000;
-      ignoreDups = true;
-      ignoreAllDups = true;
-      ignoreSpace = true;
-      extended = true;
-      append = true;
-    };
-
-    shellAliases = {
-      ls = "eza";
-      l = "ls --color=auto --group-directories-first";
-      ll = "l -alF";
-      la = "ll -R";
-      g = "git";
-      nv = "nvim";
-    };
-
-    syntaxHighlighting.enable = true;
-
-    autosuggestion = {
-      enable = true;
-      strategy = [
-        "history"
-        "completion"
-      ];
-    };
-
-    initContent = ''
-      fpath+=("${pkgs.pure-prompt}/share/zsh/site-functions")
-      source "$XDG_CONFIG_HOME/nix/config/zsh/zshrc"
+    initExtra = ''
+      source "${pkgs.blesh}/share/blesh/ble.sh" --noattach
+      export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
+      export THEME="''${THEME:-midnight}"
+      [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
+      [[ ''${BLE_VERSION-} ]] && ble-attach
     '';
   };
 
-  home.activation.removeZshenvBridge = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    [ -L "$HOME/.zshenv" ] && rm "$HOME/.zshenv" || true
+  programs.starship = {
+    enable = true;
+    enableBashIntegration = false;
+    settings = {
+      format = lib.concatStrings [
+        "$directory"
+        "$git_branch"
+        "$git_status"
+        "$cmd_duration"
+        "$line_break"
+        "$character"
+      ];
+      add_newline = true;
+      character = {
+        success_symbol = "[>](bold)";
+        error_symbol = "[>](bold red)";
+        vimcmd_symbol = "[<](bold)";
+      };
+      directory = {
+        truncation_length = 0;
+        truncate_to_repo = false;
+      };
+      git_branch.format = "[$branch]($style) ";
+      git_status = {
+        format = "([$all_status$ahead_behind]($style) )";
+        ahead = "^";
+        behind = "v";
+        stashed = "=";
+      };
+      cmd_duration = {
+        min_time = 5000;
+        format = "[$duration]($style) ";
+      };
+    };
+  };
+
+  home.activation.removeZshFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    for f in "$HOME/.zshenv" "$HOME/.zshenv.bak"; do
+      [ -e "$f" ] && rm "$f" || true
+    done
   '';
 
   programs.fzf = {
     enable = true;
-    enableZshIntegration = true;
+    enableBashIntegration = false;
     defaultCommand = "rg --files --hidden";
     defaultOptions = [
       "--bind=ctrl-a:select-all"
@@ -260,18 +263,18 @@ in
 
   programs.eza = {
     enable = true;
-    enableZshIntegration = false;
+    enableBashIntegration = false;
     git = true;
   };
 
   programs.zoxide = {
     enable = true;
-    enableZshIntegration = true;
+    enableBashIntegration = false;
   };
 
   programs.direnv = {
     enable = true;
-    enableZshIntegration = true;
+    enableBashIntegration = false;
     nix-direnv.enable = true;
     config.global = {
       hide_env_diff = true;

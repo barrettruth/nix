@@ -37,6 +37,7 @@ return {
             args = { '-i', '2' },
             stdin = true,
         })
+        ft('sh,bash'):lint('shellcheck')
         ft('zsh'):lint('zsh')
 
         ft('proto'):fmt('buf'):lint('buf')

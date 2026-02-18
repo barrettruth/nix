@@ -82,14 +82,22 @@ in
       "storage"
       "power"
     ];
-    shell = pkgs.zsh;
+    shell = pkgs.bash;
   };
 
-  programs.zsh = {
+  programs.bash = {
     enable = true;
     shellInit = ''
-      export ZDOTDIR="$HOME/.config/zsh"
+      export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
       export THEME="midnight"
+    '';
+    interactiveShellInit = ''
+      source "${pkgs.blesh}/share/blesh/ble.sh" --noattach
+      [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
+      [[ ''${BLE_VERSION-} ]] && ble-attach
+    '';
+    loginShellInit = ''
+      [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ] && start-hyprland
     '';
   };
   programs.hyprland = {

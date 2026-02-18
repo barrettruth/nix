@@ -38,6 +38,7 @@ in
     hadolint
     mypy
     selene
+    shellcheck
 
     # runtime/tools
     nodejs
