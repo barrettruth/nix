@@ -19,6 +19,7 @@ in
     ruff
     tinymist
     vscode-langservers-extracted
+    nixd
 
     # formatters
     black
