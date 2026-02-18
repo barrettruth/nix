@@ -29,6 +29,7 @@ in
     [
       awscli2
       tree
+      typos
       jq
       curl
       wget
