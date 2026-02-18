@@ -192,20 +192,26 @@ in
     }
   '';
 
-  programs.bash = lib.mkIf (!hostConfig.isNixOS) {
+  programs.bash = {
     enable = true;
+    shellAliases = {
+      ls = "eza";
+      l = "ls --color=auto --group-directories-first";
+      ll = "l -alF";
+      la = "ll -R";
+      g = "git";
+      nv = "nvim";
+    };
     initExtra = ''
-      source "${pkgs.blesh}/share/blesh/ble.sh" --noattach
       export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
       export THEME="''${THEME:-midnight}"
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
-      [[ ''${BLE_VERSION-} ]] && ble-attach
     '';
   };
 
   programs.starship = {
     enable = true;
-    enableBashIntegration = false;
+    enableBashIntegration = true;
     settings = {
       format = lib.concatStrings [
         "$directory"
@@ -217,15 +223,19 @@ in
       ];
       add_newline = true;
       character = {
-        success_symbol = "[>](bold)";
+        success_symbol = "[>](bold magenta)";
         error_symbol = "[>](bold red)";
-        vimcmd_symbol = "[<](bold)";
+        vimcmd_symbol = "[<](bold magenta)";
       };
       directory = {
+        style = "bold blue";
         truncation_length = 0;
         truncate_to_repo = false;
       };
-      git_branch.format = "[$branch]($style) ";
+      git_branch = {
+        format = "[$branch]($style) ";
+        style = "242";
+      };
       git_status = {
         format = "([$all_status$ahead_behind]($style) )";
         ahead = "^";
@@ -247,7 +257,7 @@ in
 
   programs.fzf = {
     enable = true;
-    enableBashIntegration = false;
+    enableBashIntegration = true;
     defaultCommand = "rg --files --hidden";
     defaultOptions = [
       "--bind=ctrl-a:select-all"
@@ -263,18 +273,18 @@ in
 
   programs.eza = {
     enable = true;
-    enableBashIntegration = false;
+    enableBashIntegration = true;
     git = true;
   };
 
   programs.zoxide = {
     enable = true;
-    enableBashIntegration = false;
+    enableBashIntegration = true;
   };
 
   programs.direnv = {
     enable = true;
-    enableBashIntegration = false;
+    enableBashIntegration = true;
     nix-direnv.enable = true;
     config.global = {
       hide_env_diff = true;

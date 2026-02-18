@@ -84,16 +84,7 @@ in
     shell = pkgs.bash;
   };
 
-  programs.bash = {
-    enable = true;
-    shellInit = ''
-      export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
-      export THEME="midnight"
-    '';
-    interactiveShellInit = ''
-      [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
-    '';
-};
+  programs.bash.enable = true;
   programs.hyprland = {
     enable = true;
     portalPackage = pkgs.xdg-desktop-portal-hyprland;

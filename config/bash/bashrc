@@ -10,22 +10,10 @@ HISTSIZE=2000
 HISTFILESIZE=2000
 HISTCONTROL=ignoreboth:erasedups
 
-alias ls='eza'
-alias l='ls --color=auto --group-directories-first'
-alias ll='l -alF'
-alias la='ll -R'
-alias g='git'
-alias nv='nvim'
-
 export GPG_TTY=$(tty)
 export THEME="${THEME:-midnight}"
 export FZF_COMPLETION_TRIGGER=';'
 export FZF_TMUX=1
-
-eval "$(fzf --bash)"
-eval "$(zoxide init bash)"
-eval "$(direnv hook bash)"
-eval "$(starship init bash)"
 
 fzf-config-widget() {
   local file

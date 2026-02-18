@@ -9,6 +9,7 @@ set show-all-if-ambiguous on
 
 $if mode=vi
   set keymap vi-command
+  "\C-l": clear-screen
   "\C-p": previous-history
   "\C-n": next-history
   "\C-j": backward-char
@@ -16,6 +17,7 @@ $if mode=vi
   "\e[3~": delete-char
 
   set keymap vi-insert
+  "\C-l": clear-screen
   "\C-p": previous-history
   "\C-n": next-history
   "\C-j": backward-char
