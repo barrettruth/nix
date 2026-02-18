@@ -23,7 +23,7 @@ in
     efiSupport = true;
     device = "nodev";
     useOSProber = true;
-    configurationLimit = 2;
+    configurationLimit = 10;
     gfxmodeEfi = "1920x1200,auto";
     fontSize = 36;
   };

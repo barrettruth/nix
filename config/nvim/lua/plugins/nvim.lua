@@ -320,14 +320,6 @@ return {
                         vim.cmd.bd()
                     end
                 end,
-                k = function()
-                    oil_detail = not oil_detail
-                    if oil_detail then
-                        require("oil").set_columns({ "icon", "permissions", "size", "mtime" })
-                    else
-                        require("oil").set_columns({ "icon" })
-                    end
-                end
             },
         },
     },
