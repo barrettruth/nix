@@ -36,6 +36,7 @@ in
       tesseract
       gnumake
       gcc
+      pacman
       file
       ffmpeg
       poppler-utils
