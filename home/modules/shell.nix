@@ -238,6 +238,7 @@ in
       };
       git_status = {
         format = "([$all_status$ahead_behind]($style) )";
+        modified = "*";
         ahead = "^";
         behind = "v";
         stashed = "=";

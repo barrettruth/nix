@@ -45,6 +45,7 @@ return {
     },
     {
         'barrettruth/nonicons.nvim',
+        lazy = false,
         dir = '~/dev/nonicons.nvim',
         dependencies = { 'nvim-tree/nvim-web-devicons' },
     },
