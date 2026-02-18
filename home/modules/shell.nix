@@ -225,7 +225,6 @@ in
       character = {
         success_symbol = "[>](bold purple)";
         error_symbol = "[>](bold red)";
-        vimcmd_symbol = "[<](bold purple)";
       };
       directory = {
         style = "bold blue";
