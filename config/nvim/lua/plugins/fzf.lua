@@ -74,6 +74,7 @@ return {
         { 'gl', '<cmd>FzfLua loclist<cr>' },
     },
     opts = {
+        file_icon_padding = ' ',
         files = {
             cmd = vim.env.FZF_CTRL_T_COMMAND,
             file_icons = true,

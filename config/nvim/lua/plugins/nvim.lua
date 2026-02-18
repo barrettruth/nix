@@ -1,3 +1,39 @@
+local oil_detail = false
+
+local function parse_output(proc)
+    local result = proc:wait()
+    local ret = {}
+    if result.code == 0 then
+        for line in vim.gsplit(result.stdout, "\n", { plain = true, trimempty = true }) do
+            ret[line:gsub("/$", "")] = true
+        end
+    end
+    return ret
+end
+
+local function new_git_status()
+    return setmetatable({}, {
+        __index = function(self, key)
+            local ignored_proc = vim.system(
+                { "git", "ls-files", "--ignored", "--exclude-standard", "--others", "--directory" },
+                { cwd = key, text = true }
+            )
+            local tracked_proc = vim.system(
+                { "git", "ls-tree", "HEAD", "--name-only" },
+                { cwd = key, text = true }
+            )
+            local ret = {
+                ignored = parse_output(ignored_proc),
+                tracked = parse_output(tracked_proc),
+            }
+            rawset(self, key, ret)
+            return ret
+        end,
+    })
+end
+
+local git_status = new_git_status()
+
 return {
     {
         'barrettruth/midnight.nvim',
@@ -8,9 +44,9 @@ return {
         end,
     },
     {
-        dir = '~/dev/nonicons',
+        'barrettruth/nonicons.nvim',
+        dir = '~/dev/nonicons.nvim',
         dependencies = { 'nvim-tree/nvim-web-devicons' },
-        opts = {},
     },
     {
         'echasnovski/mini.pairs',
@@ -227,6 +263,12 @@ return {
         'stevearc/oil.nvim',
         config = function(_, opts)
             require('oil').setup(opts)
+            local refresh = require("oil.actions").refresh
+            local orig_refresh = refresh.callback
+            refresh.callback = function(...)
+                git_status = new_git_status()
+                orig_refresh(...)
+            end
             vim.api.nvim_create_autocmd('BufEnter', {
                 callback = function()
                     local ft = vim.bo.filetype
@@ -251,21 +293,16 @@ return {
             float = { border = 'single' },
             view_options = {
                 is_hidden_file = function(name, bufnr)
-                    local dir = require('oil').get_current_dir(bufnr)
+                    local dir = require("oil").get_current_dir(bufnr)
+                    local is_dotfile = vim.startswith(name, ".") and name ~= ".."
                     if not dir then
-                        return false
+                        return is_dotfile
                     end
-                    if vim.startswith(name, '.') then
-                        return false
+                    if is_dotfile then
+                        return not git_status[dir].tracked[name]
+                    else
+                        return git_status[dir].ignored[name]
                     end
-                    local git_dir = vim.fn.finddir('.git', dir .. ';')
-                    if git_dir == '' then
-                        return false
-                    end
-                    local fullpath = dir .. '/' .. name
-                    local result =
-                        vim.fn.systemlist({ 'git', 'check-ignore', fullpath })
-                    return #result > 0
                 end,
             },
             keymaps = {
@@ -275,7 +312,7 @@ return {
                 ['<C-r>'] = 'actions.refresh',
                 ['<C-s>'] = { 'actions.select', opts = { vertical = true } },
                 ['<C-x>'] = { 'actions.select', opts = { horizontal = true } },
-                ['q'] = function()
+                q = function()
                     local ok, bufremove = pcall(require, 'mini.bufremove')
                     if ok then
                         bufremove.delete()
@@ -283,6 +320,14 @@ return {
                         vim.cmd.bd()
                     end
                 end,
+                k = function()
+                    oil_detail = not oil_detail
+                    if oil_detail then
+                        require("oil").set_columns({ "icon", "permissions", "size", "mtime" })
+                    else
+                        require("oil").set_columns({ "icon" })
+                    end
+                end
             },
         },
     },
@@ -311,15 +356,15 @@ return {
         },
     },
     { 'tpope/vim-abolish', event = 'VeryLazy' },
-    { 'tpope/vim-sleuth', event = 'BufReadPost' },
+    { 'tpope/vim-sleuth',  event = 'BufReadPost' },
     {
         'kylechui/nvim-surround',
         config = true,
         keys = {
-            { 'cs', mode = 'n' },
-            { 'ds', mode = 'n' },
-            { 'ys', mode = 'n' },
-            { 'yS', mode = 'n' },
+            { 'cs',  mode = 'n' },
+            { 'ds',  mode = 'n' },
+            { 'ys',  mode = 'n' },
+            { 'yS',  mode = 'n' },
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },

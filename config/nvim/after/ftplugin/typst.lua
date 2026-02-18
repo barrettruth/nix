@@ -10,9 +10,16 @@ vim.keymap.set('n', '<leader>t', function()
     local ret = vim.system({ 'hyprctl', 'clients', '-j' }):wait()
     if ret.code == 0 then
         for _, c in ipairs(vim.json.decode(ret.stdout)) do
-            if (c.class or ''):lower():find('sioyek')
-                and (c.title or ''):find(basename, 1, true) then
-                vim.system({ 'hyprctl', 'dispatch', 'closewindow', 'address:' .. c.address })
+            if
+                (c.class or ''):lower():find('sioyek')
+                and (c.title or ''):find(basename, 1, true)
+            then
+                vim.system({
+                    'hyprctl',
+                    'dispatch',
+                    'closewindow',
+                    'address:' .. c.address,
+                })
                 return
             end
         end

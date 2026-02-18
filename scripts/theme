@@ -22,7 +22,7 @@ else
     if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
       require fuzzel
       count="$(printf "%s\n" "$themes" | wc -l)"
-      theme="$(printf "%s\n" "$themes" | fuzzel --dmenu --prompt="theme:  " --lines="$count")"
+      theme="$(printf "%s\n" "$themes" | fuzzel --dmenu --hide-prompt --lines="$count")"
     else
       require dmenu
       theme="$(printf "%s\n" "$themes" | dmenu -p 'select theme: ')"
