@@ -242,6 +242,10 @@ in
         ahead = "^";
         behind = "v";
         stashed = "=";
+        deleted = "-";
+        diverged = "^v";
+        conflicted = "m";
+        renamed = "->";
       };
       cmd_duration = {
         min_time = 5000;
