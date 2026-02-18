@@ -43,6 +43,7 @@ for _, server in ipairs({
     'emmet_language_server',
     'eslint',
     'html',
+    'nixd',
     'mdx_analyzer',
     'jsonls',
     'vtsls',
