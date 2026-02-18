@@ -232,12 +232,12 @@ in
         truncate_to_repo = false;
       };
       git_branch = {
-        symbol = "";
-        format = "[$symbol$branch]($style) ";
+        format = "[$branch]($style)";
         style = "242";
       };
       git_status = {
-        format = "([$all_status$ahead_behind]($style) )";
+        format = "[$all_status$ahead_behind]($style) ";
+        style = "242";
         modified = "*";
         ahead = "^";
         behind = "v";
