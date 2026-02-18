@@ -7,9 +7,6 @@
 }:
 
 let
-  c = config.colors;
-  repoDir = "${config.home.homeDirectory}/.config/nix";
-
   ripgrep = config.programs.ripgrep.enable;
 
   claude = true;
@@ -268,6 +265,11 @@ in
   programs.zoxide = {
     enable = true;
     enableZshIntegration = true;
+  };
+
+  documentation = {
+    enable = true;
+    man.enable = true;
   };
 
   programs.direnv = {
