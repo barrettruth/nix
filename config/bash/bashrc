@@ -21,12 +21,12 @@ eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 
 fzf-config-widget() {
-  local file
-  file="$(FZF_CTRL_T_COMMAND="fd --type file --hidden . \"$XDG_CONFIG_HOME\"/nix | sed \"s|$HOME|~|g\"" fzf --reverse)" || return
-  file="${file/#\~/$HOME}"
-  READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}${file}${READLINE_LINE:$READLINE_POINT}"
-  READLINE_POINT=$(( READLINE_POINT + ${#file} ))
+  local selected
+  selected="$(FZF_CTRL_T_COMMAND="rg --files --hidden $HOME/.config" __fzf_select__)"
+  READLINE_LINE="${READLINE_LINE:0:READLINE_POINT}$selected${READLINE_LINE:READLINE_POINT}"
+  READLINE_POINT=$((READLINE_POINT + ${#selected}))
 }
-bind -x '"\C-e": fzf-config-widget'
+bind -m vi-insert -x '"\C-e": fzf-config-widget'
+bind -m vi-command -x '"\C-e": fzf-config-widget'
 
 [ -r "$OPAMROOT/opam-init/init.sh" ] && . "$OPAMROOT/opam-init/init.sh" > /dev/null 2> /dev/null
