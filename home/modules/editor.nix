@@ -44,6 +44,7 @@ in
     nodejs
     luarocks
     tree-sitter
+    tree-sitter-cli
     nixfmt-tree
     (texlive.combine {
       inherit (texlive)
