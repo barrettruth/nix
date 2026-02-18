@@ -15,6 +15,11 @@ export THEME="${THEME:-midnight}"
 export FZF_COMPLETION_TRIGGER=';'
 export FZF_TMUX=1
 
+eval "$(fzf --bash)"
+eval "$(zoxide init bash)"
+eval "$(direnv hook bash)"
+eval "$(starship init bash)"
+
 fzf-config-widget() {
   local file
   file="$(FZF_CTRL_T_COMMAND="fd --type file --hidden . \"$XDG_CONFIG_HOME\"/nix | sed \"s|$HOME|~|g\"" fzf --reverse)" || return

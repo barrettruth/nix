@@ -192,7 +192,7 @@ in
     }
   '';
 
-  programs.bash = {
+  programs.bash = lib.mkIf (!hostConfig.isNixOS) {
     enable = true;
     shellAliases = {
       ls = "eza";
@@ -211,7 +211,7 @@ in
 
   programs.starship = {
     enable = true;
-    enableBashIntegration = true;
+    enableBashIntegration = false;
     settings = {
       format = lib.concatStrings [
         "$directory"
@@ -257,7 +257,7 @@ in
 
   programs.fzf = {
     enable = true;
-    enableBashIntegration = true;
+    enableBashIntegration = false;
     defaultCommand = "rg --files --hidden";
     defaultOptions = [
       "--bind=ctrl-a:select-all"
@@ -273,18 +273,18 @@ in
 
   programs.eza = {
     enable = true;
-    enableBashIntegration = true;
+    enableBashIntegration = false;
     git = true;
   };
 
   programs.zoxide = {
     enable = true;
-    enableBashIntegration = true;
+    enableBashIntegration = false;
   };
 
   programs.direnv = {
     enable = true;
-    enableBashIntegration = true;
+    enableBashIntegration = false;
     nix-direnv.enable = true;
     config.global = {
       hide_env_diff = true;

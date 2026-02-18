@@ -84,7 +84,24 @@ in
     shell = pkgs.bash;
   };
 
-  programs.bash.enable = true;
+  programs.bash = {
+    enable = true;
+    shellAliases = {
+      ls = "eza";
+      l = "ls --color=auto --group-directories-first";
+      ll = "l -alF";
+      la = "ll -R";
+      g = "git";
+      nv = "nvim";
+    };
+    shellInit = ''
+      export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
+      export THEME="midnight"
+    '';
+    interactiveShellInit = ''
+      [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
+    '';
+  };
   programs.hyprland = {
     enable = true;
     portalPackage = pkgs.xdg-desktop-portal-hyprland;
