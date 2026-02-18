@@ -22,8 +22,11 @@ eval "$(zoxide init bash)"
 
 fzf-config-widget() {
   local selected
-  selected="$(FZF_CTRL_T_COMMAND="rg --files --hidden $HOME/.config" __fzf_select__)"
-  READLINE_LINE="${READLINE_LINE:0:READLINE_POINT}$selected${READLINE_LINE:READLINE_POINT}"
+  selected="$(rg --files --hidden "$HOME"/.config | sed "s|$HOME|~|" | \
+    FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "-m") \
+    FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))" || return
+  selected="${selected//$'\n'/ }"
+  READLINE_LINE="${READLINE_LINE:0:READLINE_POINT}${selected}${READLINE_LINE:READLINE_POINT}"
   READLINE_POINT=$((READLINE_POINT + ${#selected}))
 }
 bind -m vi-insert -x '"\C-e": fzf-config-widget'
