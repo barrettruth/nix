@@ -45,6 +45,11 @@ in
   services.automatic-timezoned.enable = true;
   services.geoclue2.enable = true;
   services.pcscd.enable = true;
+  documentation.man = {
+    enable = true;
+    generateCaches = true;
+  };
+
   i18n.defaultLocale = "en_US.UTF-8";
 
   security.pam.services.hyprlock = { };
