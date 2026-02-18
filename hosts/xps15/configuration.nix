@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  hyprland,
   ...
 }:
 
@@ -23,7 +22,7 @@ in
     efiSupport = true;
     device = "nodev";
     useOSProber = true;
-    configurationLimit = 10;
+    configurationLimit = 5;
     gfxmodeEfi = "1920x1200,auto";
     fontSize = 36;
   };
@@ -99,7 +98,6 @@ in
 };
   programs.hyprland = {
     enable = true;
-    package = hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     portalPackage = pkgs.xdg-desktop-portal-hyprland;
   };
 
@@ -185,8 +183,6 @@ in
       "root"
       "barrett"
     ];
-    substituters = [ "https://hyprland.cachix.org" ];
-    trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
   };
 
   nix.gc = {

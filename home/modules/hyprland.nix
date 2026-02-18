@@ -3,7 +3,6 @@
   lib,
   config,
   hostConfig,
-  hyprland ? null,
   ...
 }:
 
@@ -38,13 +37,7 @@ in
 {
   wayland.windowManager.hyprland = {
     enable = true;
-    package =
-      if !hostConfig.isNixOS then
-        null
-      else if hyprland != null then
-        hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland
-      else
-        pkgs.hyprland;
+    package = if hostConfig.isNixOS then pkgs.hyprland else null;
     portalPackage = null;
     systemd.enable = hostConfig.isNixOS;
 

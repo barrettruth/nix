@@ -10,7 +10,6 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
-    hyprland.url = "github:hyprwm/Hyprland";
   };
 
   outputs =
@@ -20,7 +19,6 @@
       nixos-hardware,
       zen-browser,
       claude-code,
-      hyprland,
       ...
     }:
     let
@@ -120,13 +118,13 @@
             home-manager.backupFileExtension = "bak";
             home-manager.users.barrett = import ./home/home.nix;
             home-manager.extraSpecialArgs = {
-              inherit zen-browser hyprland;
+              inherit zen-browser;
               hostConfig = xps15Config;
             };
           }
         ];
         specialArgs = {
-          inherit nixpkgs hyprland;
+          inherit nixpkgs;
         };
       };
 
