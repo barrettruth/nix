@@ -223,9 +223,9 @@ in
       ];
       add_newline = true;
       character = {
-        success_symbol = "[>](bold magenta)";
+        success_symbol = "[>](bold purple)";
         error_symbol = "[>](bold red)";
-        vimcmd_symbol = "[<](bold magenta)";
+        vimcmd_symbol = "[<](bold purple)";
       };
       directory = {
         style = "bold blue";
