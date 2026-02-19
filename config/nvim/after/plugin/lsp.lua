@@ -27,14 +27,6 @@ vim.lsp.config('*', {
     flags = { debounce_text_changes = 0 },
 })
 
-map({
-    { 'n', 'x' },
-    'gF',
-    function()
-        vim.lsp.buf.format({ async = true })
-    end,
-})
-
 for _, server in ipairs({
     'bashls',
     'basedpyright',

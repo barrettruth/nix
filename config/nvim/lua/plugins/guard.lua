@@ -11,7 +11,7 @@ return {
         }
     end,
     keys = {
-        { 'gF', '<cmd>Guard fmt<CR>', mode = { 'n', 'x' } },
+        { 'gF', '<cmd>Guard fmt<cr>', mode = { 'n', 'x' } },
     },
     config = function()
         local ft = require('guard.filetype')

@@ -3,30 +3,6 @@ return {
         'nvim-treesitter/nvim-treesitter',
         branch = 'main',
         build = ':TSUpdate all',
-        init = function()
-            vim.api.nvim_create_autocmd('FileType', {
-                pattern = '*',
-                callback = function()
-                    local bufnr = vim.api.nvim_get_current_buf()
-                    local lines = vim.api.nvim_buf_line_count(bufnr)
-
-                    if lines < 5000 then
-                        pcall(vim.treesitter.start)
-                    else
-                        vim.notify_once(
-                            ('Skipping tree-sitter for bufnr %s; file too large (%s >= 5000 lines)'):format(
-                                bufnr,
-                                lines
-                            )
-                        )
-                    end
-                end,
-                group = vim.api.nvim_create_augroup(
-                    'ATreeSitter',
-                    { clear = true }
-                ),
-            })
-        end,
         opts = {
             auto_install = true,
         },
@@ -79,33 +55,47 @@ return {
             end
 
             local move = require('nvim-treesitter-textobjects.move')
-            local move_maps = {
-                { ']a', 'goto_next_start', '@parameter.inner' },
-                { ']s', 'goto_next_start', '@class.outer' },
-                { ']f', 'goto_next_start', '@function.outer' },
-                { ']i', 'goto_next_start', '@conditional.outer' },
-                { ']/', 'goto_next_start', '@comment.outer' },
-                { ']A', 'goto_next_end', '@parameter.inner' },
-                { ']F', 'goto_next_end', '@function.outer' },
-                { ']I', 'goto_next_end', '@conditional.outer' },
-                { '[a', 'goto_previous_start', '@parameter.inner' },
-                { '[s', 'goto_previous_start', '@class.outer' },
-                { '[f', 'goto_previous_start', '@function.outer' },
-                { '[i', 'goto_previous_start', '@conditional.outer' },
-                { '[/', 'goto_previous_start', '@comment.outer' },
-                { '[A', 'goto_previous_end', '@parameter.inner' },
-                { '[F', 'goto_previous_end', '@function.outer' },
-                { '[I', 'goto_previous_end', '@conditional.outer' },
+            local move_textobjects = {
+                { 'a', '@parameter.inner' },
+                { 's', '@class.outer' },
+                { 'f', '@function.outer' },
+                { 'i', '@conditional.outer' },
+                { '/', '@comment.outer' },
             }
             for _, m in ipairs({ 'n', 'x', 'o' }) do
-                for _, t in ipairs(move_maps) do
+                for _, t in ipairs(move_textobjects) do
+                    local key, capture = t[1], t[2]
                     map({
                         m,
-                        t[1],
+                        ']' .. key,
                         function()
-                            move[t[2]](t[3], 'textobjects')
+                            move.goto_next_start(capture, 'textobjects')
                         end,
                     })
+                    map({
+                        m,
+                        '[' .. key,
+                        function()
+                            move.goto_previous_start(capture, 'textobjects')
+                        end,
+                    })
+                    local upper = key:upper()
+                    if upper ~= key then
+                        map({
+                            m,
+                            ']' .. upper,
+                            function()
+                                move.goto_next_end(capture, 'textobjects')
+                            end,
+                        })
+                        map({
+                            m,
+                            '[' .. upper,
+                            function()
+                                move.goto_previous_end(capture, 'textobjects')
+                            end,
+                        })
+                    end
                 end
             end
 

@@ -14,6 +14,7 @@ return {
         vim.o.pumheight = 15
         opts.completion.menu.max_height = vim.o.pumheight
 
+        require('config.blink')
         require('blink.cmp').setup(opts)
     end,
     opts = {
@@ -47,8 +48,19 @@ return {
                 draw = {
                     treesitter = { 'lsp', 'snippets', 'buffer' },
                     columns = {
-                        { 'kind_icon' },
                         { 'label', 'label_description', gap = 1 },
+                        { 'kind' },
+                    },
+                    components = {
+                        kind = {
+                            ellipsis = false,
+                            text = function(ctx)
+                                return '[' .. ctx.kind .. ']'
+                            end,
+                            highlight = function(ctx)
+                                return ctx.kind_hl
+                            end,
+                        },
                     },
                 },
             },
@@ -68,16 +80,20 @@ return {
                 'buffer',
                 'env',
                 'snippets',
-                -- 'sshconfig',
+                'sshconfig',
             },
             providers = {
                 git = {
                     module = 'blink-cmp-git',
                     name = 'Git',
                 },
+                sshconfig = {
+                    name = 'SshConfig',
+                    module = 'blink-cmp-sshconfig',
+                },
                 conventional_commits = {
                     name = 'Conventional Commits',
-                    module = 'config.cmp_cc',
+                    module = 'config.blink.conventional_commits',
                 },
                 lazydev = {
                     name = 'LazyDev',
@@ -88,10 +104,6 @@ return {
                     name = 'Env',
                     module = 'blink-cmp-env',
                 },
-                -- sshconfig = {
-                --     name = 'SshConfig',
-                --     module = 'blink-cmp-sshconfig',
-                -- },
             },
         },
     },
