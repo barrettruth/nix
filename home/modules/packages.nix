@@ -121,7 +121,8 @@ in
       (if hostConfig.isLinux then sioyek-wrapped else pkgs.sioyek)
     ]
     ++ lib.optionals (vesktop && hostConfig.isLinux) [ pkgs.vesktop ]
-    ++ lib.optionals (signal && hostConfig.isLinux) [ pkgs.signal-desktop ];
+    ++ lib.optionals (signal && hostConfig.isLinux) [ pkgs.signal-desktop ]
+    ++ lib.optionals hostConfig.isLinux [ pkgs.element-desktop ];
 
   xdg.configFile."sioyek/keys_user.config" = lib.mkIf sioyek {
     text = ''
