@@ -1,6 +1,12 @@
 return {
     'ibhagwan/fzf-lua',
     config = function(_, opts)
+        local has_devicons = pcall(require, 'nvim-web-devicons')
+        opts.files = opts.files or {}
+        opts.files.file_icons = has_devicons
+        opts.grep = opts.grep or {}
+        opts.grep.file_icons = has_devicons
+
         require('fzf-lua').setup(opts)
 
         vim.api.nvim_create_autocmd('FileType', {
@@ -77,7 +83,6 @@ return {
         file_icon_padding = ' ',
         files = {
             cmd = vim.env.FZF_CTRL_T_COMMAND,
-            file_icons = true,
             no_header_i = true,
         },
         fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
@@ -85,7 +90,6 @@ return {
             ''
         ),
         grep = {
-            file_icons = true,
             no_header_i = true,
             RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
         },

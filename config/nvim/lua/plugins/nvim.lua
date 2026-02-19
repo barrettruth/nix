@@ -38,16 +38,17 @@ return {
     {
         'barrettruth/midnight.nvim',
         dir = '~/dev/midnight.nvim',
-        enabled = true,
         config = function()
             vim.cmd.colorscheme('midnight')
         end,
     },
     {
         'barrettruth/nonicons.nvim',
+        enabled = false,
         lazy = false,
-        dir = '~/dev/nonicons.nvim',
-        dependencies = { 'nvim-tree/nvim-web-devicons' },
+        dependencies = {
+            { 'nvim-tree/nvim-web-devicons', enabled = false, },
+        },
     },
     {
         'echasnovski/mini.pairs',
@@ -163,7 +164,7 @@ return {
     },
     {
         'lervag/vimtex',
-        lazy = false,
+        ft = { 'latex' },
         init = function()
             vim.g.vimtex_view_method = 'sioyek'
             vim.g.vimtex_quickfix_mode = 0

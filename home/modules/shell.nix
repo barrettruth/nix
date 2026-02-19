@@ -36,7 +36,6 @@ in
       tesseract
       gnumake
       gcc
-      pacman
       file
       ffmpeg
       poppler-utils
@@ -46,6 +45,7 @@ in
     ]
     ++ lib.optionals hostConfig.isLinux [ xclip ]
     ++ lib.optionals rust [ rustup ]
+    ++ lib.optionals python [ uv ]
     ++ lib.optionals claude [ claude-code ];
 
   home.sessionVariables = lib.mkMerge [
