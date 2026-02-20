@@ -163,6 +163,7 @@ in
 
   xdg.configFile."rg/config" = lib.mkIf ripgrep {
     text = ''
+      --hidden
       --column
       --no-heading
       --smart-case
