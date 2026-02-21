@@ -161,7 +161,6 @@ in
         interval = 1;
         signal = 2;
         on-click = "pgrep pavucontrol && pkill pavucontrol || pavucontrol --tab=4";
-        on-click-right = "ctl audio in";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-";
@@ -181,7 +180,6 @@ in
         tooltip = true;
         tooltip-format = "Volume: {volume}%\nOutput: {desc}";
         on-click = "pgrep pavucontrol && pkill pavucontrol || pavucontrol --tab=3";
-        on-click-right = "ctl audio out";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
