@@ -400,11 +400,12 @@ power)
   ;;
 idle)
   require notify-send
-  if pkill hypridle; then
+  if systemctl --user is-active --quiet hypridle.service; then
+    systemctl --user stop hypridle.service
     tmux set -g lock-after-time 0 2>/dev/null
     notify-send -a ctl -t 2500 'idle off'
   else
-    hypridle &
+    systemctl --user start hypridle.service
     tmux set -g lock-after-time 300 2>/dev/null
     notify-send -a ctl -t 2500 'idle on'
   fi
