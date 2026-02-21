@@ -259,7 +259,7 @@ return {
                 hsl_fn = true,
             },
         },
-        event = 'VeryLazy',
+        event = 'BufReadPre',
     },
     {
         'stevearc/oil.nvim',
