@@ -98,6 +98,11 @@ in
       export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
       export THEME="midnight"
     '';
+    loginShellInit = ''
+      if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" -eq 1 ]; then
+        exec start-hyprland
+      fi
+    '';
     interactiveShellInit = ''
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
     '';

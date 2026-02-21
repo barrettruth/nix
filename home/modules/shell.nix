@@ -165,6 +165,7 @@ in
   xdg.configFile."rg/config" = lib.mkIf ripgrep {
     text = ''
       --hidden
+      --glob=!.git/
       --column
       --no-heading
       --smart-case
