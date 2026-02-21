@@ -50,7 +50,6 @@ in
   home.packages =
     lib.optionals hostConfig.isNixOS [
       pkgs.xdg-desktop-portal-gtk
-      pkgs.hyprpaper
     ]
     ++ [
       pkgs.hyprlock
@@ -59,14 +58,16 @@ in
   xdg.configFile."hypr/themes/midnight.conf".text = mkHyprTheme config.palettes.midnight;
   xdg.configFile."hypr/themes/daylight.conf".text = mkHyprTheme config.palettes.daylight;
 
-  xdg.configFile."hypr/hyprpaper.conf".text = ''
-    wallpaper {
-      monitor =
-      path = ${config.xdg.userDirs.pictures}/Screensavers/wallpaper.jpg
-    }
-
-    splash = false
-  '';
+  services.hyprpaper = {
+    enable = true;
+    settings = {
+      splash = false;
+      wallpaper = {
+        monitor = "";
+        path = "${config.xdg.userDirs.pictures}/Screensavers/wallpaper.jpg";
+      };
+    };
+  };
 
   xdg.configFile."hypr/hyprlock.conf".text =
     let

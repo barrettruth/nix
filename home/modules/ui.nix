@@ -82,7 +82,6 @@ in
     psmisc
     fuzzel
     wl-clipboard
-    cliphist
     grim
     slurp
     wf-recorder
@@ -291,6 +290,8 @@ in
       }
     '';
   };
+
+  services.cliphist.enable = true;
 
   services.dunst = {
     enable = true;
