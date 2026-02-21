@@ -92,6 +92,7 @@ in
     glib.bin
     gsettings-desktop-schemas
     (python3.withPackages (ps: [ ps.pillow ]))
+    pavucontrol
   ];
 
   programs.waybar = {
@@ -110,6 +111,7 @@ in
         "tray"
         "custom/keyboard"
         "privacy"
+        "custom/mic"
         "pulseaudio"
         "network"
         "battery"
@@ -153,6 +155,18 @@ in
         rewrite = { };
       };
 
+      "custom/mic" = {
+        exec = ''sh -c 'out=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@); vol=$(echo "$out" | awk "{printf \"%.0f\", \$2 * 100}"); if echo "$out" | grep -q MUTED; then echo "{\"text\":\"󰍭\",\"tooltip\":\"Mic: muted\",\"class\":\"muted\"}"; else echo "{\"text\":\"󰍬\",\"tooltip\":\"Mic: ''${vol}%\",\"class\":\"active\"}"; fi' '';
+        return-type = "json";
+        interval = 1;
+        signal = 2;
+        on-click = "pgrep pavucontrol && pkill pavucontrol || pavucontrol --tab=4";
+        on-click-right = "ctl audio in";
+        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
+        on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ --limit 1.0";
+        on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-";
+      };
+
       pulseaudio = {
         format = "{icon}";
         format-muted = "󰖁";
@@ -166,8 +180,9 @@ in
         signal = 1;
         tooltip = true;
         tooltip-format = "Volume: {volume}%\nOutput: {desc}";
-        on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+        on-click = "pgrep pavucontrol && pkill pavucontrol || pavucontrol --tab=3";
         on-click-right = "ctl audio out";
+        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
       };
@@ -256,6 +271,7 @@ in
       #custom-keyboard,
       #privacy,
       #tray,
+      #custom-mic,
       #pulseaudio,
       #network,
       #battery,
