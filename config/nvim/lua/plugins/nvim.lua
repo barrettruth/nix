@@ -263,6 +263,7 @@ return {
     },
     {
         'stevearc/oil.nvim',
+        dir = '~/dev/oil.nvim',
         config = function(_, opts)
             require('oil').setup(opts)
             local refresh = require("oil.actions").refresh

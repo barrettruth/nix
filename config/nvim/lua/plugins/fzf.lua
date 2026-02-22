@@ -1,13 +1,16 @@
 return {
     'ibhagwan/fzf-lua',
     config = function(_, opts)
+        local fzf = require('fzf-lua')
+
         local has_devicons = pcall(require, 'nvim-web-devicons')
         opts.files = opts.files or {}
         opts.files.file_icons = has_devicons
         opts.grep = opts.grep or {}
         opts.grep.file_icons = has_devicons
+        opts.grep.rg_opts = fzf.defaults.grep.rg_opts:gsub("%-e$", "--glob='!.git/' -e")
 
-        require('fzf-lua').setup(opts)
+        fzf.setup(opts)
 
         vim.api.nvim_create_autocmd('FileType', {
             pattern = 'fzf',
