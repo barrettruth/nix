@@ -333,6 +333,7 @@ in
         extraConfig = ''
           set -g @continuum-restore 'on'
           set -g @continuum-save-interval '10'
+          set -g status-right '#{E:@bar-content}'
         '';
       }
     ];
