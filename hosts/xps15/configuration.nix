@@ -16,7 +16,7 @@ let
     THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
     export THEME
     unset _tf
-    exec Hyprland
+    exec start-hyprland
   '';
 in
 {
