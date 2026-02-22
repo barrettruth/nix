@@ -136,42 +136,6 @@ volume)
   fi
   notify-send -a ctl -t 2500 -r 5556 "$icon  $bar"
   ;;
-wifi)
-  case "$2" in
-  pick)
-    require fuzzel
-    station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
-    [ -z "$station" ] && { echo "ctl: no wifi device found" >&2; exit 1; }
-    iwctl station "$station" scan 2>/dev/null
-    sleep 1
-    networks=$(iwctl station "$station" get-networks 2>/dev/null | \
-      sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
-      awk 'NR>4 && /\S/' | \
-      sed 's/^[[:space:]>]*//' | \
-      sed 's/[[:space:]]\{3,\}.*//' | \
-      sed 's/[[:space:]]*$//' | \
-      grep -v '^-')
-    [ -z "$networks" ] && exit 0
-    count=$(printf '%s\n' "$networks" | wc -l)
-    ssid=$(printf '%s\n' "$networks" | fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count")
-    [ -z "$ssid" ] && exit 0
-    known=$(iwctl known-networks list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g')
-    if printf '%s' "$known" | grep -qF "$ssid"; then
-      iwctl station "$station" connect "$ssid"
-    elif iwctl station "$station" get-networks 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | grep -F "$ssid" | grep -qi "open"; then
-      iwctl station "$station" connect "$ssid"
-    else
-      pass=$(printf '' | fuzzel --dmenu --prompt="passphrase:  " --no-icons --password --lines=0)
-      [ -z "$pass" ] && exit 0
-      iwctl station "$station" connect "$ssid" --passphrase "$pass"
-    fi
-    ;;
-  *)
-    echo "Usage: ctl wifi {pick}" >&2
-    exit 1
-    ;;
-  esac
-  ;;
 media)
   if pgrep -x wf-recorder >/dev/null 2>&1; then
     pkill -INT wf-recorder
@@ -411,7 +375,7 @@ idle)
   fi
   ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|brightness|volume|media|wallpaper|power|idle}" >&2
   exit 1
   ;;
 esac
