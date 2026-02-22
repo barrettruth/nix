@@ -113,6 +113,10 @@ in
     (lib.mkIf claude {
       CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
     })
+    {
+      THEME = config.theme;
+      INPUTRC = "${repoDir}/config/bash/inputrc";
+    }
   ];
 
   home.sessionPath = lib.mkMerge [
@@ -195,26 +199,19 @@ in
     }
   '';
 
-  programs.bash = lib.mkIf (!hostConfig.isNixOS) {
+  programs.bash = {
     enable = true;
-    shellAliases = {
-      ls = "eza";
-      l = "ls --color=auto --group-directories-first";
-      ll = "l -alF";
-      la = "ll -R";
+    shellAliases = lib.mkIf (!hostConfig.isNixOS) {
       g = "git";
       nv = "nvim";
     };
-    initExtra = ''
-      export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
-      export THEME="''${THEME:-midnight}"
+    initExtra = lib.mkAfter ''
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
     '';
   };
 
   programs.starship = {
     enable = true;
-    enableBashIntegration = false;
     settings = {
       format = lib.concatStrings [
         "$directory"
@@ -265,7 +262,6 @@ in
 
   programs.fzf = {
     enable = true;
-    enableBashIntegration = false;
     defaultCommand = "rg --files --hidden";
     defaultOptions = [
       "--bind=ctrl-a:select-all"
@@ -281,18 +277,15 @@ in
 
   programs.eza = {
     enable = true;
-    enableBashIntegration = false;
     git = true;
   };
 
   programs.zoxide = {
     enable = true;
-    enableBashIntegration = false;
   };
 
   programs.direnv = {
     enable = true;
-    enableBashIntegration = false;
     nix-direnv.enable = true;
     config.global = {
       hide_env_diff = true;

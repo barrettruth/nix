@@ -1,24 +1,13 @@
-for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
-  [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
-done
-unset _hm
-
-shopt -s autocd globstar histappend
+shopt -s autocd cdspell dirspell globstar histappend
 
 HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/bash_history"
-HISTSIZE=2000
-HISTFILESIZE=2000
+HISTSIZE=50000
+HISTFILESIZE=50000
 HISTCONTROL=ignoreboth:erasedups
 
 export GPG_TTY=$(tty)
-export THEME="${THEME:-midnight}"
 export FZF_COMPLETION_TRIGGER=';'
 export FZF_TMUX=1
-
-eval "$(fzf --bash)"
-eval "$(direnv hook bash)"
-eval "$(starship init bash)"
-eval "$(zoxide init bash)"
 
 fzf-config-widget() {
   local selected

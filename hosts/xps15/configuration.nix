@@ -87,19 +87,17 @@ in
   programs.bash = {
     enable = true;
     shellAliases = {
-      ls = "eza";
-      l = "ls --color=auto --group-directories-first";
-      ll = "l -alF";
-      la = "ll -R";
       g = "git";
       nv = "nvim";
     };
-    shellInit = ''
-      export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
-      export THEME="midnight"
-    '';
-    interactiveShellInit = ''
-      [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
+    loginShellInit = ''
+      for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
+        [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
+      done
+      unset _hm
+      if [ "$(tty)" = "/dev/tty1" ]; then
+        exec Hyprland
+      fi
     '';
   };
   programs.hyprland = {
