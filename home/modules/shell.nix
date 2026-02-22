@@ -114,7 +114,6 @@ in
       CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
     })
     {
-      THEME = config.theme;
       INPUTRC = "${repoDir}/config/bash/inputrc";
     }
   ];

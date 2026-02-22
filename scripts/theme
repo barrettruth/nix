@@ -49,6 +49,11 @@ fi
 [ -z "$theme" ] && exit 1
 echo "$themes" | grep -Fxq "$theme" || exit 1
 
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
+mkdir -p "$state_dir"
+printf '%s\n' "$theme" > "$state_dir/theme"
+export THEME="$theme"
+
 case "$(uname)" in
 Linux)
   case "$theme" in

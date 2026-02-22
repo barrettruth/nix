@@ -1,3 +1,8 @@
+_tf="${XDG_STATE_HOME:-$HOME/.local/state}/theme"
+THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
+export THEME
+unset _tf
+
 shopt -s autocd cdspell dirspell globstar histappend
 
 HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/bash_history"

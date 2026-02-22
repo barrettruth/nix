@@ -95,6 +95,10 @@ in
         [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
       done
       unset _hm
+      _tf="''${XDG_STATE_HOME:-$HOME/.local/state}/theme"
+      THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
+      export THEME
+      unset _tf
       if [ "$(tty)" = "/dev/tty1" ]; then
         exec Hyprland
       fi
