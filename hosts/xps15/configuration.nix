@@ -8,7 +8,7 @@
 let
   tuigreet = lib.getExe pkgs.tuigreet;
   loginShell = pkgs.writeShellScript "login-shell" ''
-    exec $(getent passwd $(id -un) | cut -d: -f7) -lc 'exec start-hyprland'
+    exec $(getent passwd $(id -un) | cut -d: -f7) -l
   '';
 in
 {

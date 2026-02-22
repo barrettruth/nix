@@ -132,8 +132,7 @@ in
         format = "󰌌";
         tooltip = true;
         tooltip-format = "Layout: {}";
-        on-click = "ctl keyboard next";
-        on-click-right = "ctl keyboard pick";
+        on-click = "ctl keyboard pick";
       };
 
       privacy = {
@@ -196,7 +195,6 @@ in
         tooltip-format-ethernet = "Interface: {ifname}\nIP: {ipaddr}/{cidr}\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}";
         tooltip-format-disconnected = "Wireless LAN disconnected";
         on-click = "pgrep iwgtk && pkill iwgtk || iwgtk";
-        on-click-right = "rfkill toggle wlan";
       };
 
       battery = {
