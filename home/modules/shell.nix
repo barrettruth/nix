@@ -204,6 +204,9 @@ in
       g = "git";
       nv = "nvim";
     };
+    bashrcExtra = ''
+      [[ $- == *i* ]] || return 0
+    '';
     initExtra = lib.mkAfter ''
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
     '';
