@@ -8,7 +8,7 @@
 let
   tuigreet = lib.getExe pkgs.tuigreet;
   loginShell = pkgs.writeShellScript "login-shell" ''
-    exec $(getent passwd $(id -un) | cut -d: -f7) -l
+    exec $(getent passwd $(id -un) | cut -d: -f7) -lc 'exec start-hyprland'
   '';
 in
 {
@@ -98,11 +98,6 @@ in
       export INPUTRC="$HOME/.config/nix/config/bash/inputrc"
       export THEME="midnight"
     '';
-    # loginShellInit = ''
-    #   if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" -eq 1 ]; then
-    #     exec start-hyprland
-    #   fi
-    # '';
     interactiveShellInit = ''
       [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
     '';
