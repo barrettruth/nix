@@ -7,8 +7,16 @@
 
 let
   tuigreet = lib.getExe pkgs.tuigreet;
-  loginShell = pkgs.writeShellScript "login-shell" ''
-    exec $(getent passwd $(id -un) | cut -d: -f7) -l
+  hyprSession = pkgs.writeShellScript "hypr-session" ''
+    for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
+      [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
+    done
+    unset _hm
+    _tf="''${XDG_STATE_HOME:-$HOME/.local/state}/theme"
+    THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
+    export THEME
+    unset _tf
+    exec Hyprland
   '';
 in
 {
@@ -90,19 +98,6 @@ in
       g = "git";
       nv = "nvim";
     };
-    loginShellInit = ''
-      for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
-        [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
-      done
-      unset _hm
-      _tf="''${XDG_STATE_HOME:-$HOME/.local/state}/theme"
-      THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
-      export THEME
-      unset _tf
-      if [ "$(tty)" = "/dev/tty1" ]; then
-        exec Hyprland
-      fi
-    '';
   };
   programs.hyprland = {
     enable = true;
@@ -137,7 +132,7 @@ in
   services.greetd = {
     enable = true;
     settings.default_session = {
-      command = "${tuigreet} --time --asterisks --cmd ${loginShell}";
+      command = "${tuigreet} --time --asterisks --cmd ${hyprSession}";
       user = "greeter";
     };
   };
