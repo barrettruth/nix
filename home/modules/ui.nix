@@ -223,7 +223,7 @@ in
         };
         interval = 30;
         tooltip = true;
-        tooltip-format = "Status: {status}\nCapacity: {capacity}%\n{timeTo}";
+        tooltip-format = "Capacity: {capacity}%\n{timeTo}";
       };
 
       clock = {
