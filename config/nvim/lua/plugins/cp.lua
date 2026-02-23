@@ -136,7 +136,6 @@ return {
         { '<leader>cP', '<cmd>CP pick<cr>' },
         { '<leader>cr', '<cmd>CP run all<cr>' },
         { '<leader>cd', '<cmd>CP run --debug<cr>' },
-        { '<leader>cc', '<cmd>CP cache read<cr>' },
         { ']c', '<cmd>CP next<cr>' },
         { '[c', '<cmd>CP prev<cr>' },
     },

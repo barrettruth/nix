@@ -223,7 +223,10 @@ in
         };
         interval = 30;
         tooltip = true;
-        tooltip-format = "Capacity: {capacity}%\n{timeTo}";
+        tooltip-format-discharging = "Discharging: {capacity}%\n{timeTo}";
+        tooltip-format-charging = "Charging: {capacity}%\n{timeTo}";
+        tooltip-format-full = "Full: {capacity}%";
+        tooltip-format = "{capacity}%\n{timeTo}";
       };
 
       clock = {
