@@ -5,7 +5,9 @@ return {
         'Kaiser-Yang/blink-cmp-git',
         'folke/lazydev.nvim',
         'bydlw98/blink-cmp-env',
-        { 'bydlw98/blink-cmp-sshconfig', build = 'make' },
+        { 'barrettruth/blink-cmp-ssh', dir = '~/dev/blink-cmp-ssh' },
+        { 'barrettruth/blink-cmp-tmux', dir = '~/dev/blink-cmp-tmux' },
+        { 'barrettruth/blink-cmp-ghostty', dir = '~/dev/blink-cmp-ghostty' },
     },
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
@@ -80,16 +82,26 @@ return {
                 'buffer',
                 'env',
                 'snippets',
-                'sshconfig',
+                'ssh',
+                'tmux',
+                'ghostty',
             },
             providers = {
                 git = {
                     module = 'blink-cmp-git',
                     name = 'Git',
                 },
-                sshconfig = {
-                    name = 'SshConfig',
-                    module = 'blink-cmp-sshconfig',
+                ssh = {
+                    name = 'SSH',
+                    module = 'blink-cmp-ssh',
+                },
+                tmux = {
+                    name = 'Tmux',
+                    module = 'blink-cmp-tmux',
+                },
+                ghostty = {
+                    name = 'Ghostty',
+                    module = 'blink-cmp-ghostty',
                 },
                 conventional_commits = {
                     name = 'Conventional Commits',
