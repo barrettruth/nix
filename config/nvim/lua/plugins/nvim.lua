@@ -333,6 +333,52 @@ return {
                 end,
             },
         },
+        dependencies = {
+            {
+                'malewicz1337/oil-git.nvim',
+                dir = '~/dev/oil-git.nvim',
+                opts = {
+                    symbol_position = 'signcolumn',
+                    can_use_signcolumn = function()
+                        return true
+                    end,
+                    show_file_highlights = false,
+                    show_directory_highlights = false,
+                    symbols = {
+                        file = {
+                            added = '│',
+                            modified = '│',
+                            renamed = '│',
+                            deleted = '＿',
+                            copied = '│',
+                            conflict = '│',
+                            untracked = '│',
+                            ignored = ' ',
+                        },
+                        directory = {
+                            added = '│',
+                            modified = '│',
+                            renamed = '│',
+                            deleted = '＿',
+                            copied = '│',
+                            conflict = '│',
+                            untracked = '│',
+                            ignored = ' ',
+                        },
+                    },
+                    highlights = {
+                        OilGitAdded = { link = 'GitSignsAdd' },
+                        OilGitModified = { link = 'GitSignsChange' },
+                        OilGitRenamed = { link = 'GitSignsChange' },
+                        OilGitDeleted = { link = 'GitSignsDelete' },
+                        OilGitCopied = { link = 'GitSignsChange' },
+                        OilGitConflict = { link = 'GitSignsDelete' },
+                        OilGitUntracked = { link = 'GitSignsAdd' },
+                        OilGitIgnored = { link = 'Comment' },
+                    },
+                },
+            },
+        },
     },
     {
         'echasnovski/mini.misc',
@@ -374,7 +420,13 @@ return {
     },
     {
         'wallpants/github-preview.nvim',
-        keys = { '<leader>m', '<cmd>GithubPreviewToggle<cr>' },
-        config = true,
+        dir = '~/dev/github-preview.nvim',
+        keys = { { '<leader>m', '<cmd>silent GithubPreviewToggle<cr>' } },
+        opts = {
+            single_file = true,
+            cursor_line = {
+                disable = true,
+            },
+        },
     },
 }

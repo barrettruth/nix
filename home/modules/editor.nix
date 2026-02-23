@@ -42,6 +42,7 @@ in
 
     # runtime/tools
     nodejs
+    bun
     luarocks
     tree-sitter
     nixfmt-tree

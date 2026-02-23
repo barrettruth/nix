@@ -226,50 +226,6 @@ return {
         },
     },
     {
-        'malewicz1337/oil-git.nvim',
-        dir = '~/dev/oil-git.nvim',
-        opts = {
-            symbol_position = 'signcolumn',
-            can_use_signcolumn = function()
-                return true
-            end,
-            show_file_highlights = false,
-            show_directory_highlights = false,
-            symbols = {
-                file = {
-                    added = '│',
-                    modified = '│',
-                    renamed = '│',
-                    deleted = '＿',
-                    copied = '│',
-                    conflict = '│',
-                    untracked = '│',
-                    ignored = ' ',
-                },
-                directory = {
-                    added = '│',
-                    modified = '│',
-                    renamed = '│',
-                    deleted = '＿',
-                    copied = '│',
-                    conflict = '│',
-                    untracked = '│',
-                    ignored = ' ',
-                },
-            },
-            highlights = {
-                OilGitAdded = { link = 'GitSignsAdd' },
-                OilGitModified = { link = 'GitSignsChange' },
-                OilGitRenamed = { link = 'GitSignsChange' },
-                OilGitDeleted = { link = 'GitSignsDelete' },
-                OilGitCopied = { link = 'GitSignsChange' },
-                OilGitConflict = { link = 'GitSignsDelete' },
-                OilGitUntracked = { link = 'GitSignsAdd' },
-                OilGitIgnored = { link = 'Comment' },
-            },
-        },
-    },
-    {
         'lewis6991/gitsigns.nvim',
         event = 'VeryLazy',
         opts = {
