@@ -12,18 +12,8 @@ vim.diagnostic.config({
     jump = { float = true },
 })
 
-local function prepare_capabilities()
-    local capabilities = vim.lsp.protocol.make_client_capabilities()
-    capabilities.textDocument.completion.completionItem.snippetSupport = false
-
-    local ok, blink = pcall(require, 'blink.cmp')
-
-    return ok and blink.get_lsp_capabilities(capabilities) or capabilities
-end
-
 vim.lsp.config('*', {
     on_attach = lsp.on_attach,
-    capabilities = prepare_capabilities(),
     flags = { debounce_text_changes = 0 },
 })
 

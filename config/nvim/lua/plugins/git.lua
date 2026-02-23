@@ -228,10 +228,9 @@ return {
     {
         'malewicz1337/oil-git.nvim',
         dir = '~/dev/oil-git.nvim',
-        ft = 'oil',
         opts = {
             symbol_position = 'signcolumn',
-            can_use_signcolumn = function() return 'yes' end,
+            can_use_signcolumn = function() return 'auto' end,
             show_file_highlights = false,
             show_directory_highlights = false,
             symbols = {

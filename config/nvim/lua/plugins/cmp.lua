@@ -1,6 +1,6 @@
 return {
     'saghen/blink.cmp',
-    version = '1.*',
+    build = 'nix run .#build-plugin',
     dependencies = {
         'Kaiser-Yang/blink-cmp-git',
         'folke/lazydev.nvim',
@@ -20,6 +20,7 @@ return {
         require('blink.cmp').setup(opts)
     end,
     opts = {
+        fuzzy = { implementation = 'prefer_rust_with_warning' },
         keymap = {
             ['<c-p>'] = { 'select_prev' },
             ['<c-n>'] = { 'show', 'select_next' },
