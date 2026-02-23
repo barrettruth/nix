@@ -92,7 +92,6 @@ in
     gsettings-desktop-schemas
     (python3.withPackages (ps: [ ps.pillow ]))
     pavucontrol
-    iwgtk
   ];
 
   programs.waybar = {
@@ -194,7 +193,7 @@ in
         tooltip-format-wifi = "SSID: {essid}\nSignal: {signalStrength}%\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}\nIP: {ipaddr}";
         tooltip-format-ethernet = "Interface: {ifname}\nIP: {ipaddr}/{cidr}\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}";
         tooltip-format-disconnected = "Wireless LAN disconnected";
-        on-click = "pgrep iwgtk && pkill iwgtk || iwgtk";
+        on-click = "ctl wifi pick";
       };
 
       battery = {
