@@ -8,7 +8,8 @@ return {
         opts.files.file_icons = has_devicons
         opts.grep = opts.grep or {}
         opts.grep.file_icons = has_devicons
-        opts.grep.rg_opts = fzf.defaults.grep.rg_opts:gsub("%-e$", "--glob='!.git/' -e")
+        opts.grep.rg_opts =
+            fzf.defaults.grep.rg_opts:gsub('%-e$', "--glob='!.git/' -e")
 
         fzf.setup(opts)
 
@@ -45,7 +46,7 @@ return {
                 end
             end,
         },
-        { '<c-l>',      '<cmd>FzfLua live_grep<cr>' },
+        { '<c-l>', '<cmd>FzfLua live_grep<cr>' },
         { '<leader>f/', '<cmd>FzfLua search_history<cr>' },
         { '<leader>f:', '<cmd>FzfLua command_history<cr>' },
         { '<leader>fa', '<cmd>FzfLua autocmds<cr>' },
@@ -79,8 +80,8 @@ return {
         },
         { '<leader>gb', '<cmd>FzfLua git_branches<cr>' },
         { '<leader>gw', '<cmd>FzfLua git_worktrees<cr>' },
-        { 'gq',         '<cmd>FzfLua quickfix<cr>' },
-        { 'gl',         '<cmd>FzfLua loclist<cr>' },
+        { 'gq', '<cmd>FzfLua quickfix<cr>' },
+        { 'gl', '<cmd>FzfLua loclist<cr>' },
     },
     opts = {
         file_icon_padding = ' ',

@@ -38,7 +38,10 @@ return {
     end,
     sign = function()
         local marks = vim.api.nvim_buf_get_extmarks(
-            0, -1, { vim.v.lnum - 1, 0 }, { vim.v.lnum - 1, -1 },
+            0,
+            -1,
+            { vim.v.lnum - 1, 0 },
+            { vim.v.lnum - 1, -1 },
             { details = true, type = 'sign' }
         )
         for _, mark in ipairs(marks) do
@@ -46,7 +49,10 @@ return {
             if d and d.sign_text then
                 local text = vim.trim(d.sign_text)
                 if text ~= '' then
-                    return '%#' .. (d.sign_hl_group or 'SignColumn') .. '#' .. text
+                    return '%#'
+                        .. (d.sign_hl_group or 'SignColumn')
+                        .. '#'
+                        .. text
                 end
             end
         end

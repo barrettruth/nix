@@ -230,7 +230,9 @@ return {
         dir = '~/dev/oil-git.nvim',
         opts = {
             symbol_position = 'signcolumn',
-            can_use_signcolumn = function() return true end,
+            can_use_signcolumn = function()
+                return true
+            end,
             show_file_highlights = false,
             show_directory_highlights = false,
             symbols = {
@@ -268,24 +270,36 @@ return {
         },
     },
     {
-        "lewis6991/gitsigns.nvim",
-        event = "VeryLazy",
+        'lewis6991/gitsigns.nvim',
+        event = 'VeryLazy',
         opts = {
             signs = {
-                add = { text = "│" },
-                change = { text = "│" },
-                delete = { text = "＿" },
-                topdelete = { text = "‾" },
-                changedelete = { text = "│" },
+                add = { text = '│' },
+                change = { text = '│' },
+                delete = { text = '＿' },
+                topdelete = { text = '‾' },
+                changedelete = { text = '│' },
             },
             on_attach = function(bufnr)
                 vim.wo[vim.fn.bufwinid(bufnr)].signcolumn = 'yes'
             end,
         },
         keys = {
-            { "]g",         "<cmd>Gitsigns next_hunk<cr>",                 desc = "Next git hunk" },
-            { "[g",         "<cmd>Gitsigns prev_hunk<cr>",                 desc = "Previous git hunk" },
-            { "<leader>gB", "<cmd>Gitsigns toggle_current_line_blame<cr>", desc = "Toggle line blame" },
+            {
+                ']g',
+                '<cmd>Gitsigns next_hunk<cr>',
+                desc = 'Next git hunk',
+            },
+            {
+                '[g',
+                '<cmd>Gitsigns prev_hunk<cr>',
+                desc = 'Previous git hunk',
+            },
+            {
+                '<leader>gB',
+                '<cmd>Gitsigns toggle_current_line_blame<cr>',
+                desc = 'Toggle line blame',
+            },
         },
     },
 }

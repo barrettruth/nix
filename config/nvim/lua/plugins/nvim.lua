@@ -4,8 +4,10 @@ local function parse_output(proc)
     local result = proc:wait()
     local ret = {}
     if result.code == 0 then
-        for line in vim.gsplit(result.stdout, "\n", { plain = true, trimempty = true }) do
-            ret[line:gsub("/$", "")] = true
+        for line in
+            vim.gsplit(result.stdout, '\n', { plain = true, trimempty = true })
+        do
+            ret[line:gsub('/$', '')] = true
         end
     end
     return ret
@@ -14,12 +16,16 @@ end
 local function new_git_status()
     return setmetatable({}, {
         __index = function(self, key)
-            local ignored_proc = vim.system(
-                { "git", "ls-files", "--ignored", "--exclude-standard", "--others", "--directory" },
-                { cwd = key, text = true }
-            )
+            local ignored_proc = vim.system({
+                'git',
+                'ls-files',
+                '--ignored',
+                '--exclude-standard',
+                '--others',
+                '--directory',
+            }, { cwd = key, text = true })
             local tracked_proc = vim.system(
-                { "git", "ls-tree", "HEAD", "--name-only" },
+                { 'git', 'ls-tree', 'HEAD', '--name-only' },
                 { cwd = key, text = true }
             )
             local ret = {
@@ -267,7 +273,7 @@ return {
         dir = '~/dev/oil.nvim',
         config = function(_, opts)
             require('oil').setup(opts)
-            local refresh = require("oil.actions").refresh
+            local refresh = require('oil.actions').refresh
             local orig_refresh = refresh.callback
             refresh.callback = function(...)
                 git_status = new_git_status()
@@ -297,8 +303,9 @@ return {
             float = { border = 'single' },
             view_options = {
                 is_hidden_file = function(name, bufnr)
-                    local dir = require("oil").get_current_dir(bufnr)
-                    local is_dotfile = vim.startswith(name, ".") and name ~= ".."
+                    local dir = require('oil').get_current_dir(bufnr)
+                    local is_dotfile = vim.startswith(name, '.')
+                        and name ~= '..'
                     if not dir then
                         return is_dotfile
                     end
@@ -352,17 +359,22 @@ return {
         },
     },
     { 'tpope/vim-abolish', event = 'VeryLazy' },
-    { 'tpope/vim-sleuth',  event = 'BufReadPost' },
+    { 'tpope/vim-sleuth', event = 'BufReadPost' },
     {
         'kylechui/nvim-surround',
         config = true,
         keys = {
-            { 'cs',  mode = 'n' },
-            { 'ds',  mode = 'n' },
-            { 'ys',  mode = 'n' },
-            { 'yS',  mode = 'n' },
+            { 'cs', mode = 'n' },
+            { 'ds', mode = 'n' },
+            { 'ys', mode = 'n' },
+            { 'yS', mode = 'n' },
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },
+    },
+    {
+        'wallpants/github-preview.nvim',
+        keys = { '<leader>m', '<cmd>GithubPreviewToggle<cr>' },
+        config = true,
     },
 }

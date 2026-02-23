@@ -77,7 +77,10 @@ M.conventional_commits = make_source({
                             {
                                 range = {
                                     start = { line = 0, character = colon - 1 },
-                                    ['end'] = { line = 0, character = colon - 1 },
+                                    ['end'] = {
+                                        line = 0,
+                                        character = colon - 1,
+                                    },
                                 },
                                 newText = '!',
                             },
