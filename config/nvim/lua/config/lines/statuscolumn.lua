@@ -36,7 +36,23 @@ return {
         end
         return ' '
     end,
+    sign = function()
+        local marks = vim.api.nvim_buf_get_extmarks(
+            0, -1, { vim.v.lnum - 1, 0 }, { vim.v.lnum - 1, -1 },
+            { details = true, type = 'sign' }
+        )
+        for _, mark in ipairs(marks) do
+            local d = mark[4]
+            if d and d.sign_text then
+                local text = vim.trim(d.sign_text)
+                if text ~= '' then
+                    return '%#' .. (d.sign_hl_group or 'SignColumn') .. '#' .. text
+                end
+            end
+        end
+        return ' '
+    end,
     statuscolumn = function()
-        return '%s%{%v:lua.require("config.lines.statuscolumn").fold()%}%=%{%v:lua.require("config.lines.statuscolumn").num()%} '
+        return '%{%v:lua.require("config.lines.statuscolumn").sign()%}%{%v:lua.require("config.lines.statuscolumn").fold()%}%=%{%v:lua.require("config.lines.statuscolumn").num()%} '
     end,
 }

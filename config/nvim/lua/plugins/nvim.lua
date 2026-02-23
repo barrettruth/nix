@@ -295,9 +295,6 @@ return {
             skip_confirm_for_simple_edits = true,
             prompt_save_on_select_new_entry = false,
             float = { border = 'single' },
-            win_options = {
-                signcolumn = 'auto',
-            },
             view_options = {
                 is_hidden_file = function(name, bufnr)
                     local dir = require("oil").get_current_dir(bufnr)
