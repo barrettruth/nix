@@ -212,6 +212,22 @@ return {
                 end),
             },
             {
+                '<leader>gd',
+                function()
+                    require('fzf-lua').fzf_exec(
+                        'git branch -a --format="%(refname:short)"',
+                        {
+                            prompt = 'Git diff> ',
+                            actions = {
+                                ['default'] = function(selected)
+                                    vim.cmd('Git diff ' .. selected[1])
+                                end,
+                            },
+                        }
+                    )
+                end,
+            },
+            {
                 '<leader>gi',
                 function()
                     forge_picker('issue', 'all')

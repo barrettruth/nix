@@ -40,6 +40,8 @@
       ".mypy_cache/"
       "result"
       "result-*"
+      ".direnv"
+      ".envrc"
     ];
 
     signing = {

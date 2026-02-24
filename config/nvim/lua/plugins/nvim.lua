@@ -439,4 +439,7 @@ return {
             },
         },
     },
+    {
+        'barrettruth/pending.nvim'
+    }
 }

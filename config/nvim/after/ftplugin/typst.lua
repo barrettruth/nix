@@ -24,5 +24,5 @@ vim.keymap.set('n', '<leader>t', function()
             end
         end
     end
-    vim.system({ 'sioyek', pdf })
+    vim.system({ 'sioyek', '--new-instance', pdf })
 end, { buffer = true })
