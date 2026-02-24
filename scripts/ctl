@@ -146,14 +146,44 @@ wifi)
     sleep 1
     networks=$(iwctl station "$station" get-networks 2>/dev/null | \
       sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
-      awk 'NR>4 && /\S/' | \
+      awk 'NR>4 && /\S/ && !/^[[:space:]]*-/' | \
       sed 's/^[[:space:]>]*//' | \
-      sed 's/[[:space:]]\{3,\}.*//' | \
-      sed 's/[[:space:]]*$//' | \
-      grep -v '^-')
+      awk '{
+        sub(/[[:space:]]*$/, "")
+        i = index($0, "   ")
+        if (i > 0) {
+          ssid = substr($0, 1, i - 1)
+          rest = substr($0, i)
+          sub(/^[[:space:]]*/, "", rest)
+          j = index(rest, "   ")
+          if (j > 0) {
+            security = substr(rest, 1, j - 1)
+            signal = substr(rest, j)
+            sub(/^[[:space:]]*/, "", signal)
+            sub(/[[:space:]]*$/, "", signal)
+          } else {
+            security = rest
+            signal = ""
+          }
+          sub(/[[:space:]]*$/, "", ssid)
+          sub(/[[:space:]]*$/, "", security)
+          printf "%s\t%s\t%s\n", ssid, security, signal
+        }
+      }')
     [ -z "$networks" ] && exit 0
+    w1=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=12}{l=length($1);if(l>m)m=l}END{print m}')
+    w2=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=8}{l=length($2);if(l>m)m=l}END{print m}')
+    w3=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=6}{l=length($3);if(l>m)m=l}END{print m}')
+    fw=$((w1 + 4 + w2 + 4 + w3 + 10))
+    sep=$(awk -v n="$fw" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
+    header=$(printf "%-*s    %-*s    %s\n%s" "$w1" "Network name" "$w2" "Security" "Signal" "$sep")
     count=$(printf '%s\n' "$networks" | wc -l)
-    ssid=$(printf '%s\n' "$networks" | fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count")
+    ssid=$(printf '%s\n' "$networks" | \
+      awk -F'\t' -v w1="$w1" -v w2="$w2" '{printf "%-*s    %-*s    %s\t%s\n", w1, $1, w2, $2, $3, $1}' | \
+      fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count" \
+        --with-nth=1 --accept-nth=2 \
+        --mesg="$header" --mesg-mode=expand \
+        --font="monospace:size=12" --width="$fw")
     [ -z "$ssid" ] && exit 0
     known=$(iwctl known-networks list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g')
     if printf '%s' "$known" | grep -qF "$ssid"; then
