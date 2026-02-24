@@ -5,9 +5,9 @@ return {
         'Kaiser-Yang/blink-cmp-git',
         'folke/lazydev.nvim',
         'bydlw98/blink-cmp-env',
-        { 'barrettruth/blink-cmp-ssh', dir = '~/dev/blink-cmp-ssh' },
-        { 'barrettruth/blink-cmp-tmux', dir = '~/dev/blink-cmp-tmux' },
-        { 'barrettruth/blink-cmp-ghostty', dir = '~/dev/blink-cmp-ghostty' },
+        'barrettruth/blink-cmp-ssh',
+        'barrettruth/blink-cmp-tmux',
+        'barrettruth/blink-cmp-ghostty'
     },
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config

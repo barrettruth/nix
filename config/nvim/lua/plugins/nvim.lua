@@ -42,8 +42,17 @@ local git_status = new_git_status()
 
 return {
     {
+        'barrettruth/live-server.nvim',
+        enabled = false,
+        init = function()
+            vim.g.live_server = {
+                debug = false
+            }
+        end,
+        keys = { { '<leader>l', '<cmd>LiveServerToggle<cr>' } },
+    },
+    {
         'barrettruth/midnight.nvim',
-        dir = '~/dev/midnight.nvim',
         config = function()
             vim.cmd.colorscheme('midnight')
         end,
@@ -51,7 +60,7 @@ return {
     {
         'barrettruth/nonicons.nvim',
         dir = '~/dev/nonicons.nvim',
-        enabled = false,
+        enabled = true,
         lazy = false,
         dependencies = {
             'nvim-tree/nvim-web-devicons',
@@ -269,8 +278,8 @@ return {
         event = 'BufReadPre',
     },
     {
-        'stevearc/oil.nvim',
-        dir = '~/dev/oil.nvim',
+        'barrettruth/canola.nvim',
+        dir = '~/dev/canola.nvim',
         config = function(_, opts)
             require('oil').setup(opts)
             local refresh = require('oil.actions').refresh
@@ -419,6 +428,7 @@ return {
         },
     },
     {
+        -- TODO: replace this with own barrettruth/render.nvim
         'wallpants/github-preview.nvim',
         dir = '~/dev/github-preview.nvim',
         keys = { { '<leader>m', '<cmd>silent GithubPreviewToggle<cr>' } },

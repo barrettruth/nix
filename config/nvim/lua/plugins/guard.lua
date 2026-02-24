@@ -1,7 +1,7 @@
 return {
     'nvimdev/guard.nvim',
     dependencies = {
-        { dir = '~/dev/guard-collection', 'nvimdev/guard-collection' },
+        'nvimdev/guard-collection',
     },
     init = function()
         vim.g.guard_config = {

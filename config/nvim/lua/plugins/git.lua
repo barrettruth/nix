@@ -159,7 +159,7 @@ return {
         cmd = { 'Git', 'G', 'Gread', 'Gwrite', 'Gdiffsplit', 'Gvdiffsplit' },
     },
     {
-        dir = '~/dev/diffs.nvim',
+        'barrettruth/diffs.nvim',
         enabled = true,
         init = function()
             vim.g.diffs = {
