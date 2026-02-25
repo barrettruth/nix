@@ -60,7 +60,7 @@ return {
     {
         'barrettruth/nonicons.nvim',
         dir = '~/dev/nonicons.nvim',
-        enabled = true,
+        enabled = false,
         lazy = false,
         dependencies = {
             'nvim-tree/nvim-web-devicons',
@@ -440,6 +440,9 @@ return {
         },
     },
     {
-        'barrettruth/pending.nvim'
+        'barrettruth/pending.nvim',
+        dir = '~/dev/pending.nvim',
+        -- TODO: should we be using this or `<Plug>` mappings?
+        keys = { { '<leader>p', '<cmd>Pending<cr>' }}
     }
 }

@@ -160,7 +160,15 @@ return {
     },
     {
         'barrettruth/diffs.nvim',
+        dir = '~/dev/diffs.nvim',
         enabled = true,
+        dependencies = {
+            {
+                'NeogitOrg/neogit',
+                dependencies = { 'nvim-lua/plenary.nvim' },
+                enabled = false,
+            },
+        },
         init = function()
             vim.g.diffs = {
                 fugitive = true,

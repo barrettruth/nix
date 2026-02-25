@@ -87,6 +87,9 @@ return {
                 'tmux',
                 'ghostty',
             },
+            per_filetype = {
+                pending = { inherit_defaults = true, 'omni' },
+            },
             providers = {
                 git = {
                     module = 'blink-cmp-git',
