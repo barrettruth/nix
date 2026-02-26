@@ -88,7 +88,7 @@ return {
                 'ghostty',
             },
             per_filetype = {
-                pending = { inherit_defaults = true, 'omni' },
+                pending = { 'omni' },
             },
             providers = {
                 git = {

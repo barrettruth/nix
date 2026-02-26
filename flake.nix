@@ -10,6 +10,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
+    neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
   };
 
   outputs =
@@ -19,11 +20,13 @@
       nixos-hardware,
       zen-browser,
       claude-code,
+      neovim-nightly,
       ...
     }:
     let
       overlays = [
         claude-code.overlays.default
+        neovim-nightly.overlays.default
       ];
 
       sharedUnfree = [

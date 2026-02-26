@@ -5,6 +5,11 @@ return {
             return ''
         end
 
+        local wo = vim.wo
+        if not wo.number and not wo.relativenumber then
+            return ''
+        end
+
         local lnum = vim.v.lnum
         local relnum = vim.v.relnum
         local hl = relnum == 0 and 'CursorLineNr' or 'LineNr'
