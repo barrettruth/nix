@@ -29,7 +29,6 @@ for _, server in ipairs({
     'mdx_analyzer',
     'jsonls',
     'vtsls',
-    'pytest_lsp',
     'lua_ls',
     'ruff',
     'tinymist',

@@ -16,8 +16,10 @@ in
     clang-tools
     emmet-language-server
     lua-language-server
+    mdx-language-server
     ruff
     tinymist
+    vtsls
     vscode-langservers-extracted
     nixd
 
@@ -43,6 +45,7 @@ in
     # runtime/tools
     nodejs
     bun
+    lua
     luarocks
     tree-sitter
     nixfmt-tree
