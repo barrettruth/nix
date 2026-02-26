@@ -9,7 +9,11 @@ vim.diagnostic.config({
         header = '',
         prefix = ' ',
     },
-    jump = { float = true },
+    jump = {
+        on_jump = function(_, bufnr)
+            vim.diagnostic.open_float({ bufnr = bufnr, scope = 'cursor' })
+        end,
+    },
 })
 
 vim.lsp.config('*', {

@@ -1,5 +1,8 @@
 return {
-    'neovim/nvim-lspconfig',
+    {
+        'neovim/nvim-lspconfig',
+        dir = '~/dev/nvim-lspconfig',
+    },
     {
         'folke/lazydev.nvim',
         ft = 'lua',
