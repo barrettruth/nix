@@ -7,6 +7,7 @@
 
 let
   neovim = config.programs.neovim.enable;
+  pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
 in
 {
   home.packages = with pkgs; [
@@ -17,6 +18,7 @@ in
     emmet-language-server
     lua-language-server
     mdx-language-server
+    pytest-language-server
     ruff
     tinymist
     vtsls
