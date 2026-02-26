@@ -260,9 +260,6 @@ return {
                 topdelete = { text = '‾' },
                 changedelete = { text = '│' },
             },
-            on_attach = function(bufnr)
-                vim.wo[vim.fn.bufwinid(bufnr)].signcolumn = 'yes'
-            end,
         },
         keys = {
             {

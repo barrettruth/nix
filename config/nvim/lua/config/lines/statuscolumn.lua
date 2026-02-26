@@ -34,10 +34,13 @@ return {
         local expr = require('config.fold').foldexpr()
         if expr:sub(1, 1) == '>' then
             if vim.fn.foldclosed(vim.v.lnum) ~= -1 then
-                return '>'
+                return '> '
             else
-                return 'v'
+                return 'v '
             end
+        end
+        if vim.fn.foldlevel(vim.v.lnum) == 0 then
+            return ''
         end
         return ' '
     end,
