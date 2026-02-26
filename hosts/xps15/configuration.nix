@@ -194,5 +194,8 @@ in
     options = "--delete-older-than 7d";
   };
 
+  systemd.services.nix-gc.serviceConfig.ExecStartPost =
+    "/nix/var/nix/profiles/system/bin/switch-to-configuration boot";
+
   system.stateVersion = "24.11";
 }
