@@ -441,6 +441,9 @@ return {
     },
     {
         'barrettruth/pending.nvim',
+        init = function()
+            vim.g.pending = { debug = true }
+        end,
         dir = '~/dev/pending.nvim',
         -- TODO: should we be using this or `<Plug>` mappings?
         keys = { { '<leader>p', '<cmd>Pending<cr>' }}
