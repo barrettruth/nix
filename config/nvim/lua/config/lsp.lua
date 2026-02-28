@@ -7,13 +7,6 @@ function M.on_attach(client, bufnr)
         bmap({ 'n', 'K', vim.lsp.buf.hover })
     end
 
-    if client:supports_method(Methods.textDocument_documentSymbol) then
-        local ok, navic = pcall(require, 'nvim-navic')
-        if ok then
-            navic.attach(client, bufnr)
-        end
-    end
-
     local ok, _ = pcall(require, 'fzf-lua')
 
     local mappings = {

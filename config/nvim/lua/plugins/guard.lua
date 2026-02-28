@@ -1,9 +1,11 @@
+vim.pack.add({
+    'https://github.com/nvimdev/guard.nvim',
+    'https://github.com/nvimdev/guard-collection',
+})
+
 return {
     'nvimdev/guard.nvim',
-    dependencies = {
-        'nvimdev/guard-collection',
-    },
-    init = function()
+    before = function()
         vim.g.guard_config = {
             fmt_on_save = false,
             save_on_fmt = true,
@@ -13,7 +15,7 @@ return {
     keys = {
         { 'gF', '<cmd>Guard fmt<cr>', mode = { 'n', 'x' } },
     },
-    config = function()
+    after = function()
         local ft = require('guard.filetype')
 
         ft('python')

@@ -1,13 +1,11 @@
 local o, opt = vim.o, vim.opt
 
+o.autoread = true
 o.autowrite = true
 
 o.breakindent = true
 
 o.cursorline = true
-
-o.cmdheight = 0
-o.conceallevel = 0
 
 opt.diffopt:append('linematch:60')
 
@@ -16,8 +14,11 @@ o.expandtab = true
 o.exrc = true
 o.secure = true
 
-opt.foldcolumn = 'auto:1'
-opt.signcolumn = 'no'
+o.foldcolumn = '1'
+o.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+o.foldlevel = 1
+o.foldmethod = 'expr'
+o.foldtext = ''
 
 opt.fillchars = {
     eob = ' ',
@@ -49,8 +50,6 @@ o.scrolloff = 8
 o.shiftwidth = 2
 
 opt.shortmess:append('acCIs')
-
-o.showmode = false
 
 o.showtabline = 0
 

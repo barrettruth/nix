@@ -1,13 +1,11 @@
-local api, au = vim.api, vim.api.nvim_create_autocmd
+local aug = vim.api.nvim_create_augroup('AAugs', { clear = true })
 
-local aug = api.nvim_create_augroup('AAugs', { clear = true })
-
-au('BufEnter', {
+vim.api.nvim_create_autocmd('BufEnter', {
     command = 'setl formatoptions-=cro spelloptions=camel,noplainbuffer',
     group = aug,
 })
 
-au({ 'TermOpen', 'BufWinEnter' }, {
+vim.api.nvim_create_autocmd({ 'TermOpen', 'BufWinEnter' }, {
     callback = function(args)
         if vim.bo[args.buf].buftype == 'terminal' then
             vim.opt_local.number = true
@@ -18,41 +16,19 @@ au({ 'TermOpen', 'BufWinEnter' }, {
     group = aug,
 })
 
-au('BufWritePost', {
-    pattern = (
-        os.getenv('XDG_CONFIG_HOME') or (os.getenv('HOME') .. '/.config')
-    ) .. '/dunst/dunstrc',
-    callback = function()
-        vim.fn.system('killall dunst && nohup dunst &; disown')
-    end,
-    group = aug,
-})
-
-au('BufReadPost', {
+vim.api.nvim_create_autocmd('BufReadPost', {
     command = 'sil! normal g`"',
     group = aug,
 })
 
-au({ 'BufRead', 'BufNewFile' }, {
-    pattern = '*/templates/*.html',
-    callback = function(opts)
-        vim.api.nvim_set_option_value(
-            'filetype',
-            'htmldjango',
-            { buf = opts.buf }
-        )
-    end,
-    group = aug,
-})
-
-au('TextYankPost', {
+vim.api.nvim_create_autocmd('TextYankPost', {
     callback = function()
         vim.highlight.on_yank({ higroup = 'Visual', timeout = 300 })
     end,
     group = aug,
 })
 
-au({ 'FocusLost', 'BufLeave', 'VimLeave' }, {
+vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave', 'VimLeave' }, {
     pattern = '*',
     callback = function()
         vim.cmd('silent! wall')

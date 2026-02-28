@@ -126,6 +126,8 @@ local function insert_template(buf, lang, platform)
     return true
 end
 
+vim.pack.add({ 'https://github.com/barrettruth/cp.nvim' })
+
 return {
     'barrettruth/cp.nvim',
     cmd = 'CP',

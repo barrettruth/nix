@@ -1,12 +1,91 @@
+vim.pack.add({
+    'https://github.com/ibhagwan/fzf-lua',
+})
+
 return {
     'ibhagwan/fzf-lua',
-    config = function(_, opts)
+    after = function()
         local fzf = require('fzf-lua')
-
         local has_devicons = pcall(require, 'nvim-web-devicons')
-        opts.files = opts.files or {}
+
+        local opts = {
+            file_icon_padding = ' ',
+            files = {
+                cmd = vim.env.FZF_CTRL_T_COMMAND,
+                no_header_i = true,
+            },
+            fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
+                '%-%-color=[^%s]+',
+                ''
+            ),
+            grep = {
+                no_header_i = true,
+                RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
+            },
+            lsp = {
+                includeDeclaration = false,
+                jump1 = true,
+                symbols = {
+                    symbol_hl_prefix = '@',
+                    symbol_style = 3,
+                },
+            },
+            winopts = {
+                border = 'single',
+                preview = {
+                    hidden = 'hidden',
+                },
+            },
+            actions = {
+                files = {
+                    default = function(...)
+                        require('fzf-lua.actions').file_edit(...)
+                    end,
+                    ['ctrl-l'] = function(...)
+                        local a = require('fzf-lua.actions')
+                        a.file_sel_to_ll(...)
+                        vim.cmd.lclose()
+                    end,
+                    ['ctrl-q'] = function(...)
+                        local a = require('fzf-lua.actions')
+                        a.file_sel_to_qf(...)
+                        vim.cmd.cclose()
+                    end,
+                    ['ctrl-h'] = function(...)
+                        require('fzf-lua.actions').toggle_hidden(...)
+                    end,
+                    ['ctrl-v'] = function(...)
+                        require('fzf-lua.actions').file_vsplit(...)
+                    end,
+                    ['ctrl-x'] = function(...)
+                        require('fzf-lua.actions').file_split(...)
+                    end,
+                },
+            },
+            border = 'single',
+            git = {
+                files = {
+                    cmd = 'git ls-files --cached --others --exclude-standard',
+                    git_icons = false,
+                },
+                worktrees = {
+                    fzf_args = (
+                        (vim.env.FZF_DEFAULT_OPTS or '')
+                            :gsub('%-%-bind=ctrl%-a:select%-all', '')
+                            :gsub('--color=[^%s]+', '')
+                    ),
+                },
+                branches = {
+                    fzf_args = (
+                        (vim.env.FZF_DEFAULT_OPTS or '')
+                            :gsub('%-%-bind=ctrl%-a:select%-all', '')
+                            :gsub('--color=[^%s]+', '')
+                    ),
+                },
+            },
+        }
+
         opts.files.file_icons = has_devicons
-        opts.grep = opts.grep or {}
         opts.grep.file_icons = has_devicons
         opts.grep.rg_opts =
             fzf.defaults.grep.rg_opts:gsub('%-e$', "--glob='!.git/' -e")
@@ -82,77 +161,5 @@ return {
         { '<leader>gw', '<cmd>FzfLua git_worktrees<cr>' },
         { 'gq', '<cmd>FzfLua quickfix<cr>' },
         { 'gl', '<cmd>FzfLua loclist<cr>' },
-    },
-    opts = {
-        file_icon_padding = ' ',
-        files = {
-            cmd = vim.env.FZF_CTRL_T_COMMAND,
-            no_header_i = true,
-        },
-        fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
-            '%-%-color=[^%s]+',
-            ''
-        ),
-        grep = {
-            no_header_i = true,
-            RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
-        },
-        lsp = {
-            includeDeclaration = false,
-            jump1 = true,
-            symbols = {
-                symbol_hl_prefix = '@',
-                symbol_style = 3,
-            },
-        },
-        winopts = {
-            border = 'single',
-            preview = {
-                hidden = 'hidden',
-            },
-        },
-        actions = {
-            files = {
-                default = function(...)
-                    require('fzf-lua.actions').file_edit(...)
-                end,
-                ['ctrl-l'] = function(...)
-                    local a = require('fzf-lua.actions')
-                    a.file_sel_to_ll(...)
-                    vim.cmd.lclose()
-                end,
-                ['ctrl-q'] = function(...)
-                    local a = require('fzf-lua.actions')
-                    a.file_sel_to_qf(...)
-                    vim.cmd.cclose()
-                end,
-                ['ctrl-h'] = function(...)
-                    require('fzf-lua.actions').toggle_hidden(...)
-                end,
-                ['ctrl-v'] = function(...)
-                    require('fzf-lua.actions').file_vsplit(...)
-                end,
-                ['ctrl-x'] = function(...)
-                    require('fzf-lua.actions').file_split(...)
-                end,
-            },
-        },
-        border = 'single',
-        git = {
-            files = {
-                cmd = 'git ls-files --cached --others --exclude-standard',
-                git_icons = false,
-            },
-            worktrees = {
-                fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
-                    :gsub('%-%-bind=ctrl%-a:select%-all', '')
-                    :gsub('--color=[^%s]+', '')),
-            },
-            branches = {
-                fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
-                    :gsub('%-%-bind=ctrl%-a:select%-all', '')
-                    :gsub('--color=[^%s]+', '')),
-            },
-        },
     },
 }

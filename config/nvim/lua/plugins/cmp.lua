@@ -1,128 +1,152 @@
+vim.pack.add({
+    'https://github.com/saghen/blink.cmp',
+    'https://github.com/Kaiser-Yang/blink-cmp-git',
+    'https://github.com/bydlw98/blink-cmp-env',
+    'https://github.com/barrettruth/blink-cmp-ssh',
+    'https://github.com/barrettruth/blink-cmp-tmux',
+    'https://github.com/barrettruth/blink-cmp-ghostty',
+})
+
+local pack_dir = vim.fn.stdpath('data') .. '/site/pack/core/opt'
+local blink_dir = pack_dir .. '/blink.cmp'
+if
+    vim.fn.filereadable(blink_dir .. '/target/release/libblink_cmp_fuzzy.so')
+    == 0
+then
+    vim.system({ 'nix', 'run', '.#build-plugin' }, { cwd = blink_dir }):wait()
+end
+
+vim.api.nvim_create_autocmd('PackChanged', {
+    callback = function(ev)
+        local name, kind = ev.data.spec.name, ev.data.kind
+        if kind == 'delete' then
+            return
+        end
+        if name == 'blink.cmp' then
+            vim.system(
+                { 'nix', 'run', '.#build-plugin' },
+                { cwd = ev.data.path }
+            )
+        end
+    end,
+})
+
 return {
     'saghen/blink.cmp',
-    build = 'nix run .#build-plugin',
-    dependencies = {
-        'Kaiser-Yang/blink-cmp-git',
-        'folke/lazydev.nvim',
-        'bydlw98/blink-cmp-env',
-        'barrettruth/blink-cmp-ssh',
-        'barrettruth/blink-cmp-tmux',
-        'barrettruth/blink-cmp-ghostty'
-    },
-    ---@module 'blink.cmp'
-    ---@type blink.cmp.Config
     event = { 'InsertEnter', 'LspAttach' },
-    config = function(_, opts)
-        vim.o.pumheight = 15
-        opts.completion.menu.max_height = vim.o.pumheight
-
-        require('config.blink')
-        require('blink.cmp').setup(opts)
-    end,
-    opts = {
-        fuzzy = { implementation = 'prefer_rust_with_warning' },
-        keymap = {
-            ['<c-p>'] = { 'select_prev' },
-            ['<c-n>'] = { 'show', 'select_next' },
-            ['<c-space>'] = {},
-            ['<c-y>'] = {
-                function(cmp)
-                    return cmp.snippet_active() and cmp.accept()
-                        or cmp.select_and_accept()
-                end,
-                'snippet_forward',
-            },
-        },
-        completion = {
-            accept = {
-                auto_brackets = { enabled = false },
-            },
-            documentation = {
-                auto_show = true,
-                window = {
-                    border = 'single',
-                    scrollbar = false,
+    keys = { { '<c-n>', mode = 'i' } },
+    after = function()
+        ---@module 'blink.cmp'
+        ---@type blink.cmp.Config
+        local opts = {
+            fuzzy = { implementation = 'prefer_rust_with_warning' },
+            keymap = {
+                ['<c-p>'] = { 'select_prev' },
+                ['<c-n>'] = { 'show', 'select_next' },
+                ['<c-space>'] = {},
+                ['<c-y>'] = {
+                    function(cmp)
+                        return cmp.snippet_active() and cmp.accept()
+                            or cmp.select_and_accept()
+                    end,
+                    'snippet_forward',
                 },
             },
-            menu = {
-                auto_show = false,
-                border = 'single',
-                scrollbar = false,
-                draw = {
-                    treesitter = { 'lsp', 'snippets', 'buffer' },
-                    columns = {
-                        { 'label', 'label_description', gap = 1 },
-                        { 'kind' },
+            completion = {
+                accept = {
+                    auto_brackets = { enabled = false },
+                },
+                documentation = {
+                    auto_show = true,
+                    window = {
+                        border = 'single',
+                        scrollbar = false,
                     },
-                    components = {
-                        kind = {
-                            ellipsis = false,
-                            text = function(ctx)
-                                return '[' .. ctx.kind .. ']'
-                            end,
-                            highlight = function(ctx)
-                                return ctx.kind_hl
-                            end,
+                },
+                menu = {
+                    auto_show = false,
+                    border = 'single',
+                    scrollbar = false,
+                    draw = {
+                        treesitter = { 'lsp', 'snippets', 'buffer' },
+                        columns = {
+                            { 'label', 'label_description', gap = 1 },
+                            { 'kind' },
+                        },
+                        components = {
+                            kind = {
+                                ellipsis = false,
+                                text = function(ctx)
+                                    return '[' .. ctx.kind .. ']'
+                                end,
+                                highlight = function(ctx)
+                                    return ctx.kind_hl
+                                end,
+                            },
                         },
                     },
                 },
-            },
-            ghost_text = {
-                enabled = true,
-                show_with_selection = true,
-                show_without_selection = false,
-                show_without_menu = false,
-            },
-        },
-        sources = {
-            default = {
-                'git',
-                'conventional_commits',
-                'lsp',
-                'path',
-                'buffer',
-                'env',
-                'snippets',
-                'ssh',
-                'tmux',
-                'ghostty',
-            },
-            per_filetype = {
-                pending = { 'omni', 'buffer' },
-            },
-            providers = {
-                git = {
-                    module = 'blink-cmp-git',
-                    name = 'Git',
-                },
-                ssh = {
-                    name = 'SSH',
-                    module = 'blink-cmp-ssh',
-                },
-                tmux = {
-                    name = 'Tmux',
-                    module = 'blink-cmp-tmux',
-                },
-                ghostty = {
-                    name = 'Ghostty',
-                    module = 'blink-cmp-ghostty',
-                },
-                conventional_commits = {
-                    name = 'Conventional Commits',
-                    module = 'config.blink.conventional_commits',
-                },
-                lazydev = {
-                    name = 'LazyDev',
-                    module = 'lazydev.integrations.blink',
-                    score_offset = 100,
-                },
-                env = {
-                    name = 'Env',
-                    module = 'blink-cmp-env',
+                ghost_text = {
+                    enabled = true,
+                    show_with_selection = true,
+                    show_without_selection = false,
+                    show_without_menu = false,
                 },
             },
-        },
-    },
-    keys = { { '<c-n>', mode = 'i' } },
-    opts_extend = { 'sources.default' },
+            sources = {
+                default = {
+                    'git',
+                    'conventional_commits',
+                    'lsp',
+                    'path',
+                    'buffer',
+                    'env',
+                    'snippets',
+                    'ssh',
+                    'tmux',
+                    'ghostty',
+                },
+                per_filetype = {
+                    pending = { 'omni', 'buffer' },
+                },
+                providers = {
+                    git = {
+                        module = 'blink-cmp-git',
+                        name = 'Git',
+                    },
+                    ssh = {
+                        name = 'SSH',
+                        module = 'blink-cmp-ssh',
+                    },
+                    tmux = {
+                        name = 'Tmux',
+                        module = 'blink-cmp-tmux',
+                    },
+                    ghostty = {
+                        name = 'Ghostty',
+                        module = 'blink-cmp-ghostty',
+                    },
+                    conventional_commits = {
+                        name = 'Conventional Commits',
+                        module = 'config.cmp.conventional_commits',
+                    },
+                    lazydev = {
+                        name = 'LazyDev',
+                        module = 'lazydev.integrations.blink',
+                        score_offset = 100,
+                    },
+                    env = {
+                        name = 'Env',
+                        module = 'blink-cmp-env',
+                    },
+                },
+            },
+        }
+
+        vim.o.pumheight = 15
+        opts.completion.menu.max_height = vim.o.pumheight
+
+        require('config.cmp')
+        require('blink.cmp').setup(opts)
+    end,
 }

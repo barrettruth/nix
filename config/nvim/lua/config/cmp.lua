@@ -104,7 +104,7 @@ M.conventional_commits = make_source({
 })
 
 for name, src in pairs(M) do
-    package.loaded['config.blink.' .. name] = src
+    package.loaded['config.cmp.' .. name] = src
 end
 
 return M

@@ -1,31 +1,46 @@
+vim.pack.add({
+    'https://github.com/nvim-treesitter/nvim-treesitter',
+    'https://github.com/nvim-treesitter/nvim-treesitter-textobjects',
+    'https://github.com/Wansmer/treesj',
+})
+
+vim.api.nvim_create_autocmd('PackChanged', {
+    callback = function(ev)
+        local name, kind = ev.data.spec.name, ev.data.kind
+        if kind == 'delete' then
+            return
+        end
+        if name == 'nvim-treesitter' then
+            vim.schedule(function()
+                vim.cmd('TSUpdate all')
+            end)
+        end
+    end,
+})
+
 return {
     {
         'nvim-treesitter/nvim-treesitter',
-        branch = 'main',
-        build = ':TSUpdate all',
-        opts = {
-            auto_install = true,
-        },
+        after = function()
+            require('nvim-treesitter').setup({ auto_install = true })
+        end,
     },
     {
         'nvim-treesitter/nvim-treesitter-textobjects',
-        branch = 'main',
-        dependencies = 'nvim-treesitter/nvim-treesitter',
-        init = function()
+        before = function()
             vim.g.no_plugin_maps = true
         end,
-        opts = {
-            select = {
-                enable = true,
-                lookahead = true,
-            },
-            move = {
-                enable = true,
-                set_jumps = true,
-            },
-        },
-        config = function(_, opts)
-            require('nvim-treesitter-textobjects').setup(opts)
+        after = function()
+            require('nvim-treesitter-textobjects').setup({
+                select = {
+                    enable = true,
+                    lookahead = true,
+                },
+                move = {
+                    enable = true,
+                    set_jumps = true,
+                },
+            })
 
             local select = require('nvim-treesitter-textobjects.select')
             local select_maps = {
@@ -113,7 +128,9 @@ return {
     },
     {
         'Wansmer/treesj',
-        config = true,
+        after = function()
+            require('treesj').setup()
+        end,
         keys = {
             { 'gt', '<cmd>lua require("treesj").toggle()<cr>' },
         },

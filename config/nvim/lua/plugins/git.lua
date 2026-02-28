@@ -1,3 +1,8 @@
+vim.pack.add({
+    'https://github.com/tpope/vim-fugitive',
+    { src = 'https://github.com/lewis6991/gitsigns.nvim', load = false },
+})
+
 ---@return string
 local function file_loc()
     local root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
@@ -125,6 +130,7 @@ local function forge_picker(kind, state)
     local forge = forges[forge_name]
     local cli_kind = forge.kinds[kind]
     local next_state = ({ all = 'open', open = 'closed', closed = 'all' })[state]
+    pcall(vim.cmd.packadd, 'fzf-lua')
     require('fzf-lua').fzf_exec(forge.list_cmd(cli_kind, state), {
         prompt = ('%s (%s)> '):format(forge.labels[kind], state),
         header = ':: <c-o> to toggle all/open/closed',
@@ -153,23 +159,79 @@ local function with_forge(fn)
     end
 end
 
+map({
+    { 'n', 'v' },
+    '<leader>go',
+    with_forge(function(forge)
+        local branch = vim.trim(vim.fn.system('git branch --show-current'))
+        forge.browse(file_loc(), branch)
+    end),
+})
+map({
+    { 'n', 'v' },
+    '<leader>gy',
+    with_forge(function(forge)
+        forge.yank_commit(file_loc())
+    end),
+})
+map({
+    { 'n', 'v' },
+    '<leader>gl',
+    with_forge(function(forge)
+        forge.yank_branch(file_loc())
+    end),
+})
+map({
+    'n',
+    '<leader>gx',
+    with_forge(function(forge)
+        forge.browse_root()
+    end),
+})
+map({
+    'n',
+    '<leader>gd',
+    function()
+        pcall(vim.cmd.packadd, 'fzf-lua')
+        require('fzf-lua').fzf_exec(
+            'git branch -a --format="%(refname:short)"',
+            {
+                prompt = 'Git diff> ',
+                actions = {
+                    ['default'] = function(selected)
+                        vim.cmd('Git diff ' .. selected[1])
+                    end,
+                },
+            }
+        )
+    end,
+})
+map({
+    'n',
+    '<leader>gi',
+    function()
+        forge_picker('issue', 'all')
+    end,
+})
+map({
+    'n',
+    '<leader>gp',
+    function()
+        forge_picker('pr', 'all')
+    end,
+})
+
 return {
     {
         'tpope/vim-fugitive',
         cmd = { 'Git', 'G', 'Gread', 'Gwrite', 'Gdiffsplit', 'Gvdiffsplit' },
+        after = function()
+            vim.o.statusline = '%{FugitiveStatusline()} ' .. vim.o.statusline
+        end,
     },
     {
         'barrettruth/diffs.nvim',
-        dir = '~/dev/diffs.nvim',
-        enabled = true,
-        dependencies = {
-            {
-                'NeogitOrg/neogit',
-                dependencies = { 'nvim-lua/plenary.nvim' },
-                enabled = false,
-            },
-        },
-        init = function()
+        before = function()
             vim.g.diffs = {
                 fugitive = true,
                 neogit = false,
@@ -188,95 +250,24 @@ return {
         end,
     },
     {
-        'ibhagwan/fzf-lua',
-        keys = {
-            {
-                '<leader>go',
-                with_forge(function(forge)
-                    local branch =
-                        vim.trim(vim.fn.system('git branch --show-current'))
-                    forge.browse(file_loc(), branch)
-                end),
-                mode = { 'n', 'v' },
-            },
-            {
-                '<leader>gy',
-                with_forge(function(forge)
-                    forge.yank_commit(file_loc())
-                end),
-                mode = { 'n', 'v' },
-            },
-            {
-                '<leader>gl',
-                with_forge(function(forge)
-                    forge.yank_branch(file_loc())
-                end),
-                mode = { 'n', 'v' },
-            },
-            {
-                '<leader>gx',
-                with_forge(function(forge)
-                    forge.browse_root()
-                end),
-            },
-            {
-                '<leader>gd',
-                function()
-                    require('fzf-lua').fzf_exec(
-                        'git branch -a --format="%(refname:short)"',
-                        {
-                            prompt = 'Git diff> ',
-                            actions = {
-                                ['default'] = function(selected)
-                                    vim.cmd('Git diff ' .. selected[1])
-                                end,
-                            },
-                        }
-                    )
-                end,
-            },
-            {
-                '<leader>gi',
-                function()
-                    forge_picker('issue', 'all')
-                end,
-            },
-            {
-                '<leader>gp',
-                function()
-                    forge_picker('pr', 'all')
-                end,
-            },
-        },
-    },
-    {
         'lewis6991/gitsigns.nvim',
-        event = 'VeryLazy',
-        opts = {
-            signs = {
-                add = { text = '│' },
-                change = { text = '│' },
-                delete = { text = '＿' },
-                topdelete = { text = '‾' },
-                changedelete = { text = '│' },
-            },
-        },
+        enabled = false,
+        event = 'DeferredUIEnter',
+        after = function()
+            require('gitsigns').setup({
+                signs = {
+                    add = { text = '│' },
+                    change = { text = '│' },
+                    delete = { text = '＿' },
+                    topdelete = { text = '‾' },
+                    changedelete = { text = '│' },
+                },
+            })
+        end,
         keys = {
-            {
-                ']g',
-                '<cmd>Gitsigns next_hunk<cr>',
-                desc = 'Next git hunk',
-            },
-            {
-                '[g',
-                '<cmd>Gitsigns prev_hunk<cr>',
-                desc = 'Previous git hunk',
-            },
-            {
-                '<leader>gB',
-                '<cmd>Gitsigns toggle_current_line_blame<cr>',
-                desc = 'Toggle line blame',
-            },
+            { ']g', '<cmd>Gitsigns next_hunk<cr>' },
+            { '[g', '<cmd>Gitsigns prev_hunk<cr>' },
+            { '<leader>gB', '<cmd>Gitsigns toggle_current_line_blame<cr>' },
         },
     },
 }
