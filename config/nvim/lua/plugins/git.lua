@@ -1,5 +1,20 @@
 vim.pack.add({
     'https://github.com/tpope/vim-fugitive',
+})
+
+function _G._fugitive_stl()
+    local s = vim.fn.FugitiveStatusline()
+    return s ~= '' and s .. ' ' or ''
+end
+
+vim.api.nvim_create_autocmd('VimEnter', {
+    once = true,
+    callback = function()
+        vim.o.statusline = ' %{v:lua._fugitive_stl()}' .. vim.o.statusline:sub(2)
+    end,
+})
+
+vim.pack.add({
     'https://github.com/lewis6991/gitsigns.nvim',
 }, { load = function() end })
 
@@ -207,13 +222,6 @@ vim.keymap.set('n', '<leader>gp', function()
 end)
 
 return {
-    {
-        'tpope/vim-fugitive',
-        cmd = { 'Git', 'G', 'Gread', 'Gwrite', 'Gdiffsplit', 'Gvdiffsplit' },
-        after = function()
-            vim.o.statusline = '%{FugitiveStatusline()} ' .. vim.o.statusline
-        end,
-    },
     {
         'barrettruth/diffs.nvim',
         before = function()
