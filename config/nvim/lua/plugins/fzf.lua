@@ -1,5 +1,5 @@
 vim.pack.add({
-    'https://github.com/ibhagwan/fzf-lua',
+    { src = 'https://github.com/ibhagwan/fzf-lua', load = false },
 })
 
 return {

@@ -1,11 +1,20 @@
 local dev_plugins = {
-    ['diffs.nvim'] = '~/dev/diffs.nvim',
-    ['canola.nvim'] = '~/dev/canola.nvim',
-    ['pending.nvim'] = '~/dev/pending.nvim',
+    'midnight.nvim',
+    'live-server.nvim',
+    'nonicons.nvim',
+    'canola.nvim',
+    'pending.nvim',
+    'cp.nvim',
+    'diffs.nvim',
 }
 
-for _, path in pairs(dev_plugins) do
-    vim.opt.rtp:prepend(path)
+local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
+vim.fn.mkdir(opt_dir, 'p')
+for _, name in ipairs(dev_plugins) do
+    local link = opt_dir .. name
+    if not vim.uv.fs_lstat(link) then
+        vim.uv.fs_symlink(vim.fn.expand('~/dev/' .. name), link)
+    end
 end
 
 local function parse_output(proc)
@@ -175,11 +184,6 @@ local function insert_template(buf, lang, platform)
 
     return true
 end
-
-vim.pack.add({
-    'https://github.com/barrettruth/cp.nvim',
-    'https://github.com/nvim-tree/nvim-web-devicons',
-})
 
 return {
     {

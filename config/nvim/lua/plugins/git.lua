@@ -1,5 +1,5 @@
 vim.pack.add({
-    'https://github.com/tpope/vim-fugitive',
+    { src = 'https://github.com/tpope/vim-fugitive', load = false },
     { src = 'https://github.com/lewis6991/gitsigns.nvim', load = false },
 })
 

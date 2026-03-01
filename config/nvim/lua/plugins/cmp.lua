@@ -1,10 +1,10 @@
 vim.pack.add({
-    'https://github.com/saghen/blink.cmp',
-    'https://github.com/Kaiser-Yang/blink-cmp-git',
-    'https://github.com/bydlw98/blink-cmp-env',
-    'https://github.com/barrettruth/blink-cmp-ssh',
-    'https://github.com/barrettruth/blink-cmp-tmux',
-    'https://github.com/barrettruth/blink-cmp-ghostty',
+    { src = 'https://github.com/saghen/blink.cmp', load = false },
+    { src = 'https://github.com/Kaiser-Yang/blink-cmp-git', load = false },
+    { src = 'https://github.com/bydlw98/blink-cmp-env', load = false },
+    { src = 'https://github.com/barrettruth/blink-cmp-ssh', load = false },
+    { src = 'https://github.com/barrettruth/blink-cmp-tmux', load = false },
+    { src = 'https://github.com/barrettruth/blink-cmp-ghostty', load = false },
 })
 
 local pack_dir = vim.fn.stdpath('data') .. '/site/pack/core/opt'
