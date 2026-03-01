@@ -46,7 +46,9 @@ opt.matchpairs:append('<:>')
 o.number = true
 o.relativenumber = true
 o.signcolumn = 'no'
+
 o.statuscolumn = '%s%C %=%{v:relnum?v:relnum:v:lnum} '
+o.statusline = " %{len(expand('%'))?expand('%:~').' ':''}%h%m%r%=%c:%l/%L "
 
 opt.path:append('**')
 
