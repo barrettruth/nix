@@ -4,7 +4,7 @@ local Methods = vim.lsp.protocol.Methods
 
 function M.on_attach(client, bufnr)
     if client:supports_method(Methods.textDocument_hover) then
-        vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = 0 })
+        vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = bufnr })
     end
 
     local ok, _ = pcall(require, 'fzf-lua')
@@ -67,7 +67,7 @@ function M.on_attach(client, bufnr)
     for _, m in ipairs(mappings) do
         local method, key, cmd = unpack(m)
         if client:supports_method(method) then
-            vim.keymap.set('n', key, cmd, { buffer = 0 })
+            vim.keymap.set('n', key, cmd, { buffer = bufnr })
         end
     end
 end

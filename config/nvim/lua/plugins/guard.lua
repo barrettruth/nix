@@ -1,7 +1,7 @@
 vim.pack.add({
-    { src = 'https://github.com/nvimdev/guard.nvim', load = false },
-    { src = 'https://github.com/nvimdev/guard-collection', load = false },
-})
+    'https://github.com/nvimdev/guard.nvim',
+    'https://github.com/nvimdev/guard-collection',
+}, { load = function() end })
 
 return {
     'nvimdev/guard.nvim',

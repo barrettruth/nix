@@ -1,3 +1,4 @@
+-- TODO: move to barrettruth/render.nvim
 vim.keymap.set('n', '<leader>t', function()
     if vim.fn.executable('sioyek') ~= 1 then
         return vim.notify('sioyek not found', vim.log.levels.ERROR)

@@ -1,8 +1,11 @@
 vim.pack.add({
     'https://github.com/neovim/nvim-lspconfig',
-    { src = 'https://github.com/folke/lazydev.nvim', load = false },
-    { src = 'https://github.com/saecki/live-rename.nvim', load = false },
 })
+
+vim.pack.add({
+    'https://github.com/folke/lazydev.nvim',
+    'https://github.com/saecki/live-rename.nvim',
+}, { load = function() end })
 
 return {
     {

@@ -1,7 +1,7 @@
 vim.pack.add({
-    { src = 'https://github.com/tpope/vim-fugitive', load = false },
-    { src = 'https://github.com/lewis6991/gitsigns.nvim', load = false },
-})
+    'https://github.com/tpope/vim-fugitive',
+    'https://github.com/lewis6991/gitsigns.nvim',
+}, { load = function() end })
 
 ---@return string
 local function file_loc()

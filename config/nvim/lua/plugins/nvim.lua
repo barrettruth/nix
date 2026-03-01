@@ -1,15 +1,15 @@
 vim.pack.add({
-    { src = 'https://github.com/echasnovski/mini.ai', load = false },
-    { src = 'https://github.com/monaqa/dial.nvim', load = false },
-    { src = 'https://github.com/catgoose/nvim-colorizer.lua', load = false },
-    { src = 'https://github.com/echasnovski/mini.pairs', load = false },
-    { src = 'https://github.com/echasnovski/mini.misc', load = false },
-    { src = 'https://github.com/nvim-mini/mini.bufremove', load = false },
-    { src = 'https://github.com/tpope/vim-abolish', load = false },
-    { src = 'https://github.com/tpope/vim-sleuth', load = false },
-    { src = 'https://github.com/kylechui/nvim-surround', load = false },
-    { src = 'https://github.com/lervag/vimtex', load = false },
-})
+    'https://github.com/echasnovski/mini.ai',
+    'https://github.com/monaqa/dial.nvim',
+    'https://github.com/catgoose/nvim-colorizer.lua',
+    'https://github.com/echasnovski/mini.pairs',
+    'https://github.com/echasnovski/mini.misc',
+    'https://github.com/nvim-mini/mini.bufremove',
+    'https://github.com/tpope/vim-abolish',
+    'https://github.com/tpope/vim-sleuth',
+    'https://github.com/kylechui/nvim-surround',
+    'https://github.com/lervag/vimtex',
+}, { load = function() end })
 
 return {
     {

@@ -1,8 +1,11 @@
 vim.pack.add({
     'https://github.com/nvim-treesitter/nvim-treesitter',
     'https://github.com/nvim-treesitter/nvim-treesitter-textobjects',
-    { src = 'https://github.com/Wansmer/treesj', load = false },
 })
+
+vim.pack.add({
+    'https://github.com/Wansmer/treesj',
+}, { load = function() end })
 
 vim.api.nvim_create_autocmd('PackChanged', {
     callback = function(ev)

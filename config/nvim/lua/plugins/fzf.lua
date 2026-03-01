@@ -1,6 +1,6 @@
 vim.pack.add({
-    { src = 'https://github.com/ibhagwan/fzf-lua', load = false },
-})
+    'https://github.com/ibhagwan/fzf-lua',
+}, { load = function() end })
 
 return {
     'ibhagwan/fzf-lua',

@@ -18,7 +18,6 @@ vim.diagnostic.config({
 
 vim.lsp.config('*', {
     on_attach = lsp.on_attach,
-    flags = { debounce_text_changes = 0 },
 })
 
 for _, server in ipairs({

@@ -2,7 +2,7 @@ vim.g.mapleader = ' '
 
 vim.g.lz_n = {
     load = function(name)
-        vim.cmd('packadd! ' .. (name:match('[^/]+$') or name))
+        vim.cmd.packadd((name:match('[^/]+$') or name))
     end,
 }
 
