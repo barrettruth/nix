@@ -409,7 +409,7 @@ return {
     },
     {
         'barrettruth/render.nvim',
-        ft = { 'typst', 'tex' },
+        ft = { 'typst', 'tex', 'markdown' },
         before = function()
             vim.g.render = {
                 providers = {
@@ -432,10 +432,24 @@ return {
                         end,
                         clean = { 'latexmk', '-c' },
                     },
+                    pandoc = {
+                        cmd = { 'pandoc' },
+                        args = function(ctx)
+                            local output = ctx.file:gsub('%.md$', '.html')
+                            return { ctx.file, '-s', '--embed-resources', '-o', output }
+                        end,
+                        output = function(ctx)
+                            return ctx.file:gsub('%.md$', '.html')
+                        end,
+                        clean = function(ctx)
+                            return { 'rm', '-f', ctx.file:gsub('%.md$', '.html') }
+                        end,
+                    },
                 },
                 providers_by_ft = {
                     typst = 'typst',
                     tex = 'latexmk',
+                    markdown = 'pandoc',
                 },
             }
         end,

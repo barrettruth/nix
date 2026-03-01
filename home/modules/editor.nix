@@ -18,6 +18,7 @@ in
     emmet-language-server
     lua-language-server
     mdx-language-server
+    pandoc
     pytest-language-server
     ruff
     tinymist
