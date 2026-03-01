@@ -59,13 +59,9 @@ return {
             }
             for _, m in ipairs({ 'x', 'o' }) do
                 for _, t in ipairs(select_maps) do
-                    map({
-                        m,
-                        t[1],
-                        function()
-                            select.select_textobject(t[2], 'textobjects', m)
-                        end,
-                    })
+                    vim.keymap.set(m, t[1], function()
+                        select.select_textobject(t[2], 'textobjects', m)
+                    end)
                 end
             end
 
@@ -80,36 +76,20 @@ return {
             for _, m in ipairs({ 'n', 'x', 'o' }) do
                 for _, t in ipairs(move_textobjects) do
                     local key, capture = t[1], t[2]
-                    map({
-                        m,
-                        ']' .. key,
-                        function()
-                            move.goto_next_start(capture, 'textobjects')
-                        end,
-                    })
-                    map({
-                        m,
-                        '[' .. key,
-                        function()
-                            move.goto_previous_start(capture, 'textobjects')
-                        end,
-                    })
+                    vim.keymap.set(m, ']' .. key, function()
+                        move.goto_next_start(capture, 'textobjects')
+                    end)
+                    vim.keymap.set(m, '[' .. key, function()
+                        move.goto_previous_start(capture, 'textobjects')
+                    end)
                     local upper = key:upper()
                     if upper ~= key then
-                        map({
-                            m,
-                            ']' .. upper,
-                            function()
-                                move.goto_next_end(capture, 'textobjects')
-                            end,
-                        })
-                        map({
-                            m,
-                            '[' .. upper,
-                            function()
-                                move.goto_previous_end(capture, 'textobjects')
-                            end,
-                        })
+                        vim.keymap.set(m, ']' .. upper, function()
+                            move.goto_next_end(capture, 'textobjects')
+                        end)
+                        vim.keymap.set(m, '[' .. upper, function()
+                            move.goto_previous_end(capture, 'textobjects')
+                        end)
                     end
                 end
             end
@@ -117,12 +97,32 @@ return {
             local ts_repeat =
                 require('nvim-treesitter-textobjects.repeatable_move')
             for _, m in ipairs({ 'n', 'x', 'o' }) do
-                map({ m, ';', ts_repeat.repeat_last_move_next })
-                map({ m, ',', ts_repeat.repeat_last_move_previous })
-                map({ m, 'f', ts_repeat.builtin_f_expr }, { expr = true })
-                map({ m, 'F', ts_repeat.builtin_F_expr }, { expr = true })
-                map({ m, 't', ts_repeat.builtin_t_expr }, { expr = true })
-                map({ m, 'T', ts_repeat.builtin_T_expr }, { expr = true })
+                vim.keymap.set(m, ';', ts_repeat.repeat_last_move_next)
+                vim.keymap.set(m, ',', ts_repeat.repeat_last_move_previous)
+                vim.keymap.set(
+                    m,
+                    'f',
+                    ts_repeat.builtin_f_expr,
+                    { expr = true }
+                )
+                vim.keymap.set(
+                    m,
+                    'F',
+                    ts_repeat.builtin_F_expr,
+                    { expr = true }
+                )
+                vim.keymap.set(
+                    m,
+                    't',
+                    ts_repeat.builtin_t_expr,
+                    { expr = true }
+                )
+                vim.keymap.set(
+                    m,
+                    'T',
+                    ts_repeat.builtin_T_expr,
+                    { expr = true }
+                )
             end
         end,
     },

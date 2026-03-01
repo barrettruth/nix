@@ -32,8 +32,10 @@ return {
                     local clients = vim.lsp.get_clients({ buffer = o.buf })
                     for _, client in ipairs(clients) do
                         if client:supports_method('textDocument/rename') then
-                            bmap(
-                                { 'n', 'grn', live_rename.rename },
+                            vim.keymap.set(
+                                'n',
+                                'grn',
+                                live_rename.rename,
                                 { buffer = o.buf }
                             )
                         end
@@ -53,8 +55,10 @@ return {
         after = function()
             require('vtsls').config({
                 on_attach = function(_, bufnr)
-                    bmap(
-                        { 'n', 'gD', vim.cmd.VtsExec('goto_source_definition') },
+                    vim.keymap.set(
+                        'n',
+                        'gD',
+                        vim.cmd.VtsExec('goto_source_definition'),
                         { buffer = bufnr }
                     )
                 end,

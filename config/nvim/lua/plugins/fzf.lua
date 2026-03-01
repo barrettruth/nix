@@ -129,7 +129,7 @@ return {
         { '<leader>f/', '<cmd>FzfLua search_history<cr>' },
         { '<leader>f:', '<cmd>FzfLua command_history<cr>' },
         { '<leader>fa', '<cmd>FzfLua autocmds<cr>' },
-        { '<leader>fB', '<cmd>FzfLua buffers<cr>' },
+        { '<leader>fb', '<cmd>FzfLua buffers<cr>' },
         { '<leader>fc', '<cmd>FzfLua commands<cr>' },
         {
             '<leader>fe',

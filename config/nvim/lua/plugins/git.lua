@@ -159,67 +159,52 @@ local function with_forge(fn)
     end
 end
 
-map({
+vim.keymap.set(
     { 'n', 'v' },
     '<leader>go',
     with_forge(function(forge)
         local branch = vim.trim(vim.fn.system('git branch --show-current'))
         forge.browse(file_loc(), branch)
-    end),
-})
-map({
+    end)
+)
+vim.keymap.set(
     { 'n', 'v' },
     '<leader>gy',
     with_forge(function(forge)
         forge.yank_commit(file_loc())
-    end),
-})
-map({
+    end)
+)
+vim.keymap.set(
     { 'n', 'v' },
     '<leader>gl',
     with_forge(function(forge)
         forge.yank_branch(file_loc())
-    end),
-})
-map({
+    end)
+)
+vim.keymap.set(
     'n',
     '<leader>gx',
     with_forge(function(forge)
         forge.browse_root()
-    end),
-})
-map({
-    'n',
-    '<leader>gd',
-    function()
-        pcall(vim.cmd.packadd, 'fzf-lua')
-        require('fzf-lua').fzf_exec(
-            'git branch -a --format="%(refname:short)"',
-            {
-                prompt = 'Git diff> ',
-                actions = {
-                    ['default'] = function(selected)
-                        vim.cmd('Git diff ' .. selected[1])
-                    end,
-                },
-            }
-        )
-    end,
-})
-map({
-    'n',
-    '<leader>gi',
-    function()
-        forge_picker('issue', 'all')
-    end,
-})
-map({
-    'n',
-    '<leader>gp',
-    function()
-        forge_picker('pr', 'all')
-    end,
-})
+    end)
+)
+vim.keymap.set('n', '<leader>gd', function()
+    pcall(vim.cmd.packadd, 'fzf-lua')
+    require('fzf-lua').fzf_exec('git branch -a --format="%(refname:short)"', {
+        prompt = 'Git diff> ',
+        actions = {
+            ['default'] = function(selected)
+                vim.cmd('Git diff ' .. selected[1])
+            end,
+        },
+    })
+end)
+vim.keymap.set('n', '<leader>gi', function()
+    forge_picker('issue', 'all')
+end)
+vim.keymap.set('n', '<leader>gp', function()
+    forge_picker('pr', 'all')
+end)
 
 return {
     {

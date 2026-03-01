@@ -20,7 +20,6 @@ vim.api.nvim_create_autocmd('BufReadPost', {
     command = 'sil! normal g`"',
     group = aug,
 })
-
 vim.api.nvim_create_autocmd('TextYankPost', {
     callback = function()
         vim.highlight.on_yank({ higroup = 'Visual', timeout = 300 })

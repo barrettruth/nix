@@ -1,43 +1,3 @@
-local function parse_output(proc)
-    local result = proc:wait()
-    local ret = {}
-    if result.code == 0 then
-        for line in
-            vim.gsplit(result.stdout, '\n', { plain = true, trimempty = true })
-        do
-            ret[line:gsub('/$', '')] = true
-        end
-    end
-    return ret
-end
-
-local function new_git_status()
-    return setmetatable({}, {
-        __index = function(self, key)
-            local ignored_proc = vim.system({
-                'git',
-                'ls-files',
-                '--ignored',
-                '--exclude-standard',
-                '--others',
-                '--directory',
-            }, { cwd = key, text = true })
-            local tracked_proc = vim.system(
-                { 'git', 'ls-tree', 'HEAD', '--name-only' },
-                { cwd = key, text = true }
-            )
-            local ret = {
-                ignored = parse_output(ignored_proc),
-                tracked = parse_output(tracked_proc),
-            }
-            rawset(self, key, ret)
-            return ret
-        end,
-    })
-end
-
-local git_status = new_git_status()
-
 vim.pack.add({
     'https://github.com/echasnovski/mini.ai',
     'https://github.com/monaqa/dial.nvim',
@@ -52,20 +12,6 @@ vim.pack.add({
 })
 
 return {
-    {
-        'barrettruth/live-server.nvim',
-        enabled = false,
-        before = function()
-            vim.g.live_server = {
-                debug = false,
-            }
-        end,
-        keys = { { '<leader>l', '<cmd>LiveServerToggle<cr>' } },
-    },
-    {
-        'barrettruth/nonicons.nvim',
-        enabled = false,
-    },
     {
         'echasnovski/mini.pairs',
         after = function()
@@ -287,74 +233,6 @@ return {
         event = 'BufReadPre',
     },
     {
-        'barrettruth/canola.nvim',
-        enabled = true,
-        after = function()
-            require('oil').setup({
-                skip_confirm_for_simple_edits = true,
-                prompt_save_on_select_new_entry = false,
-                float = { border = 'single' },
-                view_options = {
-                    is_hidden_file = function(name, bufnr)
-                        local dir = require('oil').get_current_dir(bufnr)
-                        local is_dotfile = vim.startswith(name, '.')
-                            and name ~= '..'
-                        if not dir then
-                            return is_dotfile
-                        end
-                        if is_dotfile then
-                            return not git_status[dir].tracked[name]
-                        else
-                            return git_status[dir].ignored[name]
-                        end
-                    end,
-                },
-                keymaps = {
-                    ['<C-h>'] = false,
-                    ['<C-t>'] = false,
-                    ['<C-l>'] = false,
-                    ['<C-r>'] = 'actions.refresh',
-                    ['<C-s>'] = { 'actions.select', opts = { vertical = true } },
-                    ['<C-x>'] = {
-                        'actions.select',
-                        opts = { horizontal = true },
-                    },
-                    q = function()
-                        local ok, bufremove = pcall(require, 'mini.bufremove')
-                        if ok then
-                            bufremove.delete()
-                        else
-                            vim.cmd.bd()
-                        end
-                    end,
-                },
-            })
-            local refresh = require('oil.actions').refresh
-            local orig_refresh = refresh.callback
-            refresh.callback = function(...)
-                git_status = new_git_status()
-                orig_refresh(...)
-            end
-            vim.api.nvim_create_autocmd('BufEnter', {
-                callback = function()
-                    local ft = vim.bo.filetype
-                    if ft == '' then
-                        local path = vim.fn.expand('%:p')
-                        if vim.fn.isdirectory(path) == 1 then
-                            vim.cmd('Oil ' .. path)
-                        end
-                    end
-                end,
-                group = vim.api.nvim_create_augroup('AOil', { clear = true }),
-            })
-        end,
-        event = 'DeferredUIEnter',
-        keys = {
-            { '-', '<cmd>e .<cr>' },
-            { '_', '<cmd>Oil<cr>' },
-        },
-    },
-    {
         'echasnovski/mini.misc',
         after = function()
             require('mini.misc').setup()
@@ -397,13 +275,5 @@ return {
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },
-    },
-    {
-        'barrettruth/pending.nvim',
-        before = function()
-            vim.g.pending = { debug = true }
-        end,
-        -- TODO: should we be using this or `<Plug>` mappings?
-        keys = { { '<leader>p', '<cmd>Pending<cr>' } },
     },
 }

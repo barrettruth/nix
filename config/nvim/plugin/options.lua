@@ -14,9 +14,8 @@ o.expandtab = true
 o.exrc = true
 o.secure = true
 
-o.foldcolumn = '1'
 o.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-o.foldlevel = 1
+o.foldlevel = 99
 o.foldmethod = 'expr'
 o.foldtext = ''
 
@@ -24,6 +23,10 @@ opt.fillchars = {
     eob = ' ',
     vert = '│',
     diff = '╱',
+    foldopen = 'v',
+    foldclose = '>',
+    foldsep = ' ',
+    foldinner = ' ',
 }
 
 opt.iskeyword:append('-')
@@ -42,6 +45,8 @@ opt.matchpairs:append('<:>')
 
 o.number = true
 o.relativenumber = true
+o.signcolumn = 'no'
+o.statuscolumn = '%s%C %=%{v:relnum?v:relnum:v:lnum} '
 
 opt.path:append('**')
 

@@ -1,10 +1,10 @@
-map({ 'n', '<left>', '<cmd>vertical resize -10<cr>' })
-map({ 'n', '<right>', '<cmd>vertical resize +10<cr>' })
-map({ 'n', '<down>', '<cmd>resize +10<cr>' })
-map({ 'n', '<up>', '<cmd>resize -10<cr>' })
+vim.keymap.set('n', '<left>', '<cmd>vertical resize -10<cr>')
+vim.keymap.set('n', '<right>', '<cmd>vertical resize +10<cr>')
+vim.keymap.set('n', '<down>', '<cmd>resize +10<cr>')
+vim.keymap.set('n', '<up>', '<cmd>resize -10<cr>')
 
-map({ 'n', 'J', 'mzJ`z' })
+vim.keymap.set('n', 'J', 'mzJ`z')
 
-map({ 'x', 'p', '"_dp' })
-map({ 'x', 'P', '"_dP' })
-map({ 't', '<esc>', '<c-\\><c-n>' })
+vim.keymap.set('x', 'p', '"_dp')
+vim.keymap.set('x', 'P', '"_dP')
+vim.keymap.set('t', '<esc>', '<c-\\><c-n>')

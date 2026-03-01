@@ -21,8 +21,23 @@ return {
     },
     on_attach = function(...)
         require('config.lsp').on_attach(...)
-        bmap({ 'n', '\\Rc', '<cmd>RustLsp codeAction<cr>' })
-        bmap({ 'n', '\\Rm', '<cmd>RustLsp expandMacro<cr>' })
-        bmap({ 'n', '\\Ro', '<cmd>RustLsp openCargo<cr>' })
+        vim.keymap.set(
+            'n',
+            '\\Rc',
+            '<cmd>RustLsp codeAction<cr>',
+            { buffer = 0 }
+        )
+        vim.keymap.set(
+            'n',
+            '\\Rm',
+            '<cmd>RustLsp expandMacro<cr>',
+            { buffer = 0 }
+        )
+        vim.keymap.set(
+            'n',
+            '\\Ro',
+            '<cmd>RustLsp openCargo<cr>',
+            { buffer = 0 }
+        )
     end,
 }
