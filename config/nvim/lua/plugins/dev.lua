@@ -6,6 +6,7 @@ local dev_plugins = {
     'pending.nvim',
     'cp.nvim',
     'diffs.nvim',
+    'render.nvim',
 }
 
 local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
@@ -405,5 +406,43 @@ return {
                 end,
             }
         end,
+    },
+    {
+        'barrettruth/render.nvim',
+        ft = { 'typst', 'tex' },
+        before = function()
+            vim.g.render = {
+                providers = {
+                    typst = {
+                        cmd = { 'typst', 'compile' },
+                        args = function(ctx)
+                            return { ctx.file }
+                        end,
+                        output = function(ctx)
+                            return ctx.file:gsub('%.typ$', '.pdf')
+                        end,
+                    },
+                    latexmk = {
+                        cmd = { 'latexmk' },
+                        args = function(ctx)
+                            return { '-pdf', '-interaction=nonstopmode', ctx.file }
+                        end,
+                        output = function(ctx)
+                            return ctx.file:gsub('%.tex$', '.pdf')
+                        end,
+                        clean = { 'latexmk', '-c' },
+                    },
+                },
+                providers_by_ft = {
+                    typst = 'typst',
+                    tex = 'latexmk',
+                },
+            }
+        end,
+        keys = {
+            { '<leader>rr', '<cmd>Render compile<cr>' },
+            { '<leader>rs', '<cmd>Render stop<cr>' },
+            { '<leader>rc', '<cmd>Render clean<cr>' },
+        },
     },
 }
