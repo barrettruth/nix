@@ -224,6 +224,7 @@ in
         "$character"
       ];
       add_newline = true;
+      continuation_prompt = "[>>](dimmed purple) ";
       character = {
         success_symbol = "[>](bold purple)";
         error_symbol = "[>](bold red)";
