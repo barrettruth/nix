@@ -140,7 +140,7 @@ return {
         { ']c', '<cmd>CP next<cr>' },
         { '[c', '<cmd>CP prev<cr>' },
     },
-    init = function()
+    before = function()
         vim.g.cp = {
             debug = false,
             languages = {

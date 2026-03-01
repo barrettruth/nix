@@ -39,7 +39,6 @@ end
 local git_status = new_git_status()
 
 vim.pack.add({
-    -- 'https://github.com/barrettruth/midnight.nvim',
     'https://github.com/echasnovski/mini.ai',
     'https://github.com/monaqa/dial.nvim',
     'https://github.com/catgoose/nvim-colorizer.lua',
@@ -62,12 +61,6 @@ return {
             }
         end,
         keys = { { '<leader>l', '<cmd>LiveServerToggle<cr>' } },
-    },
-    {
-        'barrettruth/midnight.nvim',
-        after = function()
-            vim.cmd.colorscheme('midnight')
-        end,
     },
     {
         'barrettruth/nonicons.nvim',
@@ -404,19 +397,6 @@ return {
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },
-    },
-    {
-        -- TODO: replace this with own barrettruth/render.nvim
-        'wallpants/github-preview.nvim',
-        after = function()
-            require('github-preview').setup({
-                single_file = true,
-                cursor_line = {
-                    disable = true,
-                },
-            })
-        end,
-        keys = { { '<leader>m', '<cmd>silent GithubPreviewToggle<cr>' } },
     },
     {
         'barrettruth/pending.nvim',
