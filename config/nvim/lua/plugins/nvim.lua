@@ -8,7 +8,6 @@ vim.pack.add({
     'https://github.com/tpope/vim-abolish',
     'https://github.com/tpope/vim-sleuth',
     'https://github.com/kylechui/nvim-surround',
-    'https://github.com/lervag/vimtex',
 }, { load = function() end })
 
 return {
@@ -131,14 +130,6 @@ return {
             { 'a', mode = { 'x', 'o' } },
             { 'i', mode = { 'x', 'o' } },
         },
-    },
-    {
-        'lervag/vimtex',
-        ft = { 'latex' },
-        before = function()
-            vim.g.vimtex_view_method = 'sioyek'
-            vim.g.vimtex_quickfix_mode = 0
-        end,
     },
     {
         'monaqa/dial.nvim',
