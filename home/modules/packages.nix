@@ -15,6 +15,7 @@ let
   sioyek = true;
   vesktop = true;
   signal = true;
+  vivaldi = true;
 
   hexDigit =
     c:
@@ -122,6 +123,7 @@ in
     ]
     ++ lib.optionals (vesktop && hostConfig.isLinux) [ pkgs.vesktop ]
     ++ lib.optionals (signal && hostConfig.isLinux) [ pkgs.signal-desktop ]
+    ++ lib.optionals (vivaldi && hostConfig.isLinux) [ pkgs.vivaldi ]
     ++ lib.optionals hostConfig.isLinux [ pkgs.element-desktop ];
 
   xdg.configFile."sioyek/keys_user.config" = lib.mkIf sioyek {
