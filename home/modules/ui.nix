@@ -357,6 +357,9 @@ in
     [dmenu]
     mode=text
     exit-immediately-if-empty=no
+
+    [key-bindings]
+    custom-1=Control+r
   '';
   xdg.configFile."fuzzel/themes/midnight.ini".text = mkFuzzelTheme config.palettes.midnight;
   xdg.configFile."fuzzel/themes/daylight.ini".text = mkFuzzelTheme config.palettes.daylight;
