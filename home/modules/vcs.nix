@@ -6,6 +6,11 @@
   ...
 }:
 
+let
+  name = "Barrett Ruth";
+  email = "br.barrettruth@gmail.com";
+  gpgKey = "A6C96C9349D2FC81";
+in
 {
   programs.git = {
     enable = true;
@@ -45,15 +50,12 @@
     ];
 
     signing = {
-      key = "A6C96C9349D2FC81";
+      key = gpgKey;
       signByDefault = true;
     };
 
     settings = {
-      user = {
-        name = "Barrett Ruth";
-        email = "br.barrettruth@gmail.com";
-      };
+      user = { inherit name email; };
       alias = {
         a = "add";
         b = "branch";
@@ -97,6 +99,26 @@
       mergetool.codediff.cmd = "nvim -c 'CodeDiff' $LOCAL $REMOTE $MERGED";
       push.autoSetupRemote = true;
       credential.helper = "cache";
+    };
+  };
+
+  programs.jujutsu = {
+    enable = true;
+    settings = {
+      user = { inherit name email; };
+      signing = {
+        behavior = "own";
+        backend = "gpg";
+        key = gpgKey;
+      };
+      ui = {
+        editor = "nvim";
+        pager = "less -FRX";
+        diff-editor = ":builtin";
+        merge-editor = "vimdiff";
+      };
+      git.sign-on-push = true;
+      merge-tools.vimdiff.program = "nvim";
     };
   };
 

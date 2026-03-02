@@ -12,7 +12,7 @@
     ./modules/theme.nix
     ./modules/shell.nix
     ./modules/terminal.nix
-    ./modules/git.nix
+    ./modules/vcs.nix
     ./modules/editor.nix
     ./modules/packages.nix
   ]

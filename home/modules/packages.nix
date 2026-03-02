@@ -112,7 +112,6 @@ in
       typst
       typstyle
       glab
-      jujutsu
     ]
     ++ lib.optionals hostConfig.isLinux [
       bitwarden-desktop
