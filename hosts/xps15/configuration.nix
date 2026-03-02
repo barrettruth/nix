@@ -35,6 +35,7 @@ in
     fontSize = 36;
   };
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi.efiSysMountPoint = "/efi";
   boot.kernelParams = [
     "loglevel=3"
     "quiet"
