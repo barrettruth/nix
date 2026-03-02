@@ -100,7 +100,7 @@ let
   };
 in
 {
-  home.sessionVariables = lib.mkIf zen { BROWSER = "zen-beta"; };
+  home.sessionVariables = lib.mkIf vivaldi { BROWSER = "vivaldi"; };
 
   programs.mpv.enable = true;
 
@@ -226,10 +226,10 @@ in
   xdg.mimeApps = lib.mkIf hostConfig.isLinux {
     enable = true;
     defaultApplications = lib.mkMerge [
-      (lib.mkIf zen {
-        "x-scheme-handler/http" = "zen-beta.desktop";
-        "x-scheme-handler/https" = "zen-beta.desktop";
-        "text/html" = "zen-beta.desktop";
+      (lib.mkIf vivaldi {
+        "x-scheme-handler/http" = "vivaldi.desktop";
+        "x-scheme-handler/https" = "vivaldi.desktop";
+        "text/html" = "vivaldi.desktop";
       })
       (lib.mkIf neovim {
         "text/plain" = "nvim.desktop";
