@@ -110,7 +110,6 @@ in
         link "$cfg/hypr/themes/$theme.conf" "$cfg/hypr/themes/theme.conf"
         link "$cfg/waybar/themes/$theme.css" "$cfg/waybar/themes/theme.css"
         link "$cfg/fuzzel/themes/$theme.ini" "$cfg/fuzzel/themes/theme.ini"
-        link "$cfg/eww/themes/$theme.scss" "$cfg/eww/themes/theme.scss"
         $DRY_RUN_CMD mkdir -p "$cfg/dunst/dunstrc.d"
         link "$cfg/dunst/themes/$theme.conf" "$cfg/dunst/dunstrc.d/theme.conf"
       ''}
