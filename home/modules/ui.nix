@@ -352,7 +352,7 @@ in
   };
 
   xdg.configFile."eww/eww.yuck".text = ''
-    (deflisten audio :initial '{"sv":0,"sm":false,"iv":0,"im":false}' "''${EWW_CONFIG_DIR}/scripts/audio")
+    (deflisten audio :initial '{"sv":0,"sm":false,"iv":0,"im":false}' "${config.xdg.configHome}/eww/scripts/audio")
 
     (defwidget volume-popup []
       (box :class "volume-popup" :orientation "v" :space-evenly false :spacing 12
@@ -369,7 +369,7 @@ in
 
     (defwindow volume
       :monitor 0
-      :geometry (geometry :x "-16px" :y "8px" :width "280px" :anchor "top right")
+      :geometry (geometry :x "-16px" :y "42px" :width "280px" :anchor "top right")
       :stacking "overlay"
       :exclusive false
       :focusable false
@@ -379,9 +379,14 @@ in
   xdg.configFile."eww/eww.scss".text = ''
     @import "themes/theme";
 
+    window {
+      border-radius: 0;
+    }
+
     .volume-popup {
       background: $bg;
       border: 2px solid $border;
+      border-radius: 0;
       padding: 16px;
     }
 
