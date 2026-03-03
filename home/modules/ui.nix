@@ -234,6 +234,7 @@ in
         format = " {:%a %d/%m/%Y  %H:%M:%S}";
         interval = 1;
         tooltip = false;
+        on-click-right = "notify-send test 'right click'";
       };
 
       "custom/power" = {
