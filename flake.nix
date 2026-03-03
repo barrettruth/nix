@@ -106,6 +106,9 @@
             pkgs.statix
             pkgs.nixfmt
             pkgs.pre-commit
+            pkgs.nodePackages.prettier
+            pkgs.stylua
+            pkgs.selene
           ];
         };
 
