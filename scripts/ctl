@@ -81,42 +81,51 @@ audio)
       class="Audio/Sink"
       prompt="sink:  "
       default_meta="default.audio.sink"
+      node="@DEFAULT_AUDIO_SINK@"
       pad=7
     else
       class="Audio/Source"
       prompt="source: "
       default_meta="default.audio.source"
+      node="@DEFAULT_AUDIO_SOURCE@"
       pad=8
     fi
-    dump=$(pw-dump)
-    devices=$(printf '%s' "$dump" | jq -r --arg class "$class" \
-      '.[] | select(.info.props."media.class" == $class) | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")\t\(.info.props."node.name" // "")"')
-    [ -z "$devices" ] && exit 0
-    default_name=$(printf '%s' "$dump" | jq -r --arg key "$default_meta" \
-      '.[] | select(.type == "PipeWire:Interface:Metadata" and .info.props."metadata.name" == "default") | .info.metadata[] | select(.key == $key) | .value | fromjson | .name')
-    rows=$(printf '%s\n' "$devices" | while IFS="$(printf '\t')" read -r id name node_name; do
-      active=$([ "$node_name" = "$default_name" ] && echo ">" || echo "")
-      printf '%s\t%s\t%s\n' "$id" "$name" "$active"
-    done)
-    [ -z "$rows" ] && exit 0
-    w1=$(printf '%s\n' "$rows" | awk -F'\t' 'BEGIN{m=11}{l=length($2);if(l>m)m=l}END{print m}')
-    fw=$((w1 + pad + 10))
-    sep=$(awk -v n="$w1" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
-    indent=$(printf "%${pad}s" "")
-    active_prefix=$(printf "  >%$((pad - 3))s" "")
-    header=$(printf "%s%s\n%s%s" "$indent" "Device name" "$indent" "$sep")
-    count=$(printf '%s\n' "$rows" | wc -l)
-    choice=$(printf '%s\n' "$rows" |
-      awk -F'\t' -v w1="$w1" -v indent="$indent" -v active_prefix="$active_prefix" '{
-        prefix = ($3 == ">") ? active_prefix : indent
-        printf "%s%-*s\t%s\n", prefix, w1, $2, $1
-      }' |
-      fuzzel --dmenu --prompt="$prompt" --no-icons --lines="$count" \
-        --with-nth=1 --accept-nth=2 \
-        --mesg="$header" --mesg-mode=expand \
-        --font="monospace:size=12" --width="$fw")
-    [ -z "$choice" ] && exit 0
-    wpctl set-default "$choice"
+    while :; do
+      dump=$(pw-dump)
+      devices=$(printf '%s' "$dump" | jq -r --arg class "$class" \
+        '.[] | select(.info.props."media.class" == $class) | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")\t\(.info.props."node.name" // "")"')
+      [ -z "$devices" ] && exit 0
+      default_name=$(printf '%s' "$dump" | jq -r --arg key "$default_meta" \
+        '.[] | select(.type == "PipeWire:Interface:Metadata" and .info.props."metadata.name" == "default") | .info.metadata[] | select(.key == $key) | .value | fromjson | .name')
+      vol=$(wpctl get-volume "$node" | awk '{printf "%d", $2 * 100}')
+      rows=$(printf '%s\n' "$devices" | while IFS="$(printf '\t')" read -r id name node_name; do
+        active=$([ "$node_name" = "$default_name" ] && echo ">" || echo "")
+        printf '%s\t%s\t%s\n' "$id" "$name" "$active"
+      done)
+      [ -z "$rows" ] && exit 0
+      w1=$(printf '%s\n' "$rows" | awk -F'\t' 'BEGIN{m=11}{l=length($2);if(l>m)m=l}END{print m}')
+      fw=$((w1 + pad + 10))
+      sep=$(awk -v n="$w1" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
+      indent=$(printf "%${pad}s" "")
+      active_prefix=$(printf "  >%$((pad - 3))s" "")
+      header=$(printf "%s%s  vol: %d%%\n%s%s" "$indent" "Device name" "$vol" "$indent" "$sep")
+      count=$(printf '%s\n' "$rows" | wc -l)
+      choice=$(printf '%s\n' "$rows" |
+        awk -F'\t' -v w1="$w1" -v indent="$indent" -v active_prefix="$active_prefix" '{
+          prefix = ($3 == ">") ? active_prefix : indent
+          printf "%s%-*s\t%s\n", prefix, w1, $2, $1
+        }' |
+        fuzzel --dmenu --prompt="$prompt" --no-icons --lines="$count" \
+          --with-nth=1 --accept-nth=2 \
+          --mesg="$header" --mesg-mode=expand \
+          --font="monospace:size=12" --width="$fw")
+      rc=$?
+      [ "$rc" = 11 ] && { wpctl set-volume "$node" 5%+ --limit 1.0; continue; }
+      [ "$rc" = 12 ] && { wpctl set-volume "$node" 5%-; continue; }
+      [ -z "$choice" ] && exit 0
+      wpctl set-default "$choice"
+      break
+    done
     ;;
   *)
     echo "Usage: ctl audio {sink|source}" >&2

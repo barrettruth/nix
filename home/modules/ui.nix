@@ -16,15 +16,6 @@ let
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
   '';
 
-  mkEwwTheme = palette: ''
-    $bg: ${palette.bg};
-    $fg: ${palette.fg};
-    $bgAlt: ${palette.bgAlt};
-    $fgAlt: ${palette.fgAlt};
-    $border: ${palette.border};
-    $accent: ${palette.accent};
-  '';
-
   hexToFuzzel = hex: "${builtins.substring 1 6 hex}ff";
 
   mkFuzzelTheme = palette: ''
@@ -87,7 +78,6 @@ in
     papirus-icon-theme
     psmisc
     fuzzel
-    eww
     wl-clipboard
     grim
     slurp
@@ -167,7 +157,7 @@ in
         max-volume = 100;
         scroll-step = 5;
         on-click = "ctl audio sink";
-        on-click-right = "eww open --toggle volume";
+        on-click-right = "ctl audio sink";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         tooltip = true;
         tooltip-format = "{volume}%";
@@ -181,7 +171,7 @@ in
         max-volume = 100;
         scroll-step = 5;
         on-click = "ctl audio source";
-        on-click-right = "eww open --toggle volume";
+        on-click-right = "ctl audio source";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
         tooltip = true;
         tooltip-format = "{volume}%";
@@ -329,110 +319,6 @@ in
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
-  xdg.configFile."eww/scripts/audio" = {
-    executable = true;
-    text = ''
-      #!/bin/sh
-      emit() {
-        sink=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)
-        source=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null)
-        sv=$(echo "$sink" | awk '{printf "%d", $2 * 100}')
-        sm=$(echo "$sink" | grep -q MUTED && echo true || echo false)
-        iv=$(echo "$source" | awk '{printf "%d", $2 * 100}')
-        im=$(echo "$source" | grep -q MUTED && echo true || echo false)
-        printf '{"sv":%d,"sm":%s,"iv":%d,"im":%s}\n' "$sv" "$sm" "$iv" "$im"
-      }
-      emit
-      pactl subscribe 2>/dev/null | while read -r line; do
-        case "$line" in
-          *"change"*"sink"*|*"change"*"source"*|*"change"*"server"*) emit ;;
-        esac
-      done
-    '';
-  };
-
-  xdg.configFile."eww/eww.yuck".text = ''
-    (deflisten audio :initial '{"sv":0,"sm":false,"iv":0,"im":false}' "${config.xdg.configHome}/eww/scripts/audio")
-
-    (defwidget volume-popup []
-      (box :class "volume-popup" :orientation "v" :space-evenly false :spacing 12
-        (box :class "slider-row" :orientation "h" :space-evenly false :spacing 8
-          (button :class "mute-btn" :onclick "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-            (label :text {audio.sm ? "󰖁" : audio.sv <= 33 ? "󰕿" : audio.sv <= 66 ? "󰖀" : "󰕾"}))
-          (scale :class "vol-slider" :value {audio.sv} :min 0 :max 100 :orientation "h"
-            :onchange "wpctl set-volume @DEFAULT_AUDIO_SINK@ {}%"))
-        (box :class "slider-row" :orientation "h" :space-evenly false :spacing 8
-          (button :class "mute-btn" :onclick "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-            (label :text {audio.im ? "󰍭" : "󰍬"}))
-          (scale :class "vol-slider" :value {audio.iv} :min 0 :max 100 :orientation "h"
-            :onchange "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ {}%"))))
-
-    (defwindow volume
-      :monitor 0
-      :geometry (geometry :x "-16px" :y "42px" :width "280px" :anchor "top right")
-      :stacking "overlay"
-      :exclusive false
-      :focusable false
-      (volume-popup))
-  '';
-
-  xdg.configFile."eww/eww.scss".text = ''
-    @import "themes/theme";
-
-    window {
-      border-radius: 0;
-    }
-
-    .volume-popup {
-      background: $bg;
-      border: 2px solid $border;
-      border-radius: 0;
-      padding: 16px;
-    }
-
-    .slider-row {
-      padding: 4px 0;
-    }
-
-    .mute-btn {
-      background: transparent;
-      color: $fg;
-      font-size: 18px;
-      min-width: 28px;
-      min-height: 28px;
-      padding: 0;
-      border: none;
-      &:hover { color: $accent; }
-    }
-
-    .vol-slider {
-      min-width: 200px;
-      min-height: 8px;
-
-      trough {
-        background: $bgAlt;
-        min-height: 4px;
-        border-radius: 2px;
-      }
-
-      highlight {
-        background: $accent;
-        border-radius: 2px;
-      }
-
-      slider {
-        background: $fg;
-        min-width: 12px;
-        min-height: 12px;
-        border-radius: 6px;
-        margin: -4px 0;
-      }
-    }
-  '';
-
-  xdg.configFile."eww/themes/midnight.scss".text = mkEwwTheme config.palettes.midnight;
-  xdg.configFile."eww/themes/daylight.scss".text = mkEwwTheme config.palettes.daylight;
-
   xdg.configFile."fuzzel/fuzzel.ini".text = ''
     include=${config.xdg.configHome}/fuzzel/themes/theme.ini
 
@@ -467,6 +353,8 @@ in
 
     [key-bindings]
     custom-1=Control+r
+    custom-2=Control+k
+    custom-3=Control+j
   '';
   xdg.configFile."fuzzel/themes/midnight.ini".text = mkFuzzelTheme config.palettes.midnight;
   xdg.configFile."fuzzel/themes/daylight.ini".text = mkFuzzelTheme config.palettes.daylight;
