@@ -69,47 +69,43 @@ in
     };
   };
 
-  xdg.configFile."hypr/hyprlock.conf".text =
-    let
-      c = config.colors;
-    in
-    ''
-      general {
-        hide_cursor = true
-        grace = 0
-      }
+  xdg.configFile."hypr/hyprlock.conf".text = ''
+    general {
+      hide_cursor = true
+      grace = 0
+    }
 
-      background {
-        monitor =
-        path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
-      }
+    background {
+      monitor =
+      path = ${config.xdg.userDirs.pictures}/Screensavers/lock.jpg
+    }
 
-      animations {
-        enabled = false
-      }
+    animations {
+      enabled = false
+    }
 
-      input-field {
-        monitor =
-        size = 600, 50
-        outline_thickness = 0
-        dots_text_format = *
-        dots_size = 0.9
-        dots_spacing = 0.3
-        dots_center = true
-        outer_color = rgba(00000000)
-        inner_color = rgba(00000000)
-        font_color = rgb(ffffff)
-        font_family = Berkeley Mono
-        check_color = rgb(98c379)
-        fail_color = rgb(ff6b6b)
-        fail_text = $FAIL
-        rounding = 0
-        placeholder_text =
-        position = 0, 0
-        halign = center
-        valign = center
-      }
-    '';
+    input-field {
+      monitor =
+      size = 600, 50
+      outline_thickness = 0
+      dots_text_format = *
+      dots_size = 0.9
+      dots_spacing = 0.3
+      dots_center = true
+      outer_color = rgba(00000000)
+      inner_color = rgba(00000000)
+      font_color = rgb(ffffff)
+      font_family = Berkeley Mono
+      check_color = rgb(98c379)
+      fail_color = rgb(ff6b6b)
+      fail_text = $FAIL
+      rounding = 0
+      placeholder_text =
+      position = 0, 0
+      halign = center
+      valign = center
+    }
+  '';
 
   services.hypridle = {
     enable = true;

@@ -1,8 +1,4 @@
-{ pkgs, config, ... }:
-
-let
-  c = config.colors;
-in
+{ config, ... }:
 {
   home.sessionVariables = {
     TERMINAL = "ghostty";

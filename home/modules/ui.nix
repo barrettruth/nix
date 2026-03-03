@@ -2,13 +2,10 @@
   pkgs,
   lib,
   config,
-  hostConfig,
   ...
 }:
 
 let
-  c = config.colors;
-
   mkWaybarTheme = palette: ''
     * { color: ${palette.fg}; }
     window#waybar { background: ${palette.bg}; border-bottom: 2px solid ${palette.bgAlt}; }

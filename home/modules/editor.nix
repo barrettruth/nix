@@ -44,6 +44,8 @@ in
     mypy
     selene
     shellcheck
+    deadnix
+    statix
 
     # runtime/tools
     nodejs
