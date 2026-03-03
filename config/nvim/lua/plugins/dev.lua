@@ -184,6 +184,9 @@ return {
         before = function()
             vim.g.cp = {
                 debug = false,
+                templates = {
+                    cursor_marker = '<++>',
+                },
                 languages = {
                     cpp = {
                         extension = 'cc',
@@ -275,18 +278,6 @@ return {
                         vim.opt_local.foldtext = ''
                         vim.diagnostic.enable(false)
 
-                        local buf = vim.api.nvim_get_current_buf()
-                        local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-                        for lnum, line in ipairs(lines) do
-                            local col = line:find('<++>', 1, true)
-                            if col then
-                                local new_line = line:sub(1, col - 1) .. line:sub(col + 4)
-                                vim.api.nvim_buf_set_lines(buf, lnum - 1, lnum, false, { new_line })
-                                vim.api.nvim_win_set_cursor(0, { lnum, col - 1 })
-                                break
-                            end
-                        end
-
                         local clang_format_path = vim.fn.getcwd() .. '/.clang-format'
                         if vim.fn.filereadable(clang_format_path) == 0 then
                             vim.fn.writefile(
@@ -306,15 +297,10 @@ return {
         'barrettruth/preview.nvim',
         ft = { 'typst', 'tex', 'markdown' },
         after = function()
-            local presets = require('preview.presets')
             require('preview').setup({
-                'github',
-                typst = vim.tbl_deep_extend('force', presets.typst, {
-                    open = { 'sioyek', '--new-instance' },
-                }),
-                tex = vim.tbl_deep_extend('force', presets.latex, {
-                    open = { 'sioyek', '--new-instance' },
-                }),
+                github = true,
+                typst = { open = { 'sioyek', '--new-instance' } },
+                latex = { open = { 'sioyek', '--new-instance' } },
             })
         end,
         keys = { { '<leader>p', '<cmd>Preview toggle<cr>' } },
