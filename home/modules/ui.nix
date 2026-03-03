@@ -152,7 +152,7 @@ in
       wireplumber = {
         format = "{icon}";
         format-muted = "󰖁";
-        format-icons = [ "󰕿" "󰖀" "󰕾" ];
+        format-icons = [ "󰖁" "󰕿" "󰕿" "󰕿" "󰖀" "󰖀" "󰖀" "󰕾" "󰕾" "󰕾" ];
         node-type = "Audio/Sink";
         max-volume = 100;
         scroll-step = 5;
@@ -166,7 +166,7 @@ in
       "wireplumber#source" = {
         format = "{icon}";
         format-muted = "󰍭";
-        format-icons = [ "󰍬" ];
+        format-icons = [ "󰍭" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" ];
         node-type = "Audio/Source";
         max-volume = 100;
         scroll-step = 5;
@@ -352,6 +352,7 @@ in
     exit-immediately-if-empty=no
 
     [key-bindings]
+    delete-line-forward=none
     custom-1=Control+r
     custom-2=Control+k
     custom-3=Control+j

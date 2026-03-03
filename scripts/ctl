@@ -97,23 +97,23 @@ audio)
       [ -z "$devices" ] && exit 0
       default_name=$(printf '%s' "$dump" | jq -r --arg key "$default_meta" \
         '.[] | select(.type == "PipeWire:Interface:Metadata" and .info.props."metadata.name" == "default") | .info.metadata[] | select(.key == $key) | .value | fromjson | .name')
-      vol=$(wpctl get-volume "$node" | awk '{printf "%d", $2 * 100}')
       rows=$(printf '%s\n' "$devices" | while IFS="$(printf '\t')" read -r id name node_name; do
         active=$([ "$node_name" = "$default_name" ] && echo ">" || echo "")
-        printf '%s\t%s\t%s\n' "$id" "$name" "$active"
+        vol=$(wpctl get-volume "$id" 2>/dev/null | awk '{printf "%d", $2 * 100}')
+        printf '%s\t%s\t%s\t%s\n' "$id" "$name" "$active" "$vol"
       done)
       [ -z "$rows" ] && exit 0
       w1=$(printf '%s\n' "$rows" | awk -F'\t' 'BEGIN{m=11}{l=length($2);if(l>m)m=l}END{print m}')
-      fw=$((w1 + pad + 10))
-      sep=$(awk -v n="$w1" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
+      fw=$((w1 + pad + 16))
+      sep=$(awk -v n="$((w1 + 10))" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
       indent=$(printf "%${pad}s" "")
       active_prefix=$(printf "  >%$((pad - 3))s" "")
-      header=$(printf "%s%s  vol: %d%%\n%s%s" "$indent" "Device name" "$vol" "$indent" "$sep")
+      header=$(printf "%s%-*s    %s\n%s%s" "$indent" "$w1" "Device name" "Volume" "$indent" "$sep")
       count=$(printf '%s\n' "$rows" | wc -l)
       choice=$(printf '%s\n' "$rows" |
         awk -F'\t' -v w1="$w1" -v indent="$indent" -v active_prefix="$active_prefix" '{
           prefix = ($3 == ">") ? active_prefix : indent
-          printf "%s%-*s\t%s\n", prefix, w1, $2, $1
+          printf "%s%-*s    %3d%%\t%s\n", prefix, w1, $2, $4, $1
         }' |
         fuzzel --dmenu --prompt="$prompt" --no-icons --lines="$count" \
           --with-nth=1 --accept-nth=2 \
