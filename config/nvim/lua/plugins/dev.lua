@@ -206,7 +206,7 @@ return {
     },
     {
         'barrettruth/nonicons.nvim',
-        enabled = false,
+        enabled = true,
     },
     {
         'barrettruth/canola.nvim',

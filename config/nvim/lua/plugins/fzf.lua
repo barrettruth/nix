@@ -6,7 +6,7 @@ return {
     'ibhagwan/fzf-lua',
     after = function()
         local fzf = require('fzf-lua')
-        local has_devicons = pcall(require, 'nvim-web-devicons')
+        local has_icons = pcall(require, 'nonicons')
 
         local opts = {
             file_icon_padding = ' ',
@@ -85,8 +85,8 @@ return {
             },
         }
 
-        opts.files.file_icons = has_devicons
-        opts.grep.file_icons = has_devicons
+        opts.files.file_icons = has_icons
+        opts.grep.file_icons = has_icons
         opts.grep.rg_opts =
             fzf.defaults.grep.rg_opts:gsub('%-e$', "--glob='!.git/' -e")
 
