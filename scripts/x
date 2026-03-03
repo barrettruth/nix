@@ -15,7 +15,8 @@ require() {
   done
 }
 
-cmd="$1"; shift
+cmd="$1"
+shift
 
 case "$cmd" in
 setup)

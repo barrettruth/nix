@@ -32,11 +32,13 @@ in
     configurationLimit = 5;
     gfxmodeEfi = "1920x1200,auto";
     fontSize = 36;
-    mirroredBoots = [{
-      path = "/boot";
-      efiSysMountPoint = "/efi";
-      devices = [ "nodev" ];
-    }];
+    mirroredBoots = [
+      {
+        path = "/boot";
+        efiSysMountPoint = "/efi";
+        devices = [ "nodev" ];
+      }
+    ];
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.efi.efiSysMountPoint = "/efi";

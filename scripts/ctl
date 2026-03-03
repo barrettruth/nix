@@ -16,7 +16,7 @@ screenshot)
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
     require grim slurp wl-copy
-    grim -g "$(slurp)" "$file" && wl-copy < "$file"
+    grim -g "$(slurp)" "$file" && wl-copy <"$file"
   else
     require maim xclip
     maim -s "$file" && xclip -selection clipboard -t image/png -i "$file" &
@@ -48,13 +48,13 @@ keyboard)
     colemak) current="Colemak" ;;
     *) current="QWERTY" ;;
     esac
-    choice=$(printf 'QWERTY\nDvorak\nColemak' | \
+    choice=$(printf 'QWERTY\nDvorak\nColemak' |
       awk -v cur="$current" '{
-        prefix = ($0 == cur) ? "  >    " : "       "
+        prefix = ($0 == cur) ? "  >   " : "      "
         printf "%s%s\t%s\n", prefix, $0, $0
-      }' | \
-      fuzzel --dmenu --prompt="kbd:   " --no-icons --lines=3 \
-        --with-nth=1 --accept-nth=2 --width=24)
+      }' |
+      fuzzel --dmenu --prompt="kbd:  " --no-icons --lines=3 \
+        --with-nth=1 --accept-nth=2 --font="monospace:size=12" --width=23)
     [ -z "$choice" ] && exit 0
     case "$choice" in
     QWERTY) variant="" ;;
@@ -76,7 +76,7 @@ keyboard)
 audio)
   require wpctl pw-dump jq fuzzel
   case "$2" in
-  sink|source)
+  sink | source)
     if [ "$2" = sink ]; then
       class="Audio/Sink"
       prompt="sink:  "
@@ -106,11 +106,11 @@ audio)
     active_prefix=$(printf "  >%$((pad - 3))s" "")
     header=$(printf "%s%s\n%s%s" "$indent" "Device name" "$indent" "$sep")
     count=$(printf '%s\n' "$rows" | wc -l)
-    choice=$(printf '%s\n' "$rows" | \
+    choice=$(printf '%s\n' "$rows" |
       awk -F'\t' -v w1="$w1" -v indent="$indent" -v active_prefix="$active_prefix" '{
         prefix = ($3 == ">") ? active_prefix : indent
         printf "%s%-*s\t%s\n", prefix, w1, $2, $1
-      }' | \
+      }' |
       fuzzel --dmenu --prompt="$prompt" --no-icons --lines="$count" \
         --with-nth=1 --accept-nth=2 \
         --mesg="$header" --mesg-mode=expand \
@@ -130,14 +130,25 @@ brightness)
   case "$2" in
   up) brightnessctl set "$BRIGHT_STEP"%+ ;;
   down) brightnessctl set "$BRIGHT_STEP"%- ;;
-  *) echo "Usage: ctl brightness {up|down}" >&2; exit 1 ;;
+  *)
+    echo "Usage: ctl brightness {up|down}" >&2
+    exit 1
+    ;;
   esac
   pct=$(awk -v cur="$(brightnessctl get)" -v max="$(brightnessctl max)" 'BEGIN { printf "%d", cur * 100 / max }')
   filled=$((pct / 5))
   empty=$((20 - filled))
   bar=""
-  i=0; while [ "$i" -lt "$filled" ]; do bar="${bar}━"; i=$((i + 1)); done
-  i=0; while [ "$i" -lt "$empty" ]; do bar="${bar}─"; i=$((i + 1)); done
+  i=0
+  while [ "$i" -lt "$filled" ]; do
+    bar="${bar}━"
+    i=$((i + 1))
+  done
+  i=0
+  while [ "$i" -lt "$empty" ]; do
+    bar="${bar}─"
+    i=$((i + 1))
+  done
   notify-send -a ctl -t 2500 -r 5555 "󰃠  $bar"
   ;;
 volume)
@@ -149,14 +160,25 @@ volume)
   up) wpctl set-volume "$SINK" "${VOL_STEP}%+" --limit 1.0 ;;
   down) wpctl set-volume "$SINK" "${VOL_STEP}%-" ;;
   toggle) wpctl set-mute "$SINK" toggle ;;
-  *) echo "Usage: ctl volume {up|down|toggle}" >&2; exit 1 ;;
+  *)
+    echo "Usage: ctl volume {up|down|toggle}" >&2
+    exit 1
+    ;;
   esac
   vol=$(get_vol)
   filled=$((vol / 5))
   empty=$((20 - filled))
   bar=""
-  i=0; while [ "$i" -lt "$filled" ]; do bar="${bar}━"; i=$((i + 1)); done
-  i=0; while [ "$i" -lt "$empty" ]; do bar="${bar}─"; i=$((i + 1)); done
+  i=0
+  while [ "$i" -lt "$filled" ]; do
+    bar="${bar}━"
+    i=$((i + 1))
+  done
+  i=0
+  while [ "$i" -lt "$empty" ]; do
+    bar="${bar}─"
+    i=$((i + 1))
+  done
   if wpctl get-volume "$SINK" | grep -q MUTED; then
     icon="󰖁"
   elif [ "$vol" -le 33 ]; then
@@ -173,11 +195,14 @@ wifi)
   pick)
     require fuzzel
     station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
-    [ -z "$station" ] && { echo "ctl: no wifi device found" >&2; exit 1; }
+    [ -z "$station" ] && {
+      echo "ctl: no wifi device found" >&2
+      exit 1
+    }
     while :; do
-      networks=$(iwctl station "$station" get-networks 2>/dev/null | \
-        sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
-        awk 'NR>4 && /\S/ && !/^[[:space:]]*-/' | \
+      networks=$(iwctl station "$station" get-networks 2>/dev/null |
+        sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' |
+        awk 'NR>4 && /\S/ && !/^[[:space:]]*-/' |
         awk '{
           active = ($0 ~ /^[[:space:]]*>/) ? ">" : ""
           sub(/^[[:space:]>]*/, "")
@@ -210,11 +235,11 @@ wifi)
       sep=$(awk -v n="$((w1 + w2 + w3 + 8))" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
       header=$(printf "       %-*s    %-*s    %s\n       %s" "$w1" "Network name" "$w2" "Security" "Signal" "$sep")
       count=$(printf '%s\n' "$networks" | wc -l)
-      ssid=$(printf '%s\n' "$networks" | \
+      ssid=$(printf '%s\n' "$networks" |
         awk -F'\t' -v w1="$w1" -v w2="$w2" '{
           prefix = ($4 == ">") ? "  >    " : "       "
           printf "%s%-*s    %-*s    %s\t%s\n", prefix, w1, $1, w2, $2, $3, $1
-        }' | \
+        }' |
         fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count" \
           --with-nth=1 --accept-nth=2 \
           --mesg="$header" --mesg-mode=expand \
@@ -266,33 +291,33 @@ media)
   case "$chosen" in
   "$cap_desktop")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
+    grim "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$cap_area")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim -g "$(slurp)" "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
+    grim -g "$(slurp)" "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$cap_window")
     geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim -g "$geom" "$file" && wl-copy < "$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
+    grim -g "$geom" "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$rec_desktop")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "Recording started"
     wf-recorder -f "$file" &
     ;;
   "$rec_area")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "Recording started"
     wf-recorder -g "$(slurp)" -f "$file" &
     ;;
   "$rec_window")
     geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    echo "$file" > "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "Recording started"
     wf-recorder -g "$geom" -f "$file" &
     ;;
@@ -306,7 +331,7 @@ media)
   ;;
 wallpaper)
   require python
-  python - "$2" << 'PYTHON'
+  python - "$2" <<'PYTHON'
 import os
 import random
 import subprocess
