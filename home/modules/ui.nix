@@ -112,7 +112,7 @@ in
         "custom/keyboard"
         "privacy"
         "custom/mic"
-        "pulseaudio"
+        "custom/pulseaudio"
         "network"
         "battery"
         "clock"
@@ -165,24 +165,16 @@ in
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-";
       };
 
-      pulseaudio = {
-        format = "{icon}";
-        format-muted = "󰖁";
-        format-icons = {
-          default = [
-            "󰕿"
-            "󰖀"
-            "󰕾"
-          ];
-        };
+      "custom/pulseaudio" = {
+        exec = ''sh -c 'out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@); vol=$(echo "$out" | awk "{printf \"%d\", \$2 * 100}"); if echo "$out" | grep -q MUTED; then icon="󰖁"; elif [ "$vol" -le 33 ]; then icon="󰕿"; elif [ "$vol" -le 66 ]; then icon="󰖀"; else icon="󰕾"; fi; echo "{\"text\":\"$icon\",\"tooltip\":\"Volume: ''${vol}%\"}"' '';
+        return-type = "json";
+        interval = 1;
         signal = 1;
-        tooltip = true;
-        tooltip-format = "Volume: {volume}%\nOutput: {desc}";
         on-click = "ctl audio sink";
         on-click-right = "pgrep -f 'waybar.*slider' && pkill -f 'waybar.*slider' || (waybar -c ${config.xdg.configHome}/waybar/slider.json &)";
-        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
-        on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
-        on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; pkill -RTMIN+1 waybar";
+        on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0; pkill -RTMIN+1 waybar";
+        on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; pkill -RTMIN+1 waybar";
       };
 
       network = {
@@ -234,7 +226,6 @@ in
         format = " {:%a %d/%m/%Y  %H:%M:%S}";
         interval = 1;
         tooltip = false;
-        on-click-right = "notify-send test 'right click'";
       };
 
       "custom/power" = {
@@ -273,7 +264,7 @@ in
       #privacy,
       #tray,
       #custom-mic,
-      #pulseaudio,
+      #custom-pulseaudio,
       #network,
       #battery,
       #clock,

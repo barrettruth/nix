@@ -58,24 +58,6 @@ end
 
 local git_status = new_git_status()
 
-local clang_format = [[BasedOnStyle: LLVM
-IndentWidth: 2
-UseTab: Never
-
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortLambdasOnASingleLine: None
-AllowShortBlocksOnASingleLine: Never
-AllowShortEnumsOnASingleLine: false
-AllowShortCaseExpressionOnASingleLine: false
-
-BreakBeforeBraces: Attach
-ColumnLimit: 100
-AlignAfterOpenBracket: Align
-BinPackArguments: false
-BinPackParameters: false]]
-
 return {
     {
         'barrettruth/midnight.nvim',
@@ -258,34 +240,27 @@ return {
                     panel = { diff_modes = { 'side-by-side', 'git' } },
                 },
                 hooks = {
-                    setup_io_input = function(buf)
-                        require('cp.helpers').clearcol(buf)
-                    end,
-                    setup_io_output = function(buf)
-                        require('cp.helpers').clearcol(buf)
-                    end,
-                    before_run = function(_)
-                        require('config.lsp').format()
-                    end,
-                    before_debug = function(_)
-                        require('config.lsp').format()
-                    end,
-                    setup_code = function(_)
-                        vim.opt_local.winbar = ''
-                        vim.opt_local.foldlevel = 0
-                        vim.opt_local.foldmethod = 'marker'
-                        vim.opt_local.foldmarker = '{{{,}}}'
-                        vim.opt_local.foldtext = ''
-                        vim.diagnostic.enable(false)
-
-                        local clang_format_path = vim.fn.getcwd() .. '/.clang-format'
-                        if vim.fn.filereadable(clang_format_path) == 0 then
-                            vim.fn.writefile(
-                                vim.split(clang_format, '\n'),
-                                clang_format_path
-                            )
-                        end
-                    end,
+                    setup = {
+                        contest = function(state)
+                            local dir = vim.fn.fnamemodify(state.get_source_file(state.get_language()), ':h')
+                            local path = dir .. '/.clang-format'
+                            if vim.fn.filereadable(path) == 0 then
+                                vim.fn.system({ 'cp', vim.fn.expand('~/.config/nix/config/cp/.clang-format'), path })
+                            end
+                        end,
+                        code = function(_)
+                            vim.opt_local.foldlevel  = 0
+                            vim.opt_local.foldmethod = 'marker'
+                            vim.opt_local.foldmarker = '{{{,}}}'
+                            vim.opt_local.foldtext   = ''
+                            vim.diagnostic.enable(false)
+                        end,
+                    },
+                    on = {
+                        enter = function(_) vim.opt_local.winbar = '' end,
+                        run   = function(_) require('config.lsp').format() end,
+                        debug = function(_) require('config.lsp').format() end,
+                    },
                 },
                 filename = function(_, _, problem_id)
                     return problem_id
