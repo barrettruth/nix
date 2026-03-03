@@ -485,6 +485,25 @@ else:
     sys.exit(1)
 PYTHON
   ;;
+clip)
+  require fuzzel cliphist wl-copy
+  entries=$(cliphist list)
+  [ -z "$entries" ] && exit 0
+  count=$(printf '%s\n' "$entries" | wc -l)
+  lines=$((count < 15 ? count : 15))
+  chosen=$(printf '%s\n' "$entries" |
+    awk -F'\t' '{
+      content = substr($0, index($0, "\t") + 1)
+      display = (length(content) > 63) ? substr(content, 1, 60) "..." : content
+      printf "       %s\t%s\n", display, $1
+    }' |
+    fuzzel --dmenu --no-icons --prompt="clip:  " \
+      --with-nth=1 --accept-nth=2 --font="monospace:size=12" \
+      --lines="$lines" --width=75)
+  [ -z "$chosen" ] && exit 0
+  original=$(printf '%s\n' "$entries" | awk -F'\t' -v id="$chosen" '$1==id{print;exit}')
+  printf '%s' "$original" | cliphist decode | wl-copy
+  ;;
 power)
   require fuzzel
   lock="󰌾   Lock"
@@ -514,7 +533,7 @@ idle)
   fi
   ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|clip}" >&2
   exit 1
   ;;
 esac
