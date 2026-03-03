@@ -10,7 +10,8 @@ end
 vim.api.nvim_create_autocmd('VimEnter', {
     once = true,
     callback = function()
-        vim.o.statusline = ' %{v:lua._fugitive_stl()}' .. vim.o.statusline:sub(2)
+        vim.o.statusline = ' %{v:lua._fugitive_stl()}'
+            .. vim.o.statusline:sub(2)
     end,
 })
 

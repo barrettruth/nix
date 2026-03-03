@@ -14,8 +14,8 @@ require tmux
 get_scope() {
   _path=$(tmux display-message -p '#{pane_current_path}')
   case "$_path" in
-    "$HOME") printf '~' ;;
-    *) basename "$_path" ;;
+  "$HOME") printf '~' ;;
+  *) basename "$_path" ;;
   esac
 }
 
@@ -61,7 +61,7 @@ pick_pane() {
   sel=$({
     printf 'target\tcommand\tpath\n'
     tmux list-panes -a -F '#{window_index}.#{pane_index}:#{session_name}	#{pane_current_command}	#{pane_current_path}' |
-    sed "s|$HOME|~|g"
+      sed "s|$HOME|~|g"
   } | column -t -s "$(printf '\t')" |
     fzf --reverse --header-lines 1 --prompt 'select-pane> ')
   sel="${sel%% *}"
@@ -73,7 +73,7 @@ target_pane() {
   sel=$({
     printf 'target\tcommand\tpath\n'
     tmux list-panes -a -F '#{window_index}.#{pane_index}:#{session_name}	#{pane_current_command}	#{pane_current_path}' |
-    sed "s|$HOME|~|g"
+      sed "s|$HOME|~|g"
   } | column -t -s "$(printf '\t')" |
     fzf --reverse --header-lines 1 --prompt "$1> ")
   sel="${sel%% *}"

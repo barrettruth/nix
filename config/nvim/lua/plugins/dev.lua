@@ -226,12 +226,16 @@ return {
                         enabled_languages = { 'cpp', 'python' },
                         default_language = 'cpp',
                         overrides = {
-                            cpp = { template = '~/.config/nix/config/cp/template_single.cc' },
+                            cpp = {
+                                template = '~/.config/nix/config/cp/template_single.cc',
+                            },
                         },
                     },
                     cses = {
                         overrides = {
-                            cpp = { template = '~/.config/nix/config/cp/template_single.cc' },
+                            cpp = {
+                                template = '~/.config/nix/config/cp/template_single.cc',
+                            },
                         },
                     },
                 },
@@ -242,30 +246,48 @@ return {
                 hooks = {
                     setup = {
                         contest = function(state)
-                            local dir = vim.fn.fnamemodify(state.get_source_file(state.get_language()), ':h')
+                            local dir = vim.fn.fnamemodify(
+                                state.get_source_file(state.get_language()),
+                                ':h'
+                            )
                             local path = dir .. '/.clang-format'
                             if vim.fn.filereadable(path) == 0 then
-                                vim.fn.system({ 'cp', vim.fn.expand('~/.config/nix/config/cp/.clang-format'), path })
+                                vim.fn.system({
+                                    'cp',
+                                    vim.fn.expand(
+                                        '~/.config/nix/config/cp/.clang-format'
+                                    ),
+                                    path,
+                                })
                             end
                         end,
                         code = function(_)
-                            vim.opt_local.foldlevel  = 0
+                            vim.opt_local.foldlevel = 0
                             vim.opt_local.foldmethod = 'marker'
                             vim.opt_local.foldmarker = '{{{,}}}'
-                            vim.opt_local.foldtext   = ''
+                            vim.opt_local.foldtext = ''
                             vim.diagnostic.enable(false)
                         end,
                     },
                     on = {
-                        enter = function(_) vim.opt_local.winbar = '' end,
-                        run   = function(_) require('config.lsp').format() end,
-                        debug = function(_) require('config.lsp').format() end,
+                        enter = function(_)
+                            vim.opt_local.winbar = ''
+                        end,
+                        run = function(_)
+                            require('config.lsp').format()
+                        end,
+                        debug = function(_)
+                            require('config.lsp').format()
+                        end,
                     },
                 },
                 filename = function(_, _, problem_id)
                     return problem_id
                 end,
             }
+        end,
+        after = function()
+            vim.cmd.packadd('fzf-lua')
         end,
     },
     {
