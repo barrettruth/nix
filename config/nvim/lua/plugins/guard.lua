@@ -33,7 +33,7 @@ return {
         ft('javascript,javascriptreact,typescript,typescriptreact')
             :fmt('prettierd')
             :lint('eslint_d')
-        ft('css,graphql,html,json,jsonc,mdx,yaml'):fmt('prettierd')
+        ft('css,graphql,html,json,jsonc,mdx,toml,yaml'):fmt('prettierd')
 
         ft('sh,bash,zsh'):fmt({
             cmd = 'shfmt',
@@ -56,7 +56,8 @@ return {
         ft('nix')
             :fmt({
                 cmd = 'nix',
-                args = { 'fmt', '--' },
+                args = { 'fmt', '--', '--stdin' },
+                stdin = true,
                 fname = true,
             })
             :lint({
