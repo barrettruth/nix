@@ -242,25 +242,4 @@ return {
             }
         end,
     },
-    {
-        'lewis6991/gitsigns.nvim',
-        enabled = false,
-        event = 'DeferredUIEnter',
-        after = function()
-            require('gitsigns').setup({
-                signs = {
-                    add = { text = '│' },
-                    change = { text = '│' },
-                    delete = { text = '＿' },
-                    topdelete = { text = '‾' },
-                    changedelete = { text = '│' },
-                },
-            })
-        end,
-        keys = {
-            { ']g', '<cmd>Gitsigns next_hunk<cr>' },
-            { '[g', '<cmd>Gitsigns prev_hunk<cr>' },
-            { '<leader>gB', '<cmd>Gitsigns toggle_current_line_blame<cr>' },
-        },
-    },
 }

@@ -42,7 +42,19 @@ keyboard)
     ;;
   pick)
     require fuzzel
-    choice=$(printf 'QWERTY\nDvorak\nColemak' | fuzzel --dmenu --prompt="keyboard:  " --lines=3 --no-icons)
+    variant=$(hyprctl getoption input:kb_variant 2>/dev/null | awk '/^str:/{print $2}' | cut -d, -f2)
+    case "$variant" in
+    dvorak) current="Dvorak" ;;
+    colemak) current="Colemak" ;;
+    *) current="QWERTY" ;;
+    esac
+    choice=$(printf 'QWERTY\nDvorak\nColemak' | \
+      awk -v cur="$current" '{
+        prefix = ($0 == cur) ? "  >    " : "       "
+        printf "%s%s\t%s\n", prefix, $0, $0
+      }' | \
+      fuzzel --dmenu --prompt="kbd:   " --no-icons --lines=3 \
+        --with-nth=1 --accept-nth=2 --width=24)
     [ -z "$choice" ] && exit 0
     case "$choice" in
     QWERTY) variant="" ;;
@@ -62,32 +74,52 @@ keyboard)
   esac
   ;;
 audio)
-  require wpctl pw-dump jq
+  require wpctl pw-dump jq fuzzel
   case "$2" in
-  out)
-    sinks="$(pw-dump | jq -r '.[] | select(.info.props."media.class" == "Audio/Sink") | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")"')"
-    [ -z "$sinks" ] && exit 0
-    if [ "$XDG_SESSION_TYPE" = x11 ]; then
-      choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | dmenu -i -p "select sink:" | cut -d: -f1)"
+  sink|source)
+    if [ "$2" = sink ]; then
+      class="Audio/Sink"
+      prompt="sink:  "
+      default_meta="default.audio.sink"
+      pad=7
     else
-      count=$(printf "%s\n" "$sinks" | wc -l)
-      choice="$(printf "%s\n" "$sinks" | awk -F'\t' '{print $1": "$2}' | fuzzel --dmenu --prompt="sink:  " --lines="$count" | cut -d: -f1)"
+      class="Audio/Source"
+      prompt="source: "
+      default_meta="default.audio.source"
+      pad=8
     fi
-    [ "$choice" ] && wpctl set-default "$choice"
-    ;;
-  in)
-    sources="$(pw-dump | jq -r '.[] | select(.info.props."media.class" == "Audio/Source") | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")"')"
-    [ -z "$sources" ] && exit 0
-    if [ "$XDG_SESSION_TYPE" = x11 ]; then
-      choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | dmenu -i -p "select source:" | cut -d: -f1)"
-    else
-      count=$(printf "%s\n" "$sources" | wc -l)
-      choice="$(printf "%s\n" "$sources" | awk -F'\t' '{print $1": "$2}' | fuzzel --dmenu --prompt="source:  " --lines="$count" | cut -d: -f1)"
-    fi
-    [ "$choice" ] && wpctl set-default "$choice"
+    dump=$(pw-dump)
+    devices=$(printf '%s' "$dump" | jq -r --arg class "$class" \
+      '.[] | select(.info.props."media.class" == $class) | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")\t\(.info.props."node.name" // "")"')
+    [ -z "$devices" ] && exit 0
+    default_name=$(printf '%s' "$dump" | jq -r --arg key "$default_meta" \
+      '.[] | select(.type == "PipeWire:Interface:Metadata" and .info.props."metadata.name" == "default") | .info.metadata[] | select(.key == $key) | .value | fromjson | .name')
+    rows=$(printf '%s\n' "$devices" | while IFS="$(printf '\t')" read -r id name node_name; do
+      active=$([ "$node_name" = "$default_name" ] && echo ">" || echo "")
+      printf '%s\t%s\t%s\n' "$id" "$name" "$active"
+    done)
+    [ -z "$rows" ] && exit 0
+    w1=$(printf '%s\n' "$rows" | awk -F'\t' 'BEGIN{m=11}{l=length($2);if(l>m)m=l}END{print m}')
+    fw=$((w1 + pad + 10))
+    sep=$(awk -v n="$w1" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
+    indent=$(printf "%${pad}s" "")
+    active_prefix=$(printf "  >%$((pad - 3))s" "")
+    header=$(printf "%s%s\n%s%s" "$indent" "Device name" "$indent" "$sep")
+    count=$(printf '%s\n' "$rows" | wc -l)
+    choice=$(printf '%s\n' "$rows" | \
+      awk -F'\t' -v w1="$w1" -v indent="$indent" -v active_prefix="$active_prefix" '{
+        prefix = ($3 == ">") ? active_prefix : indent
+        printf "%s%-*s\t%s\n", prefix, w1, $2, $1
+      }' | \
+      fuzzel --dmenu --prompt="$prompt" --no-icons --lines="$count" \
+        --with-nth=1 --accept-nth=2 \
+        --mesg="$header" --mesg-mode=expand \
+        --font="monospace:size=12" --width="$fw")
+    [ -z "$choice" ] && exit 0
+    wpctl set-default "$choice"
     ;;
   *)
-    echo "Usage: ctl audio {in|out}" >&2
+    echo "Usage: ctl audio {sink|source}" >&2
     exit 1
     ;;
   esac
@@ -143,8 +175,6 @@ wifi)
     station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
     [ -z "$station" ] && { echo "ctl: no wifi device found" >&2; exit 1; }
     while :; do
-      iwctl station "$station" scan 2>/dev/null
-      sleep 1
       networks=$(iwctl station "$station" get-networks 2>/dev/null | \
         sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
         awk 'NR>4 && /\S/ && !/^[[:space:]]*-/' | \
@@ -176,13 +206,13 @@ wifi)
       w1=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=12}{l=length($1);if(l>m)m=l}END{print m}')
       w2=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=8}{l=length($2);if(l>m)m=l}END{print m}')
       w3=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=6}{l=length($3);if(l>m)m=l}END{print m}')
-      fw=$((w1 + 4 + w2 + 4 + w3 + 14))
-      sep=$(awk -v n="$fw" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
-      header=$(printf "    %-*s    %-*s    %s\n%s" "$w1" "Network name" "$w2" "Security" "Signal" "$sep")
+      fw=$((w1 + 4 + w2 + 4 + w3 + 17))
+      sep=$(awk -v n="$((w1 + w2 + w3 + 8))" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
+      header=$(printf "       %-*s    %-*s    %s\n       %s" "$w1" "Network name" "$w2" "Security" "Signal" "$sep")
       count=$(printf '%s\n' "$networks" | wc -l)
       ssid=$(printf '%s\n' "$networks" | \
         awk -F'\t' -v w1="$w1" -v w2="$w2" '{
-          prefix = ($4 == ">") ? " >  " : "    "
+          prefix = ($4 == ">") ? "  >    " : "       "
           printf "%s%-*s    %-*s    %s\t%s\n", prefix, w1, $1, w2, $2, $3, $1
         }' | \
         fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count" \

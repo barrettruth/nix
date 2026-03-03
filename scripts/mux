@@ -172,7 +172,7 @@ cmd)
     sed 's/ /	/' |
     fzf --reverse --prompt ':' --print-query \
       --delimiter '\t' --with-nth '1,2' --accept-nth '1' \
-      --bind 'ctrl-y:transform-query(echo {1})+disable-search')
+      --bind 'ctrl-y:transform-query(echo {1})')
   rc=$?
   query=$(printf '%s' "$result" | head -1)
   action=$(printf '%s' "$result" | sed -n '2p')

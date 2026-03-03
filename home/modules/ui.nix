@@ -17,6 +17,8 @@ let
     #workspaces button:hover { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
+    #pulseaudio-slider trough { background: ${palette.bgAlt}; }
+    #pulseaudio-slider highlight { background: ${palette.accent}; }
   '';
 
   hexToFuzzel = hex: "${builtins.substring 1 6 hex}ff";
@@ -91,7 +93,6 @@ in
     glib.bin
     gsettings-desktop-schemas
     (python3.withPackages (ps: [ ps.pillow ]))
-    pavucontrol
   ];
 
   programs.waybar = {
@@ -158,7 +159,7 @@ in
         return-type = "json";
         interval = 1;
         signal = 2;
-        on-click = "pgrep pavucontrol && pkill pavucontrol || pavucontrol --tab=4";
+        on-click = "ctl audio source";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-";
@@ -177,7 +178,8 @@ in
         signal = 1;
         tooltip = true;
         tooltip-format = "Volume: {volume}%\nOutput: {desc}";
-        on-click = "pgrep pavucontrol && pkill pavucontrol || pavucontrol --tab=3";
+        on-click = "ctl audio sink";
+        on-click-right = "pgrep -f 'waybar.*slider' && pkill -f 'waybar.*slider' || (waybar -c ${config.xdg.configHome}/waybar/slider.json &)";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-";
@@ -289,6 +291,22 @@ in
       #custom-power {
         padding: 0 16px 0 10px;
       }
+
+      #pulseaudio-slider {
+        padding: 0 10px;
+      }
+
+      #pulseaudio-slider trough {
+        min-width: 150px;
+        min-height: 4px;
+      }
+
+      #pulseaudio-slider slider {
+        min-width: 0;
+        min-height: 0;
+        background: transparent;
+        border: none;
+      }
     '';
   };
 
@@ -325,6 +343,20 @@ in
   xdg.configFile."dunst/themes/daylight.conf".text = mkDunstTheme config.palettes.daylight;
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
+
+  xdg.configFile."waybar/slider.json".text = builtins.toJSON {
+    position = "top";
+    layer = "top";
+    height = 38;
+    "margin-top" = 38;
+    exclusive = false;
+    "modules-right" = [ "pulseaudio/slider" ];
+    "pulseaudio/slider" = {
+      min = 0;
+      max = 100;
+      orientation = "horizontal";
+    };
+  };
 
   xdg.configFile."fuzzel/fuzzel.ini".text = ''
     include=${config.xdg.configHome}/fuzzel/themes/theme.ini

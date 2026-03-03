@@ -1,12 +1,8 @@
-vim.pack.add({
-    'https://github.com/ibhagwan/fzf-lua',
-}, { load = function() end })
-
 return {
-    'ibhagwan/fzf-lua',
+    'barrettruth/fzf-lua',
     after = function()
         local fzf = require('fzf-lua')
-        local has_icons = pcall(require, 'nonicons')
+        local has_nonicons = pcall(require, 'nonicons')
 
         local opts = {
             file_icon_padding = ' ',
@@ -85,8 +81,8 @@ return {
             },
         }
 
-        opts.files.file_icons = has_icons
-        opts.grep.file_icons = has_icons
+        opts.files.file_icons = has_nonicons and 'nonicons' or false
+        opts.grep.file_icons = has_nonicons and 'nonicons' or false
         opts.grep.rg_opts =
             fzf.defaults.grep.rg_opts:gsub('%-e$', "--glob='!.git/' -e")
 
