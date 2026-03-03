@@ -14,8 +14,15 @@ let
     #workspaces button:hover { background: ${palette.bgAlt}; }
     #window { color: ${palette.fgAlt}; }
     tooltip { background: ${palette.bgAlt}; color: ${palette.fg}; border: 1px solid ${palette.border}; }
-    #pulseaudio-slider trough { background: ${palette.bgAlt}; }
-    #pulseaudio-slider highlight { background: ${palette.accent}; }
+  '';
+
+  mkEwwTheme = palette: ''
+    $bg: ${palette.bg};
+    $fg: ${palette.fg};
+    $bgAlt: ${palette.bgAlt};
+    $fgAlt: ${palette.fgAlt};
+    $border: ${palette.border};
+    $accent: ${palette.accent};
   '';
 
   hexToFuzzel = hex: "${builtins.substring 1 6 hex}ff";
@@ -80,6 +87,7 @@ in
     papirus-icon-theme
     psmisc
     fuzzel
+    eww
     wl-clipboard
     grim
     slurp
@@ -108,8 +116,8 @@ in
         "tray"
         "custom/keyboard"
         "privacy"
-        "custom/mic"
-        "custom/pulseaudio"
+        "wireplumber#source"
+        "wireplumber"
         "network"
         "battery"
         "clock"
@@ -151,27 +159,32 @@ in
         rewrite = { };
       };
 
-      "custom/mic" = {
-        exec = ''sh -c 'out=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@); vol=$(echo "$out" | awk "{printf \"%.0f\", \$2 * 100}"); if echo "$out" | grep -q MUTED; then echo "{\"text\":\"󰍭\",\"tooltip\":\"Mic: muted\",\"class\":\"muted\"}"; else echo "{\"text\":\"󰍬\",\"tooltip\":\"Mic: ''${vol}%\",\"class\":\"active\"}"; fi' '';
-        return-type = "json";
-        interval = 1;
-        signal = 2;
-        on-click = "ctl audio source";
-        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
-        on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ --limit 1.0";
-        on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-";
+      wireplumber = {
+        format = "{icon}";
+        format-muted = "󰖁";
+        format-icons = [ "󰕿" "󰖀" "󰕾" ];
+        node-type = "Audio/Sink";
+        max-volume = 100;
+        scroll-step = 5;
+        on-click = "ctl audio sink";
+        on-click-right = "eww open --toggle volume";
+        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+        tooltip = true;
+        tooltip-format = "{volume}%";
       };
 
-      "custom/pulseaudio" = {
-        exec = ''sh -c 'out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@); vol=$(echo "$out" | awk "{printf \"%d\", \$2 * 100}"); if echo "$out" | grep -q MUTED; then icon="󰖁"; elif [ "$vol" -le 33 ]; then icon="󰕿"; elif [ "$vol" -le 66 ]; then icon="󰖀"; else icon="󰕾"; fi; echo "{\"text\":\"$icon\",\"tooltip\":\"Volume: ''${vol}%\"}"' '';
-        return-type = "json";
-        interval = 1;
-        signal = 1;
-        on-click = "ctl audio sink";
-        on-click-right = "pgrep -f 'waybar.*slider' && pkill -f 'waybar.*slider' || (setsid waybar -c ${config.xdg.configHome}/waybar/slider.json >/dev/null 2>&1 &)";
-        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; pkill -RTMIN+1 waybar";
-        on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0; pkill -RTMIN+1 waybar";
-        on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; pkill -RTMIN+1 waybar";
+      "wireplumber#source" = {
+        format = "{icon}";
+        format-muted = "󰍭";
+        format-icons = [ "󰍬" ];
+        node-type = "Audio/Source";
+        max-volume = 100;
+        scroll-step = 5;
+        on-click = "ctl audio source";
+        on-click-right = "eww open --toggle volume";
+        on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
+        tooltip = true;
+        tooltip-format = "{volume}%";
       };
 
       network = {
@@ -260,8 +273,7 @@ in
       #custom-keyboard,
       #privacy,
       #tray,
-      #custom-mic,
-      #custom-pulseaudio,
+      #wireplumber,
       #network,
       #battery,
       #clock,
@@ -279,22 +291,6 @@ in
 
       #custom-power {
         padding: 0 16px 0 10px;
-      }
-
-      #pulseaudio-slider {
-        padding: 0 10px;
-      }
-
-      #pulseaudio-slider trough {
-        min-width: 150px;
-        min-height: 4px;
-      }
-
-      #pulseaudio-slider slider {
-        min-width: 0;
-        min-height: 0;
-        background: transparent;
-        border: none;
       }
     '';
   };
@@ -333,19 +329,104 @@ in
   xdg.configFile."waybar/themes/midnight.css".text = mkWaybarTheme config.palettes.midnight;
   xdg.configFile."waybar/themes/daylight.css".text = mkWaybarTheme config.palettes.daylight;
 
-  xdg.configFile."waybar/slider.json".text = builtins.toJSON {
-    position = "top";
-    layer = "top";
-    height = 38;
-    "margin-top" = 38;
-    exclusive = false;
-    "modules-right" = [ "pulseaudio/slider" ];
-    "pulseaudio/slider" = {
-      min = 0;
-      max = 100;
-      orientation = "horizontal";
-    };
+  xdg.configFile."eww/scripts/audio" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      emit() {
+        sink=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)
+        source=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null)
+        sv=$(echo "$sink" | awk '{printf "%d", $2 * 100}')
+        sm=$(echo "$sink" | grep -q MUTED && echo true || echo false)
+        iv=$(echo "$source" | awk '{printf "%d", $2 * 100}')
+        im=$(echo "$source" | grep -q MUTED && echo true || echo false)
+        printf '{"sv":%d,"sm":%s,"iv":%d,"im":%s}\n' "$sv" "$sm" "$iv" "$im"
+      }
+      emit
+      pactl subscribe 2>/dev/null | while read -r line; do
+        case "$line" in
+          *"change"*"sink"*|*"change"*"source"*|*"change"*"server"*) emit ;;
+        esac
+      done
+    '';
   };
+
+  xdg.configFile."eww/eww.yuck".text = ''
+    (deflisten audio :initial '{"sv":0,"sm":false,"iv":0,"im":false}' "''${EWW_CONFIG_DIR}/scripts/audio")
+
+    (defwidget volume-popup []
+      (box :class "volume-popup" :orientation "v" :space-evenly false :spacing 12
+        (box :class "slider-row" :orientation "h" :space-evenly false :spacing 8
+          (button :class "mute-btn" :onclick "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+            (label :text {audio.sm ? "󰖁" : audio.sv <= 33 ? "󰕿" : audio.sv <= 66 ? "󰖀" : "󰕾"}))
+          (scale :class "vol-slider" :value {audio.sv} :min 0 :max 100 :orientation "h"
+            :onchange "wpctl set-volume @DEFAULT_AUDIO_SINK@ {}%"))
+        (box :class "slider-row" :orientation "h" :space-evenly false :spacing 8
+          (button :class "mute-btn" :onclick "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+            (label :text {audio.im ? "󰍭" : "󰍬"}))
+          (scale :class "vol-slider" :value {audio.iv} :min 0 :max 100 :orientation "h"
+            :onchange "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ {}%"))))
+
+    (defwindow volume
+      :monitor 0
+      :geometry (geometry :x "-16px" :y "8px" :width "280px" :anchor "top right")
+      :stacking "overlay"
+      :exclusive false
+      :focusable false
+      (volume-popup))
+  '';
+
+  xdg.configFile."eww/eww.scss".text = ''
+    @import "themes/theme";
+
+    .volume-popup {
+      background: $bg;
+      border: 2px solid $border;
+      padding: 16px;
+    }
+
+    .slider-row {
+      padding: 4px 0;
+    }
+
+    .mute-btn {
+      background: transparent;
+      color: $fg;
+      font-size: 18px;
+      min-width: 28px;
+      min-height: 28px;
+      padding: 0;
+      border: none;
+      &:hover { color: $accent; }
+    }
+
+    .vol-slider {
+      min-width: 200px;
+      min-height: 8px;
+
+      trough {
+        background: $bgAlt;
+        min-height: 4px;
+        border-radius: 2px;
+      }
+
+      highlight {
+        background: $accent;
+        border-radius: 2px;
+      }
+
+      slider {
+        background: $fg;
+        min-width: 12px;
+        min-height: 12px;
+        border-radius: 6px;
+        margin: -4px 0;
+      }
+    }
+  '';
+
+  xdg.configFile."eww/themes/midnight.scss".text = mkEwwTheme config.palettes.midnight;
+  xdg.configFile."eww/themes/daylight.scss".text = mkEwwTheme config.palettes.daylight;
 
   xdg.configFile."fuzzel/fuzzel.ini".text = ''
     include=${config.xdg.configHome}/fuzzel/themes/theme.ini
