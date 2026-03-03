@@ -5,15 +5,18 @@ Create a conventional commit from staged or unstaged changes.
 ## Instructions
 
 1. Run exactly this one Bash command:
+
    ```
    git status --short && echo "---DIFF---" && git diff --cached && echo "---LOG---" && git log --oneline -5
    ```
 
 2. If the diff section is empty (nothing staged), ask the user which files to
    stage from the status list. Then run exactly one Bash command:
+
    ```
    git add <files> && git diff --cached
    ```
+
    Do NOT re-run status or log — you already have them.
 
 3. Draft the commit message. Rules:

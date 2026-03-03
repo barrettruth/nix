@@ -5,9 +5,11 @@ Create a pull request from the current branch.
 ## Instructions
 
 1. Run exactly this one Bash command:
+
    ```
    echo "---BRANCH---" && git branch --show-current && echo "---LOG---" && git log --oneline main..HEAD && echo "---STAT---" && git diff main...HEAD --stat && echo "---TEMPLATE---" && cat .github/pull_request_template.md 2>/dev/null || true
    ```
+
    If the branch is `main` or `master`, tell the user and stop.
 
 2. Draft the PR using the commit log and diffstat (do NOT run `git diff` for the
@@ -15,6 +17,7 @@ Create a pull request from the current branch.
    - **Title**: `type(scope): imperative summary`, max 72 chars. For
      single-commit PRs, reuse the commit header. For multi-commit, summarize.
    - **Body**: if a PR template was found in step 1, fill it in. Otherwise:
+
      ```
      ## Problem
 
@@ -24,6 +27,7 @@ Create a pull request from the current branch.
 
      <what the change does>
      ```
+
    - Write in plain prose. No bullet walls, no AI markdown soup.
 
 3. Present the title and body. Ask for approval.
