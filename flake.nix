@@ -96,6 +96,19 @@
     {
       formatter.x86_64-linux = (mkPkgs "x86_64-linux" [ ]).nixfmt-tree;
 
+      devShells.x86_64-linux.default =
+        let
+          pkgs = mkPkgs "x86_64-linux" [ ];
+        in
+        pkgs.mkShell {
+          packages = [
+            pkgs.deadnix
+            pkgs.statix
+            pkgs.nixfmt
+            pkgs.pre-commit
+          ];
+        };
+
       nixosConfigurations.xps15 = nixpkgs.lib.nixosSystem {
         modules = [
           nixos-hardware.nixosModules.dell-xps-15-9500-nvidia

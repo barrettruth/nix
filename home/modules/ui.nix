@@ -171,7 +171,7 @@ in
         interval = 1;
         signal = 1;
         on-click = "ctl audio sink";
-        on-click-right = "pgrep -f 'waybar.*slider' && pkill -f 'waybar.*slider' || (waybar -c ${config.xdg.configHome}/waybar/slider.json &)";
+        on-click-right = "pgrep -f 'waybar.*slider' && pkill -f 'waybar.*slider' || hyprctl dispatch exec 'waybar -c ${config.xdg.configHome}/waybar/slider.json'";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; pkill -RTMIN+1 waybar";
         on-scroll-up = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0; pkill -RTMIN+1 waybar";
         on-scroll-down = "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; pkill -RTMIN+1 waybar";
