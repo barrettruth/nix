@@ -67,7 +67,7 @@ in
   };
 
   config = {
-    palettes = palettes;
+    inherit palettes;
     colors = palettes.${config.theme};
 
     home.pointerCursor = lib.mkIf hostConfig.isLinux {
