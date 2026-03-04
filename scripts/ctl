@@ -96,7 +96,7 @@ audio)
         '.[] | select(.info.props."media.class" == $class) | "\(.id)\t\(.info.props."node.description" // .info.props."node.name" // "unknown")\t\(.info.props."node.name" // "")"')
       [ -z "$devices" ] && exit 0
       default_name=$(printf '%s' "$dump" | jq -r --arg key "$default_meta" \
-        '.[] | select(.type == "PipeWire:Interface:Metadata" and .info.props."metadata.name" == "default") | .info.metadata[] | select(.key == $key) | .value | fromjson | .name')
+        '.[] | select(.type == "PipeWire:Interface:Metadata" and .props."metadata.name" == "default") | .metadata[] | select(.key == $key) | .value.name')
       rows=$(printf '%s\n' "$devices" | while IFS="$(printf '\t')" read -r id name node_name; do
         active=$([ "$node_name" = "$default_name" ] && echo ">" || echo "")
         vol=$(wpctl get-volume "$id" 2>/dev/null | awk '{printf "%d", $2 * 100}')

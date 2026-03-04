@@ -147,7 +147,7 @@ return {
     {
         'barrettruth/pending.nvim',
         before = function()
-            vim.g.pending = { debug = true }
+            vim.g.pending = { debug = false }
         end,
         keys = { { '<leader>P', '<cmd>Pending<cr>' } },
     },
@@ -297,7 +297,22 @@ return {
             require('preview').setup({
                 github = true,
                 typst = { open = { 'sioyek', '--new-instance' } },
-                latex = { open = { 'sioyek', '--new-instance' } },
+                latex = {
+                    open = { 'sioyek', '--new-instance' },
+                    output = function(ctx)
+                        return 'build/' .. vim.fn.fnamemodify(ctx.file, ':t:r') .. '.pdf'
+                    end,
+                    args = function(ctx)
+                        return {
+                            '-pdf',
+                            '-interaction=nonstopmode',
+                            '-synctex=1',
+                            '-outdir=build',
+                            '-pdflatex=pdflatex -file-line-error -interaction=nonstopmode %O %S',
+                            ctx.file,
+                        }
+                    end,
+                },
             })
         end,
         keys = { { '<leader>p', '<cmd>Preview watch<cr>' } },
