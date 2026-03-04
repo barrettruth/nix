@@ -19,36 +19,43 @@ Solution: describe what this commit does
 ### Body
 
 Required for any non-trivial change. Use `Problem:` / `Solution:` sections.
-Wrap at 72 characters. Separate from header with a blank line.
+2-3 sentences per section, max. Wrap at 72 characters. Separate from header
+with a blank line.
+
+Use backticks around code identifiers, function names, and file paths
+(e.g. `setup()`, `lua/oil/view.lua`, `FIELD_NAME`).
 
 ### Examples
 
 Good:
 
 ```
-fix(lsp): correct off-by-one in diagnostic range
+fix(lsp): correct off-by-one in `diagnostic_range`
 
 Problem: diagnostics highlighted one character past the actual error,
-causing confusion when multiple diagnostics appeared on adjacent tokens.
+causing confusion on adjacent tokens.
 
-Solution: subtract 1 from the end column returned by the language server
-before converting to 0-indexed nvim columns.
+Solution: subtract 1 from the end column returned by the language
+server before converting to 0-indexed nvim columns.
 ```
 
 ```
-refactor: extract repeated buffer lookup into helper
+refactor: extract repeated buffer lookup into `get_buf_entry`
 ```
 
 Bad:
 
 ```
-Fixed stuff          # not imperative, vague
-feat: Add Feature.   # uppercase after colon, trailing period
+Fixed stuff
+feat: Add Feature.
 fix(lsp): correct off-by-one in diagnostic range and also refactor the
-entire highlight module and add new tests   # multiple concerns
+entire highlight module and add new tests
 ```
 
-## Branch Naming
+## Branch Rules
+
+Always work on a feature branch. Never commit or push directly to `main` or
+`master`. If on the default branch, create and switch to a topic branch first.
 
 ```
 type/short-description
@@ -65,15 +72,15 @@ If no template exists, fall back to:
 ```
 ## Problem
 
-<why this change is needed>
+<1-2 sentences>
 
 ## Solution
 
-<what the change does>
+<1-2 sentences>
 ```
 
-Either way, write in plain prose. No bullet-point walls, no AI-style markdown
-headings beyond what the template calls for. Keep it concise and human.
+Write concise prose. No bullet-point walls, no verbose AI-style markdown.
+Use backticks for code references.
 
 ## Decomposition Rules
 

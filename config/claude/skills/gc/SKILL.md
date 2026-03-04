@@ -1,4 +1,4 @@
-# /commit
+# /gc
 
 Create a conventional commit from staged or unstaged changes.
 
@@ -26,7 +26,10 @@ Create a conventional commit from staged or unstaged changes.
    - Scope is optional, lowercase.
    - Non-trivial changes require a body with `Problem:` / `Solution:` sections,
      wrapped at 72 chars, separated from header by a blank line.
+   - Keep the body tight: 2-3 sentences per section, max.
    - Trivial one-liners: header alone is fine.
+   - Use backticks around code identifiers, function names, and file paths
+     (e.g. `setup()`, `lua/pending/store.lua`).
    - Match the style of the recent commits from step 1.
 
 4. Present the full message and ask for approval.

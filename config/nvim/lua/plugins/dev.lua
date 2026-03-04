@@ -61,7 +61,7 @@ local git_status = new_git_status()
 return {
     {
         'barrettruth/midnight.nvim',
-        enabled = false,
+        enabled = true,
         after = function()
             vim.cmd.colorscheme('midnight')
         end,
@@ -300,6 +300,6 @@ return {
                 latex = { open = { 'sioyek', '--new-instance' } },
             })
         end,
-        keys = { { '<leader>p', '<cmd>Preview toggle<cr>' } },
+        keys = { { '<leader>p', '<cmd>Preview watch<cr>' } },
     },
 }

@@ -145,7 +145,7 @@ ai)
   ;;
 code)
   require nvim
-  spawn_or_focus code 'nvim -c "lua require([[config.tmux]]).run([[nvim]])"'
+  spawn_or_focus code 'nvim .'
   ;;
 git)
   require nvim git
@@ -153,12 +153,8 @@ git)
   if ! git -C "$pane_path" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     tmux display-message "Not a git repository"
   else
-    spawn_or_focus git 'nvim -c "lua require([[config.tmux]]).run([[git]])"'
+    spawn_or_focus git 'nvim -c "Git|only"'
   fi
-  ;;
-run)
-  require nvim
-  spawn_or_focus run 'nvim -c "lua require([[config.tmux]]).run([[run]])"'
   ;;
 shell)
   spawn_or_focus shell
@@ -178,7 +174,7 @@ cmd)
   action=$(printf '%s' "$result" | sed -n '2p')
   [ $rc -eq 130 ] && exit
   if [ -n "$query" ] && [ "$query" != "$action" ]; then
-    tmux $query
+    tmux "$query"
   elif [ -n "$action" ]; then
     case "$action" in
     switch-client) pick_session ;;

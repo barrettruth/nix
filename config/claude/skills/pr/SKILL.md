@@ -21,28 +21,35 @@ Create a pull request from the current branch.
      ```
      ## Problem
 
-     <why this change is needed>
+     <1-2 sentences>
 
      ## Solution
 
-     <what the change does>
+     <1-2 sentences>
      ```
 
-   - Write in plain prose. No bullet walls, no AI markdown soup.
+   - Write concise prose. No bullet walls, no verbose explanations.
+   - Use backticks around code identifiers, function names, and file paths.
 
 3. Present the title and body. Ask for approval.
 
-4. After approval, run exactly one Bash command (push + create chained):
+4. After approval, if `scripts/ci.sh` exists, run it:
    ```
-   git push -u origin <branch> && gh pr create --title "<title>" --body "$(cat <<'EOF'
+   bash scripts/ci.sh
+   ```
+   If it fails, show the output and stop. Do NOT create the PR.
+
+5. Run exactly one Bash command:
+   ```
+   gh pr create --title "<title>" --body "$(cat <<'EOF'
    <body here>
    EOF
    )"
    ```
    Print the PR URL from the output.
 
-Total: 2 Bash calls (gather + push/create). Do not run any other commands. Do
-not read files, explore code, or run additional git commands beyond what is
-listed above.
+Total: 2 Bash calls (gather + create), or 3 if CI ran. Do not run any other
+commands. Do not read files, explore code, or run additional git commands beyond
+what is listed above.
 
 Never force-push, even with lease. Never target main/master as the head branch.
