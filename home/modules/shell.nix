@@ -354,6 +354,19 @@ in
         "api.github.com"
       ];
       tools.web_fetch = true;
+      hooks = {
+        PreToolUse = [
+          {
+            matcher = "Bash";
+            hooks = [
+              {
+                type = "command";
+                command = "${config.xdg.configHome}/claude/hooks/guard.sh";
+              }
+            ];
+          }
+        ];
+      };
     };
   };
 
@@ -367,6 +380,10 @@ in
 
   xdg.configFile."claude/skills" = lib.mkIf claude {
     source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/skills";
+  };
+
+  xdg.configFile."claude/hooks" = lib.mkIf claude {
+    source = config.lib.file.mkOutOfStoreSymlink "${repoDir}/config/claude/hooks";
   };
 
   xdg.configFile."tmux/themes/midnight.conf".source =

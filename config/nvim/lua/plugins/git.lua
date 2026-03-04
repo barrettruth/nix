@@ -225,12 +225,14 @@ end)
 return {
     {
         'barrettruth/diffs.nvim',
+        enabled = true,
         before = function()
             vim.g.diffs = {
+                debug = '/tmp/diffs.log',
                 fugitive = true,
                 neogit = false,
                 extra_filetypes = { 'diff' },
-                hide_prefix = true,
+                hide_prefix = false,
                 highlights = {
                     vim = {
                         enabled = true,
