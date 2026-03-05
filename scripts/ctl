@@ -120,8 +120,14 @@ audio)
           --mesg="$header" --mesg-mode=expand \
           --font="monospace:size=12" --width="$fw")
       rc=$?
-      [ "$rc" = 11 ] && { wpctl set-volume "$node" 5%+ --limit 1.0; continue; }
-      [ "$rc" = 12 ] && { wpctl set-volume "$node" 5%-; continue; }
+      [ "$rc" = 11 ] && {
+        wpctl set-volume "$node" 5%+ --limit 1.0
+        continue
+      }
+      [ "$rc" = 12 ] && {
+        wpctl set-volume "$node" 5%-
+        continue
+      }
       [ -z "$choice" ] && exit 0
       wpctl set-default "$choice"
       break
