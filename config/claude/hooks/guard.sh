@@ -9,7 +9,6 @@ if printf '%s' "$CMD" | grep -qE '\bgh\b.*\s(-R|--repo)\b'; then
   exit 2
 fi
 
-
 if printf '%s' "$CMD" | grep -qE '\bgit\s+push\b'; then
   BRANCH=$(git branch --show-current 2>/dev/null || true)
   if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
