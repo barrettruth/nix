@@ -35,7 +35,6 @@
         "claude"
         "apple_cursor"
         "graphite-cli"
-        "vivaldi"
       ];
 
       mkPkgs =

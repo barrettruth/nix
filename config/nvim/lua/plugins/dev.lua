@@ -119,6 +119,7 @@ return {
                     end,
                 },
             })
+            -- TODO: better way to do this allowing vim.g.canola as that's it
             local refresh = require('oil.actions').refresh
             local orig_refresh = refresh.callback
             refresh.callback = function(...)
