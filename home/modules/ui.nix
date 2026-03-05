@@ -152,7 +152,18 @@ in
       wireplumber = {
         format = "{icon}";
         format-muted = "󰖁";
-        format-icons = [ "󰖁" "󰕿" "󰕿" "󰕿" "󰖀" "󰖀" "󰖀" "󰕾" "󰕾" "󰕾" ];
+        format-icons = [
+          "󰖁"
+          "󰕿"
+          "󰕿"
+          "󰕿"
+          "󰖀"
+          "󰖀"
+          "󰖀"
+          "󰕾"
+          "󰕾"
+          "󰕾"
+        ];
         node-type = "Audio/Sink";
         max-volume = 100;
         scroll-step = 5;
@@ -166,7 +177,18 @@ in
       "wireplumber#source" = {
         format = "{icon}";
         format-muted = "󰍭";
-        format-icons = [ "󰍭" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" "󰍬" ];
+        format-icons = [
+          "󰍭"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+          "󰍬"
+        ];
         node-type = "Audio/Source";
         max-volume = 100;
         scroll-step = 5;

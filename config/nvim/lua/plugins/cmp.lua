@@ -59,6 +59,7 @@ return {
                     'snippet_forward',
                 },
             },
+            cmdline = { enabled = false },
             completion = {
                 accept = {
                     auto_brackets = { enabled = false },

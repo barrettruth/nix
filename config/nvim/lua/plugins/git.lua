@@ -230,7 +230,6 @@ return {
             vim.g.diffs = {
                 debug = '/tmp/diffs.log',
                 fugitive = true,
-                neogit = false,
                 extra_filetypes = { 'diff' },
                 hide_prefix = false,
                 highlights = {

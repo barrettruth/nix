@@ -9,10 +9,6 @@ if printf '%s' "$CMD" | grep -qE '\bgh\b.*\s(-R|--repo)\b'; then
   exit 2
 fi
 
-if printf '%s' "$CMD" | grep -qE '\bgh\s+issue\s+create\b'; then
-  echo "Blocked: gh issue create must be run manually or explicitly approved." >&2
-  exit 2
-fi
 
 if printf '%s' "$CMD" | grep -qE '\bgit\s+push\b'; then
   BRANCH=$(git branch --show-current 2>/dev/null || true)

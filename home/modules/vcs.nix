@@ -170,7 +170,7 @@ in
 
   services.gpg-agent = lib.mkIf hostConfig.isLinux {
     enable = true;
-    defaultCacheTtl = 3600;
+    defaultCacheTtl = 7200;
     maxCacheTtl = 7200;
     pinentry.package = pkgs.pinentry-curses;
   };

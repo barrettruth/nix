@@ -13,9 +13,11 @@ Create a pull request immediately, no approval step.
    If the branch is `main` or `master`, tell the user and stop.
 
 2. If `scripts/ci.sh` exists, run it:
+
    ```
    bash scripts/ci.sh
    ```
+
    If it fails, show the output and stop.
 
 3. Draft the PR (do NOT present for approval — create it immediately):
@@ -35,12 +37,14 @@ Create a pull request immediately, no approval step.
    - Use backticks around code identifiers, function names, and file paths.
 
    Run exactly one Bash command:
+
    ```
    gh pr create --title "<title>" --body "$(cat <<'EOF'
    <body here>
    EOF
    )"
    ```
+
    Print the PR URL from the output.
 
 Total: 2-3 Bash calls. Do not run any other commands.

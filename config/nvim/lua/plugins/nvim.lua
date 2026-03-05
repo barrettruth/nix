@@ -20,6 +20,10 @@ return {
     },
     {
         'echasnovski/mini.ai',
+        keys = {
+            { 'a', mode = { 'x', 'o' } },
+            { 'i', mode = { 'x', 'o' } },
+        },
         after = function()
             require('mini.ai').setup({
                 custom_textobjects = {
@@ -47,27 +51,6 @@ return {
                         return {
                             from = { line = start_line, col = 1 },
                             to = { line = end_line, col = to_col },
-                        }
-                    end,
-                    l = function(ai_type)
-                        local line_num = vim.fn.line('.')
-                        local line = vim.fn.getline(line_num)
-                        if line == '' then
-                            return {
-                                from = { line = line_num, col = 1 },
-                                to = { line = line_num, col = 1 },
-                            }
-                        end
-                        local start_col, end_col
-                        if ai_type == 'i' then
-                            start_col = line:find('%S') or 1
-                            end_col = line:match('.*%S()') or 1
-                        else
-                            start_col, end_col = 1, line:len()
-                        end
-                        return {
-                            from = { line = line_num, col = start_col },
-                            to = { line = line_num, col = end_col },
                         }
                     end,
                     I = function(ai_type)
@@ -126,10 +109,6 @@ return {
                 },
             })
         end,
-        keys = {
-            { 'a', mode = { 'x', 'o' } },
-            { 'i', mode = { 'x', 'o' } },
-        },
     },
     {
         'monaqa/dial.nvim',

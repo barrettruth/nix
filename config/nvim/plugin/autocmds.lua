@@ -16,6 +16,15 @@ vim.api.nvim_create_autocmd({ 'TermOpen', 'BufWinEnter' }, {
     group = aug,
 })
 
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = { 'fzf', 'TelescopePrompt', 'TelescopeResults' },
+    callback = function()
+        vim.opt_local.number = false
+        vim.opt_local.relativenumber = false
+    end,
+    group = aug,
+})
+
 vim.api.nvim_create_autocmd('BufReadPost', {
     command = 'sil! normal g`"',
     group = aug,
