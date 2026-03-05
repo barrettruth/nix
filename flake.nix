@@ -107,6 +107,7 @@
             pkgs.nixfmt
             pkgs.pre-commit
             pkgs.nodePackages.prettier
+            pkgs.shfmt
             pkgs.stylua
             pkgs.selene
           ];
