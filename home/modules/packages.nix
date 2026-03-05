@@ -15,7 +15,6 @@ let
   sioyek = true;
   vesktop = true;
   signal = true;
-  vivaldi = true;
 
   hexDigit =
     c:
@@ -100,7 +99,7 @@ let
   };
 in
 {
-  home.sessionVariables = lib.mkIf vivaldi { BROWSER = "vivaldi"; };
+  home.sessionVariables = lib.mkIf zen { BROWSER = "zen"; };
 
   programs.mpv.enable = true;
 
@@ -123,7 +122,6 @@ in
     ]
     ++ lib.optionals (vesktop && hostConfig.isLinux) [ pkgs.vesktop ]
     ++ lib.optionals (signal && hostConfig.isLinux) [ pkgs.signal-desktop ]
-    ++ lib.optionals (vivaldi && hostConfig.isLinux) [ pkgs.vivaldi ]
     ++ lib.optionals hostConfig.isLinux [ pkgs.element-desktop ];
 
   xdg.configFile."sioyek/keys_user.config" = lib.mkIf sioyek {
@@ -226,10 +224,10 @@ in
   xdg.mimeApps = lib.mkIf hostConfig.isLinux {
     enable = true;
     defaultApplications = lib.mkMerge [
-      (lib.mkIf vivaldi {
-        "x-scheme-handler/http" = "vivaldi.desktop";
-        "x-scheme-handler/https" = "vivaldi.desktop";
-        "text/html" = "vivaldi.desktop";
+      (lib.mkIf zen {
+        "x-scheme-handler/http" = "zen.desktop";
+        "x-scheme-handler/https" = "zen.desktop";
+        "text/html" = "zen.desktop";
       })
       (lib.mkIf neovim {
         "text/plain" = "nvim.desktop";
