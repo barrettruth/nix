@@ -2,7 +2,7 @@ vim.pack.add({
     'https://github.com/tpope/vim-fugitive',
 })
 
-function _G._fugitive_stl()
+function _G._fugitive_stl() -- selene: allow(global_usage)
     local s = vim.fn.FugitiveStatusline()
     return s ~= '' and s .. ' ' or ''
 end
