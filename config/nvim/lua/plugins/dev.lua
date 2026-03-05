@@ -292,15 +292,22 @@ return {
     },
     {
         'barrettruth/preview.nvim',
-        ft = { 'typst', 'tex', 'markdown' },
-        after = function()
-            require('preview').setup({
+        ft = { 'typst', 'tex', 'markdown', 'plantuml' },
+        before = function()
+            vim.filetype.add({
+                extension = { puml = 'plantuml', pu = 'plantuml' },
+            })
+            vim.g.preview = {
                 github = true,
                 typst = { open = { 'sioyek', '--new-instance' } },
+                plantuml = true,
+                mermaid = true,
                 latex = {
                     open = { 'sioyek', '--new-instance' },
                     output = function(ctx)
-                        return 'build/' .. vim.fn.fnamemodify(ctx.file, ':t:r') .. '.pdf'
+                        return ('build/%s.pdf'):format(
+                            vim.fn.fnamemodify(ctx.file, ':t:r')
+                        )
                     end,
                     args = function(ctx)
                         return {
@@ -313,8 +320,8 @@ return {
                         }
                     end,
                 },
-            })
+            }
         end,
-        keys = { { '<leader>p', '<cmd>Preview watch<cr>' } },
+        keys = { { '<leader>p', '<cmd>Preview toggle<cr>' } },
     },
 }

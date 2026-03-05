@@ -88,18 +88,6 @@ return {
 
         fzf.setup(opts)
 
-        vim.api.nvim_create_autocmd('FileType', {
-            pattern = 'fzf',
-            callback = function()
-                vim.opt_local.number = false
-                vim.opt_local.relativenumber = false
-            end,
-            group = vim.api.nvim_create_augroup(
-                'AFzfHighlights',
-                { clear = true }
-            ),
-        })
-
         local ok, fzf_reload = pcall(require, 'config.fzf_reload')
         if ok then
             fzf_reload.setup(opts)

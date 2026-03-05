@@ -34,9 +34,11 @@ Create a pull request from the current branch.
 3. Present the title and body. Ask for approval.
 
 4. After approval, if `scripts/ci.sh` exists, run it:
+
    ```
    bash scripts/ci.sh
    ```
+
    If it fails, show the output and stop. Do NOT create the PR.
 
 5. Run exactly one Bash command:
