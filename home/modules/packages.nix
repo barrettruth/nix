@@ -94,7 +94,9 @@ let
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/sioyek \
-        --set QT_QPA_PLATFORM xcb
+        --set QT_QPA_PLATFORM xcb \
+        --add-flags "--execute-command toggle_statusbar" \
+        --add-flags "--execute-command toggle_synctex"
     '';
   };
 in
@@ -145,14 +147,14 @@ in
       toggle_statusbar b
 
       close_window q
+
+      synctex_under_cursor i
     '';
   };
 
   xdg.configFile."sioyek/prefs_user.config" = lib.mkIf sioyek {
     text = ''
       wheel_zoom_on_cursor 1
-      startup_commands show_statusbar 0;toggle_synctex
-
       page_separator_width 10
       should_launch_new_window 1
 
@@ -161,7 +163,7 @@ in
       font_size 18
       status_bar_font_size 18
 
-      inverse_search_command sh -c 'nvim --server "$NVIM" --remote-send ":e +%2 %1<CR>"'
+      inverse_search_command nvim --server /tmp/nvim-preview.sock --remote-expr "execute('b +%2 %1')"
     '';
   };
 

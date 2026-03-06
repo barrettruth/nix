@@ -300,6 +300,7 @@ return {
             vim.filetype.add({
                 extension = { puml = 'plantuml', pu = 'plantuml' },
             })
+            vim.fn.serverstart('/tmp/nvim-preview.sock')
             vim.api.nvim_create_autocmd('User', {
                 pattern = 'PreviewCompileSuccess',
                 callback = function(args)
@@ -312,10 +313,7 @@ return {
                 plantuml = true,
                 mermaid = true,
                 latex = {
-                    open = {
-                        'sioyek',
-                        '--instance-name', 'preview',
-                    },
+                    open = { 'sioyek', '--instance-name', 'preview' },
                     output = function(ctx)
                         return vim.fn.fnamemodify(ctx.file, ':h')
                             .. '/build/'
@@ -337,22 +335,24 @@ return {
         end,
         keys = {
             { '<leader>p', '<cmd>Preview toggle<cr>' },
-            {
-                '<leader>s',
-                function()
-                    local bufnr = vim.api.nvim_get_current_buf()
-                    local pdf = synctex_pdf[bufnr]
-                    if pdf then
-                        vim.fn.jobstart({
-                            'sioyek',
-                            '--instance-name', 'preview',
-                            '--forward-search-file', vim.fn.expand('%:p'),
-                            '--forward-search-line', tostring(vim.fn.line('.')),
-                            pdf,
-                        })
-                    end
-                end,
-            },
         },
+        after = function()
+            local function forward_search()
+                local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
+                if pdf then
+                    vim.fn.jobstart({
+                        'sioyek',
+                        '--instance-name', 'preview',
+                        '--forward-search-file', vim.fn.expand('%:p'),
+                        '--forward-search-line', tostring(vim.fn.line('.')),
+                        pdf,
+                    })
+                end
+            end
+            vim.api.nvim_create_autocmd('CursorHold', {
+                pattern = '*.tex',
+                callback = forward_search,
+            })
+        end,
     },
 }
