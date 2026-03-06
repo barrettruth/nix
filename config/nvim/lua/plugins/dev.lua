@@ -225,14 +225,7 @@ return {
                     },
                 },
                 platforms = {
-                    kattis = { default_language = 'cpp' },
-                    codeforces = {
-                        enabled_languages = { 'cpp', 'python' },
-                        default_language = 'cpp',
-                    },
                     atcoder = {
-                        enabled_languages = { 'cpp', 'python' },
-                        default_language = 'cpp',
                         overrides = {
                             cpp = {
                                 template = '~/.config/nix/config/cp/template_single.cc',
@@ -246,8 +239,6 @@ return {
                             },
                         },
                     },
-                    usaco = { default_language = 'cpp' },
-                    codechef = { default_language = 'cpp' },
                 },
                 ui = {
                     picker = 'fzf-lua',

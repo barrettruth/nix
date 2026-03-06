@@ -122,13 +122,20 @@ in
     };
   };
 
+  xdg.configFile."github/ruleset.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/github/ruleset.json";
+
   programs.gh = {
     enable = true;
     settings = {
       git_protocol = "https";
       prompt = "enabled";
+      aliases = {
+        init = "!gh api --method PATCH /repos/\"$1\" -f delete_branch_on_merge=true -f allow_squash_merge=true -f allow_merge_commit=false -f allow_rebase_merge=true -f allow_auto_merge=true -f allow_update_branch=true -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=BLANK > /dev/null && gh api --method POST /repos/\"$1\"/rulesets --input ${config.xdg.configHome}/github/ruleset.json > /dev/null && echo \"done: $1\"";
+      };
     };
   };
+
 
   programs.ssh = {
     enable = true;
