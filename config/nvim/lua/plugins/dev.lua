@@ -307,6 +307,21 @@ return {
                     synctex_pdf[args.data.bufnr] = args.data.output
                 end,
             })
+            vim.api.nvim_create_autocmd('CursorHold', {
+                pattern = '*.tex',
+                callback = function()
+                    local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
+                    if pdf then
+                        vim.fn.jobstart({
+                            'sioyek',
+                            '--instance-name', 'preview',
+                            '--forward-search-file', vim.fn.expand('%:p'),
+                            '--forward-search-line', tostring(vim.fn.line('.')),
+                            pdf,
+                        })
+                    end
+                end,
+            })
             vim.g.preview = {
                 github = true,
                 typst = { open = { 'sioyek', '--new-instance' } },
@@ -336,23 +351,5 @@ return {
         keys = {
             { '<leader>p', '<cmd>Preview toggle<cr>' },
         },
-        after = function()
-            local function forward_search()
-                local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
-                if pdf then
-                    vim.fn.jobstart({
-                        'sioyek',
-                        '--instance-name', 'preview',
-                        '--forward-search-file', vim.fn.expand('%:p'),
-                        '--forward-search-line', tostring(vim.fn.line('.')),
-                        pdf,
-                    })
-                end
-            end
-            vim.api.nvim_create_autocmd('CursorHold', {
-                pattern = '*.tex',
-                callback = forward_search,
-            })
-        end,
     },
 }
