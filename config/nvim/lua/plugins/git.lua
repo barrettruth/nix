@@ -16,10 +16,6 @@ vim.api.nvim_create_autocmd('VimEnter', {
     end,
 })
 
-vim.pack.add({
-    'https://github.com/lewis6991/gitsigns.nvim',
-}, { load = function() end })
-
 ---@return string
 local function file_loc()
     local root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
@@ -230,12 +226,14 @@ return {
         before = function()
             vim.g.diffs = {
                 debug = '/tmp/diffs.log',
-                fugitive = true,
+                integrations = { fugitive = true },
                 extra_filetypes = { 'diff' },
                 hide_prefix = false,
                 highlights = {
+                    gutter = true,
                     vim = {
                         enabled = true,
+                        max_lnes = 500,
                     },
                     intra = {
                         enabled = true,
