@@ -137,7 +137,10 @@ return {
                         end
                     end
                 end,
-                group = vim.api.nvim_create_augroup('ACanola', { clear = true }),
+                group = vim.api.nvim_create_augroup(
+                    'ACanola',
+                    { clear = true }
+                ),
             })
         end,
         event = 'DeferredUIEnter',
@@ -308,16 +311,22 @@ return {
                 end,
             })
             vim.api.nvim_create_autocmd('CursorHold', {
-                group = vim.api.nvim_create_augroup('APreviewSynctex', { clear = true }),
+                group = vim.api.nvim_create_augroup(
+                    'APreviewSynctex',
+                    { clear = true }
+                ),
                 pattern = '*.tex',
                 callback = function()
                     local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
                     if pdf then
                         vim.fn.jobstart({
                             'sioyek',
-                            '--instance-name', 'preview',
-                            '--forward-search-file', vim.fn.expand('%:p'),
-                            '--forward-search-line', tostring(vim.fn.line('.')),
+                            '--instance-name',
+                            'preview',
+                            '--forward-search-file',
+                            vim.fn.expand('%:p'),
+                            '--forward-search-line',
+                            tostring(vim.fn.line('.')),
                             pdf,
                         })
                     end
