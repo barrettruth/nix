@@ -308,6 +308,7 @@ return {
                 end,
             })
             vim.api.nvim_create_autocmd('CursorHold', {
+                group = vim.api.nvim_create_augroup('APreviewSynctex', { clear = true }),
                 pattern = '*.tex',
                 callback = function()
                     local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
@@ -329,21 +330,12 @@ return {
                 mermaid = true,
                 latex = {
                     open = { 'sioyek', '--instance-name', 'preview' },
+                    extra_args = { '-outdir=build' },
                     output = function(ctx)
                         return vim.fn.fnamemodify(ctx.file, ':h')
                             .. '/build/'
                             .. vim.fn.fnamemodify(ctx.file, ':t:r')
                             .. '.pdf'
-                    end,
-                    args = function(ctx)
-                        return {
-                            '-pdf',
-                            '-interaction=nonstopmode',
-                            '-synctex=1',
-                            '-outdir=build',
-                            '-pdflatex=pdflatex -file-line-error -interaction=nonstopmode %O %S',
-                            ctx.file,
-                        }
                     end,
                 },
             }
