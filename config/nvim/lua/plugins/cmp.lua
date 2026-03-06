@@ -36,6 +36,7 @@ return {
     event = { 'InsertEnter', 'LspAttach' },
     keys = { { '<c-n>', mode = 'i' } },
     before = function()
+        vim.cmd.packadd('lazydev.nvim')
         vim.cmd.packadd('blink-cmp-git')
         vim.cmd.packadd('blink-cmp-env')
         vim.cmd.packadd('blink-cmp-ssh')
@@ -103,6 +104,7 @@ return {
             },
             sources = {
                 default = {
+                    'lazydev',
                     'git',
                     'conventional_commits',
                     'lsp',
@@ -142,6 +144,7 @@ return {
                         name = 'LazyDev',
                         module = 'lazydev.integrations.blink',
                         score_offset = 100,
+                        fallbacks = { 'lsp' },
                     },
                     env = {
                         name = 'Env',

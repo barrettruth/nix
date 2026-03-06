@@ -83,6 +83,7 @@ return {
         after = function()
             require('canola').setup({
                 skip_confirm_for_simple_edits = true,
+                cleanup_buffers_on_delete = true,
                 prompt_save_on_select_new_entry = false,
                 float = { border = 'single' },
                 view_options = {
@@ -152,7 +153,7 @@ return {
     {
         'barrettruth/pending.nvim',
         before = function()
-            vim.g.pending = { debug = true }
+            vim.g.pending = { debug = false }
         end,
         cmd = 'Pending',
         keys = { { '<leader>P', '<cmd>Pending<cr>' } },
@@ -224,6 +225,7 @@ return {
                     },
                 },
                 platforms = {
+                    kattis = { default_language = 'cpp' },
                     codeforces = {
                         enabled_languages = { 'cpp', 'python' },
                         default_language = 'cpp',
@@ -244,6 +246,8 @@ return {
                             },
                         },
                     },
+                    usaco = { default_language = 'cpp' },
+                    codechef = { default_language = 'cpp' },
                 },
                 ui = {
                     picker = 'fzf-lua',
@@ -334,6 +338,7 @@ return {
                 end,
             })
             vim.g.preview = {
+                debug = '/tmp/preview.log',
                 github = true,
                 typst = { open = { 'sioyek', '--new-instance' } },
                 plantuml = true,
