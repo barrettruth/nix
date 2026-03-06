@@ -171,7 +171,7 @@ in
         on-click-right = "ctl audio sink";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
         tooltip = true;
-        tooltip-format = "{volume}%";
+        tooltip-format = "Audio Sink: {node_name}\nVolume: {volume}%";
       };
 
       "wireplumber#source" = {
@@ -196,7 +196,7 @@ in
         on-click-right = "ctl audio source";
         on-click-middle = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
         tooltip = true;
-        tooltip-format = "{volume}%";
+        tooltip-format = "Audio Source: {node_name}\nVolume: {volume}%";
       };
 
       network = {
