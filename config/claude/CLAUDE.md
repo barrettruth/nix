@@ -10,7 +10,9 @@ requests unless explicitly specified.
 
 If given express permission to use git, NEVER sign yourself as a contributor OR mention yourself in the PR.
 
-If given express permission to use git, NEVER push to a main/master branch.
+If given express permission to use git, NEVER push to a main/master branch. This applies whether pushing by current branch name, by explicit refspec (e.g. `git push origin main`), or via `HEAD:main`. The hook will block you — do not attempt workarounds.
+
+If given express permission to use git, if GPG signing fails for any reason, always retry with `--no-gpg-sign` rather than stopping or asking.
 
 If given express permission to use git, NEVER commit ai-related files (e.g. CLAUDE.md).
 

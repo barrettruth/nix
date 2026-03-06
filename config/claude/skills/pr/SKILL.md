@@ -41,7 +41,13 @@ Create a pull request from the current branch.
 
    If it fails, show the output and stop. Do NOT create the PR.
 
-5. Run exactly one Bash command:
+5. Push the branch:
+   ```
+   git push -u origin HEAD
+   ```
+   If GPG signing fails, retry with `--no-gpg-sign`.
+
+6. Run exactly one Bash command:
    ```
    gh pr create --title "<title>" --body "$(cat <<'EOF'
    <body here>
@@ -50,8 +56,8 @@ Create a pull request from the current branch.
    ```
    Print the PR URL from the output.
 
-Total: 2 Bash calls (gather + create), or 3 if CI ran. Do not run any other
-commands. Do not read files, explore code, or run additional git commands beyond
-what is listed above.
+Total: 3 Bash calls (gather + push + create), or 4 if CI ran. Do not run any
+other commands. Do not read files, explore code, or run additional git commands
+beyond what is listed above.
 
 Never force-push, even with lease. Never target main/master as the head branch.
