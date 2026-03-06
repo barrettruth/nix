@@ -122,8 +122,39 @@ in
     };
   };
 
-  xdg.configFile."github/ruleset.json".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/github/ruleset.json";
+  xdg.configFile."github/ruleset.json".text = builtins.toJSON {
+    name = "main";
+    target = "branch";
+    enforcement = "active";
+    conditions.ref_name = {
+      exclude = [ ];
+      include = [ "~DEFAULT_BRANCH" ];
+    };
+    rules = [
+      { type = "deletion"; }
+      { type = "non_fast_forward"; }
+      { type = "required_signatures"; }
+      {
+        type = "pull_request";
+        parameters = {
+          required_approving_review_count = 1;
+          dismiss_stale_reviews_on_push = true;
+          required_reviewers = [ ];
+          require_code_owner_review = false;
+          require_last_push_approval = true;
+          required_review_thread_resolution = true;
+          allowed_merge_methods = [ "squash" "rebase" ];
+        };
+      }
+    ];
+    bypass_actors = [
+      {
+        actor_id = 5;
+        actor_type = "RepositoryRole";
+        bypass_mode = "always";
+      }
+    ];
+  };
 
   programs.gh = {
     enable = true;
