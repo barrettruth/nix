@@ -163,7 +163,7 @@ in
       font_size 18
       status_bar_font_size 18
 
-      inverse_search_command nvim --server /tmp/nvim-preview.sock --remote-expr "execute('b +%2 %1')"
+      inverse_search_command nvim --server /tmp/nvim-preview.sock --remote-expr "execute('b +%2 %1 | normal! zz')"
     '';
   };
 
