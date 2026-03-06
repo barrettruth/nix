@@ -82,6 +82,21 @@ If no template exists, fall back to:
 Write concise prose. No bullet-point walls, no verbose AI-style markdown.
 Use backticks for code references.
 
+## Post-PR Steps
+
+After creating a PR, immediately:
+
+1. Fetch upstream: `git fetch origin`
+2. Check for conflicts between your branch and `origin/main`:
+   `git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main`
+3. If conflicts exist, rebase or merge `origin/main` into the branch and resolve
+   them before considering the PR done.
+
+## GPG Signing
+
+If GPG signing fails for any reason, retry the commit or push with
+`--no-gpg-sign` rather than stopping.
+
 ## Decomposition Rules
 
 - One logical change per commit.
