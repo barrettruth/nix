@@ -57,6 +57,7 @@ local function new_git_status()
 end
 
 local git_status = new_git_status()
+local synctex_pdf = {}
 
 return {
     {
@@ -80,13 +81,13 @@ return {
         'barrettruth/canola.nvim',
         enabled = true,
         after = function()
-            require('oil').setup({
+            require('canola').setup({
                 skip_confirm_for_simple_edits = true,
                 prompt_save_on_select_new_entry = false,
                 float = { border = 'single' },
                 view_options = {
                     is_hidden_file = function(name, bufnr)
-                        local dir = require('oil').get_current_dir(bufnr)
+                        local dir = require('canola').get_current_dir(bufnr)
                         local is_dotfile = vim.startswith(name, '.')
                             and name ~= '..'
                         if not dir then
@@ -120,7 +121,7 @@ return {
                 },
             })
             -- TODO: better way to do this allowing vim.g.canola as that's it
-            local refresh = require('oil.actions').refresh
+            local refresh = require('canola.actions').refresh
             local orig_refresh = refresh.callback
             refresh.callback = function(...)
                 git_status = new_git_status()
@@ -132,24 +133,25 @@ return {
                     if ft == '' then
                         local path = vim.fn.expand('%:p')
                         if vim.fn.isdirectory(path) == 1 then
-                            vim.cmd('Oil ' .. path)
+                            vim.cmd('Canola ' .. path)
                         end
                     end
                 end,
-                group = vim.api.nvim_create_augroup('AOil', { clear = true }),
+                group = vim.api.nvim_create_augroup('ACanola', { clear = true }),
             })
         end,
         event = 'DeferredUIEnter',
         keys = {
             { '-', '<cmd>e .<cr>' },
-            { '_', '<cmd>Oil<cr>' },
+            { '_', '<cmd>Canola<cr>' },
         },
     },
     {
         'barrettruth/pending.nvim',
         before = function()
-            vim.g.pending = { debug = false }
+            vim.g.pending = { debug = true }
         end,
+        cmd = 'Pending',
         keys = { { '<leader>P', '<cmd>Pending<cr>' } },
     },
     {
@@ -298,17 +300,27 @@ return {
             vim.filetype.add({
                 extension = { puml = 'plantuml', pu = 'plantuml' },
             })
+            vim.api.nvim_create_autocmd('User', {
+                pattern = 'PreviewCompileSuccess',
+                callback = function(args)
+                    synctex_pdf[args.data.bufnr] = args.data.output
+                end,
+            })
             vim.g.preview = {
                 github = true,
                 typst = { open = { 'sioyek', '--new-instance' } },
                 plantuml = true,
                 mermaid = true,
                 latex = {
-                    open = { 'sioyek', '--new-instance' },
+                    open = {
+                        'sioyek',
+                        '--instance-name', 'preview',
+                    },
                     output = function(ctx)
-                        return ('build/%s.pdf'):format(
-                            vim.fn.fnamemodify(ctx.file, ':t:r')
-                        )
+                        return vim.fn.fnamemodify(ctx.file, ':h')
+                            .. '/build/'
+                            .. vim.fn.fnamemodify(ctx.file, ':t:r')
+                            .. '.pdf'
                     end,
                     args = function(ctx)
                         return {
@@ -323,6 +335,24 @@ return {
                 },
             }
         end,
-        keys = { { '<leader>p', '<cmd>Preview toggle<cr>' } },
+        keys = {
+            { '<leader>p', '<cmd>Preview toggle<cr>' },
+            {
+                '<leader>s',
+                function()
+                    local bufnr = vim.api.nvim_get_current_buf()
+                    local pdf = synctex_pdf[bufnr]
+                    if pdf then
+                        vim.fn.jobstart({
+                            'sioyek',
+                            '--instance-name', 'preview',
+                            '--forward-search-file', vim.fn.expand('%:p'),
+                            '--forward-search-line', tostring(vim.fn.line('.')),
+                            pdf,
+                        })
+                    end
+                end,
+            },
+        },
     },
 }

@@ -151,7 +151,7 @@ in
   xdg.configFile."sioyek/prefs_user.config" = lib.mkIf sioyek {
     text = ''
       wheel_zoom_on_cursor 1
-      startup_commands show_statusbar 0
+      startup_commands show_statusbar 0;toggle_synctex_on
 
       page_separator_width 10
       should_launch_new_window 1
@@ -160,6 +160,8 @@ in
 
       font_size 18
       status_bar_font_size 18
+
+      inverse_search_command sh -c 'nvim --server "$NVIM" --remote-send ":e +%2 %1<CR>"'
     '';
   };
 
