@@ -98,7 +98,13 @@ audio)
       default_name=$(printf '%s' "$dump" | jq -r --arg key "$default_meta" \
         '.[] | select(.type == "PipeWire:Interface:Metadata" and .props."metadata.name" == "default") | .metadata[] | select(.key == $key) | .value.name')
       rows=$(printf '%s\n' "$devices" | while IFS="$(printf '\t')" read -r id name node_name; do
-        active=$([ "$node_name" = "$default_name" ] && echo ">" || echo "")
+        node_sfx="${node_name#*.}"
+        def_sfx="${default_name#*.}"
+        if [ "$node_name" = "$default_name" ] || { [ -n "$node_sfx" ] && [ "$node_sfx" = "$def_sfx" ]; }; then
+          active=">"
+        else
+          active=""
+        fi
         vol=$(wpctl get-volume "$id" 2>/dev/null | awk '{printf "%d", $2 * 100}')
         printf '%s\t%s\t%s\t%s\n' "$id" "$name" "$active" "$vol"
       done)
