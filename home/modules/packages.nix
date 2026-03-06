@@ -151,7 +151,7 @@ in
   xdg.configFile."sioyek/prefs_user.config" = lib.mkIf sioyek {
     text = ''
       wheel_zoom_on_cursor 1
-      startup_commands show_statusbar 0;toggle_synctex_on
+      startup_commands show_statusbar 0;toggle_synctex
 
       page_separator_width 10
       should_launch_new_window 1
