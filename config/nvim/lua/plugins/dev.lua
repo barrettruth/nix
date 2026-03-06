@@ -323,6 +323,7 @@ return {
                             'sioyek',
                             '--instance-name',
                             'preview',
+                            '--reuse-window',
                             '--forward-search-file',
                             vim.fn.expand('%:p'),
                             '--forward-search-line',
@@ -339,7 +340,6 @@ return {
                 mermaid = true,
                 latex = {
                     open = { 'sioyek', '--instance-name', 'preview' },
-                    extra_args = { '-outdir=build' },
                     output = function(ctx)
                         return vim.fn.fnamemodify(ctx.file, ':h')
                             .. '/build/'
