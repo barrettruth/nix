@@ -102,12 +102,12 @@ return {
                     end,
                 },
                 keymaps = {
-                    ['<C-h>'] = false,
-                    ['<C-t>'] = false,
-                    ['<C-l>'] = false,
-                    ['<C-r>'] = 'actions.refresh',
-                    ['<C-s>'] = { 'actions.select', opts = { vertical = true } },
-                    ['<C-x>'] = {
+                    ['<c-h>'] = false,
+                    ['<c-t>'] = false,
+                    ['<c-l>'] = false,
+                    ['<c-r>'] = 'actions.refresh',
+                    ['<c-s>'] = { 'actions.select', opts = { vertical = true } },
+                    ['<c-x>'] = {
                         'actions.select',
                         opts = { horizontal = true },
                     },
@@ -121,7 +121,6 @@ return {
                     end,
                 },
             })
-            -- TODO: better way to do this allowing vim.g.canola as that's it
             local refresh = require('canola.actions').refresh
             local orig_refresh = refresh.callback
             refresh.callback = function(...)
@@ -153,7 +152,11 @@ return {
     {
         'barrettruth/pending.nvim',
         before = function()
-            vim.g.pending = { debug = false }
+            vim.g.pending = {
+                debug = true,
+                -- TODO: use date formats/personal rice
+                data_path = (os.getenv('XDG_STATE_HOME') or (os.getenv('HOME') .. '/.local/state')) .. '/nvim/pending/tasks.json',
+            }
         end,
         cmd = 'Pending',
         keys = { { '<leader>P', '<cmd>Pending<cr>' } },
@@ -183,7 +186,7 @@ return {
                         commands = {
                             build = {
                                 'g++',
-                                '-std=c++23',
+                                '-std=c++20',
                                 '-O2',
                                 '-Wall',
                                 '-Wextra',
@@ -202,7 +205,7 @@ return {
                             run = { '{binary}' },
                             debug = {
                                 'g++',
-                                '-std=c++23',
+                                '-std=c++20',
                                 '-g3',
                                 '-fsanitize=address,undefined',
                                 '-fno-omit-frame-pointer',

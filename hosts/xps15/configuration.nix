@@ -96,7 +96,7 @@ in
       "storage"
       "power"
     ];
-    shell = pkgs.bash;
+    shell = pkgs.zsh;
   };
 
   programs.chromium = {
@@ -112,12 +112,12 @@ in
     };
   };
 
-  programs.bash = {
+  programs.zsh = {
     enable = true;
-    shellAliases = {
-      g = "git";
-      nv = "nvim";
-    };
+    shellInit = ''
+      export ZDOTDIR="$HOME/.config/zsh"
+      export THEME="midnight"
+    '';
   };
   programs.hyprland = {
     enable = true;
