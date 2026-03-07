@@ -94,7 +94,8 @@ let
     { id, sha256, version }:
     {
       inherit id version;
-      crxPath = builtins.fetchurl {
+      crxPath = pkgs.fetchurl {
+        name = "${id}.crx";
         url =
           "https://clients2.google.com/service/update2/crx"
           + "?response=redirect&acceptformat=crx2,crx3"
@@ -265,7 +266,8 @@ in
       {
         id = "ocaahdebbfolfmndjeplogmgcagdmblk";
         version = "1.5.4.2";
-        crxPath = builtins.fetchurl {
+        crxPath = pkgs.fetchurl {
+          name = "chromium-web-store.crx";
           url = "https://github.com/NeverDecaf/chromium-web-store/releases/download/v1.5.4.2/Chromium.Web.Store.crx";
           sha256 = "0q3js6r6wzy0hqdjgm9n8kmwb8hn6prap7gp3vx0z3xgipgpp92c";
         };
