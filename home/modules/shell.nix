@@ -28,6 +28,7 @@ in
     with pkgs;
     [
       awscli2
+      pure-prompt
       tree
       typos
       jq
@@ -43,6 +44,8 @@ in
       librsvg
       imagemagick
       graphite-cli
+      luarocks
+      jupyter
     ]
     ++ lib.optionals hostConfig.isLinux [ xclip ]
     ++ lib.optionals rust [ rustup ]
@@ -113,9 +116,6 @@ in
     (lib.mkIf claude {
       CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
     })
-    {
-      INPUTRC = "${repoDir}/config/bash/inputrc";
-    }
   ];
 
   home.sessionPath = lib.mkMerge [
@@ -198,73 +198,50 @@ in
     }
   '';
 
-  programs.bash = {
+  programs.zsh = {
     enable = true;
-    shellAliases = lib.mkIf (!hostConfig.isNixOS) {
+    dotDir = "${config.xdg.configHome}/zsh";
+    completionInit = "";
+
+    history = {
+      path = "${config.xdg.stateHome}/zsh_history";
+      size = 2000;
+      save = 2000;
+      ignoreDups = true;
+      ignoreAllDups = true;
+      ignoreSpace = true;
+      extended = true;
+      append = true;
+    };
+
+    shellAliases = {
       g = "git";
       nv = "nvim";
     };
-    bashrcExtra = ''
-      [[ $- == *i* ]] || return 0
-    '';
-    initExtra = lib.mkAfter ''
-      [ -f "$HOME/.config/nix/config/bash/bashrc" ] && . "$HOME/.config/nix/config/bash/bashrc"
-    '';
-  };
 
-  programs.starship = {
-    enable = true;
-    settings = {
-      format = lib.concatStrings [
-        "$directory"
-        "$git_branch"
-        "$git_status"
-        "$cmd_duration"
-        "$line_break"
-        "$character"
+    syntaxHighlighting.enable = true;
+
+    autosuggestion = {
+      enable = true;
+      strategy = [
+        "history"
+        "completion"
       ];
-      add_newline = true;
-      continuation_prompt = "[>>](purple) ";
-      character = {
-        success_symbol = "[>](bold purple)";
-        error_symbol = "[>](bold red)";
-      };
-      directory = {
-        style = "bold blue";
-        truncation_length = 0;
-        truncate_to_repo = false;
-      };
-      git_branch = {
-        format = "[$branch]($style) ";
-        style = "242";
-      };
-      git_status = {
-        format = "[$all_status$ahead_behind]($style) ";
-        style = "242";
-        modified = "*";
-        ahead = "^";
-        behind = "v";
-        stashed = "=";
-        deleted = "-";
-        diverged = "^v";
-        conflicted = "m";
-        renamed = "->";
-      };
-      cmd_duration = {
-        min_time = 5000;
-        format = "[$duration]($style) ";
-      };
     };
+
+    initContent = ''
+      fpath+=("${pkgs.pure-prompt}/share/zsh/site-functions")
+      source "$XDG_CONFIG_HOME/nix/config/zsh/zshrc"
+    '';
   };
 
-  home.activation.removeZshFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    for f in "$HOME/.zshenv" "$HOME/.zshenv.bak"; do
-      [ -e "$f" ] && rm "$f" || true
-    done
+  home.activation.removeZshenvBridge = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    [ -L "$HOME/.zshenv" ] && rm "$HOME/.zshenv" || true
   '';
 
   programs.fzf = {
     enable = true;
+    enableZshIntegration = true;
     defaultCommand = "rg --files --hidden";
     defaultOptions = [
       "--bind=ctrl-a:select-all"
@@ -280,15 +257,18 @@ in
 
   programs.eza = {
     enable = true;
+    enableZshIntegration = true;
     git = true;
   };
 
   programs.zoxide = {
     enable = true;
+    enableZshIntegration = true;
   };
 
   programs.direnv = {
     enable = true;
+    enableZshIntegration = true;
     nix-direnv.enable = true;
     config.global = {
       hide_env_diff = true;
