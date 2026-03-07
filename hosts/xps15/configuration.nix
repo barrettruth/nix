@@ -99,6 +99,19 @@ in
     shell = pkgs.bash;
   };
 
+  programs.chromium = {
+    enable = true;
+    extraOpts = {
+      BrowserSigninEnabled = 0;
+      SyncDisabled = true;
+      PasswordManagerEnabled = false;
+      BookmarkBarEnabled = false;
+      DefaultSearchProviderEnabled = true;
+      DefaultSearchProviderName = "DuckDuckGo";
+      DefaultSearchProviderSearchURL = "https://duckduckgo.com/?q={searchTerms}";
+    };
+  };
+
   programs.bash = {
     enable = true;
     shellAliases = {

@@ -271,15 +271,6 @@ in
         };
       }
     ];
-    extraOpts = {
-      BrowserSigninEnabled = 0;
-      SyncDisabled = true;
-      PasswordManagerEnabled = false;
-      BookmarkBarEnabled = false;
-      DefaultSearchProviderEnabled = true;
-      DefaultSearchProviderName = "DuckDuckGo";
-      DefaultSearchProviderSearchURL = "https://duckduckgo.com/?q={searchTerms}";
-    };
   };
 
   xdg.configFile."electron-flags.conf" = lib.mkIf hostConfig.isLinux {
