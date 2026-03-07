@@ -88,6 +88,22 @@ let
     ''
     + lib.optionalString isDark "startup_commands toggle_dark_mode\n";
 
+  chromiumVersion = pkgs.ungoogled-chromium.version;
+
+  mkCrx =
+    { id, sha256, version }:
+    {
+      inherit id version;
+      crxPath = builtins.fetchurl {
+        url =
+          "https://clients2.google.com/service/update2/crx"
+          + "?response=redirect&acceptformat=crx2,crx3"
+          + "&prodversion=${chromiumVersion}"
+          + "&x=id%3D${id}%26installsource%3Dondemand%26uc";
+        inherit sha256;
+      };
+    };
+
   sioyek-wrapped = pkgs.symlinkJoin {
     name = "sioyek";
     paths = [ pkgs.sioyek ];
@@ -101,7 +117,7 @@ let
   };
 in
 {
-  home.sessionVariables = lib.mkIf zen { BROWSER = "zen"; };
+  home.sessionVariables = lib.mkIf hostConfig.isLinux { BROWSER = "chromium"; };
 
   programs.mpv.enable = true;
 
@@ -218,6 +234,54 @@ in
     ''
   );
 
+  programs.chromium = lib.mkIf hostConfig.isLinux {
+    enable = true;
+    package = pkgs.ungoogled-chromium;
+    commandLineArgs = [
+      "--enable-features=VerticalTabs,WaylandWindowDecorations"
+      "--ozone-platform-hint=auto"
+    ];
+    extensions = [
+      (mkCrx {
+        id = "nngceckbapebfimnlniiiahkandclblb";
+        sha256 = "14cfgn0dzqqkg6wpvjcbgdhvydpnvqlq83cy0llm1w36kxa8wm1j";
+        version = "2026.2.0";
+      })
+      (mkCrx {
+        id = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
+        sha256 = "0zfcdcxdq98qqa1ad3w1bpnzald54d99hb6mv9zhpzgk7zgcrlm8";
+        version = "4.9.121";
+      })
+      (mkCrx {
+        id = "ddkjiahejlhfcafbddmgiahcphecmpfh";
+        sha256 = "08gd7scxysc1bgz2kzs8p9001pzbwf7hdwjq9ax14k8r19szz2qj";
+        version = "2026.301.2014";
+      })
+      (mkCrx {
+        id = "emffkefkbkpkgpdeeooapgaicgmcbolj";
+        sha256 = "0jhzzf164mhbq7ly841ss79n0w2h5slgjp6y706caqxagq6h756y";
+        version = "10.1.0";
+      })
+      {
+        id = "ocaahdebbfolfmndjeplogmgcagdmblk";
+        version = "1.5.4.2";
+        crxPath = builtins.fetchurl {
+          url = "https://github.com/NeverDecaf/chromium-web-store/releases/download/v1.5.4.2/Chromium.Web.Store.crx";
+          sha256 = "0q3js6r6wzy0hqdjgm9n8kmwb8hn6prap7gp3vx0z3xgipgpp92c";
+        };
+      }
+    ];
+    extraOpts = {
+      BrowserSigninEnabled = 0;
+      SyncDisabled = true;
+      PasswordManagerEnabled = false;
+      BookmarkBarEnabled = false;
+      DefaultSearchProviderEnabled = true;
+      DefaultSearchProviderName = "DuckDuckGo";
+      DefaultSearchProviderSearchURL = "https://duckduckgo.com/?q={searchTerms}";
+    };
+  };
+
   xdg.configFile."electron-flags.conf" = lib.mkIf hostConfig.isLinux {
     text = ''
       --enable-features=WaylandWindowDecorations
@@ -228,11 +292,11 @@ in
   xdg.mimeApps = lib.mkIf hostConfig.isLinux {
     enable = true;
     defaultApplications = lib.mkMerge [
-      (lib.mkIf zen {
-        "x-scheme-handler/http" = "zen.desktop";
-        "x-scheme-handler/https" = "zen.desktop";
-        "text/html" = "zen.desktop";
-      })
+      {
+        "x-scheme-handler/http" = "chromium-browser.desktop";
+        "x-scheme-handler/https" = "chromium-browser.desktop";
+        "text/html" = "chromium-browser.desktop";
+      }
       (lib.mkIf neovim {
         "text/plain" = "nvim.desktop";
       })
