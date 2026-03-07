@@ -49,8 +49,8 @@ pull)
   APP="$1"
   case "$APP" in
   google-chrome | google-chrome-stable) CLASS="google-chrome" ;;
+  chromium) CLASS="Chromium" ;;
   zen | zen-browser) CLASS="zen" ;;
-  chromium | ungoogled-chromium) CLASS="Chromium" ;;
   firefox) CLASS="firefox" ;;
   alacritty) CLASS="Alacritty" ;;
   code | vscodium) CLASS="Code" ;;
@@ -141,7 +141,7 @@ spawnfocus)
 
   case "$APP" in
   google-chrome | google-chrome-stable) CLASS="google-chrome" ;;
-  chromium | ungoogled-chromium) CLASS="Chromium" ;;
+  chromium) CLASS="Chromium" ;;
   zen | zen-browser) CLASS="zen" ;;
   firefox) CLASS="firefox" ;;
   alacritty) CLASS="Alacritty" ;;
