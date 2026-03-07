@@ -45,7 +45,6 @@ in
       imagemagick
       graphite-cli
       luarocks
-      jupyter
     ]
     ++ lib.optionals hostConfig.isLinux [ xclip ]
     ++ lib.optionals rust [ rustup ]
