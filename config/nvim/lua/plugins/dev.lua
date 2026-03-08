@@ -154,12 +154,16 @@ return {
         before = function()
             vim.g.pending = {
                 debug = true,
-                -- TODO: use date formats/personal rice
                 data_path = (os.getenv('XDG_STATE_HOME') or (os.getenv('HOME') .. '/.local/state')) .. '/nvim/pending/tasks.json',
+                date_format = '%d/%m/%y',
+                date_syntax = 'd',
+                recur_syntax = 'r',
+                input_date_formats = { '%d/%m/%Y', '%d/%m/%y' },
+                drawer_height = vim.o.lines,
             }
         end,
         cmd = 'Pending',
-        keys = { { '<leader>P', '<cmd>Pending<cr>' } },
+        keys = { { '<leader>P', '<cmd>Pending|only<cr>' } },
     },
     {
         'barrettruth/cp.nvim',
