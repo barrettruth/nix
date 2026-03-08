@@ -1,25 +1,24 @@
-local o, opt = vim.o, vim.opt
+vim.o.autoread = true
+vim.o.autowrite = true
 
-o.autoread = true
-o.autowrite = true
+vim.o.breakindent = true
 
-o.breakindent = true
+vim.o.cursorline = true
 
-o.cursorline = true
+vim.opt.diffopt:append('linematch:60')
 
-opt.diffopt:append('linematch:60')
+vim.o.expandtab = true
 
-o.expandtab = true
+vim.o.exrc = true
+vim.o.secure = true
 
-o.exrc = true
-o.secure = true
+vim.o.foldcolumn = 'auto'
+vim.o.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.o.foldlevel = 99
+vim.o.foldmethod = 'expr'
+vim.o.foldtext = ''
 
-o.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-o.foldlevel = 99
-o.foldmethod = 'expr'
-o.foldtext = ''
-
-opt.fillchars = {
+vim.opt.fillchars = {
     eob = ' ',
     vert = '│',
     diff = '╱',
@@ -29,56 +28,53 @@ opt.fillchars = {
     foldinner = ' ',
 }
 
-opt.iskeyword:append('-')
+vim.opt.iskeyword:append('-')
 
-o.laststatus = 3
+vim.o.laststatus = 3
 
-o.linebreak = true
+vim.o.linebreak = true
 
-o.list = true
-opt.listchars = {
+vim.o.list = true
+vim.opt.listchars = {
     space = ' ',
     trail = '·',
 }
 
-opt.matchpairs:append('<:>')
+vim.opt.matchpairs:append('<:>')
 
-o.number = true
-o.relativenumber = true
-o.signcolumn = 'no'
+vim.o.number = true
+vim.o.relativenumber = true
+vim.o.signcolumn = 'no'
 
-o.statuscolumn = '%s%C %=%{v:relnum?v:relnum:v:lnum} '
-o.statusline = " %{len(expand('%'))?expand('%:~').' ':''}%h%m%r%=%c:%l/%L "
+vim.o.statuscolumn = '%s%C %=%{v:relnum?v:relnum:v:lnum} '
+vim.o.statusline = " %{len(expand('%'))?expand('%:~').' ':''}%h%m%r%=%c:%l/%L "
 
-opt.path:append('**')
+vim.opt.path:append('**')
 
-o.scrolloff = 8
+vim.o.scrolloff = 8
 
-o.shiftwidth = 2
+vim.o.shiftwidth = 2
 
-opt.shortmess:append('acCIs')
+vim.opt.shortmess:append('acCIs')
 
-o.showtabline = 0
-
-o.spellfile = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))
+vim.o.spellfile = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))
     .. '/nvim/spell.encoding.add'
 
-o.splitkeep = 'screen'
+vim.o.splitkeep = 'screen'
 
-o.splitbelow = true
-o.splitright = true
+vim.o.splitbelow = true
+vim.o.splitright = true
 
-o.swapfile = false
+vim.o.swapfile = false
 
-o.termguicolors = true
+vim.o.termguicolors = true
 
-o.undodir = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))
+vim.o.undodir = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))
     .. '/nvim/undo'
-o.undofile = true
+vim.o.undofile = true
 
-o.updatetime = 50
+vim.o.updatetime = 50
 
-o.winborder = 'single'
-o.winbar = ''
+vim.o.winborder = 'single'
 
-o.wrap = false
+vim.o.wrap = false
