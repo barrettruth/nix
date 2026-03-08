@@ -18,6 +18,7 @@ let
   python = true;
   ocaml = true;
   docker = true;
+  zen = true;
   aws = true;
   psql = true;
   tex = true;
@@ -114,6 +115,9 @@ in
     })
     (lib.mkIf claude {
       CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
+    })
+    (lib.mkIf zen {
+      BROWSER = "zen";
     })
   ];
 

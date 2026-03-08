@@ -153,7 +153,7 @@ return {
         'barrettruth/pending.nvim',
         before = function()
             vim.g.pending = {
-                debug = true,
+                debug = false,
                 data_path = (os.getenv('XDG_STATE_HOME') or (os.getenv('HOME') .. '/.local/state')) .. '/nvim/pending/tasks.json',
                 date_format = '%d/%m/%y',
                 date_syntax = 'd',
@@ -336,7 +336,7 @@ return {
                 end,
             })
             vim.g.preview = {
-                debug = '/tmp/preview.log',
+                debug = false,
                 github = true,
                 typst = { open = { 'sioyek', '--new-instance' } },
                 plantuml = true,
