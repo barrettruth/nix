@@ -128,6 +128,7 @@
                   "nvidia-settings"
                   "tailscale"
                   "libfprint-2-tod1-goodix"
+                  "brgenml1lpr"
                 ]
               );
           }

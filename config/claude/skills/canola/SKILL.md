@@ -55,8 +55,39 @@ For each approved issue:
    to verify the fix works (no surprises — user already knows what to expect)
 5. /gc — conventional commit on fix/<short> branch
 6. /pr — push, create PR targeting `barrettruth/canola.nvim` with Problem/Solution body
-7. Update doc/upstream.md — status → fixed, add PR + commit link
+7. Update `doc/upstream.md` (see upstream.md rules below)
 8. /gc + push the upstream.md change on same branch
+
+## `doc/upstream.md` rules
+
+The tracker is organized into grouped tables — each issue/PR appears in
+exactly ONE section. Never duplicate entries across sections.
+
+### Sections
+
+- **Upstream PRs** — single table for all upstream PRs (cherry-picked,
+  deferred, not actionable, not applicable). Status is a column.
+- **Issues** — single table, all issues sorted by number. Columns:
+  Issue, Description, Status. Each issue appears exactly once.
+
+### Status values (Issues table)
+
+- `open` — unresolved
+- `fixed` — fixed in this fork. Append PR link: `fixed (#NN)`
+- `cherry-picked` — resolved by cherry-picking upstream PR: `cherry-picked (#NN)`
+- `not actionable` — won't fix. Append reason: `not actionable — reason`
+
+### When fixing an issue
+
+1. Change the issue's status from `open` to `fixed (#NN)` with our fork's PR
+2. Never include commit hashes — only PR numbers (stable across rebases)
+3. Never include priority markers (P0/P1/P2)
+
+### Link format
+
+- Upstream issues: `[#NNN](https://github.com/stevearc/oil.nvim/issues/NNN)`
+- Upstream PRs: `[#NNN](https://github.com/stevearc/oil.nvim/pull/NNN)`
+- Fork PRs: `[#NNN](https://github.com/barrettruth/canola.nvim/pull/NNN)`
 
 ## Subagent Research Prompt Template
 

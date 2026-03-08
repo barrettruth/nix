@@ -230,6 +230,7 @@ return {
                 extra_filetypes = { 'diff' },
                 hide_prefix = false,
                 highlights = {
+                    -- blend_alpha = 0.9,
                     gutter = true,
                     vim = {
                         enabled = true,
