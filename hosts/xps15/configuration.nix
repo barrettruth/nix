@@ -141,6 +141,17 @@ in
     };
   };
 
+  services.printing = {
+    enable = true;
+    drivers = with pkgs; [
+      gutenprint
+      hplip
+      brlaser
+      brgenml1lpr
+      brgenml1cupswrapper
+    ];
+  };
+
   services.pipewire = {
     enable = true;
     alsa.enable = true;
