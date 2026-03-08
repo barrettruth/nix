@@ -60,14 +60,6 @@
       "rev": "4b0a6207341d895b6cfe9bcb1e4d3e8607bfe4f4",
       "src": "https://github.com/echasnovski/mini.ai"
     },
-    "mini.bufremove": {
-      "rev": "ee69f823f84508c556127a5882760d9783692023",
-      "src": "https://github.com/nvim-mini/mini.bufremove"
-    },
-    "mini.misc": {
-      "rev": "de8947231c29012271722651aa07f6749c41d1ed",
-      "src": "https://github.com/echasnovski/mini.misc"
-    },
     "mini.pairs": {
       "rev": "b7fde3719340946feb75017ef9d75edebdeb0566",
       "src": "https://github.com/echasnovski/mini.pairs"
