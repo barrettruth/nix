@@ -154,7 +154,10 @@ return {
         before = function()
             vim.g.pending = {
                 debug = false,
-                data_path = (os.getenv('XDG_STATE_HOME') or (os.getenv('HOME') .. '/.local/state')) .. '/nvim/pending/tasks.json',
+                data_path = (
+                    os.getenv('XDG_STATE_HOME')
+                    or (os.getenv('HOME') .. '/.local/state')
+                ) .. '/nvim/pending/tasks.json',
                 date_format = '%d/%m/%y',
                 date_syntax = 'd',
                 recur_syntax = 'r',
