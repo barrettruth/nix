@@ -9,7 +9,7 @@
   programs.ghostty = {
     enable = true;
     settings = {
-      font-family = "Zed Mono";
+      font-family = "Berkeley Mono";
       font-codepoint-map = "U+f101-U+f25c=nonicons";
       font-feature = "-calt";
       font-size = 20;

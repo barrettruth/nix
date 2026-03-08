@@ -117,7 +117,7 @@ in
       CLAUDE_CONFIG_DIR = "${config.xdg.configHome}/claude";
     })
     (lib.mkIf zen {
-      BROWSER = "zen";
+      BROWSER = "zen-beta";
     })
   ];
 
