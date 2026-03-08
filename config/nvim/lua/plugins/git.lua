@@ -225,7 +225,7 @@ return {
         enabled = true,
         before = function()
             vim.g.diffs = {
-                debug = '/tmp/diffs.log',
+                debug = false,
                 integrations = { fugitive = true },
                 extra_filetypes = { 'diff' },
                 hide_prefix = false,
