@@ -3,8 +3,6 @@ vim.pack.add({
     'https://github.com/monaqa/dial.nvim',
     'https://github.com/catgoose/nvim-colorizer.lua',
     'https://github.com/echasnovski/mini.pairs',
-    'https://github.com/echasnovski/mini.misc',
-    'https://github.com/nvim-mini/mini.bufremove',
     'https://github.com/tpope/vim-abolish',
     'https://github.com/tpope/vim-sleuth',
     'https://github.com/kylechui/nvim-surround',
@@ -201,34 +199,6 @@ return {
             })
         end,
         event = 'BufReadPre',
-    },
-    {
-        'echasnovski/mini.misc',
-        after = function()
-            require('mini.misc').setup()
-        end,
-        keys = {
-            {
-                '<c-w>m',
-                "<cmd>lua MiniMisc.zoom(0, { title = '', border = 'none' })<cr>",
-            },
-        },
-    },
-    {
-        'nvim-mini/mini.bufremove',
-        after = function()
-            require('mini.bufremove').setup()
-        end,
-        keys = {
-            {
-                '<leader>bd',
-                '<cmd>lua MiniBufremove.delete()<cr>',
-            },
-            {
-                '<leader>bw',
-                '<cmd>lua MiniBufremove.wipeout()<cr>',
-            },
-        },
     },
     { 'tpope/vim-abolish', event = 'DeferredUIEnter' },
     { 'tpope/vim-sleuth', event = 'BufReadPost' },
