@@ -42,9 +42,11 @@ Create a pull request from the current branch.
    If it fails, show the output and stop. Do NOT create the PR.
 
 5. Push the branch:
+
    ```
    git push -u origin HEAD
    ```
+
    If GPG signing fails, retry with `--no-gpg-sign`.
 
 6. Run exactly one Bash command:

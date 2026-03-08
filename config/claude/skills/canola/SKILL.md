@@ -19,6 +19,7 @@ Process at most 2 issues per session. Spawn one Agent(subagent_type=general,
 worktree=true) per issue using EnterWorktree so each agent works in an
 isolated git worktree. Each agent receives: issue number, description, and
 instructions to find:
+
 - Root cause (which files, which functions, line numbers)
 - Whether a test already covers it
 - Whether the fix has side effects in other adapters or modes
@@ -29,6 +30,7 @@ instructions to find:
 Call EnterPlanMode immediately after research completes.
 
 For each issue, present the FULL picture:
+
 - Problem statement (2-3 sentences, not just the title)
 - Root cause (files + line numbers)
 - **Expected behavior** — what the correct outcome looks like, step by step,
@@ -45,6 +47,7 @@ Call ExitPlanMode only after receiving explicit approval.
 ## Phase 3: Implement (one at a time, after plan mode exits)
 
 For each approved issue:
+
 1. Write `/tmp/minimal_init.lua` — self-contained repro
 2. Give user step-by-step instructions to confirm bug reproduces
 3. Implement fix
@@ -60,6 +63,7 @@ For each approved issue:
 "Research upstream oil.nvim issue #NNN for the canola.nvim fork.
 Read: doc/upstream.md entry for this issue, then trace the relevant
 source files to find the root cause. Return:
+
 - Affected files and functions (with line numbers)
 - Root cause in 2-3 sentences
 - Expected correct behavior (step by step)
