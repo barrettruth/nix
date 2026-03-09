@@ -128,14 +128,20 @@ in
     (lib.mkIf node [ "${config.xdg.dataHome}/pnpm" ])
   ];
 
-  xdg.configFile."aws/config" = lib.mkIf aws {
-    text = ''
-      [default]
-      [profile barrett]
-      region = us-east-2
-      output = json
-    '';
-  };
+  home.activation.awsConfig = lib.mkIf aws (
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      dir="${config.xdg.configHome}/aws"
+      mkdir -p "$dir"
+      if [ ! -f "$dir/config" ]; then
+        cat > "$dir/config" << 'AWSEOF'
+[default]
+[profile barrett]
+region = us-east-2
+output = json
+AWSEOF
+      fi
+    ''
+  );
 
   xdg.configFile."npm/npmrc" = lib.mkIf node {
     text = ''
