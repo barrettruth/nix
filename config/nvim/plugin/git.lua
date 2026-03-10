@@ -218,30 +218,3 @@ end)
 vim.keymap.set('n', '<leader>gp', function()
     forge_picker('pr', 'all')
 end)
-
-return {
-    {
-        'barrettruth/diffs.nvim',
-        enabled = true,
-        before = function()
-            vim.g.diffs = {
-                debug = false,
-                integrations = { fugitive = true },
-                extra_filetypes = { 'diff' },
-                hide_prefix = false,
-                highlights = {
-                    -- blend_alpha = 0.9,
-                    gutter = true,
-                    vim = {
-                        enabled = true,
-                        max_lnes = 500,
-                    },
-                    intra = {
-                        enabled = true,
-                        max_lines = 500,
-                    },
-                },
-            }
-        end,
-    },
-}

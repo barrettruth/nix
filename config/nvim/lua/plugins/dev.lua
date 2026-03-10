@@ -61,6 +61,30 @@ local synctex_pdf = {}
 
 return {
     {
+        'barrettruth/diffs.nvim',
+        enabled = true,
+        before = function()
+            vim.g.diffs = {
+                debug = false,
+                integrations = { fugitive = true },
+                extra_filetypes = { 'diff' },
+                hide_prefix = true,
+                highlights = {
+                    gutter = true,
+                    vim = {
+                        enabled = true,
+                        -- max_lines = 500,
+                    },
+                    -- treesitter = { max_lines = 10 },
+                    intra = {
+                        enabled = true,
+                        max_lines = 500,
+                    },
+                },
+            }
+        end,
+    },
+    {
         'barrettruth/midnight.nvim',
         enabled = true,
         after = function()
@@ -154,6 +178,9 @@ return {
         before = function()
             vim.g.pending = {
                 debug = false,
+                sync = {
+                    s3 = { bucket = 'pending.nvim', region = 'us-east-1' },
+                },
                 data_path = (
                     os.getenv('XDG_STATE_HOME')
                     or (os.getenv('HOME') .. '/.local/state')

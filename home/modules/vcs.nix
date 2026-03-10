@@ -159,6 +159,12 @@ in
     ];
   };
 
+  home.packages = [ pkgs.tea ];
+
+  programs.ssh.matchBlocks."codeberg.org" = {
+    identityFile = "~/.ssh/id_ed25519";
+  };
+
   programs.gh = {
     enable = true;
     settings = {
