@@ -126,6 +126,7 @@ audio)
           --mesg="$header" --mesg-mode=expand \
           --font="monospace:size=12" --width="$fw")
       rc=$?
+      [ "$rc" = 10 ] && continue
       [ "$rc" = 11 ] && {
         wpctl set-volume "$node" 5%+ --limit 1.0
         continue

@@ -336,6 +336,7 @@ AWSEOF
   xdg.configFile."claude/settings.json" = lib.mkIf claude {
     text = builtins.toJSON {
       permissions.defaultMode = "acceptEdits";
+      notifications.hints = "disabled";
       network_access = true;
       allowed_domains = [
         "github.com"
