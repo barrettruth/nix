@@ -105,14 +105,14 @@ return {
         'barrettruth/canola.nvim',
         enabled = true,
         after = function()
-            require('canola').setup({
+            require('oil').setup({
                 skip_confirm_for_simple_edits = true,
                 cleanup_buffers_on_delete = true,
                 prompt_save_on_select_new_entry = false,
                 float = { border = 'single' },
                 view_options = {
                     is_hidden_file = function(name, bufnr)
-                        local dir = require('canola').get_current_dir(bufnr)
+                        local dir = require('oil').get_current_dir(bufnr)
                         local is_dotfile = vim.startswith(name, '.')
                             and name ~= '..'
                         if not dir then
@@ -145,7 +145,7 @@ return {
                     end,
                 },
             })
-            local refresh = require('canola.actions').refresh
+            local refresh = require('oil.actions').refresh
             local orig_refresh = refresh.callback
             refresh.callback = function(...)
                 git_status = new_git_status()
@@ -162,7 +162,7 @@ return {
                     end
                 end,
                 group = vim.api.nvim_create_augroup(
-                    'ACanola',
+                    'AOil',
                     { clear = true }
                 ),
             })
@@ -170,7 +170,7 @@ return {
         event = 'DeferredUIEnter',
         keys = {
             { '-', '<cmd>e .<cr>' },
-            { '_', '<cmd>Canola<cr>' },
+            { '_', '<cmd>Oil<cr>' },
         },
     },
     {
