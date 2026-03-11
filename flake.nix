@@ -11,11 +11,7 @@
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
     neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
-    whisper-dictation = {
-      url = "github:jacopone/whisper-dictation";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+};
 
   outputs =
     {
@@ -25,7 +21,6 @@
       zen-browser,
       claude-code,
       neovim-nightly,
-      whisper-dictation,
       ...
     }:
     let
@@ -92,7 +87,7 @@
         home-manager.lib.homeManagerConfiguration {
           pkgs = mkPkgs hostConfig.platform [ ];
           extraSpecialArgs = {
-            inherit zen-browser whisper-dictation hostConfig;
+            inherit zen-browser hostConfig;
           };
           modules = [ ./home/home.nix ];
         };
@@ -134,6 +129,10 @@
                   "tailscale"
                   "libfprint-2-tod1-goodix"
                   "brgenml1lpr"
+                  "cuda_cccl"
+                  "cuda_cudart"
+                  "libcublas"
+                  "cuda_nvcc"
                 ]
               );
           }
@@ -144,7 +143,7 @@
             home-manager.backupFileExtension = "bak";
             home-manager.users.barrett = import ./home/home.nix;
             home-manager.extraSpecialArgs = {
-              inherit zen-browser whisper-dictation;
+              inherit zen-browser;
               hostConfig = xps15Config;
             };
           }

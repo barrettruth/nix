@@ -95,22 +95,8 @@ in
       "libvirt"
       "storage"
       "power"
-      "input"
     ];
     shell = pkgs.zsh;
-  };
-
-  hardware.uinput.enable = true;
-
-  systemd.user.services.ydotoold = {
-    description = "ydotool daemon";
-    wantedBy = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.ydotool}/bin/ydotoold";
-      Restart = "on-failure";
-      RestartSec = 3;
-    };
   };
 
   programs.chromium = {

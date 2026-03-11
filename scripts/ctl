@@ -533,6 +533,51 @@ power)
   "$shutdown") systemctl poweroff ;;
   esac
   ;;
+dictate)
+  require pw-record whisper-cli wl-copy notify-send
+  dtmp="${XDG_RUNTIME_DIR:-/tmp}/dictation"
+  mkdir -p "$dtmp"
+  dpid="$dtmp/rec_pid"
+  daudio="$dtmp/recording.wav"
+  dmodel="${DICTATE_MODEL:-medium}"
+  dmodel_dir="${XDG_DATA_HOME:-$HOME/.local/share}/whisper-models"
+  dmodel_file="$dmodel_dir/ggml-$dmodel.bin"
+
+  if [ -f "$dpid" ] && kill -0 "$(cat "$dpid")" 2>/dev/null; then
+    kill "$(cat "$dpid")" 2>/dev/null
+    rm -f "$dpid"
+    sleep 0.2
+    if [ ! -s "$daudio" ]; then
+      notify-send -a ctl "no audio"
+      exit 1
+    fi
+    notify-send -a ctl "transcribing..."
+    text=$(whisper-cli \
+      --model "$dmodel_file" \
+      --language "${DICTATE_LANG:-en}" \
+      --no-prints --no-timestamps \
+      "$daudio" 2>/dev/null)
+    rm -f "$daudio"
+    text=$(printf '%s' "$text" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
+    if [ -z "$text" ]; then
+      notify-send -a ctl "no speech detected"
+      exit 1
+    fi
+    printf '%s' "$text" | wl-copy
+    notify-send -a ctl "$text"
+    exit 0
+  fi
+
+  if [ ! -f "$dmodel_file" ]; then
+    notify-send -a ctl "downloading whisper $dmodel model..."
+    mkdir -p "$dmodel_dir"
+    curl -L -o "$dmodel_file" \
+      "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-$dmodel.bin"
+  fi
+  notify-send -a ctl "recording..."
+  pw-record "$daudio" &
+  printf '%s' "$!" > "$dpid"
+  ;;
 idle)
   require notify-send
   if systemctl --user is-active --quiet hypridle.service; then
@@ -546,7 +591,7 @@ idle)
   fi
   ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|clip}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|clip|dictate}" >&2
   exit 1
   ;;
 esac
