@@ -539,7 +539,7 @@ dictate)
   mkdir -p "$dtmp"
   dpid="$dtmp/rec_pid"
   daudio="$dtmp/recording.wav"
-  dmodel="${DICTATE_MODEL:-medium}"
+  dmodel="${DICTATE_MODEL:-large-v3-turbo}"
   dmodel_dir="${XDG_DATA_HOME:-$HOME/.local/share}/whisper-models"
   dmodel_file="$dmodel_dir/ggml-$dmodel.bin"
 
