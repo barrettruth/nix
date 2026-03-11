@@ -19,6 +19,7 @@
   ++ lib.optionals hostConfig.isLinux [
     ./modules/hyprland.nix
     ./modules/ui.nix
+    ./modules/dictation.nix
   ];
 
   config = {
