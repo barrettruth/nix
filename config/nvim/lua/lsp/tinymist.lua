@@ -2,7 +2,7 @@ return {
     filetypes = { 'typst' },
     settings = {
         formatterMode = 'typstyle',
-        exportPdf = 'onSave',
+        -- exportPdf = 'onSave',
         semanticTokens = 'disable',
         lint = {
             enabled = true,
