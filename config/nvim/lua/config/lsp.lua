@@ -2,65 +2,66 @@ local M = {}
 
 local Methods = vim.lsp.protocol.Methods
 
+local function fzf_or(fzf_cmd, fallback)
+    return function()
+        if pcall(require, 'fzf-lua') then
+            vim.cmd('FzfLua ' .. fzf_cmd)
+        else
+            fallback()
+        end
+    end
+end
+
 function M.on_attach(client, bufnr)
     if client:supports_method(Methods.textDocument_hover) then
         vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = bufnr })
     end
 
-    local ok, _ = pcall(require, 'fzf-lua')
-
     local mappings = {
         {
             Methods.textDocument_codeAction,
             'gra',
-            ok and '<cmd>FzfLua lsp_code_actions<CR>'
-                or vim.lsp.buf.code_action,
+            fzf_or('lsp_code_actions', vim.lsp.buf.code_action),
         },
         {
             Methods.textDocument_declaration,
             'gD',
-            ok and '<cmd>FzfLua lsp_declarations<CR>'
-                or vim.lsp.buf.declaration,
+            fzf_or('lsp_declarations', vim.lsp.buf.declaration),
         },
         {
             Methods.textDocument_definition,
             'gd',
-            ok and '<cmd>FzfLua lsp_definitions<CR>' or vim.lsp.buf.definition,
+            fzf_or('lsp_definitions', vim.lsp.buf.definition),
         },
         {
             Methods.textDocument_implementation,
             'gri',
-            ok and '<cmd>FzfLua lsp_implementations<CR>'
-                or vim.lsp.buf.implementation,
+            fzf_or('lsp_implementations', vim.lsp.buf.implementation),
         },
         {
             Methods.textDocument_references,
             'grr',
-            ok and '<cmd>FzfLua lsp_references<CR>' or vim.lsp.buf.references,
+            fzf_or('lsp_references', vim.lsp.buf.references),
         },
         {
             Methods.textDocument_typeDefinition,
             'grt',
-            ok and '<cmd>FzfLua lsp_typedefs<CR>'
-                or vim.lsp.buf.type_definition,
+            fzf_or('lsp_typedefs', vim.lsp.buf.type_definition),
         },
         {
             Methods.textDocument_documentSymbol,
             'gs',
-            ok and '<cmd>FzfLua lsp_document_symbols<CR>'
-                or vim.lsp.buf.document_symbol,
+            fzf_or('lsp_document_symbols', vim.lsp.buf.document_symbol),
         },
         {
             Methods.workspace_diagnostic,
             'gw',
-            ok and '<cmd>FzfLua lsp_workspace_diagnostics<CR>'
-                or vim.diagnostic.setqflist,
+            fzf_or('lsp_workspace_diagnostics', vim.diagnostic.setqflist),
         },
         {
             Methods.workspace_symbol,
             'gS',
-            ok and '<cmd>FzfLua lsp_workspace_symbols<CR>'
-                or vim.lsp.buf.workspace_symbol,
+            fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
         },
     }
 

@@ -46,8 +46,9 @@ vim.o.number = true
 vim.o.relativenumber = true
 vim.o.signcolumn = 'no'
 
-vim.o.statuscolumn = '%s%C %=%{v:relnum?v:relnum:v:lnum} '
-vim.o.statusline = " %{len(expand('%'))?expand('%:~').' ':''}%h%m%r%=%c:%l/%L %{&ft!=''?&ft:&bt} "
+vim.o.statuscolumn = "%{%v:virtnum?'':'%s%C %=%{v:relnum?v:relnum:v:lnum} '%}"
+vim.o.statusline =
+    " %{len(expand('%'))?expand('%:~').' ':''}%h%m%r%=%c:%l/%L %{&ft!=''?&ft:&bt} "
 
 vim.opt.path:append('**')
 

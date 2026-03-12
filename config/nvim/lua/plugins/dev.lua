@@ -161,10 +161,7 @@ return {
                         end
                     end
                 end,
-                group = vim.api.nvim_create_augroup(
-                    'AOil',
-                    { clear = true }
-                ),
+                group = vim.api.nvim_create_augroup('AOil', { clear = true }),
             })
         end,
         event = 'DeferredUIEnter',
@@ -335,7 +332,7 @@ return {
             vim.filetype.add({
                 extension = { puml = 'plantuml', pu = 'plantuml' },
             })
-            vim.fn.serverstart('/tmp/nvim-preview.sock')
+
             vim.api.nvim_create_autocmd('User', {
                 pattern = 'PreviewCompileSuccess',
                 callback = function(args)
@@ -369,7 +366,9 @@ return {
                 debug = false,
                 github = {
                     output = function(ctx)
-                        return '/tmp/' .. vim.fn.fnamemodify(ctx.file, ':t:r') .. '.html'
+                        return '/tmp/'
+                            .. vim.fn.fnamemodify(ctx.file, ':t:r')
+                            .. '.html'
                     end,
                 },
                 typst = { open = { 'sioyek', '--new-instance' } },

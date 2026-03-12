@@ -1,5 +1,5 @@
 return {
-    'barrettruth/fzf-lua',
+    'ibhagwan/fzf-lua',
     after = function()
         local fzf = require('fzf-lua')
         local has_nonicons = pcall(require, 'nonicons')
@@ -94,6 +94,7 @@ return {
             fzf_reload.reload()
         end
     end,
+    cmd = 'FzfLua',
     keys = {
         {
             '<c-t>',
