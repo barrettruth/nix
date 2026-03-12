@@ -161,7 +161,7 @@ in
       font_size 18
       status_bar_font_size 18
 
-      inverse_search_command nvim-inverse-search %1 %2
+      inverse_search_command ${repoDir}/scripts/nvim-inverse-search %1 %2
     '';
   };
 
