@@ -1,0 +1,12 @@
+#!/bin/sh
+file="$1"
+line="$2"
+
+for sock in /run/user/$(id -u)/nvim.*.0; do
+    [ -S "$sock" ] || continue
+    result=$(nvim --server "$sock" --remote-expr "bufnr('$file')" 2>/dev/null)
+    if [ "$result" != "-1" ] && [ -n "$result" ]; then
+        nvim --server "$sock" --remote-expr "execute('b +$line $file | normal! zz')"
+        exit 0
+    fi
+done
