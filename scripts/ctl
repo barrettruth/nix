@@ -548,33 +548,32 @@ dictate)
     rm -f "$dpid"
     sleep 0.2
     if [ ! -s "$daudio" ]; then
-      notify-send -a ctl "no audio"
+      notify-send -a ctl -t 1250 "no audio"
       exit 1
     fi
-    notify-send -a ctl "transcribing..."
+    notify-send -a ctl -t 1250 "transcribing..."
     text=$(whisper-cli \
       --model "$dmodel_file" \
       --language "${DICTATE_LANG:-en}" \
       --no-prints --no-timestamps \
-      "$daudio" 2>/dev/null)
+      "$daudio" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
     rm -f "$daudio"
-    text=$(printf '%s' "$text" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
     if [ -z "$text" ]; then
-      notify-send -a ctl "no speech detected"
+      notify-send -a ctl -t 1250 "no speech detected"
       exit 1
     fi
     printf '%s' "$text" | wl-copy
-    notify-send -a ctl "$text"
+    notify-send -a ctl -t 1250 "$text"
     exit 0
   fi
 
   if [ ! -f "$dmodel_file" ]; then
-    notify-send -a ctl "downloading whisper $dmodel model..."
+    notify-send -a ctl -t 1250 "downloading whisper $dmodel model..."
     mkdir -p "$dmodel_dir"
     curl -L -o "$dmodel_file" \
       "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-$dmodel.bin"
   fi
-  notify-send -a ctl "recording..."
+  notify-send -a ctl -t 1250 "recording..."
   pw-record "$daudio" &
   printf '%s' "$!" > "$dpid"
   ;;
