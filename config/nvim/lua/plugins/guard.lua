@@ -43,6 +43,8 @@ return {
         ft('sh,bash'):lint('shellcheck')
         ft('zsh'):lint('zsh')
 
+        ft('html'):fmt('prettierd')
+
         ft('proto'):fmt('buf'):lint('buf')
         ft('dockerfile'):lint('hadolint')
         ft('tex'):fmt('latexindent')
