@@ -1,14 +1,24 @@
-{ pkgs, ... }:
+{ pkgs, modulesPath, ... }:
 
 {
-  imports = [ ./disk-config.nix ];
+  imports = [
+    ./disk-config.nix
+    ./hardware-configuration.nix
+    (modulesPath + "/profiles/minimal.nix")
+    (modulesPath + "/profiles/headless.nix")
+  ];
 
   boot.loader.grub = {
     enable = true;
     efiSupport = true;
     efiInstallAsRemovable = true;
     device = "nodev";
+    configurationLimit = 3;
   };
+
+  documentation.enable = false;
+  hardware.enableRedistributableFirmware = false;
+  fonts.fontconfig.enable = false;
 
   networking = {
     hostName = "netcup";
@@ -93,15 +103,28 @@
 
   services.forgejo = {
     enable = true;
+    user = "git";
+    group = "git";
     settings = {
       server = {
         DOMAIN = "git.barrettruth.com";
         ROOT_URL = "https://git.barrettruth.com/";
         HTTP_PORT = 3000;
+        SSH_DOMAIN = "git.barrettruth.com";
       };
       service.DISABLE_REGISTRATION = true;
+      session.COOKIE_SECURE = true;
     };
   };
+
+  users.users.git = {
+    isSystemUser = true;
+    home = "/var/lib/forgejo";
+    group = "git";
+    shell = "${pkgs.bash}/bin/bash";
+  };
+
+  users.groups.git = { };
 
   environment.systemPackages = with pkgs; [
     vim
@@ -119,8 +142,13 @@
   nix.gc = {
     automatic = true;
     dates = "weekly";
-    options = "--delete-older-than 7d";
+    options = "--delete-older-than 3d";
   };
+
+  nix.extraOptions = ''
+    min-free = ${toString (100 * 1024 * 1024)}
+    max-free = ${toString (1024 * 1024 * 1024)}
+  '';
 
   system.stateVersion = "24.11";
 }
