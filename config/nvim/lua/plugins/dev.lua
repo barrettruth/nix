@@ -176,7 +176,15 @@ return {
             vim.g.pending = {
                 view = {
                     queue = {
-                        sort = { 'lol', 'dne', 'status', 'due', 'priority', 'order', 'id' },
+                        sort = {
+                            'lol',
+                            'dne',
+                            'status',
+                            'due',
+                            'priority',
+                            'order',
+                            'id',
+                        },
                     },
                     category = { hide_done_categories = true },
                 },
