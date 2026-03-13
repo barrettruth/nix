@@ -1,10 +1,4 @@
 {
-  "lazy.nvim": {
-    "branch": "main",
-    "commit": "85c7ff3711b730b4030d03144f6db6375044ae82"
-  },
-  "midnight.nvim": {
-    "branch": "main",
-    "commit": "fe062a6f2e5bd77cd8a260f61e6e12789eaf4f13"
-  }
+  "guard-collection": { "branch": "main", "commit": "edf6c86c06badc972964dadb7fd469022690cbf0" },
+  "guard.nvim": { "branch": "main", "commit": "addb8d2f40662b8b62d60dd7d18f503beb2332e7" }
 }

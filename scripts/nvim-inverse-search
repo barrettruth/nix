@@ -1,18 +1,13 @@
 #!/bin/sh
+
 file="$1"
 line="$2"
 
-echo "$(date) file='$file' line='$line'" >> ~/.debug
-
-for sock in /run/user/$(id -u)/nvim.*.0; do
-    [ -S "$sock" ] || continue
-    result=$(nvim --server "$sock" --remote-expr "bufnr('$file')" 2>&1)
-    echo "  sock='$sock' bufnr='$result'" >> ~/.debug
-    if [ "$result" != "-1" ] && [ -n "$result" ]; then
-        out=$(nvim --server "$sock" --remote-expr "execute('b +$line $file | normal! zz')" 2>&1)
-        echo "  -> sent, result='$out'" >> ~/.debug
-        exit 0
-    fi
+for sock in /run/user/"$(id -u)"/nvim.*.0; do
+  [ -S "$sock" ] || continue
+  result=$(nvim --headless --server "$sock" --remote-expr "bufnr('$file')" 2>/dev/null)
+  if [ "$result" != "-1" ] && [ -n "$result" ]; then
+    nvim --headless --server "$sock" --remote-expr "execute('b +$line $file | normal! zz')" >/dev/null 2>&1
+    exit 0
+  fi
 done
-
-echo "  -> no match found" >> ~/.debug
