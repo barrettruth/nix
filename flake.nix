@@ -11,6 +11,10 @@
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
     neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 };
 
   outputs =
@@ -21,6 +25,7 @@
       zen-browser,
       claude-code,
       neovim-nightly,
+      disko,
       ...
     }:
     let
@@ -153,10 +158,12 @@
         };
       };
 
-      homeConfigurations = {
-        "barrett@mac" = mkHome macConfig;
-        "barrett@mac-work" = mkHome macWorkConfig;
-        "barrett@linux-work" = mkHome linuxWorkConfig;
+      nixosConfigurations.netcup = nixpkgs.lib.nixosSystem {
+        modules = [
+          disko.nixosModules.disko
+          ./hosts/netcup/configuration.nix
+          { nixpkgs.hostPlatform = "x86_64-linux"; }
+        ];
       };
     };
 }

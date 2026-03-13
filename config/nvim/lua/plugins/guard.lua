@@ -25,7 +25,7 @@ return {
                 args = { '--profile', 'black', '-' },
                 stdin = true,
             })
-            :append('black')
+            :fmt('black')
             :lint('mypy')
 
         ft('lua'):fmt('stylua'):lint('selene')
@@ -52,7 +52,7 @@ return {
         ft('cmake'):fmt('cmake-format')
         ft('make'):lint('checkmake')
         ft('cpp'):lint('cpplint')
-        ft('markdown'):fmt('cbfmt'):append('prettierd')
+        ft('markdown'):fmt('cbfmt'):fmt('prettierd')
         local lint = require('guard.lint')
 
         ft('nix')

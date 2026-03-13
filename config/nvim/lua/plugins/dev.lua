@@ -174,6 +174,12 @@ return {
         'barrettruth/pending.nvim',
         before = function()
             vim.g.pending = {
+                view = {
+                    queue = {
+                        sort = { 'lol', 'dne', 'status', 'due', 'priority', 'order', 'id' },
+                    },
+                    category = { hide_done_categories = true },
+                },
                 debug = false,
                 sync = {
                     s3 = { bucket = 'pending.nvim', region = 'us-east-1' },
@@ -376,6 +382,19 @@ return {
                 mermaid = true,
                 latex = {
                     open = { 'sioyek', '--instance-name', 'preview' },
+                    args = function(ctx)
+                        local dir = vim.fn.fnamemodify(ctx.file, ':h')
+                            .. '/build'
+                        vim.fn.mkdir(dir, 'p')
+                        return {
+                            '-pdf',
+                            '-interaction=nonstopmode',
+                            '-synctex=1',
+                            '-output-directory=' .. dir,
+                            '-pdflatex=pdflatex -file-line-error %O %S',
+                            ctx.file,
+                        }
+                    end,
                     output = function(ctx)
                         return vim.fn.fnamemodify(ctx.file, ':h')
                             .. '/build/'
