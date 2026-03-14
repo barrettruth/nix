@@ -78,6 +78,7 @@ return {
                     -- treesitter = { max_lines = 10 },
                     intra = {
                         enabled = true,
+                        algorithm = 'vscode',
                         max_lines = 500,
                     },
                 },
@@ -177,8 +178,6 @@ return {
                 view = {
                     queue = {
                         sort = {
-                            'lol',
-                            'dne',
                             'status',
                             'due',
                             'priority',
@@ -197,8 +196,6 @@ return {
                     or (os.getenv('HOME') .. '/.local/state')
                 ) .. '/nvim/pending/tasks.json',
                 date_format = '%d/%m/%y',
-                date_syntax = 'd',
-                recur_syntax = 'r',
                 input_date_formats = { '%d/%m/%Y', '%d/%m/%y' },
                 drawer_height = vim.o.lines,
             }
