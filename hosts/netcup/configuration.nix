@@ -139,7 +139,10 @@
       Type = "oneshot";
       EnvironmentFile = "/etc/vaultwarden-r2-backup.env";
     };
-    path = [ pkgs.awscli2 pkgs.gawk ];
+    path = [
+      pkgs.awscli2
+      pkgs.gawk
+    ];
     script = ''
       export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
       export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
