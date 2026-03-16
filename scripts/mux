@@ -114,15 +114,15 @@ bar)
     fi
     star="#{?#{==:#S,$sname},*,}"
     [ -n "$bar_content" ] && bar_content="$bar_content │ "
-    bar_content="$bar_content#[range=session|${sid}]$key:$sname$star#[norange]"
+    bar_content="$bar_content#[range=session|${sid}]${star}$key:$sname#[norange]"
     i=$((i + 1))
   done
   set +f
   tmux set -g status-left-length 80
   tmux set -g status-right-length 80
   tmux set -g status-left ' '
-  tmux set -g window-status-format '#[range=window|#{window_index}]#{window_index}:#{window_name}#{window_flags}#[norange]'
-  tmux set -g window-status-current-format '#[range=window|#{window_index}]#{window_index}:#{window_name}#{window_flags}#[norange]'
+  tmux set -g window-status-format '#[range=window|#{window_index}]#{?window_last_flag,-,}#{window_index}:#{window_name}#[norange]'
+  tmux set -g window-status-current-format '#[range=window|#{window_index}]*#{window_index}:#{window_name}#[norange]'
   tmux set -g window-status-separator ' │ '
   tmux set -g @bar-content "$indicator $bar_content "
   ;;
