@@ -69,7 +69,7 @@
       "src": "https://github.com/catgoose/nvim-colorizer.lua"
     },
     "nvim-lspconfig": {
-      "rev": "f386df19b145607a33885b6110ef5c04faae42cb",
+      "rev": "1d13d2b0df9a0a02904c76d7ad6810f71d404406",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-surround": {
