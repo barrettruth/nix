@@ -38,6 +38,7 @@ vim.o.list = true
 vim.opt.listchars = {
     space = ' ',
     trail = '·',
+    tab = '··',
 }
 
 vim.opt.matchpairs:append('<:>')
