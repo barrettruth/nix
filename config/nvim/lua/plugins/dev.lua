@@ -350,6 +350,12 @@ return {
                     synctex_pdf[args.data.bufnr] = args.data.output
                 end,
             })
+            vim.api.nvim_create_autocmd('User', {
+                pattern = 'PreviewWatchingStopped',
+                callback = function(args)
+                    synctex_pdf[args.data.bufnr] = nil
+                end,
+            })
             vim.api.nvim_create_autocmd('CursorHold', {
                 group = vim.api.nvim_create_augroup(
                     'APreviewSynctex',
