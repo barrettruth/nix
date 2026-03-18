@@ -18,7 +18,7 @@ local function zoom()
         border = 'none',
     }
     zoom_winid = vim.api.nvim_open_win(0, true, cfg)
-    vim.cmd.normal('zz', { bang = true })
+    vim.cmd('normal! zz')
     vim.api.nvim_create_autocmd('VimResized', {
         group = vim.api.nvim_create_augroup('Zoom', { clear = true }),
         callback = function()
