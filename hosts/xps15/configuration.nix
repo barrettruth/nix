@@ -47,6 +47,12 @@ in
     "quiet"
   ];
 
+  boot.kernel.sysctl = {
+    "net.ipv4.ipfrag_time" = 3;
+    "net.ipv4.ipfrag_high_thresh" = 134217728;
+    "net.core.rmem_max" = 2147483647;
+  };
+
   networking.hostName = "xps15";
   networking.wireless.iwd = {
     enable = true;
