@@ -36,12 +36,11 @@ for _, server in ipairs({
     'lua_ls',
     'ruff',
     'tinymist',
+    'vimdoc_ls',
 }) do
     local ok, config = pcall(require, 'lsp.' .. server)
     if ok and config then
         vim.lsp.config(server, config)
-    else
-        vim.lsp.config(server, {})
     end
     vim.lsp.enable(server)
 end

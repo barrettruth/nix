@@ -7,6 +7,7 @@ local dev_plugins = {
     'diffs.nvim',
     'preview.nvim',
     'fzf-lua',
+    'nvim-lspconfig',
 }
 
 local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
