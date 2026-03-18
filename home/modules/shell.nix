@@ -209,13 +209,13 @@ in
 
   programs.zsh = {
     enable = true;
-    dotDir = "${config.xdg.configHome}/zsh";
+    dotDir = ".config/zsh";
     completionInit = "";
 
     history = {
       path = "${config.xdg.stateHome}/zsh_history";
-      size = 2000;
-      save = 2000;
+      size = 50000;
+      save = 50000;
       ignoreDups = true;
       ignoreAllDups = true;
       ignoreSpace = true;
