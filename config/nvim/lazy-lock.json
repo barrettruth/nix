@@ -1,4 +1,10 @@
 {
-  "guard-collection": { "branch": "main", "commit": "edf6c86c06badc972964dadb7fd469022690cbf0" },
-  "guard.nvim": { "branch": "main", "commit": "addb8d2f40662b8b62d60dd7d18f503beb2332e7" }
+  "guard-collection": {
+    "branch": "main",
+    "commit": "edf6c86c06badc972964dadb7fd469022690cbf0"
+  },
+  "guard.nvim": {
+    "branch": "main",
+    "commit": "addb8d2f40662b8b62d60dd7d18f503beb2332e7"
+  }
 }
