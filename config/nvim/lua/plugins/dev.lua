@@ -2,6 +2,7 @@ local dev_plugins = {
     'midnight.nvim',
     'live-server.nvim',
     'canola.nvim',
+    'canola-collection',
     'pending.nvim',
     'cp.nvim',
     'diffs.nvim',
@@ -19,45 +20,6 @@ for _, name in ipairs(dev_plugins) do
     end
 end
 
-local function parse_output(proc)
-    local result = proc:wait()
-    local ret = {}
-    if result.code == 0 then
-        for line in
-            vim.gsplit(result.stdout, '\n', { plain = true, trimempty = true })
-        do
-            ret[line:gsub('/$', '')] = true
-        end
-    end
-    return ret
-end
-
-local function new_git_status()
-    return setmetatable({}, {
-        __index = function(self, key)
-            local ignored_proc = vim.system({
-                'git',
-                'ls-files',
-                '--ignored',
-                '--exclude-standard',
-                '--others',
-                '--directory',
-            }, { cwd = key, text = true })
-            local tracked_proc = vim.system(
-                { 'git', 'ls-tree', 'HEAD', '--name-only' },
-                { cwd = key, text = true }
-            )
-            local ret = {
-                ignored = parse_output(ignored_proc),
-                tracked = parse_output(tracked_proc),
-            }
-            rawset(self, key, ret)
-            return ret
-        end,
-    })
-end
-
-local git_status = new_git_status()
 local synctex_pdf = {}
 
 return {
@@ -107,65 +69,26 @@ return {
         'barrettruth/canola.nvim',
         branch = 'canola',
         enabled = true,
-        after = function()
-            require('canola').setup({
-                skip_confirm_for_simple_edits = true,
-                cleanup_buffers_on_delete = true,
-                prompt_save_on_select_new_entry = false,
+        before = function()
+            vim.g.canola = {
+                confirm = 'delete',
+                save = false,
+                delete = { wipe = true },
                 float = { border = 'single' },
-                view_options = {
-                    is_hidden_file = function(name, bufnr)
-                        local dir = require('canola').get_current_dir(bufnr)
-                        local is_dotfile = vim.startswith(name, '.')
-                            and name ~= '..'
-                        if not dir then
-                            return is_dotfile
-                        end
-                        if is_dotfile then
-                            return not git_status[dir].tracked[name]
-                        else
-                            return git_status[dir].ignored[name]
-                        end
-                    end,
-                },
                 keymaps = {
                     ['<c-h>'] = false,
                     ['<c-t>'] = false,
                     ['<c-l>'] = false,
                     ['<c-r>'] = 'actions.refresh',
-                    ['<c-s>'] = { 'actions.select', opts = { vertical = true } },
                     ['<c-x>'] = {
-                        'actions.select',
+                        callback = 'actions.select',
                         opts = { horizontal = true },
                     },
-                    q = function()
-                        local ok, bufremove = pcall(require, 'mini.bufremove')
-                        if ok then
-                            bufremove.delete()
-                        else
-                            vim.cmd.bd()
-                        end
-                    end,
                 },
-            })
-            local refresh = require('canola.actions').refresh
-            local orig_refresh = refresh.callback
-            refresh.callback = function(...)
-                git_status = new_git_status()
-                orig_refresh(...)
-            end
-            vim.api.nvim_create_autocmd('BufEnter', {
-                callback = function()
-                    local ft = vim.bo.filetype
-                    if ft == '' then
-                        local path = vim.fn.expand('%:p')
-                        if vim.fn.isdirectory(path) == 1 then
-                            vim.cmd('Canola ' .. path)
-                        end
-                    end
-                end,
-                group = vim.api.nvim_create_augroup('ACanola', { clear = true }),
-            })
+            }
+        end,
+        after = function()
+            vim.cmd.packadd('canola-collection')
         end,
         event = 'DeferredUIEnter',
         keys = {

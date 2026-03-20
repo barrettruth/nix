@@ -67,7 +67,7 @@ in
   services.pcscd.enable = true;
   documentation.man = {
     enable = true;
-    generateCaches = true;
+    cache.enable = true;
   };
 
   i18n.defaultLocale = "en_US.UTF-8";
