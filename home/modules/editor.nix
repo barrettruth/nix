@@ -79,6 +79,8 @@ in
   xdg.configFile."nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/nix/config/nvim";
 
+  xdg.configFile."nvim/init.lua".enable = false;
+
   xdg.configFile."latexmk/latexmkrc".text = ''
     $out_dir = "build";
     $pdf_mode = 1;

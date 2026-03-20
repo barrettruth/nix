@@ -11,6 +11,7 @@
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
     neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
+    nixpkgs-master.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -20,6 +21,7 @@
   outputs =
     {
       nixpkgs,
+      nixpkgs-master,
       home-manager,
       nixos-hardware,
       zen-browser,
@@ -29,9 +31,12 @@
       ...
     }:
     let
+      pinnedPkgs = import nixpkgs-master { system = "x86_64-linux"; };
+
       overlays = [
         claude-code.overlays.default
         neovim-nightly.overlays.default
+        (_: _: { bitwarden-desktop = pinnedPkgs.bitwarden-desktop; })
       ];
 
       sharedUnfree = [
