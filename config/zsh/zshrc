@@ -54,4 +54,13 @@ fzf-config-widget() {
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
+if [[ -f /etc/NIXOS ]]; then
+  _nix_profile_gen=$(readlink /etc/profiles/per-user/$USER 2>/dev/null)
+  precmd_rehash() {
+    local cur=$(readlink /etc/profiles/per-user/$USER 2>/dev/null)
+    [[ "$cur" != "$_nix_profile_gen" ]] && { _nix_profile_gen=$cur; rehash; }
+  }
+  precmd_functions+=(precmd_rehash)
+fi
+
 [[ ! -r "$OPAMROOT/opam-init/init.zsh" ]] || source "$OPAMROOT/opam-init/init.zsh" > /dev/null 2> /dev/null

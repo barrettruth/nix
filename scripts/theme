@@ -14,7 +14,13 @@ require gsettings
 themes="daylight
 midnight"
 
-if [ -n "$1" ]; then
+if [ "$1" = "toggle" ]; then
+  current="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)"
+  case "$current" in
+  midnight) theme="daylight" ;;
+  *) theme="midnight" ;;
+  esac
+elif [ -n "$1" ]; then
   theme="$1"
 else
   case "$(uname)" in

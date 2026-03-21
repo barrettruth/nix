@@ -71,6 +71,8 @@ return {
         enabled = true,
         before = function()
             vim.g.canola = {
+                columns = { 'icon', 'permissions', 'size', 'mtime' },
+                highlights = { filename = {}, columns = true },
                 confirm = 'delete',
                 save = false,
                 delete = { wipe = true },
@@ -101,6 +103,7 @@ return {
         before = function()
             vim.g.pending = {
                 view = {
+                    calendar = { first_day = 'sunday', day_format = '%a %d/%m', title_format = '%d/%m/%Y' },
                     queue = {
                         sort = {
                             'status',
@@ -120,7 +123,7 @@ return {
                     os.getenv('XDG_STATE_HOME')
                     or (os.getenv('HOME') .. '/.local/state')
                 ) .. '/nvim/pending/tasks.json',
-                date_format = '%d/%m/%y',
+                date_format = '%d/%m/%Y',
                 input_date_formats = { '%d/%m/%Y', '%d/%m/%y' },
                 drawer_height = vim.o.lines,
             }
