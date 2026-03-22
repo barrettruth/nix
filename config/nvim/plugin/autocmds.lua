@@ -57,3 +57,4 @@ vim.api.nvim_create_autocmd('WinLeave', {
         vim.wo.cursorline = false
     end,
 })
+
