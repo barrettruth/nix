@@ -71,10 +71,11 @@ return {
         enabled = true,
         before = function()
             vim.g.canola = {
-                columns = { 'icon', 'permissions', 'size', 'mtime' },
+                columns = {},
                 highlights = { filename = {}, columns = true },
                 confirm = 'delete',
                 save = false,
+                extglob = true,
                 delete = { wipe = true },
                 float = { border = 'single' },
                 keymaps = {
@@ -91,6 +92,49 @@ return {
         end,
         after = function()
             vim.cmd.packadd('canola-collection')
+
+            local show_all = false
+            vim.api.nvim_create_autocmd('FileType', {
+                pattern = 'canola',
+                callback = function(args)
+                    local bufnr = args.buf
+
+                    vim.keymap.set('n', 'gC', function()
+                        show_all = not show_all
+                        if show_all then
+                            require('canola').set_columns({ 'git_status', 'permissions', 'owner', 'size', 'mtime' })
+                        else
+                            require('canola').set_columns({})
+                        end
+                    end, { buffer = bufnr })
+
+                    vim.keymap.set('n', 'gX', function()
+                        local canola = require('canola')
+                        local entry = canola.get_cursor_entry()
+                        local dir = canola.get_current_dir()
+                        if not entry or not dir then
+                            return
+                        end
+                        local path = dir .. entry.name
+                        vim.ui.input({ prompt = 'chmod: ', default = '755' }, function(mode)
+                            if not mode then
+                                return
+                            end
+                            vim.uv.fs_chmod(path, tonumber(mode, 8), function(err)
+                                if err then
+                                    vim.schedule(function()
+                                        vim.notify(err, vim.log.levels.ERROR)
+                                    end)
+                                    return
+                                end
+                                vim.schedule(function()
+                                    require('canola.actions').refresh.callback()
+                                end)
+                            end)
+                        end)
+                    end, { buffer = bufnr })
+                end,
+            })
         end,
         event = 'DeferredUIEnter',
         keys = {
