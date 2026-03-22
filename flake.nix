@@ -16,6 +16,8 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    direnv-instant.url = "github:Mic92/direnv-instant";
+    vimdoc-language-server.url = "github:barrettruth/vimdoc-language-server";
   };
 
   outputs =
@@ -28,6 +30,8 @@
       claude-code,
       neovim-nightly,
       disko,
+      direnv-instant,
+      vimdoc-language-server,
       ...
     }:
     let
@@ -44,7 +48,6 @@
         "claude-code"
         "claude"
         "apple_cursor"
-        "graphite-cli"
       ];
 
       mkPkgs =
@@ -99,27 +102,45 @@
           extraSpecialArgs = {
             inherit zen-browser hostConfig;
           };
-          modules = [ ./home/home.nix ];
+          modules = [
+            direnv-instant.homeModules.direnv-instant
+            ./home/home.nix
+          ];
         };
     in
     {
       formatter.x86_64-linux = (mkPkgs "x86_64-linux" [ ]).nixfmt-tree;
 
-      devShells.x86_64-linux.default =
+      devShells.x86_64-linux =
         let
           pkgs = mkPkgs "x86_64-linux" [ ];
         in
-        pkgs.mkShell {
-          packages = [
-            pkgs.deadnix
-            pkgs.statix
-            pkgs.nixfmt
-            pkgs.pre-commit
-            pkgs.nodePackages.prettier
-            pkgs.shfmt
-            pkgs.stylua
-            pkgs.selene
-          ];
+        {
+          default = pkgs.mkShell {
+            packages = [
+              pkgs.deadnix
+              pkgs.statix
+              pkgs.nixfmt
+              pkgs.pre-commit
+              pkgs.nodePackages.prettier
+              pkgs.shfmt
+              pkgs.stylua
+              pkgs.selene
+            ];
+          };
+          neovim = pkgs.mkShell {
+            packages = [
+              pkgs.prettier
+              pkgs.stylua
+              pkgs.selene
+              pkgs.lua-language-server
+              vimdoc-language-server.packages.x86_64-linux.default
+              (pkgs.luajit.withPackages (ps: [
+                ps.busted
+                ps.nlua
+              ]))
+            ];
+          };
         };
 
       nixosConfigurations.xps15 = nixpkgs.lib.nixosSystem {
@@ -151,6 +172,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "bak";
+            home-manager.sharedModules = [ direnv-instant.homeModules.direnv-instant ];
             home-manager.users.barrett = import ./home/home.nix;
             home-manager.extraSpecialArgs = {
               inherit zen-browser;

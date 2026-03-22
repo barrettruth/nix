@@ -73,10 +73,10 @@ return {
             vim.g.canola = {
                 columns = {},
                 highlights = { filename = {}, columns = true },
-                confirm = 'delete',
-                save = false,
+                confirm = true,
+                save = 'auto',
                 extglob = true,
-                delete = { wipe = true },
+                delete = { wipe = true, recursive = true },
                 float = { border = 'single' },
                 keymaps = {
                     ['<c-h>'] = false,
