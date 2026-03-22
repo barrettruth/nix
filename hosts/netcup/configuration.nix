@@ -115,6 +115,10 @@
       };
       service.DISABLE_REGISTRATION = true;
       session.COOKIE_SECURE = true;
+      mirror = {
+        DEFAULT_INTERVAL = "1h";
+        MIN_INTERVAL = "10m";
+      };
     };
   };
 
@@ -168,6 +172,69 @@
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
+      Persistent = true;
+    };
+  };
+
+  systemd.services.forgejo-mirror-sync = {
+    description = "Auto-discover and sync GitHub repos to Forgejo mirrors";
+    after = [ "forgejo.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      EnvironmentFile = "/etc/forgejo-mirror.env";
+    };
+    path = with pkgs; [
+      curl
+      jq
+    ];
+    script = ''
+      set -euo pipefail
+
+      gh_repos=$(curl -sf -H "Authorization: token $GITHUB_TOKEN" \
+        "https://api.github.com/user/repos?per_page=100&type=owner" \
+        | jq -r '.[].full_name')
+
+      fg_repos=$(curl -sf -H "Authorization: token $FORGEJO_TOKEN" \
+        "$FORGEJO_URL/api/v1/user/repos?limit=50" \
+        | jq -r '.[].name')
+
+      for full_name in $gh_repos; do
+        repo_name=''${full_name#*/}
+
+        if echo "$fg_repos" | grep -qx "$repo_name"; then
+          curl -sf -X POST \
+            -H "Authorization: token $FORGEJO_TOKEN" \
+            "$FORGEJO_URL/api/v1/repos/$FORGEJO_OWNER/$repo_name/mirror-sync" \
+            || echo "sync failed: $repo_name" >&2
+        else
+          echo "creating mirror: $repo_name"
+          curl -sf -X POST \
+            -H "Authorization: token $FORGEJO_TOKEN" \
+            -H "Content-Type: application/json" \
+            "$FORGEJO_URL/api/v1/repos/migrate" \
+            -d "$(jq -n \
+              --arg addr "https://github.com/$full_name.git" \
+              --arg name "$repo_name" \
+              --arg owner "$FORGEJO_OWNER" \
+              --arg token "$GITHUB_TOKEN" \
+              '{
+                clone_addr: $addr,
+                repo_name: $name,
+                repo_owner: $owner,
+                mirror: true,
+                auth_token: $token,
+                service: "github"
+              }')" \
+            || echo "migrate failed: $repo_name" >&2
+        fi
+      done
+    '';
+  };
+
+  systemd.timers.forgejo-mirror-sync = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "hourly";
       Persistent = true;
     };
   };
