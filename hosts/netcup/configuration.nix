@@ -88,6 +88,11 @@
       forceSSL = true;
       locations."/".proxyPass = "http://127.0.0.1:3000";
     };
+    virtualHosts."delta.barrettruth.com" = {
+      enableACME = true;
+      forceSSL = true;
+      locations."/".proxyPass = "http://127.0.0.1:3001";
+    };
   };
 
   services.vaultwarden = {
@@ -134,6 +139,8 @@
   environment.systemPackages = with pkgs; [
     vim
     git
+    nodejs_22
+    pnpm
   ];
 
   systemd.services.vaultwarden-r2-backup = {
@@ -190,25 +197,87 @@
     script = ''
       set -euo pipefail
 
-      gh_repos=$(curl -sf -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/user/repos?per_page=100&type=owner" \
-        | jq -r '.[].full_name')
+      log() { echo "[forgejo-mirror-sync] $1"; }
+      err() { echo "[forgejo-mirror-sync] ERROR: $1" >&2; }
 
-      fg_repos=$(curl -sf -H "Authorization: token $FORGEJO_TOKEN" \
-        "$FORGEJO_URL/api/v1/user/repos?limit=50" \
-        | jq -r '.[].name')
+      api_call() {
+        local response http_code body
+        response=$(curl -s -w "\n%{http_code}" "$@")
+        http_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        if [ "$http_code" -ge 400 ]; then
+          err "HTTP $http_code from $2"
+          err "Response: $body"
+          return 1
+        fi
+        echo "$body"
+      }
+
+      log "validating GitHub token..."
+      gh_user=$(api_call -H "Authorization: token $GITHUB_TOKEN" \
+        "https://api.github.com/user" | jq -r '.login') \
+        || { err "GitHub token is invalid or expired"; exit 1; }
+      log "authenticated to GitHub as $gh_user"
+
+      log "validating Forgejo token..."
+      fg_user=$(api_call -H "Authorization: token $FORGEJO_TOKEN" \
+        "$FORGEJO_URL/api/v1/user" | jq -r '.login') \
+        || { err "Forgejo token is invalid or expired — regenerate at $FORGEJO_URL/user/settings/applications"; exit 1; }
+      log "authenticated to Forgejo as $fg_user"
+
+      log "fetching GitHub repos..."
+      gh_repos=""
+      gh_page=1
+      while true; do
+        page_data=$(api_call -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/user/repos?per_page=100&type=owner&page=$gh_page") \
+          || { err "failed to fetch GitHub repos (page $gh_page)"; exit 1; }
+        page_repos=$(echo "$page_data" | jq -r '.[].full_name')
+        [ -z "$page_repos" ] && break
+        gh_repos="''${gh_repos:+$gh_repos
+      }$page_repos"
+        gh_page=$((gh_page + 1))
+      done
+      gh_count=$(echo "$gh_repos" | grep -c . || true)
+      log "found $gh_count GitHub repos"
+
+      log "fetching Forgejo repos..."
+      fg_repos=""
+      fg_page=1
+      while true; do
+        page_data=$(api_call -H "Authorization: token $FORGEJO_TOKEN" \
+          "$FORGEJO_URL/api/v1/user/repos?limit=50&page=$fg_page") \
+          || { err "failed to fetch Forgejo repos (page $fg_page)"; exit 1; }
+        page_repos=$(echo "$page_data" | jq -r '.[].name')
+        [ -z "$page_repos" ] && break
+        fg_repos="''${fg_repos:+$fg_repos
+      }$page_repos"
+        fg_page=$((fg_page + 1))
+      done
+      fg_count=$(echo "$fg_repos" | grep -c . || true)
+      log "found $fg_count Forgejo repos"
+
+      synced=0
+      created=0
+      failed=0
 
       for full_name in $gh_repos; do
         repo_name=''${full_name#*/}
 
         if echo "$fg_repos" | grep -qx "$repo_name"; then
-          curl -sf -X POST \
+          log "syncing $repo_name..."
+          if api_call -X POST \
             -H "Authorization: token $FORGEJO_TOKEN" \
             "$FORGEJO_URL/api/v1/repos/$FORGEJO_OWNER/$repo_name/mirror-sync" \
-            || echo "sync failed: $repo_name" >&2
+            > /dev/null; then
+            synced=$((synced + 1))
+          else
+            err "sync failed for $repo_name"
+            failed=$((failed + 1))
+          fi
         else
-          echo "creating mirror: $repo_name"
-          curl -sf -X POST \
+          log "creating mirror: $repo_name..."
+          if api_call -X POST \
             -H "Authorization: token $FORGEJO_TOKEN" \
             -H "Content-Type: application/json" \
             "$FORGEJO_URL/api/v1/repos/migrate" \
@@ -225,9 +294,17 @@
                 auth_token: $token,
                 service: "github"
               }')" \
-            || echo "migrate failed: $repo_name" >&2
+            > /dev/null; then
+            created=$((created + 1))
+          else
+            err "migrate failed for $repo_name"
+            failed=$((failed + 1))
+          fi
         fi
       done
+
+      log "done: $synced synced, $created created, $failed failed"
+      [ "$failed" -eq 0 ]
     '';
   };
 
@@ -235,6 +312,75 @@
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "hourly";
+      Persistent = true;
+    };
+  };
+
+  users.users.delta = {
+    isSystemUser = true;
+    home = "/opt/delta";
+    group = "delta";
+  };
+
+  users.groups.delta = { };
+
+  systemd.services.delta = {
+    description = "delta - personal todo/productivity platform";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "simple";
+      WorkingDirectory = "/opt/delta";
+      ExecStart = "${pkgs.nodejs_22}/bin/node .next/standalone/server.js";
+      Restart = "on-failure";
+      RestartSec = 5;
+      User = "delta";
+      Group = "delta";
+      StateDirectory = "delta";
+    };
+    environment = {
+      NODE_ENV = "production";
+      PORT = "3001";
+      HOSTNAME = "127.0.0.1";
+      DATABASE_URL = "/var/lib/delta/data.db";
+    };
+  };
+
+  systemd.services.delta-r2-backup = {
+    description = "Backup delta SQLite to Cloudflare R2";
+    serviceConfig = {
+      Type = "oneshot";
+      EnvironmentFile = "/etc/delta-r2-backup.env";
+    };
+    path = [
+      pkgs.awscli2
+      pkgs.gawk
+    ];
+    script = ''
+      export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+      export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+      ENDPOINT="$R2_ENDPOINT"
+      DATE=$(date +%Y-%m-%d)
+
+      aws s3 cp /var/lib/delta/data.db \
+        "s3://delta/$DATE/data.db" \
+        --endpoint-url "$ENDPOINT"
+
+      CUTOFF=$(date -d '30 days ago' +%Y-%m-%d)
+      aws s3 ls s3://delta/ --endpoint-url "$ENDPOINT" \
+        | awk '{print $2}' | tr -d '/' \
+        | while read dir; do
+            if [ "$dir" \< "$CUTOFF" ]; then
+              aws s3 rm "s3://delta/$dir" --recursive --endpoint-url "$ENDPOINT"
+            fi
+          done
+    '';
+  };
+
+  systemd.timers.delta-r2-backup = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
       Persistent = true;
     };
   };

@@ -7,10 +7,21 @@ Create a conventional commit from staged or unstaged changes.
 1. Run exactly this one Bash command:
 
    ```
-   git status --short && echo "---DIFF---" && git diff --cached && echo "---LOG---" && git log --oneline -5
+   echo "---BRANCH---" && git branch --show-current && echo "---STATUS---" && git status --short && echo "---DIFF---" && git diff --cached && echo "---LOG---" && git log --oneline -5
    ```
 
-2. If the diff section is empty (nothing staged), ask the user which files to
+2. **If on `main` or `master`**: create a feature branch before anything else.
+   Infer the branch name from the staged diff or status (e.g. `fix/off-by-one`,
+   `feat/add-filter`). Run:
+
+   ```
+   git checkout -b type/short-description
+   ```
+
+   Use the standard type prefixes: feat/, fix/, refactor/, docs/, test/, perf/,
+   ci/, build/.
+
+3. If the diff section is empty (nothing staged), ask the user which files to
    stage from the status list. Then run exactly one Bash command:
 
    ```
@@ -19,7 +30,7 @@ Create a conventional commit from staged or unstaged changes.
 
    Do NOT re-run status or log — you already have them.
 
-3. Draft the commit message. Rules:
+4. Draft the commit message. Rules:
    - Header: `type(scope): imperative summary` — max 72 chars, lowercase after
      colon, no trailing period.
    - Valid types: `feat` `fix` `docs` `refactor` `perf` `test` `ci` `build` `revert`
@@ -32,9 +43,9 @@ Create a conventional commit from staged or unstaged changes.
      (e.g. `setup()`, `lua/pending/store.lua`).
    - Match the style of the recent commits from step 1.
 
-4. Present the full message and ask for approval.
+5. Present the full message and ask for approval.
 
-5. After approval, run exactly one Bash command:
+6. After approval, run exactly one Bash command:
    ```
    git commit -m "$(cat <<'EOF'
    <message here>
@@ -42,7 +53,7 @@ Create a conventional commit from staged or unstaged changes.
    )"
    ```
 
-Total: 2 Bash calls (gather + commit), or 3 if staging was needed. Do not run
+Total: 2-4 Bash calls (gather, maybe branch, maybe stage, commit). Do not run
 any other commands. Do not read files, explore code, or run additional git
 commands beyond what is listed above.
 

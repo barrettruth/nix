@@ -7,10 +7,14 @@ Create a pull request from the current branch.
 1. Run exactly this one Bash command:
 
    ```
-   echo "---BRANCH---" && git branch --show-current && echo "---LOG---" && git log --oneline main..HEAD && echo "---STAT---" && git diff main...HEAD --stat && echo "---TEMPLATE---" && cat .github/pull_request_template.md 2>/dev/null || true
+   echo "---BRANCH---" && git branch --show-current && echo "---LOG---" && git log --oneline main..HEAD 2>/dev/null && echo "---STAT---" && git diff main...HEAD --stat 2>/dev/null && echo "---TEMPLATE---" && cat .github/pull_request_template.md 2>/dev/null || true
    ```
 
-   If the branch is `main` or `master`, tell the user and stop.
+   **If on `main` or `master`, stop immediately.** Tell the user: "You're on
+   main. Use /gc to commit first (it will auto-create a branch), then run /pr."
+   Do NOT attempt to create a branch or commit here — that is /gc's job.
+
+   **If there are no commits ahead of main**, stop. Nothing to PR.
 
 2. Draft the PR using the commit log and diffstat (do NOT run `git diff` for the
    full diff — you already have conversation context from the work you did):
@@ -41,25 +45,36 @@ Create a pull request from the current branch.
 
    If it fails, show the output and stop. Do NOT create the PR.
 
-5. Push the branch:
+5. Push and create the PR in one step. Run exactly one Bash command:
 
    ```
-   git push -u origin HEAD
-   ```
-
-   If GPG signing fails, retry with `--no-gpg-sign`.
-
-6. Run exactly one Bash command:
-   ```
-   gh pr create --title "<title>" --body "$(cat <<'EOF'
+   git push -u origin HEAD && gh pr create --title "<title>" --body "$(cat <<'EOF'
    <body here>
    EOF
    )"
    ```
+
+   If GPG signing fails, retry with `--no-gpg-sign`.
    Print the PR URL from the output.
 
-Total: 3 Bash calls (gather + push + create), or 4 if CI ran. Do not run any
-other commands. Do not read files, explore code, or run additional git commands
-beyond what is listed above.
+6. **Post-PR conflict check.** Run exactly one Bash command:
 
-Never force-push, even with lease. Never target main/master as the head branch.
+   ```
+   git fetch origin main && git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main 2>/dev/null | head -20
+   ```
+
+   If the output contains conflict markers, tell the user there are merge
+   conflicts and offer to rebase.
+
+7. **Issue check.** Run exactly one Bash command:
+
+   ```
+   gh issue list --state open --limit 10
+   ```
+
+   If any open issues are related to this PR's changes, mention them and ask
+   if any should be linked or closed.
+
+Total: 3-5 Bash calls. Do not run any other commands beyond what is listed.
+
+Never force-push. Never target main/master as the head branch.

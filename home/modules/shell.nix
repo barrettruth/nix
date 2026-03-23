@@ -357,6 +357,17 @@ in
             ];
           }
         ];
+        PostToolUse = [
+          {
+            matcher = "Bash";
+            hooks = [
+              {
+                type = "command";
+                command = "${config.xdg.configHome}/claude/hooks/post-push.sh";
+              }
+            ];
+          }
+        ];
       };
     };
   };
