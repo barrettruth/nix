@@ -131,16 +131,9 @@ end
 ---@return string[]
 function M:pr_base_cmd(num)
     return {
-        'glab',
-        'mr',
-        'view',
-        num,
-        '--output',
-        'json',
-        '--json',
-        'target_branch',
-        '--jq',
-        '.target_branch',
+        'sh',
+        '-c',
+        ('glab mr view %s -F json | jq -r .target_branch'):format(num),
     }
 end
 
@@ -148,17 +141,9 @@ end
 ---@return string[]
 function M:pr_for_branch_cmd(branch)
     return {
-        'glab',
-        'mr',
-        'list',
-        '--source-branch',
-        branch,
-        '--output',
-        'json',
-        '--json',
-        'iid',
-        '--jq',
-        '.[0].iid',
+        'sh',
+        '-c',
+        ("glab mr list --source-branch '%s' -F json | jq -r '.[0].iid // empty'"):format(branch),
     }
 end
 
@@ -174,7 +159,12 @@ end
 ---@return string[]
 function M:check_log_cmd(run_id, failed_only)
     local _ = failed_only
-    return { 'glab', 'ci', 'trace', run_id }
+    local lines = forge.config().ci.lines
+    return {
+        'sh',
+        '-c',
+        ('glab ci trace %s | tail -n %d'):format(run_id, lines),
+    }
 end
 
 ---@param run_id string
