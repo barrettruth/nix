@@ -8,6 +8,11 @@ local M = {
     labels = { issue = 'Issues', pr = 'PRs' },
 }
 
+local function nwo()
+    local url = forge.remote_web_url()
+    return url:match('github%.com/(.+)$') or ''
+end
+
 ---@param kind string
 ---@param state string
 ---@return string
@@ -148,15 +153,24 @@ end
 ---@param failed_only boolean
 ---@return string[]
 function M:check_log_cmd(run_id, failed_only)
-    local cmd = { 'gh', 'run', 'view', run_id }
-    table.insert(cmd, failed_only and '--log-failed' or '--log')
-    return cmd
+    local lines = forge.config().ci.lines
+    local flag = failed_only and '--log-failed' or '--log'
+    return {
+        'sh',
+        '-c',
+        ('gh run view %s -R %s %s | tail -n %d'):format(
+            run_id,
+            nwo(),
+            flag,
+            lines
+        ),
+    }
 end
 
 ---@param run_id string
 ---@return string[]
 function M:check_tail_cmd(run_id)
-    return { 'gh', 'run', 'watch', run_id }
+    return { 'gh', 'run', 'watch', run_id, '-R', nwo() }
 end
 
 ---@param num string
@@ -178,6 +192,7 @@ function M:repo_info()
         'gh',
         'repo',
         'view',
+        nwo(),
         '--json',
         'viewerPermission,squashMergeAllowed,rebaseMergeAllowed,mergeCommitAllowed',
     }, { text = true }):wait()

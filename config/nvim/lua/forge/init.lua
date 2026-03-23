@@ -338,6 +338,12 @@ function M.filter_checks(checks, filter)
     return filtered
 end
 
+function M.config()
+    return vim.tbl_deep_extend('force', {
+        ci = { lines = 10000 },
+    }, vim.g.forge or {})
+end
+
 ---@param args string[]
 function M.yank_url(args)
     vim.system(args, { text = true }, function(result)

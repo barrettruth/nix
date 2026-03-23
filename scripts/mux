@@ -156,6 +156,14 @@ git)
     spawn_or_focus git 'nvim -c "Git|only"'
   fi
   ;;
+run)
+  project_name="$(get_scope)"
+  case "$project_name" in
+    delta)
+      spawn_or_focus run 'pnpm dev'
+      ;;
+  esac
+  ;;
 shell)
   spawn_or_focus shell
   ;;

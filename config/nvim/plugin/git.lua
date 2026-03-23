@@ -16,42 +16,6 @@ vim.api.nvim_create_autocmd('VimEnter', {
     end,
 })
 
--- selene: allow(global_usage)
-function _G._qftf(info)
-    local items = vim.fn.getqflist({ id = info.id, items = 0 }).items
-    local max_fname = 0
-    for i = info.start_idx, info.end_idx do
-        local e = items[i]
-        local fname = ''
-        if e.bufnr > 0 then
-            fname = vim.fn.fnamemodify(vim.fn.bufname(e.bufnr), ':.')
-        end
-        if #fname > max_fname then
-            max_fname = #fname
-        end
-    end
-    local lines = {}
-    for i = info.start_idx, info.end_idx do
-        local e = items[i]
-        local fname = ''
-        if e.bufnr > 0 then
-            fname = vim.fn.fnamemodify(vim.fn.bufname(e.bufnr), ':.')
-        end
-        local padded = fname .. string.rep(' ', max_fname - #fname)
-        local text = e.text or ''
-        if e.lnum > 0 and e.lnum ~= 1 then
-            table.insert(lines, ('%s  %d  %s'):format(padded, e.lnum, text))
-        elseif text ~= '' then
-            table.insert(lines, ('%s  %s'):format(padded, text))
-        else
-            table.insert(lines, padded)
-        end
-    end
-    return lines
-end
-
-vim.o.quickfixtextfunc = 'v:lua._qftf'
-
 vim.api.nvim_create_autocmd('FileType', {
     pattern = 'qf',
     callback = function()
@@ -77,23 +41,43 @@ local function with_forge(fn)
     end
 end
 
+---@type { base: string?, mode: 'unified'|'split' }
+local review = { base = nil, mode = 'unified' }
+
+local function close_review_view()
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local name = vim.api.nvim_buf_get_name(buf)
+        if name:match('^fugitive://') or name:match('^diffs://review:') then
+            pcall(vim.api.nvim_win_close, win, true)
+        end
+    end
+    pcall(vim.cmd, 'diffoff!')
+end
+
 ---@param f forge.Forge
 ---@param num string
 ---@param filter string?
 ---@param cached_checks table[]?
 local function checks_picker(f, num, filter, cached_checks)
     filter = filter or 'all'
-    pcall(vim.cmd.packadd, 'fzf-lua')
+    require('lz.n').trigger_load('ibhagwan/fzf-lua')
     local forge_mod = require('forge')
 
     local function open_picker(checks)
         local filtered = forge_mod.filter_checks(checks, filter)
         local lines = {}
-        local check_map = {}
-        for _, c in ipairs(filtered) do
-            local line = forge_mod.format_check(c)
+        for i, c in ipairs(filtered) do
+            local line = ('%d\t%s'):format(i, forge_mod.format_check(c))
             table.insert(lines, line)
-            check_map[line] = c
+        end
+
+        local function get_check(selected)
+            if not selected[1] then
+                return nil
+            end
+            local idx = tonumber(selected[1]:match('^(%d+)'))
+            return idx and filtered[idx] or nil
         end
 
         local labels = {
@@ -108,13 +92,14 @@ local function checks_picker(f, num, filter, cached_checks)
                 num,
                 labels[filter] or filter
             ),
-            header = ':: <cr> log | <c-b> browser | <c-t> tail'
-                .. ' | <c-f> failed | <c-p> passed | <c-n> running | <c-a> all'
-                .. ' | <c-r> refresh',
-            fzf_opts = { ['--ansi'] = '' },
+            fzf_opts = {
+                ['--ansi'] = '',
+                ['--with-nth'] = '2..',
+                ['--delimiter'] = '\t',
+            },
             actions = {
                 ['default'] = function(selected)
-                    local c = check_map[selected[1]]
+                    local c = get_check(selected)
                     if not c then
                         return
                     end
@@ -122,39 +107,22 @@ local function checks_picker(f, num, filter, cached_checks)
                     if not run_id then
                         return
                     end
-                    local b = (c.bucket or ''):lower()
-                    if b == 'pending' then
-                        vim.cmd(
-                            'botright split | terminal '
-                                .. table.concat(f:check_tail_cmd(run_id), ' ')
-                        )
+                    local bucket = (c.bucket or ''):lower()
+                    local cmd
+                    if bucket == 'pending' then
+                        cmd = f:check_tail_cmd(run_id)
                     else
-                        vim.cmd(
-                            'botright split | terminal '
-                                .. table.concat(
-                                    f:check_log_cmd(run_id, b == 'fail'),
-                                    ' '
-                                )
-                        )
+                        cmd = f:check_log_cmd(run_id, bucket == 'fail')
                     end
+                    vim.cmd(
+                        'botright split | terminal '
+                            .. table.concat(cmd, ' ')
+                    )
                 end,
-                ['ctrl-b'] = function(selected)
-                    local c = check_map[selected[1]]
+                ['ctrl-x'] = function(selected)
+                    local c = get_check(selected)
                     if c and c.link then
                         vim.ui.open(c.link)
-                    end
-                end,
-                ['ctrl-t'] = function(selected)
-                    local c = check_map[selected[1]]
-                    if not c then
-                        return
-                    end
-                    local run_id = (c.link or ''):match('/actions/runs/(%d+)')
-                    if run_id then
-                        vim.cmd(
-                            'botright split | terminal '
-                                .. table.concat(f:check_tail_cmd(run_id), ' ')
-                        )
                     end
                 end,
                 ['ctrl-f'] = function()
@@ -244,20 +212,21 @@ local function pr_actions(f, num)
     end
 
     actions['ctrl-d'] = function()
-        require('forge').log('fetching PR #' .. num .. ' ref...')
-        vim.system(f:fetch_pr(num), { text = true }, function(fetch_result)
-            if fetch_result.code ~= 0 then
+        local forge_mod = require('forge')
+        local repo_root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
+        local checkout_cmd = f.name == 'github'
+                and { 'gh', 'pr', 'checkout', num }
+            or f.name == 'gitlab' and { 'glab', 'mr', 'checkout', num }
+            or { 'tea', 'pr', 'checkout', num }
+
+        forge_mod.log('reviewing PR #' .. num .. '...')
+        vim.system(checkout_cmd, { text = true }, function(co_result)
+            if co_result.code ~= 0 then
                 vim.schedule(function()
-                    vim.notify(
-                        '[forge.nvim]: fetch failed: ' .. (fetch_result.stderr or ''),
-                        vim.log.levels.ERROR
-                    )
-                    vim.cmd.redraw()
+                    forge_mod.log('checkout skipped, proceeding with diff')
                 end)
-                return
             end
-            local ref = f.name == 'gitlab' and ('mr-%s'):format(num)
-                or ('pr-%s'):format(num)
+
             vim.system(
                 f:pr_base_cmd(num),
                 { text = true },
@@ -267,117 +236,12 @@ local function pr_actions(f, num)
                         if base == '' or base_result.code ~= 0 then
                             base = 'main'
                         end
-                        vim.notify('[forge.nvim]: diffing PR #' .. num .. ' against ' .. base, vim.log.levels.INFO)
-                        vim.cmd.redraw()
-                        local range = ('origin/%s...%s'):format(base, ref)
-                        local diff_cmd = 'git diff ' .. range
-                        local output = vim.fn.systemlist(diff_cmd)
-                        if #output == 0 then
-                            vim.notify('[forge.nvim]: no diff', vim.log.levels.INFO)
-                            vim.cmd.redraw()
-                            return
-                        end
-                        vim.cmd.enew()
-                        local buf = vim.api.nvim_get_current_buf()
-                        vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
-                        vim.bo[buf].buftype = 'nofile'
-                        vim.bo[buf].bufhidden = 'wipe'
-                        vim.bo[buf].swapfile = false
-                        vim.bo[buf].modifiable = false
-                        vim.bo[buf].filetype = 'diff'
-                        vim.api.nvim_buf_set_name(
-                            buf,
-                            ('PR #%s diff'):format(num)
-                        )
-                        local pending = 2
-                        local name_status_lines = {}
-                        local numstat_lines = {}
-                        local function on_qf_done()
-                            pending = pending - 1
-                            if pending > 0 then
-                                return
-                            end
-                            vim.schedule(function()
-                                local stats = {}
-                                for _, l in ipairs(numstat_lines) do
-                                    local a, d, p =
-                                        l:match('^(%S+)\t(%S+)\t(.+)$')
-                                    if p then
-                                        stats[p] = { add = a, del = d }
-                                    end
-                                end
-                                local items = {}
-                                for _, l in ipairs(name_status_lines) do
-                                    local st, p = l:match('^(%S+)\t(.+)$')
-                                    if not st then
-                                        st, _, p =
-                                            l:match('^(%S+)\t(%S+)\t(.+)$')
-                                    end
-                                    if st and p then
-                                        local s = stats[p]
-                                        local parts = { st:sub(1, 1) }
-                                        if s then
-                                            if
-                                                s.add ~= '0'
-                                                and s.add ~= '-'
-                                            then
-                                                table.insert(
-                                                    parts,
-                                                    '+' .. s.add
-                                                )
-                                            end
-                                            if
-                                                s.del ~= '0'
-                                                and s.del ~= '-'
-                                            then
-                                                table.insert(
-                                                    parts,
-                                                    '-' .. s.del
-                                                )
-                                            end
-                                        end
-                                        table.insert(items, {
-                                            filename = p,
-                                            lnum = 1,
-                                            text = table.concat(parts, ' '),
-                                        })
-                                    end
-                                end
-                                if #items > 0 then
-                                    vim.fn.setqflist({}, ' ', {
-                                        title = ('PR #%s files'):format(num),
-                                        items = items,
-                                    })
-                                end
-                            end)
-                        end
-                        vim.system(
-                            { 'git', 'diff', '--name-status', range },
-                            { text = true },
-                            function(r)
-                                if r.code == 0 then
-                                    name_status_lines = vim.split(
-                                        vim.trim(r.stdout or ''),
-                                        '\n',
-                                        { plain = true, trimempty = true }
-                                    )
-                                end
-                                on_qf_done()
-                            end
-                        )
-                        vim.system(
-                            { 'git', 'diff', '--numstat', range },
-                            { text = true },
-                            function(r)
-                                if r.code == 0 then
-                                    numstat_lines = vim.split(
-                                        vim.trim(r.stdout or ''),
-                                        '\n',
-                                        { plain = true, trimempty = true }
-                                    )
-                                end
-                                on_qf_done()
-                            end
+                        local range = 'origin/' .. base
+                        review.base = range
+                        review.mode = 'unified'
+                        require('diffs.commands').greview(range, { repo_root = repo_root })
+                        forge_mod.log(
+                            'review ready for PR #' .. num .. ' against ' .. base
                         )
                     end)
                 end
@@ -385,7 +249,7 @@ local function pr_actions(f, num)
         end)
     end
 
-    actions['ctrl-c'] = function()
+    actions['ctrl-t'] = function()
         checks_picker(f, num)
     end
 
@@ -483,7 +347,7 @@ end
 local function forge_picker(kind, state, f)
     local cli_kind = f.kinds[kind]
     local next_state = ({ all = 'open', open = 'closed', closed = 'all' })[state]
-    pcall(vim.cmd.packadd, 'fzf-lua')
+    require('lz.n').trigger_load('ibhagwan/fzf-lua')
 
     local forge_mod = require('forge')
     local cache_key = forge_mod.list_key(kind, state)
@@ -501,30 +365,35 @@ local function forge_picker(kind, state, f)
                 fzf_opts = { ['--ansi'] = '' },
                 actions = {
                     ['default'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if num then
                             pr_actions(f, num)['default']()
                         end
                     end,
                     ['ctrl-x'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if num then
                             f:view_web(cli_kind, num)
                         end
                     end,
                     ['ctrl-d'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if num then
                             pr_actions(f, num)['ctrl-d']()
                         end
                     end,
-                    ['ctrl-c'] = function(selected)
+                    ['ctrl-t'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if num then
                             checks_picker(f, num)
                         end
                     end,
                     ['ctrl-a'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if not num then
                             return
@@ -535,6 +404,7 @@ local function forge_picker(kind, state, f)
                         end
                     end,
                     ['ctrl-m'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if not num then
                             return
@@ -588,6 +458,14 @@ local function forge_picker(kind, state, f)
                 fzf_opts = { ['--ansi'] = '' },
                 actions = {
                     ['default'] = function(selected)
+                        if not selected[1] then return end
+                        local num = selected[1]:match('^[#!]?(%d+)')
+                        if num then
+                            f:view_web(cli_kind, num)
+                        end
+                    end,
+                    ['ctrl-x'] = function(selected)
+                        if not selected[1] then return end
                         local num = selected[1]:match('^[#!]?(%d+)')
                         if num then
                             f:view_web(cli_kind, num)
@@ -664,17 +542,6 @@ vim.keymap.set(
     end)
 )
 
-vim.keymap.set('n', '<leader>gd', function()
-    pcall(vim.cmd.packadd, 'fzf-lua')
-    require('fzf-lua').fzf_exec('git branch -a --format="%(refname:short)"', {
-        prompt = 'Git diff> ',
-        actions = {
-            ['default'] = function(selected)
-                vim.cmd.Git('difftool --name-only ' .. selected[1])
-            end,
-        },
-    })
-end)
 
 vim.keymap.set(
     'n',
@@ -696,7 +563,7 @@ vim.keymap.set(
     'n',
     '<leader>gc',
     with_forge(function(f)
-        pcall(vim.cmd.packadd, 'fzf-lua')
+        require('lz.n').trigger_load('ibhagwan/fzf-lua')
         local branch = vim.trim(vim.fn.system('git branch --show-current'))
         if branch == '' then
             vim.notify('[forge.nvim]: detached HEAD, cannot find PR', vim.log.levels.WARN)
@@ -725,3 +592,81 @@ vim.keymap.set(
         )
     end)
 )
+
+vim.keymap.set('n', ']q', function()
+    if review.base and review.mode == 'split' then
+        close_review_view()
+    end
+    if not pcall(vim.cmd.cnext) then
+        return
+    end
+    if review.base and review.mode == 'split' then
+        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+    end
+end)
+
+vim.keymap.set('n', '[q', function()
+    if review.base and review.mode == 'split' then
+        close_review_view()
+    end
+    if not pcall(vim.cmd.cprev) then
+        return
+    end
+    if review.base and review.mode == 'split' then
+        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+    end
+end)
+
+vim.keymap.set('n', ']g', function()
+    if review.base and review.mode == 'split' then
+        close_review_view()
+    end
+    if not pcall(vim.cmd.lnext) then
+        return
+    end
+    if review.base and review.mode == 'split' then
+        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+    end
+end)
+
+vim.keymap.set('n', '[g', function()
+    if review.base and review.mode == 'split' then
+        close_review_view()
+    end
+    if not pcall(vim.cmd.lprev) then
+        return
+    end
+    if review.base and review.mode == 'split' then
+        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+    end
+end)
+
+vim.keymap.set('n', 's', function()
+    if not review.base then
+        vim.cmd('normal! s')
+        return
+    end
+    if review.mode == 'unified' then
+        local commands = require('diffs.commands')
+        local file = commands.review_file_at_line(
+            vim.api.nvim_get_current_buf(),
+            vim.fn.line('.')
+        )
+        review.mode = 'split'
+        if file then
+            vim.cmd('edit ' .. vim.fn.fnameescape(file))
+            pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+        end
+    else
+        local current_file = vim.fn.expand('%:.')
+        close_review_view()
+        review.mode = 'unified'
+        require('diffs.commands').greview(review.base)
+        if current_file ~= '' then
+            vim.fn.search(
+                'diff %-%-git a/' .. vim.pesc(current_file),
+                'cw'
+            )
+        end
+    end
+end)

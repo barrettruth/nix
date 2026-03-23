@@ -144,7 +144,12 @@ end
 ---@return string[]
 function M:check_log_cmd(run_id, failed_only)
     local _ = failed_only
-    return { 'tea', 'actions', 'runs', 'logs', run_id }
+    local lines = forge.config().ci.lines
+    return {
+        'sh',
+        '-c',
+        ('tea actions runs logs %s | tail -n %d'):format(run_id, lines),
+    }
 end
 
 ---@param run_id string
