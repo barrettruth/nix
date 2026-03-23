@@ -7,10 +7,13 @@ Create a pull request immediately, no approval step.
 1. Run exactly this one Bash command:
 
    ```
-   echo "---BRANCH---" && git branch --show-current && echo "---LOG---" && git log --oneline main..HEAD && echo "---STAT---" && git diff main...HEAD --stat && echo "---TEMPLATE---" && cat .github/pull_request_template.md 2>/dev/null || true
+   echo "---BRANCH---" && git branch --show-current && echo "---LOG---" && git log --oneline main..HEAD 2>/dev/null && echo "---STAT---" && git diff main...HEAD --stat 2>/dev/null && echo "---TEMPLATE---" && cat .github/pull_request_template.md 2>/dev/null || true
    ```
 
-   If the branch is `main` or `master`, tell the user and stop.
+   **If on `main` or `master`, stop immediately.** Tell the user: "You're on
+   main. Use /gc to commit first (it will auto-create a branch), then run /qpr."
+
+   **If there are no commits ahead of main**, stop. Nothing to PR.
 
 2. If `scripts/ci.sh` exists, run it:
 
@@ -36,10 +39,10 @@ Create a pull request immediately, no approval step.
 
    - Use backticks around code identifiers, function names, and file paths.
 
-   Run exactly one Bash command:
+   Push and create in one step:
 
    ```
-   gh pr create --title "<title>" --body "$(cat <<'EOF'
+   git push -u origin HEAD && gh pr create --title "<title>" --body "$(cat <<'EOF'
    <body here>
    EOF
    )"
@@ -47,6 +50,14 @@ Create a pull request immediately, no approval step.
 
    Print the PR URL from the output.
 
-Total: 2-3 Bash calls. Do not run any other commands.
+4. **Post-PR conflict check.** Run exactly one Bash command:
+
+   ```
+   git fetch origin main && git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main 2>/dev/null | head -20
+   ```
+
+   If conflicts exist, warn the user and offer to rebase.
+
+Total: 2-4 Bash calls. Do not run any other commands.
 
 Never force-push. Never target main/master as the head branch.
