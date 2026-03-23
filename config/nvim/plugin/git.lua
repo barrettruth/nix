@@ -16,205 +16,685 @@ vim.api.nvim_create_autocmd('VimEnter', {
     end,
 })
 
----@return string
-local function file_loc()
-    local root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
-    local file = vim.api.nvim_buf_get_name(0):sub(#root + 2)
-    local mode = vim.fn.mode()
-    if mode:match('[vV]') or mode == '\22' then
-        local s = vim.fn.line('v')
-        local e = vim.fn.line('.')
-        if s > e then
-            s, e = e, s
+-- selene: allow(global_usage)
+function _G._qftf(info)
+    local items = vim.fn.getqflist({ id = info.id, items = 0 }).items
+    local max_fname = 0
+    for i = info.start_idx, info.end_idx do
+        local e = items[i]
+        local fname = ''
+        if e.bufnr > 0 then
+            fname = vim.fn.fnamemodify(vim.fn.bufname(e.bufnr), ':.')
         end
-        if s == e then
-            return ('%s:%d'):format(file, s)
+        if #fname > max_fname then
+            max_fname = #fname
         end
-        return ('%s:%d-%d'):format(file, s, e)
     end
-    return ('%s:%d'):format(file, vim.fn.line('.'))
-end
-
----@param args string[]
-local function yank_url(args)
-    vim.system(args, { text = true }, function(result)
-        if result.code == 0 then
-            local url = vim.trim(result.stdout or '')
-            if url ~= '' then
-                vim.schedule(function()
-                    vim.fn.setreg('+', url)
-                end)
-            end
+    local lines = {}
+    for i = info.start_idx, info.end_idx do
+        local e = items[i]
+        local fname = ''
+        if e.bufnr > 0 then
+            fname = vim.fn.fnamemodify(vim.fn.bufname(e.bufnr), ':.')
         end
-    end)
-end
-
-local function remote_web_url()
-    local url = vim.trim(vim.fn.system('git remote get-url origin'))
-    url = url:gsub('%.git$', '')
-    url = url:gsub('^ssh://git@', 'https://')
-    url = url:gsub('^git@([^:]+):', 'https://%1/')
-    return url
-end
-
-local function gitlab_file_url(loc, ref)
-    local base = remote_web_url()
-    local file, lines = loc:match('^(.+):(.+)$')
-    return ('%s/-/blob/%s/%s#L%s'):format(base, ref, file, lines)
-end
-
-local function detect_forge()
-    local url = vim.trim(vim.fn.system('git remote get-url origin'))
-    if vim.v.shell_error ~= 0 then
-        return nil
+        local padded = fname .. string.rep(' ', max_fname - #fname)
+        local text = e.text or ''
+        if e.lnum > 0 and e.lnum ~= 1 then
+            table.insert(lines, ('%s  %d  %s'):format(padded, e.lnum, text))
+        elseif text ~= '' then
+            table.insert(lines, ('%s  %s'):format(padded, text))
+        else
+            table.insert(lines, padded)
+        end
     end
-    if url:find('github') and vim.fn.executable('gh') == 1 then
-        return 'github'
-    end
-    if url:find('gitlab') and vim.fn.executable('glab') == 1 then
-        return 'gitlab'
-    end
-    return nil
+    return lines
 end
 
-local forges = {
-    github = {
-        kinds = { issue = 'issue', pr = 'pr' },
-        labels = { issue = 'Issues', pr = 'PRs' },
-        list_cmd = function(kind, state)
-            return ('gh %s list --limit 100 --state %s'):format(kind, state)
-        end,
-        view_cmd = function(kind, num)
-            return { 'gh', kind, 'view', num, '--web' }
-        end,
-        browse = function(loc, branch)
-            vim.system({ 'gh', 'browse', loc, '--branch', branch })
-        end,
-        browse_root = function()
-            vim.system({ 'gh', 'browse' })
-        end,
-        yank_branch = function(loc)
-            yank_url({ 'gh', 'browse', loc, '-n' })
-        end,
-        yank_commit = function(loc)
-            yank_url({ 'gh', 'browse', loc, '--commit=last', '-n' })
-        end,
-    },
-    gitlab = {
-        kinds = { issue = 'issue', pr = 'mr' },
-        labels = { issue = 'Issues', pr = 'MRs' },
-        list_cmd = function(kind, state)
-            local cmd = ('glab %s list --per-page 100'):format(kind)
-            if state == 'closed' then
-                cmd = cmd .. ' --closed'
-            elseif state == 'all' then
-                cmd = cmd .. ' --all'
-            end
-            return cmd
-        end,
-        view_cmd = function(kind, num)
-            return { 'glab', kind, 'view', num, '--web' }
-        end,
-        browse = function(loc, branch)
-            vim.ui.open(gitlab_file_url(loc, branch))
-        end,
-        browse_root = function()
-            vim.system({ 'glab', 'repo', 'view', '--web' })
-        end,
-        yank_branch = function(loc)
-            local branch = vim.trim(vim.fn.system('git branch --show-current'))
-            vim.fn.setreg('+', gitlab_file_url(loc, branch))
-        end,
-        yank_commit = function(loc)
-            local commit = vim.trim(vim.fn.system('git rev-parse HEAD'))
-            vim.fn.setreg('+', gitlab_file_url(loc, commit))
-        end,
-    },
-}
+vim.o.quickfixtextfunc = 'v:lua._qftf'
 
----@param kind 'issue'|'pr'
----@param state 'all'|'open'|'closed'
-local function forge_picker(kind, state)
-    local forge_name = detect_forge()
-    if not forge_name then
-        vim.notify('No supported forge detected', vim.log.levels.WARN)
-        return
-    end
-    local forge = forges[forge_name]
-    local cli_kind = forge.kinds[kind]
-    local next_state = ({ all = 'open', open = 'closed', closed = 'all' })[state]
-    pcall(vim.cmd.packadd, 'fzf-lua')
-    require('fzf-lua').fzf_exec(forge.list_cmd(cli_kind, state), {
-        prompt = ('%s (%s)> '):format(forge.labels[kind], state),
-        header = ':: <c-o> to toggle all/open/closed',
-        actions = {
-            ['default'] = function(selected)
-                local num = selected[1]:match('^[#!]?(%d+)')
-                if num then
-                    vim.system(forge.view_cmd(cli_kind, num))
-                end
-            end,
-            ['ctrl-o'] = function()
-                forge_picker(kind, next_state)
-            end,
-        },
-    })
-end
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'qf',
+    callback = function()
+        vim.fn.matchadd('DiffAdd', [[\v\+\d+]])
+        vim.fn.matchadd('DiffDelete', [[\v-\d+]])
+        vim.fn.matchadd('DiffChange', [[\v\s\zsM\ze\s]])
+        vim.fn.matchadd('diffAdded', [[\v\s\zsA\ze\s]])
+        vim.fn.matchadd('DiffDelete', [[\v\s\zsD\ze\s]])
+        vim.fn.matchadd('DiffText', [[\v\s\zsR\ze\s]])
+    end,
+})
 
+---@param fn fun(f: forge.Forge)
+---@return fun()
 local function with_forge(fn)
     return function()
-        local forge_name = detect_forge()
-        if not forge_name then
+        local f = require('forge').detect()
+        if not f then
             vim.notify('No supported forge detected', vim.log.levels.WARN)
             return
         end
-        fn(forges[forge_name])
+        fn(f)
+    end
+end
+
+---@param f forge.Forge
+---@param num string
+---@param filter string?
+---@param cached_checks table[]?
+local function checks_picker(f, num, filter, cached_checks)
+    filter = filter or 'all'
+    pcall(vim.cmd.packadd, 'fzf-lua')
+    local forge_mod = require('forge')
+
+    local function open_picker(checks)
+        local filtered = forge_mod.filter_checks(checks, filter)
+        local lines = {}
+        local check_map = {}
+        for _, c in ipairs(filtered) do
+            local line = forge_mod.format_check(c)
+            table.insert(lines, line)
+            check_map[line] = c
+        end
+
+        local labels = {
+            all = 'all',
+            fail = 'failed',
+            pass = 'passed',
+            pending = 'running',
+        }
+
+        require('fzf-lua').fzf_exec(lines, {
+            prompt = ('Checks (#%s, %s)> '):format(
+                num,
+                labels[filter] or filter
+            ),
+            header = ':: <cr> log | <c-b> browser | <c-t> tail'
+                .. ' | <c-f> failed | <c-p> passed | <c-n> running | <c-a> all'
+                .. ' | <c-r> refresh',
+            fzf_opts = { ['--ansi'] = '' },
+            actions = {
+                ['default'] = function(selected)
+                    local c = check_map[selected[1]]
+                    if not c then
+                        return
+                    end
+                    local run_id = (c.link or ''):match('/actions/runs/(%d+)')
+                    if not run_id then
+                        return
+                    end
+                    local b = (c.bucket or ''):lower()
+                    if b == 'pending' then
+                        vim.cmd(
+                            'botright split | terminal '
+                                .. table.concat(f:check_tail_cmd(run_id), ' ')
+                        )
+                    else
+                        vim.cmd(
+                            'botright split | terminal '
+                                .. table.concat(
+                                    f:check_log_cmd(run_id, b == 'fail'),
+                                    ' '
+                                )
+                        )
+                    end
+                end,
+                ['ctrl-b'] = function(selected)
+                    local c = check_map[selected[1]]
+                    if c and c.link then
+                        vim.ui.open(c.link)
+                    end
+                end,
+                ['ctrl-t'] = function(selected)
+                    local c = check_map[selected[1]]
+                    if not c then
+                        return
+                    end
+                    local run_id = (c.link or ''):match('/actions/runs/(%d+)')
+                    if run_id then
+                        vim.cmd(
+                            'botright split | terminal '
+                                .. table.concat(f:check_tail_cmd(run_id), ' ')
+                        )
+                    end
+                end,
+                ['ctrl-f'] = function()
+                    checks_picker(f, num, 'fail', checks)
+                end,
+                ['ctrl-p'] = function()
+                    checks_picker(f, num, 'pass', checks)
+                end,
+                ['ctrl-n'] = function()
+                    checks_picker(f, num, 'pending', checks)
+                end,
+                ['ctrl-a'] = function()
+                    checks_picker(f, num, 'all', checks)
+                end,
+                ['ctrl-r'] = function()
+                    checks_picker(f, num, filter)
+                end,
+            },
+        })
+    end
+
+    if cached_checks then
+        open_picker(cached_checks)
+        return
+    end
+
+    if f.checks_json_cmd then
+        vim.system(f:checks_json_cmd(num), { text = true }, function(result)
+            vim.schedule(function()
+                local ok, checks = pcall(vim.json.decode, result.stdout or '[]')
+                if ok and checks then
+                    open_picker(checks)
+                else
+                    vim.notify('No checks found', vim.log.levels.INFO)
+                end
+            end)
+        end)
+    else
+        require('fzf-lua').fzf_exec(f:checks_cmd(num), {
+            prompt = ('Checks (#%s)> '):format(num),
+            fzf_opts = { ['--ansi'] = '' },
+            actions = {
+                ['ctrl-r'] = function()
+                    checks_picker(f, num, filter)
+                end,
+            },
+        })
+    end
+end
+
+---@param f forge.Forge
+---@param num string
+---@return table<string, function>
+local function pr_actions(f, num)
+    local info = require('forge').repo_info(f)
+    local can_write = info.permission == 'ADMIN'
+        or info.permission == 'MAINTAIN'
+        or info.permission == 'WRITE'
+    local actions = {}
+
+    actions['default'] = function()
+        f:view_web(f.kinds.pr, num)
+    end
+
+    actions['ctrl-d'] = function()
+        vim.system(f:fetch_pr(num), { text = true }, function(fetch_result)
+            if fetch_result.code ~= 0 then
+                vim.schedule(function()
+                    vim.notify(
+                        'fetch failed: ' .. (fetch_result.stderr or ''),
+                        vim.log.levels.ERROR
+                    )
+                end)
+                return
+            end
+            local ref = f.name == 'gitlab' and ('mr-%s'):format(num)
+                or ('pr-%s'):format(num)
+            vim.system(
+                f:pr_base_cmd(num),
+                { text = true },
+                function(base_result)
+                    vim.schedule(function()
+                        local base = vim.trim(base_result.stdout or '')
+                        if base == '' or base_result.code ~= 0 then
+                            base = 'main'
+                        end
+                        local range = ('origin/%s...%s'):format(base, ref)
+                        local diff_cmd = 'git diff ' .. range
+                        local output = vim.fn.systemlist(diff_cmd)
+                        if #output == 0 then
+                            vim.notify('No diff', vim.log.levels.INFO)
+                            return
+                        end
+                        vim.cmd.enew()
+                        local buf = vim.api.nvim_get_current_buf()
+                        vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
+                        vim.bo[buf].buftype = 'nofile'
+                        vim.bo[buf].bufhidden = 'wipe'
+                        vim.bo[buf].swapfile = false
+                        vim.bo[buf].modifiable = false
+                        vim.bo[buf].filetype = 'diff'
+                        vim.api.nvim_buf_set_name(
+                            buf,
+                            ('PR #%s diff'):format(num)
+                        )
+                        local pending = 2
+                        local name_status_lines = {}
+                        local numstat_lines = {}
+                        local function on_qf_done()
+                            pending = pending - 1
+                            if pending > 0 then
+                                return
+                            end
+                            vim.schedule(function()
+                                local stats = {}
+                                for _, l in ipairs(numstat_lines) do
+                                    local a, d, p =
+                                        l:match('^(%S+)\t(%S+)\t(.+)$')
+                                    if p then
+                                        stats[p] = { add = a, del = d }
+                                    end
+                                end
+                                local items = {}
+                                for _, l in ipairs(name_status_lines) do
+                                    local st, p = l:match('^(%S+)\t(.+)$')
+                                    if not st then
+                                        st, _, p =
+                                            l:match('^(%S+)\t(%S+)\t(.+)$')
+                                    end
+                                    if st and p then
+                                        local s = stats[p]
+                                        local parts = { st:sub(1, 1) }
+                                        if s then
+                                            if
+                                                s.add ~= '0'
+                                                and s.add ~= '-'
+                                            then
+                                                table.insert(
+                                                    parts,
+                                                    '+' .. s.add
+                                                )
+                                            end
+                                            if
+                                                s.del ~= '0'
+                                                and s.del ~= '-'
+                                            then
+                                                table.insert(
+                                                    parts,
+                                                    '-' .. s.del
+                                                )
+                                            end
+                                        end
+                                        table.insert(items, {
+                                            filename = p,
+                                            lnum = 1,
+                                            text = table.concat(parts, ' '),
+                                        })
+                                    end
+                                end
+                                if #items > 0 then
+                                    vim.fn.setqflist({}, ' ', {
+                                        title = ('PR #%s files'):format(num),
+                                        items = items,
+                                    })
+                                end
+                            end)
+                        end
+                        vim.system(
+                            { 'git', 'diff', '--name-status', range },
+                            { text = true },
+                            function(r)
+                                if r.code == 0 then
+                                    name_status_lines = vim.split(
+                                        vim.trim(r.stdout or ''),
+                                        '\n',
+                                        { plain = true, trimempty = true }
+                                    )
+                                end
+                                on_qf_done()
+                            end
+                        )
+                        vim.system(
+                            { 'git', 'diff', '--numstat', range },
+                            { text = true },
+                            function(r)
+                                if r.code == 0 then
+                                    numstat_lines = vim.split(
+                                        vim.trim(r.stdout or ''),
+                                        '\n',
+                                        { plain = true, trimempty = true }
+                                    )
+                                end
+                                on_qf_done()
+                            end
+                        )
+                    end)
+                end
+            )
+        end)
+    end
+
+    actions['ctrl-x'] = function()
+        local checkout = f.name == 'github' and { 'gh', 'pr', 'checkout', num }
+            or f.name == 'gitlab' and { 'glab', 'mr', 'checkout', num }
+            or { 'tea', 'pr', 'checkout', num }
+        vim.system(checkout, { text = true }, function(result)
+            vim.schedule(function()
+                if result.code == 0 then
+                    vim.notify(('Checked out PR #%s'):format(num))
+                else
+                    vim.notify(
+                        result.stderr or 'checkout failed',
+                        vim.log.levels.ERROR
+                    )
+                end
+            end)
+        end)
+    end
+
+    actions['ctrl-c'] = function()
+        checks_picker(f, num)
+    end
+
+    if can_write then
+        actions['ctrl-a'] = function()
+            vim.system(f:approve_cmd(num), { text = true }, function(result)
+                vim.schedule(function()
+                    if result.code == 0 then
+                        vim.notify(('Approved PR #%s'):format(num))
+                    else
+                        vim.notify(
+                            result.stderr or 'approve failed',
+                            vim.log.levels.ERROR
+                        )
+                    end
+                end)
+            end)
+        end
+
+        if #info.merge_methods > 0 then
+            actions['ctrl-m'] = function()
+                if #info.merge_methods == 1 then
+                    vim.system(
+                        f:merge_cmd(num, info.merge_methods[1]),
+                        { text = true },
+                        function(result)
+                            vim.schedule(function()
+                                if result.code == 0 then
+                                    vim.notify(
+                                        ('Merged PR #%s (%s)'):format(
+                                            num,
+                                            info.merge_methods[1]
+                                        )
+                                    )
+                                else
+                                    vim.notify(
+                                        result.stderr or 'merge failed',
+                                        vim.log.levels.ERROR
+                                    )
+                                end
+                            end)
+                        end
+                    )
+                else
+                    vim.schedule(function()
+                        vim.ui.select(info.merge_methods, {
+                            prompt = 'Merge method: ',
+                        }, function(method)
+                            if not method then
+                                return
+                            end
+                            vim.system(
+                                f:merge_cmd(num, method),
+                                { text = true },
+                                function(result)
+                                    vim.schedule(function()
+                                        if result.code == 0 then
+                                            vim.notify(
+                                                ('Merged PR #%s (%s)'):format(
+                                                    num,
+                                                    method
+                                                )
+                                            )
+                                        else
+                                            vim.notify(
+                                                result.stderr or 'merge failed',
+                                                vim.log.levels.ERROR
+                                            )
+                                        end
+                                    end)
+                                end
+                            )
+                        end)
+                    end)
+                end
+            end
+        end
+    end
+
+    return actions
+end
+
+---@param f forge.Forge
+---@return string
+local function pr_header(f)
+    local info = require('forge').repo_info(f)
+    local can_write = info.permission == 'ADMIN'
+        or info.permission == 'MAINTAIN'
+        or info.permission == 'WRITE'
+
+    local parts = {
+        '<cr> browser',
+        '<c-d> diff',
+        '<c-x> checkout',
+        '<c-c> checks',
+    }
+    if can_write then
+        table.insert(parts, '<c-a> approve')
+        if #info.merge_methods > 0 then
+            table.insert(parts, '<c-m> merge')
+        end
+    end
+    return ':: ' .. table.concat(parts, ' | ')
+end
+
+---@param kind 'issue'|'pr'
+---@param state 'all'|'open'|'closed'
+---@param f forge.Forge
+local function forge_picker(kind, state, f)
+    local cli_kind = f.kinds[kind]
+    local next_state = ({ all = 'open', open = 'closed', closed = 'all' })[state]
+    pcall(vim.cmd.packadd, 'fzf-lua')
+
+    local forge_mod = require('forge')
+
+    if kind == 'pr' then
+        local pr_fields = f:pr_json_fields()
+        require('fzf-lua').fzf_exec(function(cb)
+            vim.system(
+                f:list_pr_json_cmd(state),
+                { text = true },
+                function(result)
+                    local ok, prs =
+                        pcall(vim.json.decode, result.stdout or '[]')
+                    if ok and prs then
+                        for _, pr in ipairs(prs) do
+                            cb(forge_mod.format_pr(pr, pr_fields))
+                        end
+                    end
+                    cb()
+                end
+            )
+        end, {
+            prompt = ('%s (%s)> '):format(f.labels[kind], state),
+            header = pr_header(f)
+                .. ' | <c-o> toggle all/open/closed | <c-r> refresh',
+            fzf_opts = { ['--ansi'] = '' },
+            actions = {
+                ['default'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if num then
+                        f:view_web(cli_kind, num)
+                    end
+                end,
+                ['ctrl-d'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if num then
+                        pr_actions(f, num)['ctrl-d']()
+                    end
+                end,
+                ['ctrl-x'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if num then
+                        pr_actions(f, num)['ctrl-x']()
+                    end
+                end,
+                ['ctrl-c'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if num then
+                        checks_picker(f, num)
+                    end
+                end,
+                ['ctrl-a'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if not num then
+                        return
+                    end
+                    local acts = pr_actions(f, num)
+                    if acts['ctrl-a'] then
+                        acts['ctrl-a']()
+                    end
+                end,
+                ['ctrl-m'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if not num then
+                        return
+                    end
+                    local acts = pr_actions(f, num)
+                    if acts['ctrl-m'] then
+                        acts['ctrl-m']()
+                    end
+                end,
+                ['ctrl-o'] = function()
+                    forge_picker(kind, next_state, f)
+                end,
+                ['ctrl-r'] = function()
+                    forge_picker(kind, state, f)
+                end,
+            },
+        })
+    else
+        local issue_fields = f:issue_json_fields()
+        require('fzf-lua').fzf_exec(function(cb)
+            vim.system(
+                f:list_issue_json_cmd(state),
+                { text = true },
+                function(result)
+                    local ok, issues =
+                        pcall(vim.json.decode, result.stdout or '[]')
+                    if ok and issues then
+                        for _, issue in ipairs(issues) do
+                            cb(forge_mod.format_issue(issue, issue_fields))
+                        end
+                    end
+                    cb()
+                end
+            )
+        end, {
+            prompt = ('%s (%s)> '):format(f.labels[kind], state),
+            header = ':: <c-o> toggle all/open/closed | <c-r> refresh',
+            fzf_opts = { ['--ansi'] = '' },
+            actions = {
+                ['default'] = function(selected)
+                    local num = selected[1]:match('^[#!]?(%d+)')
+                    if num then
+                        f:view_web(cli_kind, num)
+                    end
+                end,
+                ['ctrl-o'] = function()
+                    forge_picker(kind, next_state, f)
+                end,
+                ['ctrl-r'] = function()
+                    forge_picker(kind, state, f)
+                end,
+            },
+        })
     end
 end
 
 vim.keymap.set(
     { 'n', 'v' },
     '<leader>go',
-    with_forge(function(forge)
+    with_forge(function(f)
         local branch = vim.trim(vim.fn.system('git branch --show-current'))
-        forge.browse(file_loc(), branch)
+        if branch == '' then
+            vim.notify('Detached HEAD', vim.log.levels.WARN)
+            return
+        end
+        f:browse(require('forge').file_loc(), branch)
     end)
 )
+
 vim.keymap.set(
     { 'n', 'v' },
     '<leader>gy',
-    with_forge(function(forge)
-        forge.yank_commit(file_loc())
+    with_forge(function(f)
+        f:yank_commit(require('forge').file_loc())
     end)
 )
+
 vim.keymap.set(
     { 'n', 'v' },
     '<leader>gl',
-    with_forge(function(forge)
-        forge.yank_branch(file_loc())
+    with_forge(function(f)
+        f:yank_branch(require('forge').file_loc())
     end)
 )
+
 vim.keymap.set(
     'n',
     '<leader>gx',
-    with_forge(function(forge)
-        forge.browse_root()
+    with_forge(function(f)
+        f:browse_root()
     end)
 )
+
 vim.keymap.set('n', '<leader>gd', function()
     pcall(vim.cmd.packadd, 'fzf-lua')
     require('fzf-lua').fzf_exec('git branch -a --format="%(refname:short)"', {
         prompt = 'Git diff> ',
         actions = {
             ['default'] = function(selected)
-                vim.cmd('Git diff ' .. selected[1])
+                vim.cmd.Git('difftool --name-only ' .. selected[1])
             end,
         },
     })
 end)
-vim.keymap.set('n', '<leader>gi', function()
-    forge_picker('issue', 'all')
-end)
-vim.keymap.set('n', '<leader>gp', function()
-    forge_picker('pr', 'all')
-end)
+
+vim.keymap.set(
+    'n',
+    '<leader>gi',
+    with_forge(function(f)
+        forge_picker('issue', 'all', f)
+    end)
+)
+
+vim.keymap.set(
+    'n',
+    '<leader>gp',
+    with_forge(function(f)
+        forge_picker('pr', 'open', f)
+    end)
+)
+
+vim.keymap.set(
+    'n',
+    '<leader>gc',
+    with_forge(function(f)
+        pcall(vim.cmd.packadd, 'fzf-lua')
+        local branch = vim.trim(vim.fn.system('git branch --show-current'))
+        if branch == '' then
+            vim.notify('Detached HEAD — cannot find PR', vim.log.levels.WARN)
+            return
+        end
+        vim.system(
+            f:pr_for_branch_cmd(branch),
+            { text = true },
+            function(result)
+                vim.schedule(function()
+                    local num = vim.trim(result.stdout or '')
+                    if num ~= '' and num:match('^%d+$') then
+                        checks_picker(f, num)
+                    else
+                        vim.notify(
+                            'No PR found for current branch',
+                            vim.log.levels.WARN
+                        )
+                    end
+                end)
+            end
+        )
+    end)
+)
