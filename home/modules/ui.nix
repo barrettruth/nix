@@ -133,7 +133,6 @@ in
       modules-right = [
         "tray"
         "custom/keyboard"
-        "privacy"
         "custom/source"
         "custom/sink"
         "network"
@@ -156,11 +155,6 @@ in
         tooltip = true;
         tooltip-format = "Layout: {}";
         on-click = "ctl keyboard pick";
-      };
-
-      privacy = {
-        icon-size = 14;
-        icon-spacing = 6;
       };
 
       tray = {
@@ -283,7 +277,6 @@ in
       }
 
       #custom-keyboard,
-      #privacy,
       #tray,
       #custom-sink,
       #custom-source,
