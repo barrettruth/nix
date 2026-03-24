@@ -33,6 +33,7 @@
     xdg.enable = true;
     xdg.userDirs = lib.mkIf hostConfig.isLinux {
       enable = true;
+      setSessionVariables = true;
       createDirectories = false;
       download = "${config.home.homeDirectory}/Downloads";
       pictures = "${config.home.homeDirectory}/Pictures";

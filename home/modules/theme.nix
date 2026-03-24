@@ -81,6 +81,7 @@ in
     gtk = lib.mkIf hostConfig.isLinux {
       enable = true;
       gtk2.configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
+      gtk4.theme = config.gtk.theme;
       font = {
         name = "SF Pro Display";
         size = 11;
