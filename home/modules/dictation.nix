@@ -9,7 +9,7 @@
 let
   whisper = pkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
   modelDir = "${config.home.homeDirectory}/.local/share/whisper-models";
-  model = "ggml-large-v3-turbo.bin";
+  model = "ggml-large-v3-turbo-q5_0.bin";
   modelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${model}";
 in
 {
