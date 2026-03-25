@@ -1,10 +1,19 @@
 local M = {}
 
+---@param msg string
+---@param level integer?
 function M.log(msg, level)
     vim.schedule(function()
         vim.notify('[forge.nvim]: ' .. msg, level or vim.log.levels.INFO)
         vim.cmd.redraw()
     end)
+end
+
+---@param msg string
+---@param level integer?
+function M.log_now(msg, level)
+    vim.notify('[forge.nvim]: ' .. msg, level or vim.log.levels.INFO)
+    vim.cmd.redraw()
 end
 
 ---@class forge.PRState
