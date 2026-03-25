@@ -15,7 +15,12 @@ end
 
 function M.on_attach(client, bufnr)
     if client:supports_method(Methods.textDocument_hover) then
-        vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = bufnr, desc = 'hover' })
+        vim.keymap.set(
+            'n',
+            'K',
+            vim.lsp.buf.hover,
+            { buffer = bufnr, desc = 'hover' }
+        )
     end
 
     local mappings = {

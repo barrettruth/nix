@@ -254,10 +254,13 @@ end
 ---@param iso string?
 ---@return integer?
 local function parse_iso(iso)
-    if not iso or iso == '' then return nil end
-    local y, mo, d, h, mi, s =
-        iso:match('(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
-    if not y then return nil end
+    if not iso or iso == '' then
+        return nil
+    end
+    local y, mo, d, h, mi, s = iso:match('(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
+    if not y then
+        return nil
+    end
     local ok, ts = pcall(os.time, {
         year = tonumber(y),
         month = tonumber(mo),
@@ -266,7 +269,9 @@ local function parse_iso(iso)
         min = tonumber(mi),
         sec = tonumber(s),
     })
-    if ok and ts then return ts end
+    if ok and ts then
+        return ts
+    end
     return nil
 end
 
@@ -274,13 +279,25 @@ end
 ---@return string
 local function relative_time(iso)
     local ts = parse_iso(iso)
-    if not ts then return '' end
+    if not ts then
+        return ''
+    end
     local diff = os.time() - ts
-    if diff < 0 then diff = 0 end
-    if diff < 3600 then return ('%dm'):format(math.max(1, math.floor(diff / 60))) end
-    if diff < 86400 then return ('%dh'):format(math.floor(diff / 3600)) end
-    if diff < 2592000 then return ('%dd'):format(math.floor(diff / 86400)) end
-    if diff < 31536000 then return ('%dmo'):format(math.floor(diff / 2592000)) end
+    if diff < 0 then
+        diff = 0
+    end
+    if diff < 3600 then
+        return ('%dm'):format(math.max(1, math.floor(diff / 60)))
+    end
+    if diff < 86400 then
+        return ('%dh'):format(math.floor(diff / 3600))
+    end
+    if diff < 2592000 then
+        return ('%dd'):format(math.floor(diff / 86400))
+    end
+    if diff < 31536000 then
+        return ('%dmo'):format(math.floor(diff / 2592000))
+    end
     return ('%dy'):format(math.floor(diff / 31536000))
 end
 
@@ -288,7 +305,9 @@ end
 ---@return string
 local function compact_date(iso)
     local ts = parse_iso(iso)
-    if not ts then return '' end
+    if not ts then
+        return ''
+    end
     local current_year = os.date('%Y')
     local entry_year = os.date('%Y', ts)
     if entry_year == current_year then
@@ -452,16 +471,20 @@ function M.format_run(run)
     local date = compact_date(run.created_at)
     if run.branch ~= '' then
         return ('%s%s\27[0m  %s \27[36m%s\27[0m \27[2m%-6s %s\27[0m'):format(
-            color, icon,
+            color,
+            icon,
             pad_or_truncate(run.name, 20),
             pad_or_truncate(run.branch, 25),
-            event, date
+            event,
+            date
         )
     end
     return ('%s%s\27[0m  %s \27[2m%-6s %s\27[0m'):format(
-        color, icon,
+        color,
+        icon,
         pad_or_truncate(run.name, 35),
-        event, date
+        event,
+        date
     )
 end
 

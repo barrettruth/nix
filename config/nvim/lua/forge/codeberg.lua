@@ -5,7 +5,12 @@ local M = {
     name = 'codeberg',
     cli = 'tea',
     kinds = { issue = 'issues', pr = 'pulls' },
-    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'CI/CD' },
+    labels = {
+        issue = 'Issues',
+        pr = 'PRs',
+        pr_full = 'Pull Requests',
+        ci = 'CI/CD',
+    },
 }
 
 ---@param kind string
@@ -186,7 +191,8 @@ function M:run_log_cmd(id, failed_only)
     local _ = failed_only
     local lines = forge.config().ci.lines
     return {
-        'sh', '-c',
+        'sh',
+        '-c',
         ('tea actions runs logs %s | tail -n %d'):format(id, lines),
     }
 end

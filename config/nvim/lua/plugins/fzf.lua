@@ -82,9 +82,14 @@ return {
                     ),
                     actions = {
                         ['ctrl-x'] = function(selected)
-                            if not selected[1] then return end
-                            local branch = selected[1]:gsub('^[%s*]+', ''):match('%S+')
-                            if not branch then return end
+                            if not selected[1] then
+                                return
+                            end
+                            local branch =
+                                selected[1]:gsub('^[%s*]+', ''):match('%S+')
+                            if not branch then
+                                return
+                            end
                             local f = require('forge').detect()
                             if f then
                                 f:browse_branch(branch)
