@@ -18,6 +18,15 @@ end
 ---@field elapsed string
 ---@field run_id string
 
+---@class forge.CIRun
+---@field id string
+---@field name string
+---@field branch string
+---@field status string
+---@field event string
+---@field url string
+---@field created_at string
+
 ---@class forge.RepoInfo
 ---@field permission string
 ---@field merge_methods string[]
@@ -46,6 +55,11 @@ end
 ---@field checks_cmd fun(self: forge.Forge, num: string): string
 ---@field check_log_cmd fun(self: forge.Forge, run_id: string, failed_only: boolean): string[]
 ---@field check_tail_cmd fun(self: forge.Forge, run_id: string): string[]
+---@field list_runs_json_cmd fun(self: forge.Forge, branch: string?): string[]
+---@field list_runs_cmd fun(self: forge.Forge, branch: string?): string
+---@field normalize_run fun(self: forge.Forge, entry: table): forge.CIRun
+---@field run_log_cmd fun(self: forge.Forge, id: string, failed_only: boolean): string[]
+---@field run_tail_cmd fun(self: forge.Forge, id: string): string[]
 ---@field merge_cmd fun(self: forge.Forge, num: string, method: string): string[]
 ---@field approve_cmd fun(self: forge.Forge, num: string): string[]
 ---@field repo_info fun(self: forge.Forge): forge.RepoInfo
@@ -316,6 +330,58 @@ function M.format_check(check)
     )
 end
 
+---@param iso string?
+---@return string
+local function format_date(iso)
+    if not iso or iso == '' then return '' end
+    local y, mo, d, h, mi, s =
+        iso:match('(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
+    if not y then return '' end
+    local ok, ts = pcall(os.time, {
+        year = tonumber(y),
+        month = tonumber(mo),
+        day = tonumber(d),
+        hour = tonumber(h),
+        min = tonumber(mi),
+        sec = tonumber(s),
+    })
+    if not ok or not ts then return '' end
+    return os.date(M.config().date_format, ts)
+end
+
+---@param run forge.CIRun
+---@return string
+function M.format_run(run)
+    local icon, color
+    local s = run.status:lower()
+    if s == 'success' then
+        icon, color = '✓', '\27[32m'
+    elseif s == 'failure' or s == 'failed' then
+        icon, color = '✗', '\27[31m'
+    elseif
+        s == 'in_progress'
+        or s == 'running'
+        or s == 'pending'
+        or s == 'queued'
+    then
+        icon, color = '●', '\27[33m'
+    elseif s == 'cancelled' or s == 'canceled' or s == 'skipped' then
+        icon, color = '○', '\27[2m'
+    else
+        icon, color = '?', '\27[2m'
+    end
+    local date = format_date(run.created_at)
+    return ('%s%s %s\27[0m %s \27[36m%s\27[0m \27[2m%-24s %s\27[0m'):format(
+        color,
+        icon,
+        pad_or_truncate(run.status:lower(), 10),
+        pad_or_truncate(run.name, 25),
+        pad_or_truncate(run.branch, 20),
+        run.event,
+        date
+    )
+end
+
 ---@param checks table[]
 ---@param filter string?
 ---@return table[]
@@ -342,6 +408,7 @@ end
 function M.config()
     return vim.tbl_deep_extend('force', {
         ci = { lines = 10000 },
+        date_format = '%d/%m/%Y %H:%M',
     }, vim.g.forge or {})
 end
 

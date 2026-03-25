@@ -5,7 +5,7 @@ local M = {
     name = 'codeberg',
     cli = 'tea',
     kinds = { issue = 'issues', pr = 'pulls' },
-    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'Actions' },
+    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'CI/CD' },
 }
 
 ---@param kind string
@@ -170,6 +170,23 @@ end
 ---@return string[]
 function M:check_tail_cmd(run_id)
     return { 'tea', 'actions', 'runs', 'logs', run_id, '--follow' }
+end
+
+function M:list_runs_cmd(_branch)
+    return 'tea actions runs list'
+end
+
+function M:run_log_cmd(id, failed_only)
+    local _ = failed_only
+    local lines = forge.config().ci.lines
+    return {
+        'sh', '-c',
+        ('tea actions runs logs %s | tail -n %d'):format(id, lines),
+    }
+end
+
+function M:run_tail_cmd(id)
+    return { 'tea', 'actions', 'runs', 'logs', id, '--follow' }
 end
 
 ---@param num string

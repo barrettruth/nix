@@ -1,4 +1,13 @@
-local git_picker
+local function make_header(bindings)
+    local utils = require('fzf-lua.utils')
+    local parts = {}
+    for _, b in ipairs(bindings) do
+        local key = utils.ansi_from_hl('FzfLuaHeaderBind', '<' .. b[1] .. '>')
+        local desc = utils.ansi_from_hl('FzfLuaHeaderText', b[2])
+        table.insert(parts, key .. ' to ' .. desc)
+    end
+    return ':: ' .. table.concat(parts, '|')
+end
 
 ---@param f forge.Forge
 ---@param num string
@@ -41,6 +50,15 @@ local function checks_picker(f, num, filter, cached_checks)
                 ['--ansi'] = '',
                 ['--with-nth'] = '2..',
                 ['--delimiter'] = '\t',
+                ['--header'] = make_header({
+                    { 'enter', 'view log' },
+                    { 'ctrl-x', 'open in browser' },
+                    { 'ctrl-f', 'failed' },
+                    { 'ctrl-p', 'passed' },
+                    { 'ctrl-n', 'running' },
+                    { 'ctrl-a', 'all' },
+                    { 'ctrl-r', 'refresh' },
+                }),
             },
             actions = {
                 ['default'] = function(selected)
@@ -59,10 +77,8 @@ local function checks_picker(f, num, filter, cached_checks)
                     else
                         cmd = f:check_log_cmd(run_id, bucket == 'fail')
                     end
-                    vim.cmd(
-                        'botright split | terminal '
-                            .. table.concat(cmd, ' ')
-                    )
+                    vim.cmd('noautocmd botright new')
+                    vim.fn.termopen(cmd)
                     vim.cmd.stopinsert()
                     if c.link then
                         vim.b.forge_check_url = c.link
@@ -91,9 +107,6 @@ local function checks_picker(f, num, filter, cached_checks)
                 end,
                 ['ctrl-r'] = function()
                     checks_picker(f, num, filter)
-                end,
-                ['ctrl-s'] = function()
-                    git_picker()
                 end,
             },
         })
@@ -125,9 +138,6 @@ local function checks_picker(f, num, filter, cached_checks)
             actions = {
                 ['ctrl-r'] = function()
                     checks_picker(f, num, filter)
-                end,
-                ['ctrl-s'] = function()
-                    git_picker()
                 end,
             },
         })
@@ -318,7 +328,16 @@ local function forge_picker(kind, state, f)
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
                 fzf_opts = {
                     ['--ansi'] = '',
-                    ['--header'] = 'ctrl-o: toggle state │ ctrl-d: review │ ctrl-t: checks │ ctrl-x: open │ ctrl-s: back',
+                    ['--header'] = make_header({
+                        { 'enter', 'checkout' },
+                        { 'ctrl-d', 'review diff' },
+                        { 'ctrl-t', 'checks' },
+                        { 'ctrl-x', 'open in browser' },
+                        { 'ctrl-o', 'toggle state' },
+                        { 'ctrl-r', 'refresh' },
+                        { 'ctrl-a', 'approve' },
+                        { 'ctrl-m', 'merge' },
+                    }),
                 },
                 actions = {
                     ['default'] = function(selected)
@@ -378,9 +397,6 @@ local function forge_picker(kind, state, f)
                         forge_mod.clear_list(cache_key)
                         forge_picker(kind, state, f)
                     end,
-                    ['ctrl-b'] = function()
-                        git_picker()
-                    end,
                 },
             })
         end
@@ -421,7 +437,11 @@ local function forge_picker(kind, state, f)
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
                 fzf_opts = {
                     ['--ansi'] = '',
-                    ['--header'] = 'ctrl-o: toggle state │ ctrl-r: refresh │ ctrl-x: open │ ctrl-s: back',
+                    ['--header'] = make_header({
+                        { 'enter', 'open in browser' },
+                        { 'ctrl-o', 'toggle state' },
+                        { 'ctrl-r', 'refresh' },
+                    }),
                 },
                 actions = {
                     ['default'] = function(selected)
@@ -444,9 +464,6 @@ local function forge_picker(kind, state, f)
                     ['ctrl-r'] = function()
                         forge_mod.clear_list(cache_key)
                         forge_picker(kind, state, f)
-                    end,
-                    ['ctrl-b'] = function()
-                        git_picker()
                     end,
                 },
             })
@@ -472,6 +489,104 @@ local function forge_picker(kind, state, f)
                 end
             )
         end
+    end
+end
+
+local function ci_picker(f, branch)
+    require('lz.n').trigger_load('ibhagwan/fzf-lua')
+    local forge_mod = require('forge')
+
+    local function open_picker(runs)
+        local normalized = {}
+        for _, entry in ipairs(runs) do
+            table.insert(normalized, f:normalize_run(entry))
+        end
+
+        local lines = {}
+        for i, run in ipairs(normalized) do
+            table.insert(lines, ('%d\t%s'):format(i, forge_mod.format_run(run)))
+        end
+
+        local function get_run(selected)
+            if not selected[1] then return nil end
+            local idx = tonumber(selected[1]:match('^(%d+)'))
+            return idx and normalized[idx] or nil
+        end
+
+        require('fzf-lua').fzf_exec(lines, {
+            prompt = ('%s (%s)> '):format(f.labels.ci, branch or 'all'),
+            fzf_opts = {
+                ['--ansi'] = '',
+                ['--with-nth'] = '2..',
+                ['--delimiter'] = '\t',
+                ['--header'] = make_header({
+                    { 'enter', 'view log' },
+                    { 'ctrl-x', 'open in browser' },
+                    { 'ctrl-r', 'refresh' },
+                }),
+            },
+            actions = {
+                ['default'] = function(selected)
+                    local run = get_run(selected)
+                    if not run then return end
+                    local s = run.status:lower()
+                    local cmd
+                    if s == 'in_progress' or s == 'running' or s == 'pending' or s == 'queued' then
+                        cmd = f:run_tail_cmd(run.id)
+                    elseif s == 'failure' or s == 'failed' then
+                        cmd = f:run_log_cmd(run.id, true)
+                    else
+                        cmd = f:run_log_cmd(run.id, false)
+                    end
+                    vim.cmd('noautocmd botright new')
+                    vim.fn.termopen(cmd)
+                    vim.cmd.stopinsert()
+                    if run.url ~= '' then
+                        vim.b.forge_run_url = run.url
+                        vim.keymap.set('n', 'gx', function()
+                            vim.ui.open(vim.b.forge_run_url)
+                        end, { buffer = true })
+                    end
+                end,
+                ['ctrl-x'] = function(selected)
+                    local run = get_run(selected)
+                    if run and run.url ~= '' then
+                        vim.ui.open(run.url)
+                    end
+                end,
+                ['ctrl-r'] = function()
+                    ci_picker(f, branch)
+                end,
+            },
+        })
+    end
+
+    if f.list_runs_json_cmd then
+        forge_mod.log('fetching CI runs...')
+        vim.system(
+            f:list_runs_json_cmd(branch),
+            { text = true },
+            function(result)
+                vim.schedule(function()
+                    local ok, runs =
+                        pcall(vim.json.decode, result.stdout or '[]')
+                    if ok and runs and #runs > 0 then
+                        open_picker(runs)
+                    else
+                        vim.notify(
+                            '[forge]: no CI runs found',
+                            vim.log.levels.INFO
+                        )
+                        vim.cmd.redraw()
+                    end
+                end)
+            end
+        )
+    elseif f.list_runs_cmd then
+        require('fzf-lua').fzf_exec(f:list_runs_cmd(branch), {
+            prompt = f.labels.ci .. '> ',
+            fzf_opts = { ['--ansi'] = '' },
+        })
     end
 end
 
@@ -515,39 +630,16 @@ git_picker = function()
             forge_picker('issue', 'all', f)
         end)
 
-        if branch ~= '' then
-            add(ci_label, function()
-                forge_mod.log(
-                    'looking up PR for branch ' .. branch .. '...'
-                )
-                vim.system(
-                    f:pr_for_branch_cmd(branch),
-                    { text = true },
-                    function(result)
-                        vim.schedule(function()
-                            local num = vim.trim(result.stdout or '')
-                            if num ~= '' and num:match('^%d+$') then
-                                checks_picker(f, num)
-                            else
-                                vim.notify(
-                                    '[forge]: no PR found for branch '
-                                        .. branch,
-                                    vim.log.levels.WARN
-                                )
-                                vim.cmd.redraw()
-                            end
-                        end)
-                    end
-                )
-            end)
-        end
+        add(ci_label, function()
+            ci_picker(f, branch ~= '' and branch or nil)
+        end)
 
-        add('Browse Repo', function()
+        add('Browse Remote', function()
             f:browse_root()
         end)
 
         if has_file then
-            add('Browse File', function()
+            add('Open File', function()
                 if branch == '' then
                     vim.notify(
                         '[forge]: detached HEAD',
@@ -584,9 +676,6 @@ git_picker = function()
                     if sha and f then
                         f:browse_commit(sha)
                     end
-                end,
-                ['ctrl-s'] = function()
-                    git_picker()
                 end,
             },
         })
