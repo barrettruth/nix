@@ -15,4 +15,3 @@ vim.api.nvim_create_autocmd('VimEnter', {
             .. vim.o.statusline:sub(2)
     end,
 })
-

@@ -5,7 +5,12 @@ local M = {
     name = 'github',
     cli = 'gh',
     kinds = { issue = 'issue', pr = 'pr' },
-    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'CI/CD' },
+    labels = {
+        issue = 'Issues',
+        pr = 'PRs',
+        pr_full = 'Pull Requests',
+        ci = 'CI/CD',
+    },
 }
 
 local function nwo()
@@ -193,9 +198,13 @@ end
 
 function M:list_runs_json_cmd(branch)
     local cmd = {
-        'gh', 'run', 'list',
-        '--json', 'databaseId,name,headBranch,status,conclusion,event,url,createdAt',
-        '--limit', '30',
+        'gh',
+        'run',
+        'list',
+        '--json',
+        'databaseId,name,headBranch,status,conclusion,event,url,createdAt',
+        '--limit',
+        '30',
     }
     if branch then
         table.insert(cmd, '--branch')
@@ -224,10 +233,9 @@ function M:run_log_cmd(id, failed_only)
     local lines = forge.config().ci.lines
     local flag = failed_only and '--log-failed' or '--log'
     return {
-        'sh', '-c',
-        ('gh run view %s -R %s %s | tail -n %d'):format(
-            id, nwo(), flag, lines
-        ),
+        'sh',
+        '-c',
+        ('gh run view %s -R %s %s | tail -n %d'):format(id, nwo(), flag, lines),
     }
 end
 
