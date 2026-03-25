@@ -23,7 +23,6 @@
   outputs =
     {
       nixpkgs,
-      nixpkgs-master,
       home-manager,
       nixos-hardware,
       zen-browser,
@@ -35,12 +34,9 @@
       ...
     }:
     let
-      pinnedPkgs = import nixpkgs-master { system = "x86_64-linux"; };
-
       overlays = [
         claude-code.overlays.default
         neovim-nightly.overlays.default
-        (_: _: { bitwarden-desktop = pinnedPkgs.bitwarden-desktop; })
       ];
 
       sharedUnfree = [
@@ -67,46 +63,6 @@
         backlightDevice = "intel_backlight";
         platform = "x86_64-linux";
       };
-
-      macConfig = {
-        isNixOS = false;
-        isLinux = false;
-        isDarwin = true;
-        gpu = "apple";
-        backlightDevice = null;
-        platform = "aarch64-darwin";
-      };
-
-      macWorkConfig = {
-        isNixOS = false;
-        isLinux = false;
-        isDarwin = true;
-        gpu = "apple";
-        backlightDevice = null;
-        platform = "aarch64-darwin";
-      };
-
-      linuxWorkConfig = {
-        isNixOS = false;
-        isLinux = true;
-        isDarwin = false;
-        gpu = null;
-        backlightDevice = null;
-        platform = "x86_64-linux";
-      };
-
-      mkHome =
-        hostConfig:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = mkPkgs hostConfig.platform [ ];
-          extraSpecialArgs = {
-            inherit zen-browser hostConfig;
-          };
-          modules = [
-            direnv-instant.homeModules.direnv-instant
-            ./home/home.nix
-          ];
-        };
     in
     {
       formatter.x86_64-linux = (mkPkgs "x86_64-linux" [ ]).nixfmt-tree;

@@ -113,7 +113,6 @@ in
       glab
     ]
     ++ lib.optionals hostConfig.isLinux [
-      bitwarden-desktop
       libreoffice-fresh
     ]
     ++ lib.optionals zen [ zen-browser.packages.${hostConfig.platform}.default ]

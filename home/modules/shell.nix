@@ -336,6 +336,8 @@ in
 
   xdg.configFile."claude/settings.json" = lib.mkIf claude {
     text = builtins.toJSON {
+      model = "claude-opus-4-6";
+      effortLevel = "high";
       permissions.defaultMode = "acceptEdits";
       notifications.hints = "disabled";
       network_access = true;
