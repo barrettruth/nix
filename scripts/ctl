@@ -534,14 +534,12 @@ power)
   esac
   ;;
 dictate)
-  require pw-record whisper-cli wl-copy notify-send
+  require pw-record curl wl-copy notify-send
   dtmp="${XDG_RUNTIME_DIR:-/tmp}/dictation"
   mkdir -p "$dtmp"
   dpid="$dtmp/rec_pid"
   daudio="$dtmp/recording.wav"
-  dmodel="${DICTATE_MODEL:-large-v3-turbo-q5_0}"
-  dmodel_dir="${XDG_DATA_HOME:-$HOME/.local/share}/whisper-models"
-  dmodel_file="$dmodel_dir/ggml-$dmodel.bin"
+  dport=8178
 
   if [ -f "$dpid" ] && kill -0 "$(cat "$dpid")" 2>/dev/null; then
     kill "$(cat "$dpid")" 2>/dev/null
@@ -552,11 +550,14 @@ dictate)
       exit 1
     fi
     notify-send -a ctl -t 1250 "transcribing..."
-    text=$(whisper-cli \
-      --model "$dmodel_file" \
-      --language "${DICTATE_LANG:-en}" \
-      --no-prints --no-timestamps \
-      "$daudio" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
+    for _ in $(seq 1 50); do
+      curl -s --max-time 1 "http://127.0.0.1:$dport/" >/dev/null 2>&1 && break
+      sleep 0.1
+    done
+    text=$(curl -sf "http://127.0.0.1:$dport/inference" \
+      -F "file=@$daudio" \
+      -F "language=${DICTATE_LANG:-en}" \
+      -F "response-format=text" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
     rm -f "$daudio"
     if [ -z "$text" ]; then
       notify-send -a ctl -t 1250 "no speech detected"
@@ -564,15 +565,13 @@ dictate)
     fi
     printf '%s' "$text" | wl-copy
     notify-send -a ctl -t 1250 "$text"
+    systemctl --user stop whisper-idle.timer 2>/dev/null
+    systemd-run --user --unit=whisper-idle --on-active=120 systemctl --user stop whisper-dictation 2>/dev/null
     exit 0
   fi
 
-  if [ ! -f "$dmodel_file" ]; then
-    notify-send -a ctl -t 1250 "downloading whisper $dmodel model..."
-    mkdir -p "$dmodel_dir"
-    curl -L -o "$dmodel_file" \
-      "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-$dmodel.bin"
-  fi
+  systemctl --user stop whisper-idle.timer 2>/dev/null
+  systemctl --user start whisper-dictation 2>/dev/null
   notify-send -a ctl -t 1250 "recording..."
   pw-record "$daudio" &
   printf '%s' "$!" > "$dpid"
