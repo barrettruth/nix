@@ -13,10 +13,22 @@ require tmux
 
 get_scope() {
   _path=$(tmux display-message -p '#{pane_current_path}')
-  case "$_path" in
-  "$HOME") printf '~' ;;
-  *) basename "$_path" ;;
-  esac
+  _root=$(git -C "$_path" rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$_root" ]; then
+    basename "$_root"
+  elif [ "$_path" = "$HOME" ]; then
+    printf '~'
+  else
+    basename "$_path"
+  fi
+}
+
+is_adoptable() {
+  _shell=$(basename "$SHELL")
+  _name=$(tmux display-message -p '#{window_name}')
+  _cmd=$(tmux display-message -p '#{pane_current_command}')
+  _panes=$(tmux display-message -p '#{window_panes}')
+  [ "$_panes" -eq 1 ] && [ "$_cmd" = "$_shell" ] && [ "$_name" = "$_shell" ]
 }
 
 spawn_or_focus() {
@@ -25,8 +37,15 @@ spawn_or_focus() {
   cmd="$2"
 
   idx=$(tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }')
+  cur_idx=$(tmux display-message -p '#{window_index}')
 
-  if [ -n "$idx" ]; then
+  if [ -n "$idx" ] && [ "$idx" = "$cur_idx" ]; then
+    return
+  elif is_adoptable; then
+    [ -n "$idx" ] && tmux kill-window -t ":${idx}"
+    tmux rename-window "$name"
+    [ -n "$cmd" ] && tmux send-keys "exec $cmd" Enter
+  elif [ -n "$idx" ]; then
     tmux select-window -t ":${idx}"
   elif [ -n "$cmd" ]; then
     tmux new-window -c '#{pane_current_path}' -n "${name}" "$cmd"
@@ -162,77 +181,69 @@ run)
     delta)
       spawn_or_focus run 'pnpm dev'
       ;;
+    *)
+      tmux display-message "mux: no run command for '$project_name'"
+      ;;
   esac
   ;;
 shell)
   spawn_or_focus shell
   ;;
-misc)
-  spawn_or_focus misc
-  ;;
 cmd)
   require fzf
-  result=$(tmux list-commands |
+  action=$(tmux list-commands |
     sed 's/ /	/' |
-    fzf --reverse --prompt ':' --print-query \
-      --delimiter '\t' --with-nth '1,2' --accept-nth '1' \
-      --bind 'ctrl-y:transform-query(echo {1})')
-  rc=$?
-  query=$(printf '%s' "$result" | head -1)
-  action=$(printf '%s' "$result" | sed -n '2p')
-  [ $rc -eq 130 ] && exit
-  if [ -n "$query" ] && [ "$query" != "$action" ]; then
-    tmux "$query"
-  elif [ -n "$action" ]; then
-    case "$action" in
-    switch-client) pick_session ;;
-    select-window) pick_window ;;
-    select-pane) pick_pane ;;
-    rename-window)
-      cur=$(tmux display-message -p '#{window_name}')
-      printf 'name [%s]: ' "$cur"
-      read -r name
-      [ -n "$name" ] && tmux rename-window "$name"
-      ;;
-    rename-session)
-      cur=$(tmux display-message -p '#S')
-      printf 'name [%s]: ' "$cur"
-      read -r name
-      [ -n "$name" ] && tmux rename-session "$name"
-      ;;
-    join-pane)
-      target=$(target_pane 'join-pane')
-      [ -n "$target" ] && tmux join-pane -s "$target"
-      ;;
-    swap-pane)
-      target=$(target_pane 'swap-pane')
-      [ -n "$target" ] && tmux swap-pane -t "$target"
-      ;;
-    select-layout)
-      layout=$(printf '%s\n' \
-        'even-horizontal' \
-        'even-vertical' \
-        'main-horizontal' \
-        'main-vertical' \
-        'tiled' |
-        fzf --reverse --prompt 'layout> ')
-      [ -n "$layout" ] && tmux select-layout "$layout"
-      ;;
-    kill-pane)
-      confirm 'kill-pane? [y/N]:' && tmux kill-pane
-      ;;
-    kill-window)
-      confirm "kill-window \"$(tmux display-message -p '#{window_name}')\"? [y/N]:" && tmux kill-window
-      ;;
-    kill-session)
-      confirm "kill-session \"$(tmux display-message -p '#S')\"? [y/N]:" && tmux kill-session
-      ;;
-    kill-server)
-      confirm 'kill-server? [y/N]:' && tmux kill-server
-      ;;
-    *) tmux "$action" ;;
-    esac
-  fi
+    fzf --reverse --prompt ':' \
+      --delimiter '\t' --with-nth '1,2' --accept-nth '1')
+  [ -z "$action" ] && exit
+  case "$action" in
+  switch-client) pick_session ;;
+  select-window) pick_window ;;
+  select-pane) pick_pane ;;
+  rename-window)
+    cur=$(tmux display-message -p '#{window_name}')
+    printf 'name [%s]: ' "$cur"
+    read -r name
+    [ -n "$name" ] && tmux rename-window "$name"
+    ;;
+  rename-session)
+    cur=$(tmux display-message -p '#S')
+    printf 'name [%s]: ' "$cur"
+    read -r name
+    [ -n "$name" ] && tmux rename-session "$name"
+    ;;
+  join-pane)
+    target=$(target_pane 'join-pane')
+    [ -n "$target" ] && tmux join-pane -s "$target"
+    ;;
+  swap-pane)
+    target=$(target_pane 'swap-pane')
+    [ -n "$target" ] && tmux swap-pane -t "$target"
+    ;;
+  select-layout)
+    layout=$(printf '%s\n' \
+      'even-horizontal' \
+      'even-vertical' \
+      'main-horizontal' \
+      'main-vertical' \
+      'tiled' |
+      fzf --reverse --prompt 'layout> ')
+    [ -n "$layout" ] && tmux select-layout "$layout"
+    ;;
+  kill-pane)
+    confirm 'kill-pane? [y/N]:' && tmux kill-pane
+    ;;
+  kill-window)
+    confirm "kill-window \"$(tmux display-message -p '#{window_name}')\"? [y/N]:" && tmux kill-window
+    ;;
+  kill-session)
+    confirm "kill-session \"$(tmux display-message -p '#S')\"? [y/N]:" && tmux kill-session
+    ;;
+  kill-server)
+    confirm 'kill-server? [y/N]:' && tmux kill-server
+    ;;
+  *) tmux "$action" ;;
+  esac
   ;;
 *)
   tmux attach 2>/dev/null || tmux new-session

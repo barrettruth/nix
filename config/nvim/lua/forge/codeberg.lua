@@ -5,7 +5,7 @@ local M = {
     name = 'codeberg',
     cli = 'tea',
     kinds = { issue = 'issues', pr = 'pulls' },
-    labels = { issue = 'Issues', pr = 'PRs' },
+    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'Actions' },
 }
 
 ---@param kind string
@@ -80,6 +80,20 @@ end
 
 function M:browse_root()
     vim.ui.open(forge.remote_web_url())
+end
+
+function M:browse_branch(branch)
+    local base = forge.remote_web_url()
+    vim.ui.open(base .. '/src/branch/' .. branch)
+end
+
+function M:browse_commit(sha)
+    local base = forge.remote_web_url()
+    vim.ui.open(base .. '/commit/' .. sha)
+end
+
+function M:checkout_cmd(num)
+    return { 'tea', 'pr', 'checkout', num }
 end
 
 ---@param loc string

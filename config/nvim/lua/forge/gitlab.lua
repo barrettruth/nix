@@ -5,7 +5,7 @@ local M = {
     name = 'gitlab',
     cli = 'glab',
     kinds = { issue = 'issue', pr = 'mr' },
-    labels = { issue = 'Issues', pr = 'MRs' },
+    labels = { issue = 'Issues', pr = 'MRs', pr_full = 'Merge Requests', ci = 'Pipelines' },
 }
 
 ---@param kind string
@@ -92,6 +92,20 @@ end
 
 function M:browse_root()
     vim.system({ 'glab', 'repo', 'view', '--web' })
+end
+
+function M:browse_branch(branch)
+    local base = forge.remote_web_url()
+    vim.ui.open(base .. '/-/tree/' .. branch)
+end
+
+function M:browse_commit(sha)
+    local base = forge.remote_web_url()
+    vim.ui.open(base .. '/-/commit/' .. sha)
+end
+
+function M:checkout_cmd(num)
+    return { 'glab', 'mr', 'checkout', num }
 end
 
 ---@param loc string

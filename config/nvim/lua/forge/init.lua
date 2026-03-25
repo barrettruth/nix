@@ -26,7 +26,7 @@ end
 ---@field name string
 ---@field cli string
 ---@field kinds { issue: string, pr: string }
----@field labels { issue: string, pr: string }
+---@field labels { issue: string, pr: string, pr_full: string, ci: string }
 ---@field list_cmd fun(self: forge.Forge, kind: string, state: string): string
 ---@field list_pr_json_cmd fun(self: forge.Forge, state: string): string[]
 ---@field list_issue_json_cmd fun(self: forge.Forge, state: string): string[]
@@ -35,6 +35,9 @@ end
 ---@field view_web fun(self: forge.Forge, kind: string, num: string)
 ---@field browse fun(self: forge.Forge, loc: string, branch: string)
 ---@field browse_root fun(self: forge.Forge)
+---@field browse_branch fun(self: forge.Forge, branch: string)
+---@field browse_commit fun(self: forge.Forge, sha: string)
+---@field checkout_cmd fun(self: forge.Forge, num: string): string[]
 ---@field yank_branch fun(self: forge.Forge, loc: string)
 ---@field yank_commit fun(self: forge.Forge, loc: string)
 ---@field fetch_pr fun(self: forge.Forge, num: string): string[]
@@ -244,12 +247,10 @@ end
 function M.format_pr(entry, fields)
     local num = tostring(entry[fields.number] or '')
     local title = entry[fields.title] or ''
-    local branch = entry[fields.branch] or ''
     local state = entry[fields.state] or ''
-    return ('\27[34m#%-4s\27[0m %s \27[2m%s\27[0m %s%s\27[0m'):format(
+    return ('\27[34m#%-4s\27[0m %s %s%s\27[0m'):format(
         num,
-        pad_or_truncate(title, 40),
-        pad_or_truncate(branch, 20),
+        pad_or_truncate(title, 60),
         state_color(state),
         state:lower()
     )
@@ -343,6 +344,9 @@ function M.config()
         ci = { lines = 10000 },
     }, vim.g.forge or {})
 end
+
+---@type { base: string?, mode: 'unified'|'split' }
+M.review = { base = nil, mode = 'unified' }
 
 ---@param args string[]
 function M.yank_url(args)
