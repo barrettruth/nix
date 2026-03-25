@@ -70,6 +70,9 @@ return {
                             :gsub('%-%-bind=ctrl%-a:select%-all', '')
                             :gsub('--color=[^%s]+', '')
                     ),
+                    actions = {
+                        ['ctrl-x'] = false,
+                    },
                 },
                 branches = {
                     fzf_args = (
@@ -77,6 +80,17 @@ return {
                             :gsub('%-%-bind=ctrl%-a:select%-all', '')
                             :gsub('--color=[^%s]+', '')
                     ),
+                    actions = {
+                        ['ctrl-x'] = function(selected)
+                            if not selected[1] then return end
+                            local branch = selected[1]:gsub('^[%s*]+', ''):match('%S+')
+                            if not branch then return end
+                            local f = require('forge').detect()
+                            if f then
+                                f:browse_branch(branch)
+                            end
+                        end,
+                    },
                 },
             },
         }
@@ -142,8 +156,6 @@ return {
             '<leader>fs',
             '<cmd>FzfLua files cwd=~/.config/nix/scripts<cr>',
         },
-        { '<leader>gb', '<cmd>FzfLua git_branches<cr>' },
-        { '<leader>gw', '<cmd>FzfLua git_worktrees<cr>' },
         { 'gq', '<cmd>FzfLua quickfix<cr>' },
         { 'gl', '<cmd>FzfLua loclist<cr>' },
     },

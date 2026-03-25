@@ -5,7 +5,7 @@ local M = {
     name = 'github',
     cli = 'gh',
     kinds = { issue = 'issue', pr = 'pr' },
-    labels = { issue = 'Issues', pr = 'PRs' },
+    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'Checks' },
 }
 
 local function nwo()
@@ -81,6 +81,18 @@ end
 
 function M:browse_root()
     vim.system({ 'gh', 'browse' })
+end
+
+function M:browse_branch(branch)
+    vim.system({ 'gh', 'browse', '--branch', branch })
+end
+
+function M:browse_commit(sha)
+    vim.system({ 'gh', 'browse', sha })
+end
+
+function M:checkout_cmd(num)
+    return { 'gh', 'pr', 'checkout', num }
 end
 
 ---@param loc string
