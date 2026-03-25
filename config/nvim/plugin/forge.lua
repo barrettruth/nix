@@ -1,3 +1,22 @@
+---@param result vim.SystemCompleted
+---@param fallback string
+---@return string
+local function cmd_error(result, fallback)
+    local msg = result.stderr or ''
+    if vim.trim(msg) == '' then
+        msg = result.stdout or ''
+    end
+    msg = vim.trim(msg)
+    if msg == '' then
+        msg = fallback
+    end
+    return msg
+end
+
+local fzf_args = (vim.env.FZF_DEFAULT_OPTS or '')
+    :gsub('%-%-bind=[^%s]+', '')
+    :gsub('%-%-color=[^%s]+', '')
+
 local function make_header(bindings)
     local utils = require('fzf-lua.utils')
     local parts = {}
@@ -42,6 +61,7 @@ local function checks_picker(f, num, filter, cached_checks)
         }
 
         require('fzf-lua').fzf_exec(lines, {
+            fzf_args = fzf_args,
             prompt = ('Checks (#%s, %s)> '):format(
                 num,
                 labels[filter] or filter
@@ -126,13 +146,13 @@ local function checks_picker(f, num, filter, cached_checks)
     end
 
     if cached_checks then
-        forge_mod.log('checks picker (PR #' .. num .. ', cached)')
+        forge_mod.log(('checks picker (%s #%s, cached)'):format(f.labels.pr_one, num))
         open_picker(cached_checks)
         return
     end
 
     if f.checks_json_cmd then
-        forge_mod.log_now('fetching checks for PR #' .. num .. '...')
+        forge_mod.log_now(('fetching checks for %s #%s...'):format(f.labels.pr_one, num))
         vim.system(f:checks_json_cmd(num), { text = true }, function(result)
             vim.schedule(function()
                 local ok, checks = pcall(vim.json.decode, result.stdout or '[]')
@@ -146,6 +166,7 @@ local function checks_picker(f, num, filter, cached_checks)
         end)
     else
         require('fzf-lua').fzf_exec(f:checks_cmd(num), {
+            fzf_args = fzf_args,
             prompt = ('Checks (#%s)> '):format(num),
             fzf_opts = { ['--ansi'] = '' },
             actions = {
@@ -157,31 +178,154 @@ local function checks_picker(f, num, filter, cached_checks)
     end
 end
 
+---@param kind string
+---@param num string
+---@param label string
+---@param cmd string[]
+---@param success_msg string
+---@param fail_msg string
+local function run_forge_cmd(kind, num, label, cmd, success_msg, fail_msg)
+    require('forge').log_now(label .. ' ' .. kind .. ' #' .. num .. '...')
+    vim.system(cmd, { text = true }, function(result)
+        vim.schedule(function()
+            if result.code == 0 then
+                vim.notify(('[forge]: %s %s #%s'):format(success_msg, kind, num))
+            else
+                vim.notify(
+                    '[forge]: ' .. cmd_error(result, fail_msg),
+                    vim.log.levels.ERROR
+                )
+            end
+            vim.cmd.redraw()
+        end)
+    end)
+end
+
+---@param f forge.Forge
+---@param num string
+---@param is_open boolean
+local function issue_toggle_state(f, num, is_open)
+    if is_open then
+        run_forge_cmd(
+            'issue', num, 'closing', f:close_issue_cmd(num),
+            'closed', 'close failed'
+        )
+    else
+        run_forge_cmd(
+            'issue', num, 'reopening', f:reopen_issue_cmd(num),
+            'reopened', 'reopen failed'
+        )
+    end
+end
+
+---@param f forge.Forge
+---@param num string
+local function pr_manage_picker(f, num)
+    local forge_mod = require('forge')
+    local kind = f.labels.pr_one
+    forge_mod.log_now('loading actions for ' .. kind .. ' #' .. num .. '...')
+
+    local info = forge_mod.repo_info(f)
+    local can_write = info.permission == 'ADMIN'
+        or info.permission == 'MAINTAIN'
+        or info.permission == 'WRITE'
+    local pr_state = f:pr_state(num)
+    local is_open = pr_state.state == 'OPEN' or pr_state.state == 'OPENED'
+
+    local entries = {}
+    local action_map = {}
+
+    local function add(label, fn)
+        table.insert(entries, label)
+        action_map[label] = fn
+    end
+
+    if can_write and is_open then
+        add('Approve', function()
+            run_forge_cmd(
+                kind, num, 'approving', f:approve_cmd(num),
+                'approved', 'approve failed'
+            )
+        end)
+    end
+
+    if can_write and is_open then
+        for _, method in ipairs(info.merge_methods) do
+            add('Merge (' .. method .. ')', function()
+                run_forge_cmd(
+                    kind, num, 'merging (' .. method .. ')',
+                    f:merge_cmd(num, method),
+                    'merged (' .. method .. ')', 'merge failed'
+                )
+            end)
+        end
+    end
+
+    if is_open then
+        add('Close', function()
+            run_forge_cmd(
+                kind, num, 'closing', f:close_cmd(num),
+                'closed', 'close failed'
+            )
+        end)
+    else
+        add('Reopen', function()
+            run_forge_cmd(
+                kind, num, 'reopening', f:reopen_cmd(num),
+                'reopened', 'reopen failed'
+            )
+        end)
+    end
+
+    local draft_cmd = f:draft_toggle_cmd(num, pr_state.is_draft)
+    if draft_cmd then
+        local draft_label = pr_state.is_draft and 'Mark as ready'
+            or 'Mark as draft'
+        local draft_done = pr_state.is_draft and 'marked as ready'
+            or 'marked as draft'
+        add(draft_label, function()
+            run_forge_cmd(
+                kind, num, 'toggling draft', draft_cmd,
+                draft_done, 'draft toggle failed'
+            )
+        end)
+    end
+
+    require('fzf-lua').fzf_exec(entries, {
+        fzf_args = fzf_args,
+        prompt = ('%s #%s Actions> '):format(kind, num),
+        fzf_opts = { ['--no-multi'] = '' },
+        actions = {
+            ['default'] = function(selected)
+                if selected[1] and action_map[selected[1]] then
+                    action_map[selected[1]]()
+                end
+            end,
+        },
+    })
+end
+
 ---@param f forge.Forge
 ---@param num string
 ---@return table<string, function>
 local function pr_actions(f, num)
-    local info = require('forge').repo_info(f)
-    local can_write = info.permission == 'ADMIN'
-        or info.permission == 'MAINTAIN'
-        or info.permission == 'WRITE'
+    local kind = f.labels.pr_one
     local actions = {}
 
     actions['default'] = function()
-        local checkout = f:checkout_cmd(num)
-        require('forge').log_now('checking out PR #' .. num .. '...')
-        vim.system(checkout, { text = true }, function(result)
+        local forge_mod = require('forge')
+        forge_mod.log_now(('checking out %s #%s...'):format(kind, num))
+        vim.system(f:checkout_cmd(num), { text = true }, function(result)
             vim.schedule(function()
                 if result.code == 0 then
-                    vim.notify(('[forge]: checked out PR #%s'):format(num))
-                    vim.cmd.redraw()
+                    vim.notify(('[forge]: checked out %s #%s'):format(kind, num))
                 else
                     vim.notify(
-                        '[forge]: ' .. (result.stderr or 'checkout failed'),
+                        '[forge]: ' .. cmd_error(result, 'checkout failed'),
                         vim.log.levels.ERROR
                     )
-                    vim.cmd.redraw()
                 end
+                vim.cmd.redraw()
             end)
         end)
     end
@@ -190,15 +334,46 @@ local function pr_actions(f, num)
         f:view_web(f.kinds.pr, num)
     end
 
+    actions['ctrl-w'] = function()
+        local forge_mod = require('forge')
+        local fetch_cmd = f:fetch_pr(num)
+        local branch = fetch_cmd[#fetch_cmd]:match(':(.+)$')
+        if not branch then
+            return
+        end
+        local root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
+        local wt_path = vim.fs.normalize(root .. '/../' .. branch)
+        forge_mod.log_now(('fetching %s #%s into worktree...'):format(kind, num))
+        vim.system(fetch_cmd, { text = true }, function()
+            vim.system(
+                { 'git', 'worktree', 'add', wt_path, branch },
+                { text = true },
+                function(result)
+                    vim.schedule(function()
+                        if result.code == 0 then
+                            vim.notify(('[forge]: worktree at %s'):format(wt_path))
+                        else
+                            vim.notify(
+                                '[forge]: '
+                                    .. cmd_error(result, 'worktree failed'),
+                                vim.log.levels.ERROR
+                            )
+                        end
+                        vim.cmd.redraw()
+                    end)
+                end
+            )
+        end)
+    end
+
     actions['ctrl-d'] = function()
         local forge_mod = require('forge')
         local review = forge_mod.review
         local repo_root =
             vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
-        local checkout_cmd = f:checkout_cmd(num)
 
-        forge_mod.log_now('reviewing PR #' .. num .. '...')
-        vim.system(checkout_cmd, { text = true }, function(co_result)
+        forge_mod.log_now(('reviewing %s #%s...'):format(kind, num))
+        vim.system(f:checkout_cmd(num), { text = true }, function(co_result)
             if co_result.code ~= 0 then
                 vim.schedule(function()
                     forge_mod.log('checkout skipped, proceeding with diff')
@@ -222,10 +397,9 @@ local function pr_actions(f, num)
                             { repo_root = repo_root }
                         )
                         forge_mod.log(
-                            'review ready for PR #'
-                                .. num
-                                .. ' against '
-                                .. base
+                            ('review ready for %s #%s against %s'):format(
+                                kind, num, base
+                            )
                         )
                     end)
                 end
@@ -237,106 +411,8 @@ local function pr_actions(f, num)
         checks_picker(f, num)
     end
 
-    if can_write then
-        actions['ctrl-a'] = function()
-            require('forge').log_now('approving PR #' .. num .. '...')
-            vim.system(f:approve_cmd(num), { text = true }, function(result)
-                vim.schedule(function()
-                    if result.code == 0 then
-                        vim.notify(('[forge]: approved PR #%s'):format(num))
-                        vim.cmd.redraw()
-                    else
-                        vim.notify(
-                            '[forge]: ' .. (result.stderr or 'approve failed'),
-                            vim.log.levels.ERROR
-                        )
-                        vim.cmd.redraw()
-                    end
-                end)
-            end)
-        end
-
-        if #info.merge_methods > 0 then
-            actions['ctrl-m'] = function()
-                if #info.merge_methods == 1 then
-                    require('forge').log_now(
-                        'merging PR #'
-                            .. num
-                            .. ' ('
-                            .. info.merge_methods[1]
-                            .. ')...'
-                    )
-                    vim.system(
-                        f:merge_cmd(num, info.merge_methods[1]),
-                        { text = true },
-                        function(result)
-                            vim.schedule(function()
-                                if result.code == 0 then
-                                    vim.notify(
-                                        ('[forge]: merged PR #%s (%s)'):format(
-                                            num,
-                                            info.merge_methods[1]
-                                        )
-                                    )
-                                    vim.cmd.redraw()
-                                else
-                                    vim.notify(
-                                        '[forge]: '
-                                            .. (result.stderr or 'merge failed'),
-                                        vim.log.levels.ERROR
-                                    )
-                                    vim.cmd.redraw()
-                                end
-                            end)
-                        end
-                    )
-                else
-                    vim.schedule(function()
-                        vim.ui.select(info.merge_methods, {
-                            prompt = 'Merge method: ',
-                        }, function(method)
-                            if not method then
-                                return
-                            end
-                            require('forge').log_now(
-                                'merging PR #'
-                                    .. num
-                                    .. ' ('
-                                    .. method
-                                    .. ')...'
-                            )
-                            vim.system(
-                                f:merge_cmd(num, method),
-                                { text = true },
-                                function(result)
-                                    vim.schedule(function()
-                                        if result.code == 0 then
-                                            vim.notify(
-                                                ('[forge]: merged PR #%s (%s)'):format(
-                                                    num,
-                                                    method
-                                                )
-                                            )
-                                            vim.cmd.redraw()
-                                        else
-                                            vim.notify(
-                                                '[forge]: '
-                                                    .. (
-                                                        result.stderr
-                                                        or 'merge failed'
-                                                    ),
-                                                vim.log.levels.ERROR
-                                            )
-                                            vim.cmd.redraw()
-                                        end
-                                    end)
-                                end
-                            )
-                        end)
-                    end)
-                end
-            end
-        end
+    actions['ctrl-a'] = function()
+        pr_manage_picker(f, num)
     end
 
     return actions
@@ -367,6 +443,7 @@ local function forge_picker(kind, state, f)
                 )
             end
             require('fzf-lua').fzf_exec(lines, {
+                fzf_args = fzf_args,
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
                 fzf_opts = {
                     ['--ansi'] = '',
@@ -374,8 +451,10 @@ local function forge_picker(kind, state, f)
                     ['--header'] = make_header({
                         { 'enter', 'checkout' },
                         { 'ctrl-d', 'diff' },
+                        { 'ctrl-w', 'worktree' },
                         { 'ctrl-t', 'checks' },
                         { 'ctrl-x', 'browse' },
+                        { 'ctrl-a', 'actions' },
                         { 'ctrl-o', 'toggle' },
                     }),
                 },
@@ -407,6 +486,15 @@ local function forge_picker(kind, state, f)
                             pr_actions(f, num)['ctrl-d']()
                         end
                     end,
+                    ['ctrl-w'] = function(selected)
+                        if not selected[1] then
+                            return
+                        end
+                        local num = selected[1]:match('[#!](%d+)')
+                        if num then
+                            pr_actions(f, num)['ctrl-w']()
+                        end
+                    end,
                     ['ctrl-t'] = function(selected)
                         if not selected[1] then
                             return
@@ -421,25 +509,8 @@ local function forge_picker(kind, state, f)
                             return
                         end
                         local num = selected[1]:match('[#!](%d+)')
-                        if not num then
-                            return
-                        end
-                        local acts = pr_actions(f, num)
-                        if acts['ctrl-a'] then
-                            acts['ctrl-a']()
-                        end
-                    end,
-                    ['ctrl-m'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if not num then
-                            return
-                        end
-                        local acts = pr_actions(f, num)
-                        if acts['ctrl-m'] then
-                            acts['ctrl-m']()
+                        if num then
+                            pr_manage_picker(f, num)
                         end
                     end,
                     ['ctrl-o'] = function()
@@ -457,7 +528,8 @@ local function forge_picker(kind, state, f)
         if cached then
             open_pr_list(cached)
         else
-            forge_mod.log_now('fetching PR list (' .. state .. ')...')
+            -- TODO: log_now doesn't render before fetch completes (fzf-lua screen cleanup race)
+            forge_mod.log_now(('fetching %s list (%s)...'):format(f.labels.pr, state))
             vim.system(
                 f:list_pr_json_cmd(state),
                 { text = true },
@@ -482,8 +554,13 @@ local function forge_picker(kind, state, f)
             table.sort(issues, function(a, b)
                 return (a[num_field] or 0) > (b[num_field] or 0)
             end)
+            local state_field = issue_fields.state
+            local state_map = {}
             local lines = {}
             for _, issue in ipairs(issues) do
+                local n = tostring(issue[num_field] or '')
+                local s = (issue[state_field] or ''):lower()
+                state_map[n] = s == 'open' or s == 'opened'
                 table.insert(
                     lines,
                     forge_mod.format_issue(
@@ -494,17 +571,27 @@ local function forge_picker(kind, state, f)
                 )
             end
             require('fzf-lua').fzf_exec(lines, {
+                fzf_args = fzf_args,
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
                 fzf_opts = {
                     ['--ansi'] = '',
                     ['--no-multi'] = '',
                     ['--header'] = make_header({
-                        { 'ctrl-x', 'browse' },
+                        { 'enter', 'browse' },
+                        { 'ctrl-s', 'close/reopen' },
                         { 'ctrl-o', 'toggle' },
-                        { 'ctrl-r', 'refresh' },
                     }),
                 },
                 actions = {
+                    ['default'] = function(selected)
+                        if not selected[1] then
+                            return
+                        end
+                        local num = selected[1]:match('[#!](%d+)')
+                        if num then
+                            f:view_web(cli_kind, num)
+                        end
+                    end,
                     ['ctrl-x'] = function(selected)
                         if not selected[1] then
                             return
@@ -512,6 +599,15 @@ local function forge_picker(kind, state, f)
                         local num = selected[1]:match('[#!](%d+)')
                         if num then
                             f:view_web(cli_kind, num)
+                        end
+                    end,
+                    ['ctrl-s'] = function(selected)
+                        if not selected[1] then
+                            return
+                        end
+                        local num = selected[1]:match('[#!](%d+)')
+                        if num then
+                            issue_toggle_state(f, num, state_map[num] ~= false)
                         end
                     end,
                     ['ctrl-o'] = function()
@@ -529,6 +625,7 @@ local function forge_picker(kind, state, f)
         if cached then
             open_issue_list(cached)
         else
+            -- TODO: log_now doesn't render before fetch completes (fzf-lua screen cleanup race)
             forge_mod.log_now('fetching issue list (' .. state .. ')...')
             vim.system(
                 f:list_issue_json_cmd(state),
@@ -572,6 +669,7 @@ local function ci_picker(f, branch)
         end
 
         require('fzf-lua').fzf_exec(lines, {
+            fzf_args = fzf_args,
             prompt = ('%s (%s)> '):format(f.labels.ci, branch or 'all'),
             fzf_opts = {
                 ['--ansi'] = '',
@@ -663,6 +761,7 @@ local function ci_picker(f, branch)
         )
     elseif f.list_runs_cmd then
         require('fzf-lua').fzf_exec(f:list_runs_cmd(branch), {
+            fzf_args = fzf_args,
             prompt = f.labels.ci .. '> ',
             fzf_opts = { ['--ansi'] = '' },
         })
@@ -750,6 +849,7 @@ git_picker = function()
         end
 
         require('fzf-lua').fzf_exec(log_cmd, {
+            fzf_args = fzf_args,
             prompt = 'Commits> ',
             fzf_opts = {
                 ['--ansi'] = '',
@@ -781,9 +881,9 @@ git_picker = function()
                                 else
                                     vim.notify(
                                         '[forge]: '
-                                            .. (
-                                                result.stderr
-                                                or 'checkout failed'
+                                            .. cmd_error(
+                                                result,
+                                                'checkout failed'
                                             ),
                                         vim.log.levels.ERROR
                                     )
@@ -870,6 +970,7 @@ git_picker = function()
         or 'Git> '
 
     require('fzf-lua').fzf_exec(items, {
+        fzf_args = fzf_args,
         prompt = prompt,
         actions = {
             ['default'] = function(selected)
@@ -916,57 +1017,28 @@ local function close_review_view()
     pcall(vim.cmd, 'diffoff!')
 end
 
-vim.keymap.set('n', ']q', function()
-    local review = require('forge').review
-    if review.base and review.mode == 'split' then
-        close_review_view()
+local function review_nav(nav_cmd)
+    return function()
+        local review = require('forge').review
+        if review.base and review.mode == 'split' then
+            close_review_view()
+        end
+        local wrap = { cnext = 'cfirst', cprev = 'clast', lnext = 'lfirst', lprev = 'llast' }
+        if not pcall(vim.cmd, nav_cmd) then
+            if not pcall(vim.cmd, wrap[nav_cmd]) then
+                return
+            end
+        end
+        if review.base and review.mode == 'split' then
+            pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+        end
     end
-    if not pcall(vim.cmd.cnext) then
-        return
-    end
-    if review.base and review.mode == 'split' then
-        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
-    end
-end, { desc = 'next quickfix entry' })
+end
 
-vim.keymap.set('n', '[q', function()
-    local review = require('forge').review
-    if review.base and review.mode == 'split' then
-        close_review_view()
-    end
-    if not pcall(vim.cmd.cprev) then
-        return
-    end
-    if review.base and review.mode == 'split' then
-        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
-    end
-end, { desc = 'prev quickfix entry' })
-
-vim.keymap.set('n', ']g', function()
-    local review = require('forge').review
-    if review.base and review.mode == 'split' then
-        close_review_view()
-    end
-    if not pcall(vim.cmd.lnext) then
-        return
-    end
-    if review.base and review.mode == 'split' then
-        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
-    end
-end, { desc = 'next loclist entry' })
-
-vim.keymap.set('n', '[g', function()
-    local review = require('forge').review
-    if review.base and review.mode == 'split' then
-        close_review_view()
-    end
-    if not pcall(vim.cmd.lprev) then
-        return
-    end
-    if review.base and review.mode == 'split' then
-        pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
-    end
-end, { desc = 'prev loclist entry' })
+vim.keymap.set('n', ']q', review_nav('cnext'), { desc = 'next quickfix entry' })
+vim.keymap.set('n', '[q', review_nav('cprev'), { desc = 'prev quickfix entry' })
+vim.keymap.set('n', ']l', review_nav('lnext'), { desc = 'next loclist entry' })
+vim.keymap.set('n', '[l', review_nav('lprev'), { desc = 'prev loclist entry' })
 
 vim.keymap.set('n', 's', function()
     local review = require('forge').review

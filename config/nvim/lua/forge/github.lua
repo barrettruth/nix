@@ -8,6 +8,7 @@ local M = {
     labels = {
         issue = 'Issues',
         pr = 'PRs',
+        pr_one = 'PR',
         pr_full = 'Pull Requests',
         ci = 'CI/CD',
     },
@@ -256,6 +257,40 @@ function M:approve_cmd(num)
     return { 'gh', 'pr', 'review', num, '--approve' }
 end
 
+---@param num string
+---@return string[]
+function M:close_cmd(num)
+    return { 'gh', 'pr', 'close', num }
+end
+
+---@param num string
+---@return string[]
+function M:reopen_cmd(num)
+    return { 'gh', 'pr', 'reopen', num }
+end
+
+---@param num string
+---@return string[]
+function M:close_issue_cmd(num)
+    return { 'gh', 'issue', 'close', num }
+end
+
+---@param num string
+---@return string[]
+function M:reopen_issue_cmd(num)
+    return { 'gh', 'issue', 'reopen', num }
+end
+
+---@param num string
+---@param is_draft boolean
+---@return string[]?
+function M:draft_toggle_cmd(num, is_draft)
+    if is_draft then
+        return { 'gh', 'pr', 'ready', num }
+    end
+    return { 'gh', 'pr', 'ready', num, '--undo' }
+end
+
 ---@return forge.RepoInfo
 function M:repo_info()
     local result = vim.system({
@@ -294,7 +329,7 @@ function M:pr_state(num)
         'view',
         num,
         '--json',
-        'state,mergeable,reviewDecision',
+        'state,mergeable,reviewDecision,isDraft',
     }, { text = true }):wait()
 
     local data = vim.json.decode(result.stdout or '{}') or {}
@@ -302,6 +337,7 @@ function M:pr_state(num)
         state = data.state or 'UNKNOWN',
         mergeable = data.mergeable or 'UNKNOWN',
         review_decision = data.reviewDecision or '',
+        is_draft = data.isDraft == true,
     }
 end
 

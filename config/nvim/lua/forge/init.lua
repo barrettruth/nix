@@ -20,6 +20,7 @@ end
 ---@field state string
 ---@field mergeable string
 ---@field review_decision string
+---@field is_draft boolean
 
 ---@class forge.Check
 ---@field name string
@@ -44,7 +45,7 @@ end
 ---@field name string
 ---@field cli string
 ---@field kinds { issue: string, pr: string }
----@field labels { issue: string, pr: string, pr_full: string, ci: string }
+---@field labels { issue: string, pr: string, pr_one: string, pr_full: string, ci: string }
 ---@field list_cmd fun(self: forge.Forge, kind: string, state: string): string
 ---@field list_pr_json_cmd fun(self: forge.Forge, state: string): string[]
 ---@field list_issue_json_cmd fun(self: forge.Forge, state: string): string[]
@@ -73,6 +74,11 @@ end
 ---@field approve_cmd fun(self: forge.Forge, num: string): string[]
 ---@field repo_info fun(self: forge.Forge): forge.RepoInfo
 ---@field pr_state fun(self: forge.Forge, num: string): forge.PRState
+---@field close_cmd fun(self: forge.Forge, num: string): string[]
+---@field reopen_cmd fun(self: forge.Forge, num: string): string[]
+---@field close_issue_cmd fun(self: forge.Forge, num: string): string[]
+---@field reopen_issue_cmd fun(self: forge.Forge, num: string): string[]
+---@field draft_toggle_cmd fun(self: forge.Forge, num: string, is_draft: boolean): string[]?
 
 ---@type table<string, forge.Forge>
 local forge_cache = {}

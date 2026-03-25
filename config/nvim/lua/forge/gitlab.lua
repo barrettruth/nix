@@ -8,6 +8,7 @@ local M = {
     labels = {
         issue = 'Issues',
         pr = 'MRs',
+        pr_one = 'MR',
         pr_full = 'Merge Requests',
         ci = 'CI/CD',
     },
@@ -279,6 +280,40 @@ function M:approve_cmd(num)
     return { 'glab', 'mr', 'approve', num }
 end
 
+---@param num string
+---@return string[]
+function M:close_cmd(num)
+    return { 'glab', 'mr', 'close', num }
+end
+
+---@param num string
+---@return string[]
+function M:reopen_cmd(num)
+    return { 'glab', 'mr', 'reopen', num }
+end
+
+---@param num string
+---@return string[]
+function M:close_issue_cmd(num)
+    return { 'glab', 'issue', 'close', num }
+end
+
+---@param num string
+---@return string[]
+function M:reopen_issue_cmd(num)
+    return { 'glab', 'issue', 'reopen', num }
+end
+
+---@param num string
+---@param is_draft boolean
+---@return string[]?
+function M:draft_toggle_cmd(num, is_draft)
+    if is_draft then
+        return { 'glab', 'mr', 'update', num, '--ready' }
+    end
+    return { 'glab', 'mr', 'update', num, '--draft' }
+end
+
 ---@return forge.RepoInfo
 function M:repo_info()
     local result = vim.system(
@@ -286,10 +321,16 @@ function M:repo_info()
         { text = true }
     )
         :wait()
-    local data = vim.json.decode(result.stdout or '{}') or {}
-    local perms = data.permissions or {}
-    local access = (perms.project_access or {}).access_level or 0
-    local group_access = (perms.group_access or {}).access_level or 0
+    local ok, data = pcall(vim.json.decode, result.stdout or '{}')
+    if not ok or type(data) ~= 'table' then
+        data = {}
+    end
+    local perms = type(data.permissions) == 'table' and data.permissions or {}
+    local pa = type(perms.project_access) == 'table' and perms.project_access
+        or {}
+    local ga = type(perms.group_access) == 'table' and perms.group_access or {}
+    local access = pa.access_level or 0
+    local group_access = ga.access_level or 0
     local level = math.max(access, group_access)
 
     local permission = 'READ'
@@ -323,11 +364,15 @@ function M:pr_state(num)
         { 'glab', 'mr', 'view', num, '--output', 'json' },
         { text = true }
     ):wait()
-    local data = vim.json.decode(result.stdout or '{}') or {}
+    local ok, data = pcall(vim.json.decode, result.stdout or '{}')
+    if not ok or type(data) ~= 'table' then
+        data = {}
+    end
     return {
         state = (data.state or 'unknown'):upper(),
         mergeable = data.merge_status or 'unknown',
         review_decision = '',
+        is_draft = data.draft == true,
     }
 end
 
