@@ -8,6 +8,7 @@ local M = {
     labels = {
         issue = 'Issues',
         pr = 'PRs',
+        pr_one = 'PR',
         pr_full = 'Pull Requests',
         ci = 'CI/CD',
     },
@@ -214,6 +215,37 @@ function M:approve_cmd(num)
     return { 'tea', 'pr', 'approve', num }
 end
 
+---@param num string
+---@return string[]
+function M:close_cmd(num)
+    return { 'tea', 'pulls', 'close', num }
+end
+
+---@param num string
+---@return string[]
+function M:reopen_cmd(num)
+    return { 'tea', 'pulls', 'reopen', num }
+end
+
+---@param num string
+---@return string[]
+function M:close_issue_cmd(num)
+    return { 'tea', 'issues', 'close', num }
+end
+
+---@param num string
+---@return string[]
+function M:reopen_issue_cmd(num)
+    return { 'tea', 'issues', 'reopen', num }
+end
+
+---@param _num string
+---@param _is_draft boolean
+---@return string[]?
+function M:draft_toggle_cmd(_num, _is_draft)
+    return nil
+end
+
 ---@return forge.RepoInfo
 function M:repo_info()
     return {
@@ -229,11 +261,15 @@ function M:pr_state(num)
         { 'tea', 'pr', num, '--fields', 'state,mergeable', '--output', 'json' },
         { text = true }
     ):wait()
-    local data = vim.json.decode(result.stdout or '{}') or {}
+    local ok, data = pcall(vim.json.decode, result.stdout or '{}')
+    if not ok or type(data) ~= 'table' then
+        data = {}
+    end
     return {
         state = (data.state or 'unknown'):upper(),
         mergeable = data.mergeable and 'MERGEABLE' or 'UNKNOWN',
         review_decision = '',
+        is_draft = false,
     }
 end
 
