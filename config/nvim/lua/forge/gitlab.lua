@@ -61,19 +61,25 @@ function M:list_issue_json_cmd(state)
     return cmd
 end
 
----@return { number: string, title: string, branch: string, state: string }
 function M:pr_json_fields()
     return {
         number = 'iid',
         title = 'title',
         branch = 'source_branch',
         state = 'state',
+        author = 'author',
+        created_at = 'created_at',
     }
 end
 
----@return { number: string, title: string, state: string }
 function M:issue_json_fields()
-    return { number = 'iid', title = 'title', state = 'state' }
+    return {
+        number = 'iid',
+        title = 'title',
+        state = 'state',
+        author = 'author',
+        created_at = 'created_at',
+    }
 end
 
 ---@param kind string
@@ -201,10 +207,12 @@ function M:list_runs_json_cmd(branch)
 end
 
 function M:normalize_run(entry)
+    local ref = entry.ref or ''
+    local mr_num = ref:match('^refs/merge%-requests/(%d+)/head$')
     return {
         id = tostring(entry.id or ''),
-        name = '#' .. tostring(entry.iid or entry.id or ''),
-        branch = entry.ref or '',
+        name = mr_num and ('!%s'):format(mr_num) or ref,
+        branch = '',
         status = entry.status or '',
         event = entry.source or '',
         url = entry.web_url or '',
