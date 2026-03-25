@@ -54,7 +54,7 @@ keyboard)
         printf "%s%s\t%s\n", prefix, $0, $0
       }' |
       fuzzel --dmenu --prompt="kbd:  " --no-icons --lines=3 \
-        --with-nth=1 --accept-nth=2 --font="monospace:size=12" --width=23)
+        --with-nth=1 --accept-nth=2 --font="Berkeley Mono:size=12" --width=23)
     [ -z "$choice" ] && exit 0
     case "$choice" in
     QWERTY) variant="" ;;
@@ -124,7 +124,7 @@ audio)
         fuzzel --dmenu --prompt="$prompt" --no-icons --lines="$count" \
           --with-nth=1 --accept-nth=2 \
           --mesg="$header" --mesg-mode=expand \
-          --font="monospace:size=12" --width="$fw")
+          --font="Berkeley Mono:size=12" --width="$fw")
       rc=$?
       [ "$rc" = 10 ] && continue
       [ "$rc" = 11 ] && {
@@ -158,20 +158,21 @@ brightness)
     ;;
   esac
   pct=$(awk -v cur="$(brightnessctl get)" -v max="$(brightnessctl max)" 'BEGIN { printf "%d", cur * 100 / max }')
-  filled=$((pct / 5))
-  empty=$((20 - filled))
-  bar=""
+  filled=$((pct * 30 / 100))
+  empty=$((30 - filled))
+  bar="["
   i=0
   while [ "$i" -lt "$filled" ]; do
-    bar="${bar}━"
+    bar="${bar}="
     i=$((i + 1))
   done
   i=0
   while [ "$i" -lt "$empty" ]; do
-    bar="${bar}─"
+    bar="${bar} "
     i=$((i + 1))
   done
-  notify-send -a ctl -t 2500 -r 5555 "󰃠  $bar"
+  bar="${bar}]"
+  notify-send -a ctl -t 2500 -r 5555 "brightness: ${pct}%" "$bar"
   ;;
 volume)
   require wpctl notify-send
@@ -187,30 +188,26 @@ volume)
     exit 1
     ;;
   esac
-  vol=$(get_vol)
-  filled=$((vol / 5))
-  empty=$((20 - filled))
-  bar=""
-  i=0
-  while [ "$i" -lt "$filled" ]; do
-    bar="${bar}━"
-    i=$((i + 1))
-  done
-  i=0
-  while [ "$i" -lt "$empty" ]; do
-    bar="${bar}─"
-    i=$((i + 1))
-  done
   if wpctl get-volume "$SINK" | grep -q MUTED; then
-    icon="󰖁"
-  elif [ "$vol" -le 33 ]; then
-    icon="󰕿"
-  elif [ "$vol" -le 66 ]; then
-    icon="󰖀"
+    notify-send -a ctl -t 2500 -r 5556 "output: muted"
   else
-    icon="󰕾"
+    vol=$(get_vol)
+    filled=$((vol * 30 / 100))
+    empty=$((30 - filled))
+    bar="["
+    i=0
+    while [ "$i" -lt "$filled" ]; do
+      bar="${bar}="
+      i=$((i + 1))
+    done
+    i=0
+    while [ "$i" -lt "$empty" ]; do
+      bar="${bar} "
+      i=$((i + 1))
+    done
+    bar="${bar}]"
+    notify-send -a ctl -t 2500 -r 5556 "output: ${vol}%" "$bar"
   fi
-  notify-send -a ctl -t 2500 -r 5556 "$icon  $bar"
   ;;
 wifi)
   case "$2" in
@@ -265,7 +262,7 @@ wifi)
         fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count" \
           --with-nth=1 --accept-nth=2 \
           --mesg="$header" --mesg-mode=expand \
-          --font="monospace:size=12" --width="$fw")
+          --font="Berkeley Mono:size=12" --width="$fw")
       rc=$?
       [ "$rc" = 10 ] && continue
       [ -z "$ssid" ] && exit 0
@@ -511,7 +508,7 @@ clip)
       printf "       %s\t%s\n", display, $1
     }' |
     fuzzel --dmenu --no-icons --prompt="clip:  " \
-      --with-nth=1 --accept-nth=2 --font="monospace:size=12" \
+      --with-nth=1 --accept-nth=2 --font="Berkeley Mono:size=12" \
       --lines="$lines" --width=75)
   [ -z "$chosen" ] && exit 0
   original=$(printf '%s\n' "$entries" | awk -F'\t' -v id="$chosen" '$1==id{print;exit}')

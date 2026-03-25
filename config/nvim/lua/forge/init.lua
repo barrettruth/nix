@@ -48,8 +48,8 @@ end
 ---@field list_cmd fun(self: forge.Forge, kind: string, state: string): string
 ---@field list_pr_json_cmd fun(self: forge.Forge, state: string): string[]
 ---@field list_issue_json_cmd fun(self: forge.Forge, state: string): string[]
----@field pr_json_fields fun(self: forge.Forge): { number: string, title: string, branch: string, state: string }
----@field issue_json_fields fun(self: forge.Forge): { number: string, title: string, state: string }
+---@field pr_json_fields fun(self: forge.Forge): { number: string, title: string, branch: string, state: string, author: string, created_at: string }
+---@field issue_json_fields fun(self: forge.Forge): { number: string, title: string, state: string, author: string, created_at: string }
 ---@field view_web fun(self: forge.Forge, kind: string, num: string)
 ---@field browse fun(self: forge.Forge, loc: string, branch: string)
 ---@field browse_root fun(self: forge.Forge)
@@ -251,46 +251,139 @@ local function pad_or_truncate(s, width)
     return s .. string.rep(' ', width - len)
 end
 
----@param state string
+---@param iso string?
+---@return integer?
+local function parse_iso(iso)
+    if not iso or iso == '' then return nil end
+    local y, mo, d, h, mi, s =
+        iso:match('(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
+    if not y then return nil end
+    local ok, ts = pcall(os.time, {
+        year = tonumber(y),
+        month = tonumber(mo),
+        day = tonumber(d),
+        hour = tonumber(h),
+        min = tonumber(mi),
+        sec = tonumber(s),
+    })
+    if ok and ts then return ts end
+    return nil
+end
+
+---@param iso string?
 ---@return string
-local function state_color(state)
-    local s = state:lower()
-    if s == 'open' or s == 'opened' then
-        return '\27[32m'
+local function relative_time(iso)
+    local ts = parse_iso(iso)
+    if not ts then return '' end
+    local diff = os.time() - ts
+    if diff < 0 then diff = 0 end
+    if diff < 3600 then return ('%dm'):format(math.max(1, math.floor(diff / 60))) end
+    if diff < 86400 then return ('%dh'):format(math.floor(diff / 3600)) end
+    if diff < 2592000 then return ('%dd'):format(math.floor(diff / 86400)) end
+    if diff < 31536000 then return ('%dmo'):format(math.floor(diff / 2592000)) end
+    return ('%dy'):format(math.floor(diff / 31536000))
+end
+
+---@param iso string?
+---@return string
+local function compact_date(iso)
+    local ts = parse_iso(iso)
+    if not ts then return '' end
+    local current_year = os.date('%Y')
+    local entry_year = os.date('%Y', ts)
+    if entry_year == current_year then
+        return os.date('%d/%m %H:%M', ts)
     end
-    if s == 'merged' then
-        return '\27[35m'
-    end
-    return '\27[31m'
+    return os.date('%d/%m/%y %H:%M', ts)
+end
+
+local event_map = {
+    merge_request_event = 'mr',
+    external_pull_request_event = 'ext',
+    pull_request = 'pr',
+    workflow_dispatch = 'manual',
+    schedule = 'cron',
+    pipeline = 'child',
+    push = 'push',
+    web = 'web',
+    api = 'api',
+    trigger = 'trigger',
+}
+
+---@param event string
+---@return string
+local function abbreviate_event(event)
+    return event_map[event] or event
 end
 
 ---@param entry table
----@param fields { number: string, title: string, branch: string, state: string }
+---@param field string
 ---@return string
-function M.format_pr(entry, fields)
+local function extract_author(entry, field)
+    local v = entry[field]
+    if type(v) == 'table' then
+        return v.login or v.username or v.name or ''
+    end
+    return tostring(v or '')
+end
+
+---@param entry table
+---@param fields table
+---@param show_state boolean
+---@return string
+function M.format_pr(entry, fields, show_state)
     local num = tostring(entry[fields.number] or '')
     local title = entry[fields.title] or ''
-    local state = entry[fields.state] or ''
-    return ('\27[34m#%-4s\27[0m %s %s%s\27[0m'):format(
+    local author = extract_author(entry, fields.author)
+    local age = relative_time(entry[fields.created_at])
+    local prefix = ''
+    if show_state then
+        local state = (entry[fields.state] or ''):lower()
+        local icon, color
+        if state == 'open' or state == 'opened' then
+            icon, color = '●', '\27[32m'
+        elseif state == 'merged' then
+            icon, color = '✓', '\27[35m'
+        else
+            icon, color = '✗', '\27[31m'
+        end
+        prefix = color .. icon .. '\27[0m  '
+    end
+    return ('%s\27[34m#%-5s\27[0m %s \27[2m%-15s %3s\27[0m'):format(
+        prefix,
         num,
-        pad_or_truncate(title, 60),
-        state_color(state),
-        state:lower()
+        pad_or_truncate(title, 45),
+        pad_or_truncate(author, 15),
+        age
     )
 end
 
 ---@param entry table
----@param fields { number: string, title: string, state: string }
+---@param fields table
+---@param show_state boolean
 ---@return string
-function M.format_issue(entry, fields)
+function M.format_issue(entry, fields, show_state)
     local num = tostring(entry[fields.number] or '')
     local title = entry[fields.title] or ''
-    local state = entry[fields.state] or ''
-    return ('\27[34m#%-4s\27[0m %s %s%s\27[0m'):format(
+    local author = extract_author(entry, fields.author)
+    local age = relative_time(entry[fields.created_at])
+    local prefix = ''
+    if show_state then
+        local state = (entry[fields.state] or ''):lower()
+        local icon, color
+        if state == 'open' or state == 'opened' then
+            icon, color = '●', '\27[32m'
+        else
+            icon, color = '✓', '\27[2m'
+        end
+        prefix = color .. icon .. '\27[0m  '
+    end
+    return ('%s\27[34m#%-5s\27[0m %s \27[2m%-15s %3s\27[0m'):format(
+        prefix,
         num,
-        pad_or_truncate(title, 50),
-        state_color(state),
-        state:lower()
+        pad_or_truncate(title, 45),
+        pad_or_truncate(author, 15),
+        age
     )
 end
 
@@ -326,36 +419,12 @@ function M.format_check(check)
             end
         end
     end
-    local run_id = ''
-    if check.link then
-        run_id = check.link:match('/actions/runs/(%d+)') or ''
-    end
-    return ('%s%s\27[0m %s %s \27[2m%s\27[0m'):format(
+    return ('%s%s\27[0m  %s \27[2m%s\27[0m'):format(
         color,
         icon,
-        pad_or_truncate(name, 30),
-        pad_or_truncate(elapsed, 8),
-        run_id
+        pad_or_truncate(name, 35),
+        elapsed
     )
-end
-
----@param iso string?
----@return string
-local function format_date(iso)
-    if not iso or iso == '' then return '' end
-    local y, mo, d, h, mi, s =
-        iso:match('(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
-    if not y then return '' end
-    local ok, ts = pcall(os.time, {
-        year = tonumber(y),
-        month = tonumber(mo),
-        day = tonumber(d),
-        hour = tonumber(h),
-        min = tonumber(mi),
-        sec = tonumber(s),
-    })
-    if not ok or not ts then return '' end
-    return os.date(M.config().date_format, ts)
 end
 
 ---@param run forge.CIRun
@@ -379,15 +448,20 @@ function M.format_run(run)
     else
         icon, color = '?', '\27[2m'
     end
-    local date = format_date(run.created_at)
-    return ('%s%s %s\27[0m %s \27[36m%s\27[0m \27[2m%-24s %s\27[0m'):format(
-        color,
-        icon,
-        pad_or_truncate(run.status:lower(), 10),
-        pad_or_truncate(run.name, 25),
-        pad_or_truncate(run.branch, 20),
-        run.event,
-        date
+    local event = abbreviate_event(run.event)
+    local date = compact_date(run.created_at)
+    if run.branch ~= '' then
+        return ('%s%s\27[0m  %s \27[36m%s\27[0m \27[2m%-6s %s\27[0m'):format(
+            color, icon,
+            pad_or_truncate(run.name, 20),
+            pad_or_truncate(run.branch, 25),
+            event, date
+        )
+    end
+    return ('%s%s\27[0m  %s \27[2m%-6s %s\27[0m'):format(
+        color, icon,
+        pad_or_truncate(run.name, 35),
+        event, date
     )
 end
 
@@ -417,7 +491,6 @@ end
 function M.config()
     return vim.tbl_deep_extend('force', {
         ci = { lines = 10000 },
-        date_format = '%d/%m/%Y %H:%M',
     }, vim.g.forge or {})
 end
 

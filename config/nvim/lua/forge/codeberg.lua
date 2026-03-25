@@ -27,7 +27,7 @@ function M:list_pr_json_cmd(state)
         '--output',
         'json',
         '--fields',
-        'index,title,head,state',
+        'index,title,head,state,poster,created_at',
     }
 end
 
@@ -43,23 +43,29 @@ function M:list_issue_json_cmd(state)
         '--output',
         'json',
         '--fields',
-        'index,title,state',
+        'index,title,state,poster,created_at',
     }
 end
 
----@return { number: string, title: string, branch: string, state: string }
 function M:pr_json_fields()
     return {
         number = 'index',
         title = 'title',
         branch = 'head',
         state = 'state',
+        author = 'poster',
+        created_at = 'created_at',
     }
 end
 
----@return { number: string, title: string, state: string }
 function M:issue_json_fields()
-    return { number = 'index', title = 'title', state = 'state' }
+    return {
+        number = 'index',
+        title = 'title',
+        state = 'state',
+        author = 'poster',
+        created_at = 'created_at',
+    }
 end
 
 ---@param kind string

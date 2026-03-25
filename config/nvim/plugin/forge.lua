@@ -52,13 +52,12 @@ local function checks_picker(f, num, filter, cached_checks)
                 ['--with-nth'] = '2..',
                 ['--delimiter'] = '\t',
                 ['--header'] = make_header({
-                    { 'enter', 'view log' },
-                    { 'ctrl-x', 'open in browser' },
+                    { 'enter', 'log' },
+                    { 'ctrl-x', 'browse' },
                     { 'ctrl-f', 'failed' },
                     { 'ctrl-p', 'passed' },
                     { 'ctrl-n', 'running' },
                     { 'ctrl-a', 'all' },
-                    { 'ctrl-r', 'refresh' },
                 }),
             },
             actions = {
@@ -324,10 +323,12 @@ local function forge_picker(kind, state, f)
     if kind == 'pr' then
         local pr_fields = f:pr_json_fields()
 
+        local show_state = state ~= 'open'
+
         local function open_pr_list(prs)
             local lines = {}
             for _, pr in ipairs(prs) do
-                table.insert(lines, forge_mod.format_pr(pr, pr_fields))
+                table.insert(lines, forge_mod.format_pr(pr, pr_fields, show_state))
             end
             require('fzf-lua').fzf_exec(lines, {
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
@@ -336,47 +337,44 @@ local function forge_picker(kind, state, f)
                     ['--no-multi'] = '',
                     ['--header'] = make_header({
                         { 'enter', 'checkout' },
-                        { 'ctrl-d', 'review diff' },
+                        { 'ctrl-d', 'diff' },
                         { 'ctrl-t', 'checks' },
-                        { 'ctrl-x', 'open in browser' },
-                        { 'ctrl-o', 'toggle state' },
-                        { 'ctrl-r', 'refresh' },
-                        { 'ctrl-a', 'approve' },
-                        { 'ctrl-m', 'merge' },
+                        { 'ctrl-x', 'browse' },
+                        { 'ctrl-o', 'toggle' },
                     }),
                 },
                 actions = {
                     ['default'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if num then
                             pr_actions(f, num)['default']()
                         end
                     end,
                     ['ctrl-x'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if num then
                             f:view_web(cli_kind, num)
                         end
                     end,
                     ['ctrl-d'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if num then
                             pr_actions(f, num)['ctrl-d']()
                         end
                     end,
                     ['ctrl-t'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if num then
                             checks_picker(f, num)
                         end
                     end,
                     ['ctrl-a'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if not num then
                             return
                         end
@@ -387,7 +385,7 @@ local function forge_picker(kind, state, f)
                     end,
                     ['ctrl-m'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if not num then
                             return
                         end
@@ -430,6 +428,7 @@ local function forge_picker(kind, state, f)
     else
         local issue_fields = f:issue_json_fields()
         local num_field = issue_fields.number
+        local issue_show_state = state == 'all'
 
         local function open_issue_list(issues)
             table.sort(issues, function(a, b)
@@ -437,7 +436,7 @@ local function forge_picker(kind, state, f)
             end)
             local lines = {}
             for _, issue in ipairs(issues) do
-                table.insert(lines, forge_mod.format_issue(issue, issue_fields))
+                table.insert(lines, forge_mod.format_issue(issue, issue_fields, issue_show_state))
             end
             require('fzf-lua').fzf_exec(lines, {
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
@@ -445,15 +444,15 @@ local function forge_picker(kind, state, f)
                     ['--ansi'] = '',
                     ['--no-multi'] = '',
                     ['--header'] = make_header({
-                        { 'ctrl-x', 'open in browser' },
-                        { 'ctrl-o', 'toggle state' },
+                        { 'ctrl-x', 'browse' },
+                        { 'ctrl-o', 'toggle' },
                         { 'ctrl-r', 'refresh' },
                     }),
                 },
                 actions = {
                     ['ctrl-x'] = function(selected)
                         if not selected[1] then return end
-                        local num = selected[1]:match('^[#!]?(%d+)')
+                        local num = selected[1]:match('[#!](%d+)')
                         if num then
                             f:view_web(cli_kind, num)
                         end
@@ -521,8 +520,8 @@ local function ci_picker(f, branch)
                 ['--with-nth'] = '2..',
                 ['--delimiter'] = '\t',
                 ['--header'] = make_header({
-                    { 'enter', 'view log' },
-                    { 'ctrl-x', 'open in browser' },
+                    { 'enter', 'log' },
+                    { 'ctrl-x', 'browse' },
                     { 'ctrl-r', 'refresh' },
                 }),
             },
@@ -671,11 +670,11 @@ git_picker = function()
 
         local hints = {
             { 'enter', 'checkout' },
-            { 'ctrl-d', 'review diff' },
-            { 'ctrl-y', 'copy hash' },
+            { 'ctrl-d', 'diff' },
+            { 'ctrl-y', 'yank hash' },
         }
         if f then
-            table.insert(hints, 3, { 'ctrl-x', 'open in browser' })
+            table.insert(hints, 3, { 'ctrl-x', 'browse' })
         end
 
         require('fzf-lua').fzf_exec(log_cmd, {

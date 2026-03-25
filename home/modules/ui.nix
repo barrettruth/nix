@@ -256,7 +256,7 @@ in
       @import url("${config.xdg.configHome}/waybar/themes/theme.css");
 
       * {
-        font-family: "SF Pro Display", "JetBrainsMono Nerd Font", sans-serif;
+        font-family: "Berkeley Mono", "JetBrainsMono Nerd Font", monospace;
         font-size: 14px;
         border: none;
         border-radius: 0;
@@ -264,7 +264,7 @@ in
       }
 
       #workspaces button {
-        font-family: "SF Pro Display", sans-serif;
+        font-family: "Berkeley Mono", monospace;
         padding: 0 7px;
         min-width: 20px;
         background: transparent;
@@ -307,7 +307,7 @@ in
     enable = true;
     settings = {
       global = {
-        font = "SF Pro Display 13";
+        font = "Berkeley Mono 12";
         width = "(0, 400)";
         height = "(0, 120)";
         origin = "top-right";
@@ -320,13 +320,12 @@ in
         corner_radius = 0;
         alignment = "left";
         ellipsize = "end";
-        icon_position = "left";
-        max_icon_size = 32;
+        icon_position = "off";
       };
       ctl = {
         appname = "ctl";
         icon_position = "off";
-        format = "%s";
+        format = "%s\n%b";
       };
     };
   };
@@ -339,7 +338,7 @@ in
     include=${config.xdg.configHome}/fuzzel/themes/theme.ini
 
     [main]
-    font=SF Pro Display:size=12,Symbols Nerd Font:size=12
+    font=Berkeley Mono:size=12,Symbols Nerd Font:size=12
     prompt=""
     width=50
     lines=10
