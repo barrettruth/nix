@@ -25,19 +25,19 @@ return {
             'n',
             '\\Rc',
             '<cmd>RustLsp codeAction<cr>',
-            { buffer = 0 }
+            { buffer = 0, desc = 'rust code action' }
         )
         vim.keymap.set(
             'n',
             '\\Rm',
             '<cmd>RustLsp expandMacro<cr>',
-            { buffer = 0 }
+            { buffer = 0, desc = 'rust expand macro' }
         )
         vim.keymap.set(
             'n',
             '\\Ro',
             '<cmd>RustLsp openCargo<cr>',
-            { buffer = 0 }
+            { buffer = 0, desc = 'rust open cargo' }
         )
     end,
 }

@@ -51,7 +51,7 @@ end
 
 vim.keymap.set('n', '<leader>bd', function()
     bufremove()
-end)
+end, { desc = 'delete buffer' })
 vim.keymap.set('n', '<leader>bw', function()
     bufremove(true)
-end)
+end, { desc = 'wipeout buffer' })

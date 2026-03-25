@@ -64,7 +64,7 @@ return {
                 for _, t in ipairs(select_maps) do
                     vim.keymap.set(m, t[1], function()
                         select.select_textobject(t[2], 'textobjects', m)
-                    end)
+                    end, { desc = 'select ' .. t[2] })
                 end
             end
 
@@ -81,18 +81,18 @@ return {
                     local key, capture = t[1], t[2]
                     vim.keymap.set(m, ']' .. key, function()
                         move.goto_next_start(capture, 'textobjects')
-                    end)
+                    end, { desc = 'next ' .. capture .. ' start' })
                     vim.keymap.set(m, '[' .. key, function()
                         move.goto_previous_start(capture, 'textobjects')
-                    end)
+                    end, { desc = 'prev ' .. capture .. ' start' })
                     local upper = key:upper()
                     if upper ~= key then
                         vim.keymap.set(m, ']' .. upper, function()
                             move.goto_next_end(capture, 'textobjects')
-                        end)
+                        end, { desc = 'next ' .. capture .. ' end' })
                         vim.keymap.set(m, '[' .. upper, function()
                             move.goto_previous_end(capture, 'textobjects')
-                        end)
+                        end, { desc = 'prev ' .. capture .. ' end' })
                     end
                 end
             end
@@ -100,31 +100,31 @@ return {
             local ts_repeat =
                 require('nvim-treesitter-textobjects.repeatable_move')
             for _, m in ipairs({ 'n', 'x', 'o' }) do
-                vim.keymap.set(m, ';', ts_repeat.repeat_last_move_next)
-                vim.keymap.set(m, ',', ts_repeat.repeat_last_move_previous)
+                vim.keymap.set(m, ';', ts_repeat.repeat_last_move_next, { desc = 'repeat last move next' })
+                vim.keymap.set(m, ',', ts_repeat.repeat_last_move_previous, { desc = 'repeat last move prev' })
                 vim.keymap.set(
                     m,
                     'f',
                     ts_repeat.builtin_f_expr,
-                    { expr = true }
+                    { expr = true, desc = 'repeatable f' }
                 )
                 vim.keymap.set(
                     m,
                     'F',
                     ts_repeat.builtin_F_expr,
-                    { expr = true }
+                    { expr = true, desc = 'repeatable F' }
                 )
                 vim.keymap.set(
                     m,
                     't',
                     ts_repeat.builtin_t_expr,
-                    { expr = true }
+                    { expr = true, desc = 'repeatable t' }
                 )
                 vim.keymap.set(
                     m,
                     'T',
                     ts_repeat.builtin_T_expr,
-                    { expr = true }
+                    { expr = true, desc = 'repeatable T' }
                 )
             end
         end,

@@ -106,7 +106,7 @@ return {
                         else
                             require('canola').set_columns({})
                         end
-                    end, { buffer = bufnr })
+                    end, { buffer = bufnr, desc = 'toggle columns' })
 
                     vim.keymap.set('n', 'gX', function()
                         local canola = require('canola')
@@ -132,7 +132,7 @@ return {
                                 end)
                             end)
                         end)
-                    end, { buffer = bufnr })
+                    end, { buffer = bufnr, desc = 'chmod entry' })
                 end,
             })
         end,

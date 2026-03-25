@@ -39,7 +39,7 @@ return {
                                 'n',
                                 'grn',
                                 live_rename.rename,
-                                { buffer = o.buf }
+                                { buffer = o.buf, desc = 'rename symbol' }
                             )
                         end
                     end
@@ -62,7 +62,7 @@ return {
                         'n',
                         'gD',
                         vim.cmd.VtsExec('goto_source_definition'),
-                        { buffer = bufnr }
+                        { buffer = bufnr, desc = 'goto source definition' }
                     )
                 end,
                 settings = {

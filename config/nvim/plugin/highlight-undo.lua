@@ -33,5 +33,5 @@ for _, key in ipairs({ 'u', '<C-r>', 'U' }) do
             end,
         })
         return key
-    end, { expr = true })
+    end, { expr = true, desc = 'undo/redo with highlight' })
 end
