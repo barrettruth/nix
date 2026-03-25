@@ -30,7 +30,7 @@ return {
             vim.g.diffs = {
                 debug = false,
                 integrations = { fugitive = true },
-                extra_filetypes = { 'diff' },
+                extra_filetypes = { 'diff', 'git', 'gitcommit' },
                 hide_prefix = true,
                 highlights = {
                     gutter = true,

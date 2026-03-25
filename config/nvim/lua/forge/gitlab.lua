@@ -5,7 +5,7 @@ local M = {
     name = 'gitlab',
     cli = 'glab',
     kinds = { issue = 'issue', pr = 'mr' },
-    labels = { issue = 'Issues', pr = 'MRs', pr_full = 'Merge Requests', ci = 'Pipelines' },
+    labels = { issue = 'Issues', pr = 'MRs', pr_full = 'Merge Requests', ci = 'CI/CD' },
 }
 
 ---@param kind string
@@ -185,6 +185,55 @@ end
 ---@return string[]
 function M:check_tail_cmd(run_id)
     return { 'glab', 'ci', 'trace', run_id }
+end
+
+function M:list_runs_json_cmd(branch)
+    local cmd = {
+        'glab', 'ci', 'list',
+        '--output', 'json',
+        '--per-page', '30',
+    }
+    if branch then
+        table.insert(cmd, '--ref')
+        table.insert(cmd, branch)
+    end
+    return cmd
+end
+
+function M:normalize_run(entry)
+    return {
+        id = tostring(entry.id or ''),
+        name = '#' .. tostring(entry.iid or entry.id or ''),
+        branch = entry.ref or '',
+        status = entry.status or '',
+        event = entry.source or '',
+        url = entry.web_url or '',
+        created_at = entry.created_at or '',
+    }
+end
+
+function M:run_log_cmd(id, failed_only)
+    local lines = forge.config().ci.lines
+    local jq_filter = failed_only
+        and '[.[] | select(.status=="failed")][0].id // .[0].id'
+        or '.[0].id'
+    return {
+        'sh', '-c',
+        ("JOB=$(glab api 'projects/:id/pipelines/%s/jobs?per_page=100' | jq -r '%s') && [ \"$JOB\" != \"null\" ] && glab ci trace \"$JOB\" | tail -n %d"):format(
+            id, jq_filter, lines
+        ),
+    }
+end
+
+function M:run_tail_cmd(id)
+    local jq_filter =
+        '[.[] | select(.status=="running" or .status=="pending")][0].id // .[0].id'
+    return {
+        'sh', '-c',
+        ("JOB=$(glab api 'projects/:id/pipelines/%s/jobs?per_page=100' | jq -r '%s') && [ \"$JOB\" != \"null\" ] && glab ci trace \"$JOB\""):format(
+            id, jq_filter
+        ),
+    }
 end
 
 ---@param num string

@@ -5,7 +5,7 @@ local M = {
     name = 'github',
     cli = 'gh',
     kinds = { issue = 'issue', pr = 'pr' },
-    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'Checks' },
+    labels = { issue = 'Issues', pr = 'PRs', pr_full = 'Pull Requests', ci = 'CI/CD' },
 }
 
 local function nwo()
@@ -183,6 +183,50 @@ end
 ---@return string[]
 function M:check_tail_cmd(run_id)
     return { 'gh', 'run', 'watch', run_id, '-R', nwo() }
+end
+
+function M:list_runs_json_cmd(branch)
+    local cmd = {
+        'gh', 'run', 'list',
+        '--json', 'databaseId,name,headBranch,status,conclusion,event,url,createdAt',
+        '--limit', '30',
+    }
+    if branch then
+        table.insert(cmd, '--branch')
+        table.insert(cmd, branch)
+    end
+    return cmd
+end
+
+function M:normalize_run(entry)
+    local status = entry.status or ''
+    if status == 'completed' then
+        status = entry.conclusion or 'unknown'
+    end
+    return {
+        id = tostring(entry.databaseId or ''),
+        name = entry.name or '',
+        branch = entry.headBranch or '',
+        status = status,
+        event = entry.event or '',
+        url = entry.url or '',
+        created_at = entry.createdAt or '',
+    }
+end
+
+function M:run_log_cmd(id, failed_only)
+    local lines = forge.config().ci.lines
+    local flag = failed_only and '--log-failed' or '--log'
+    return {
+        'sh', '-c',
+        ('gh run view %s -R %s %s | tail -n %d'):format(
+            id, nwo(), flag, lines
+        ),
+    }
+end
+
+function M:run_tail_cmd(id)
+    return { 'gh', 'run', 'watch', id, '-R', nwo() }
 end
 
 ---@param num string
