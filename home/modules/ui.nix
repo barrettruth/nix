@@ -224,11 +224,11 @@ in
           ultralo = 5;
         };
         events = {
-          on-discharging-hi = "notify-send -u low 'battery 30%'";
-          on-discharging-mid = "notify-send -u normal 'battery 20%'";
-          on-discharging-lo = "notify-send -u critical 'battery 10%'";
-          on-discharging-ultralo = "notify-send -u critical 'battery 5%'";
-          on-charging-100 = "notify-send -u low 'battery 100%'";
+          on-discharging-hi = "notify-send -u low 'battery: 30%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 9))\")\"";
+          on-discharging-mid = "notify-send -u normal 'battery: 20%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 6))\")\"";
+          on-discharging-lo = "notify-send -u critical 'battery: 10%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 3))\")\"";
+          on-discharging-ultralo = "notify-send -u critical 'battery: 5%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 1))\")\"";
+          on-charging-100 = "notify-send -u low 'battery: 100%' '[==============================]'";
         };
         interval = 30;
         tooltip = true;
@@ -239,7 +239,7 @@ in
       };
 
       clock = {
-        format = " {:%a %d/%m/%Y  %H:%M:%S}";
+        format = " {:%d/%m/%Y  %H:%M:%S}";
         interval = 1;
         tooltip = false;
       };
