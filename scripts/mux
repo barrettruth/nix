@@ -54,51 +54,6 @@ spawn_or_focus() {
   fi
 }
 
-pick_session() {
-  require fzf column
-  sel=$({
-    printf 'name\twindows\tstatus\n'
-    tmux list-sessions -F '#{session_name}	#{session_windows}w	#{?session_attached,*,}'
-  } | column -t -s "$(printf '\t')" |
-    fzf --reverse --header-lines 1 --prompt 'select-session> ')
-  [ -n "$sel" ] && tmux switch-client -t "${sel%% *}"
-}
-
-pick_window() {
-  require fzf column
-  sel=$({
-    printf 'target\tname\tcommand\tpanes\n'
-    tmux list-windows -a -F '#{window_index}:#{session_name}	#{window_name}	#{pane_current_command}	#{window_panes}p'
-  } | column -t -s "$(printf '\t')" |
-    fzf --reverse --header-lines 1 --prompt 'select-window> ')
-  sel="${sel%% *}"
-  [ -n "$sel" ] && tmux switch-client -t "${sel#*:}:${sel%%:*}"
-}
-
-pick_pane() {
-  require fzf column
-  sel=$({
-    printf 'target\tcommand\tpath\n'
-    tmux list-panes -a -F '#{window_index}.#{pane_index}:#{session_name}	#{pane_current_command}	#{pane_current_path}' |
-      sed "s|$HOME|~|g"
-  } | column -t -s "$(printf '\t')" |
-    fzf --reverse --header-lines 1 --prompt 'select-pane> ')
-  sel="${sel%% *}"
-  [ -n "$sel" ] && tmux switch-client -t "${sel#*:}:${sel%%:*}"
-}
-
-target_pane() {
-  require fzf column
-  sel=$({
-    printf 'target\tcommand\tpath\n'
-    tmux list-panes -a -F '#{window_index}.#{pane_index}:#{session_name}	#{pane_current_command}	#{pane_current_path}' |
-      sed "s|$HOME|~|g"
-  } | column -t -s "$(printf '\t')" |
-    fzf --reverse --header-lines 1 --prompt "$1> ")
-  sel="${sel%% *}"
-  [ -n "$sel" ] && printf '%s' "${sel#*:}:${sel%%:*}"
-}
-
 confirm() {
   printf '%s ' "$1"
   old=$(stty -g)
@@ -131,32 +86,23 @@ bar)
     else
       key='?'
     fi
-    star="#{?#{==:#S,$sname},*,}"
+    star="#{?#{==:#S,$sname},#[fg=#{@accent}]*#[default],}"
     [ -n "$bar_content" ] && bar_content="$bar_content │ "
-    bar_content="$bar_content#[range=session|${sid}]${star}$key:$sname#[norange]"
+    bar_content="$bar_content#[range=session|${sid}]${star}$key#[fg=#{@accent}]:#[default]$sname#[norange]"
     i=$((i + 1))
   done
   set +f
   tmux set -g status-left-length 80
   tmux set -g status-right-length 80
   tmux set -g status-left ' '
-  tmux set -g window-status-format '#[range=window|#{window_index}]#{?window_last_flag,-,}#{window_index}:#{window_name}#[norange]'
-  tmux set -g window-status-current-format '#[range=window|#{window_index}]*#{window_index}:#{window_name}#[norange]'
+  tmux set -g window-status-format '#[range=window|#{window_index}]#{?window_last_flag,#[fg=#{@accent}]-#[default],}#{window_index}#[fg=#{@accent}]:#[default]#{window_name}#[norange]'
+  tmux set -g window-status-current-format '#[range=window|#{window_index}]#[fg=#{@accent}]*#[default]#{window_index}#[fg=#{@accent}]:#[default]#{window_name}#[norange]'
   tmux set -g window-status-separator ' │ '
   tmux set -g @bar-content "$indicator $bar_content "
   ;;
 switch)
   session="$(tmux ls -F '#S' | tail -n "+$(($2 + 1))" | head -1)"
   tmux switch -t "$session"
-  ;;
-pick-session)
-  pick_session
-  ;;
-pick-window)
-  pick_window
-  ;;
-pick-pane)
-  pick_pane
   ;;
 ai)
   require claude
@@ -197,9 +143,6 @@ cmd)
       --delimiter '\t' --with-nth '1,2' --accept-nth '1')
   [ -z "$action" ] && exit
   case "$action" in
-  switch-client) pick_session ;;
-  select-window) pick_window ;;
-  select-pane) pick_pane ;;
   rename-window)
     cur=$(tmux display-message -p '#{window_name}')
     printf 'name [%s]: ' "$cur"
@@ -211,14 +154,6 @@ cmd)
     printf 'name [%s]: ' "$cur"
     read -r name
     [ -n "$name" ] && tmux rename-session "$name"
-    ;;
-  join-pane)
-    target=$(target_pane 'join-pane')
-    [ -n "$target" ] && tmux join-pane -s "$target"
-    ;;
-  swap-pane)
-    target=$(target_pane 'swap-pane')
-    [ -n "$target" ] && tmux swap-pane -t "$target"
     ;;
   select-layout)
     layout=$(printf '%s\n' \
