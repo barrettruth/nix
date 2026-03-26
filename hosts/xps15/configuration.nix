@@ -125,10 +125,10 @@ in
       export THEME="midnight"
     '';
   };
-  programs.hyprland = {
-    enable = true;
-    portalPackage = pkgs.xdg-desktop-portal-hyprland;
-  };
+  # programs.hyprland = {
+  #   enable = true;
+  #   portalPackage = pkgs.xdg-desktop-portal-hyprland;
+  # };
 
   hardware.bluetooth.enable = true;
 

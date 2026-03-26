@@ -368,7 +368,6 @@ local function pr_actions(f, num)
 
     actions['ctrl-d'] = function()
         local forge_mod = require('forge')
-        local review = forge_mod.review
         local repo_root =
             vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
 
@@ -390,8 +389,7 @@ local function pr_actions(f, num)
                             base = 'main'
                         end
                         local range = 'origin/' .. base
-                        review.base = range
-                        review.mode = 'unified'
+                        start_review(range)
                         require('diffs.commands').greview(
                             range,
                             { repo_root = repo_root }
@@ -901,10 +899,8 @@ git_picker = function()
                     if not sha then
                         return
                     end
-                    local review = forge_mod.review
                     local range = sha .. '^..' .. sha
-                    review.base = range
-                    review.mode = 'unified'
+                    start_review(range)
                     require('diffs.commands').greview(range)
                     forge_mod.log_now('reviewing ' .. sha)
                 end,
@@ -941,9 +937,7 @@ git_picker = function()
                 if not br then
                     return
                 end
-                local review = forge_mod.review
-                review.base = br
-                review.mode = 'unified'
+                start_review(br)
                 require('diffs.commands').greview(br)
                 forge_mod.log_now('reviewing ' .. br)
             end,
@@ -1017,33 +1011,19 @@ local function close_review_view()
     pcall(vim.cmd, 'diffoff!')
 end
 
-local function review_nav(nav_cmd)
-    return function()
-        local review = require('forge').review
-        if review.base and review.mode == 'split' then
-            close_review_view()
-        end
-        local wrap = { cnext = 'cfirst', cprev = 'clast', lnext = 'lfirst', lprev = 'llast' }
-        if not pcall(vim.cmd, nav_cmd) then
-            if not pcall(vim.cmd, wrap[nav_cmd]) then
-                return
-            end
-        end
-        if review.base and review.mode == 'split' then
-            pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
-        end
-    end
+local review_augroup = vim.api.nvim_create_augroup('ForgeReview', { clear = true })
+
+local function end_review()
+    local review = require('forge').review
+    review.base = nil
+    review.mode = 'unified'
+    pcall(vim.keymap.del, 'n', 's')
+    vim.api.nvim_clear_autocmds({ group = review_augroup })
 end
 
-vim.keymap.set('n', ']q', review_nav('cnext'), { desc = 'next quickfix entry' })
-vim.keymap.set('n', '[q', review_nav('cprev'), { desc = 'prev quickfix entry' })
-vim.keymap.set('n', ']l', review_nav('lnext'), { desc = 'next loclist entry' })
-vim.keymap.set('n', '[l', review_nav('lprev'), { desc = 'prev loclist entry' })
-
-vim.keymap.set('n', 's', function()
+local function toggle_review_mode()
     local review = require('forge').review
     if not review.base then
-        vim.cmd('normal! s')
         return
     end
     if review.mode == 'unified' then
@@ -1066,4 +1046,40 @@ vim.keymap.set('n', 's', function()
             vim.fn.search('diff %-%-git a/' .. vim.pesc(current_file), 'cw')
         end
     end
-end, { desc = 'toggle review split/unified' })
+end
+
+local function start_review(base, mode)
+    local review = require('forge').review
+    review.base = base
+    review.mode = mode or 'unified'
+    vim.keymap.set('n', 's', toggle_review_mode, { desc = 'toggle review split/unified' })
+    vim.api.nvim_clear_autocmds({ group = review_augroup })
+    vim.api.nvim_create_autocmd('BufWipeout', {
+        group = review_augroup,
+        pattern = 'diffs://review:*',
+        callback = end_review,
+    })
+end
+
+local function review_nav(nav_cmd)
+    return function()
+        local review = require('forge').review
+        if review.base and review.mode == 'split' then
+            close_review_view()
+        end
+        local wrap = { cnext = 'cfirst', cprev = 'clast', lnext = 'lfirst', lprev = 'llast' }
+        if not pcall(vim.cmd, nav_cmd) then
+            if not pcall(vim.cmd, wrap[nav_cmd]) then
+                return
+            end
+        end
+        if review.base and review.mode == 'split' then
+            pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+        end
+    end
+end
+
+vim.keymap.set('n', ']q', review_nav('cnext'), { desc = 'next quickfix entry' })
+vim.keymap.set('n', '[q', review_nav('cprev'), { desc = 'prev quickfix entry' })
+vim.keymap.set('n', ']l', review_nav('lnext'), { desc = 'next loclist entry' })
+vim.keymap.set('n', '[l', review_nav('lprev'), { desc = 'prev loclist entry' })
