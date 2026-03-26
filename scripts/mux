@@ -124,12 +124,12 @@ git)
 run)
   project_name="$(get_scope)"
   case "$project_name" in
-    delta)
-      spawn_or_focus run 'pnpm dev'
-      ;;
-    *)
-      tmux display-message "mux: no run command for '$project_name'"
-      ;;
+  delta | barrettruth.com)
+    spawn_or_focus run 'pnpm dev'
+    ;;
+  *)
+    tmux display-message "mux: no run command for '$project_name'"
+    ;;
   esac
   ;;
 shell)
