@@ -338,6 +338,73 @@ local function pr_manage_picker(f, num)
     })
 end
 
+local function close_review_view()
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local name = vim.api.nvim_buf_get_name(buf)
+        if name:match('^fugitive://') or name:match('^diffs://review:') then
+            pcall(vim.api.nvim_win_close, win, true)
+        end
+    end
+    pcall(vim.cmd, 'diffoff!')
+end
+
+local review_augroup =
+    vim.api.nvim_create_augroup('ForgeReview', { clear = true })
+
+local function end_review()
+    local review = require('forge').review
+    review.base = nil
+    review.mode = 'unified'
+    pcall(vim.keymap.del, 'n', 's')
+    vim.api.nvim_clear_autocmds({ group = review_augroup })
+end
+
+local function toggle_review_mode()
+    local review = require('forge').review
+    if not review.base then
+        return
+    end
+    if review.mode == 'unified' then
+        local commands = require('diffs.commands')
+        local file = commands.review_file_at_line(
+            vim.api.nvim_get_current_buf(),
+            vim.fn.line('.')
+        )
+        review.mode = 'split'
+        if file then
+            vim.cmd('edit ' .. vim.fn.fnameescape(file))
+            pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
+        end
+    else
+        local current_file = vim.fn.expand('%:.')
+        close_review_view()
+        review.mode = 'unified'
+        require('diffs.commands').greview(review.base)
+        if current_file ~= '' then
+            vim.fn.search('diff %-%-git a/' .. vim.pesc(current_file), 'cw')
+        end
+    end
+end
+
+local function start_review(base, mode)
+    local review = require('forge').review
+    review.base = base
+    review.mode = mode or 'unified'
+    vim.keymap.set(
+        'n',
+        's',
+        toggle_review_mode,
+        { desc = 'toggle review split/unified' }
+    )
+    vim.api.nvim_clear_autocmds({ group = review_augroup })
+    vim.api.nvim_create_autocmd('BufWipeout', {
+        group = review_augroup,
+        pattern = 'diffs://review:*',
+        callback = end_review,
+    })
+end
+
 ---@param f forge.Forge
 ---@param num string
 ---@return table<string, function>
@@ -809,8 +876,8 @@ local function ci_picker(f, branch)
     end
 end
 
-git_picker = function()
-    local root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
+local git_picker = function()
+    vim.fn.system('git rev-parse --show-toplevel')
     if vim.v.shell_error ~= 0 then
         vim.notify('[forge]: not a git repository', vim.log.levels.WARN)
         return
@@ -1042,73 +1109,6 @@ vim.api.nvim_create_autocmd('FileType', {
         vim.fn.matchadd('DiffText', [[\v\s\zsR\ze\s]])
     end,
 })
-
-local function close_review_view()
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-        local buf = vim.api.nvim_win_get_buf(win)
-        local name = vim.api.nvim_buf_get_name(buf)
-        if name:match('^fugitive://') or name:match('^diffs://review:') then
-            pcall(vim.api.nvim_win_close, win, true)
-        end
-    end
-    pcall(vim.cmd, 'diffoff!')
-end
-
-local review_augroup =
-    vim.api.nvim_create_augroup('ForgeReview', { clear = true })
-
-local function end_review()
-    local review = require('forge').review
-    review.base = nil
-    review.mode = 'unified'
-    pcall(vim.keymap.del, 'n', 's')
-    vim.api.nvim_clear_autocmds({ group = review_augroup })
-end
-
-local function toggle_review_mode()
-    local review = require('forge').review
-    if not review.base then
-        return
-    end
-    if review.mode == 'unified' then
-        local commands = require('diffs.commands')
-        local file = commands.review_file_at_line(
-            vim.api.nvim_get_current_buf(),
-            vim.fn.line('.')
-        )
-        review.mode = 'split'
-        if file then
-            vim.cmd('edit ' .. vim.fn.fnameescape(file))
-            pcall(vim.cmd, 'Gvdiffsplit ' .. review.base)
-        end
-    else
-        local current_file = vim.fn.expand('%:.')
-        close_review_view()
-        review.mode = 'unified'
-        require('diffs.commands').greview(review.base)
-        if current_file ~= '' then
-            vim.fn.search('diff %-%-git a/' .. vim.pesc(current_file), 'cw')
-        end
-    end
-end
-
-local function start_review(base, mode)
-    local review = require('forge').review
-    review.base = base
-    review.mode = mode or 'unified'
-    vim.keymap.set(
-        'n',
-        's',
-        toggle_review_mode,
-        { desc = 'toggle review split/unified' }
-    )
-    vim.api.nvim_clear_autocmds({ group = review_augroup })
-    vim.api.nvim_create_autocmd('BufWipeout', {
-        group = review_augroup,
-        pattern = 'diffs://review:*',
-        callback = end_review,
-    })
-end
 
 local function review_nav(nav_cmd)
     return function()
