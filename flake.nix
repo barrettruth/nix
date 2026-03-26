@@ -10,6 +10,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
+    hyprland.url = "github:hyprwm/Hyprland";
     neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
     disko = {
@@ -25,6 +26,7 @@
       nixpkgs,
       home-manager,
       nixos-hardware,
+      hyprland,
       zen-browser,
       claude-code,
       neovim-nightly,
@@ -102,6 +104,7 @@
       nixosConfigurations.xps15 = nixpkgs.lib.nixosSystem {
         modules = [
           nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
+          hyprland.nixosModules.default
           ./hosts/xps15/configuration.nix
           {
             nixpkgs.hostPlatform = "x86_64-linux";
@@ -131,7 +134,7 @@
             home-manager.sharedModules = [ direnv-instant.homeModules.direnv-instant ];
             home-manager.users.barrett = import ./home/home.nix;
             home-manager.extraSpecialArgs = {
-              inherit zen-browser;
+              inherit zen-browser hyprland;
               hostConfig = xps15Config;
             };
           }

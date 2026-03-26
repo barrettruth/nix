@@ -366,11 +366,11 @@ function M.format_pr(entry, fields, show_state)
         local state = (entry[fields.state] or ''):lower()
         local icon, color
         if state == 'open' or state == 'opened' then
-            icon, color = '●', '\27[32m'
+            icon, color = '+', '\27[34m'
         elseif state == 'merged' then
-            icon, color = '✓', '\27[35m'
+            icon, color = 'v', '\27[35m'
         else
-            icon, color = '✗', '\27[31m'
+            icon, color = 'x', '\27[31m'
         end
         prefix = color .. icon .. '\27[0m  '
     end
@@ -397,9 +397,9 @@ function M.format_issue(entry, fields, show_state)
         local state = (entry[fields.state] or ''):lower()
         local icon, color
         if state == 'open' or state == 'opened' then
-            icon, color = '●', '\27[32m'
+            icon, color = '+', '\27[34m'
         else
-            icon, color = '✓', '\27[2m'
+            icon, color = 'v', '\27[2m'
         end
         prefix = color .. icon .. '\27[0m  '
     end
@@ -419,13 +419,13 @@ function M.format_check(check)
     local name = check.name or ''
     local icon, color
     if bucket == 'pass' then
-        icon, color = '✓', '\27[32m'
+        icon, color = 'v', '\27[32m'
     elseif bucket == 'fail' then
-        icon, color = '✗', '\27[31m'
+        icon, color = 'x', '\27[31m'
     elseif bucket == 'pending' then
-        icon, color = '●', '\27[33m'
+        icon, color = '~', '\27[33m'
     elseif bucket == 'skipping' or bucket == 'cancel' then
-        icon, color = '○', '\27[2m'
+        icon, color = '-', '\27[2m'
     else
         icon, color = '?', '\27[2m'
     end
@@ -458,18 +458,18 @@ function M.format_run(run)
     local icon, color
     local s = run.status:lower()
     if s == 'success' then
-        icon, color = '✓', '\27[32m'
+        icon, color = 'v', '\27[32m'
     elseif s == 'failure' or s == 'failed' then
-        icon, color = '✗', '\27[31m'
+        icon, color = 'x', '\27[31m'
     elseif
         s == 'in_progress'
         or s == 'running'
         or s == 'pending'
         or s == 'queued'
     then
-        icon, color = '●', '\27[33m'
+        icon, color = '~', '\27[33m'
     elseif s == 'cancelled' or s == 'canceled' or s == 'skipped' then
-        icon, color = '○', '\27[2m'
+        icon, color = '-', '\27[2m'
     else
         icon, color = '?', '\27[2m'
     end

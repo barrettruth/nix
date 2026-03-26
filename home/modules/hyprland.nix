@@ -3,6 +3,7 @@
   lib,
   config,
   hostConfig,
+  hyprland,
   ...
 }:
 
@@ -37,8 +38,10 @@ in
 {
   wayland.windowManager.hyprland = {
     enable = true;
-    package = if hostConfig.isNixOS then pkgs.hyprland else null;
-    portalPackage = null;
+    # package = if hostConfig.isNixOS then pkgs.hyprland else null;
+    package = hyprland.packages.${hostConfig.platform}.hyprland;
+    # portalPackage = null;
+    portalPackage = hyprland.packages.${hostConfig.platform}.xdg-desktop-portal-hyprland;
     systemd.enable = hostConfig.isNixOS;
 
     extraConfig = ''
