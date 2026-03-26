@@ -571,7 +571,7 @@ dictate)
   systemctl --user start whisper-dictation 2>/dev/null
   notify-send -a ctl -t 1250 "whisper" "recording..."
   pw-record "$daudio" &
-  printf '%s' "$!" > "$dpid"
+  printf '%s' "$!" >"$dpid"
   ;;
 idle)
   require notify-send

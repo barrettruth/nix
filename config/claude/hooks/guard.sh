@@ -9,7 +9,14 @@ if printf '%s' "$CMD" | grep -qiE 'co-authored-by|signed-off-by'; then
   exit 2
 fi
 
-BRANCH=$(git branch --show-current 2>/dev/null || true)
+GIT_DIR=$(printf '%s' "$CMD" | grep -oP '(?<=cd\s)[^\s;&|]+' | tail -1)
+if [ -n "$GIT_DIR" ]; then
+  GIT_ROOT=$(git -C "$GIT_DIR" rev-parse --show-toplevel 2>/dev/null || true)
+  BRANCH=$(git -C "$GIT_DIR" branch --show-current 2>/dev/null || true)
+else
+  GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+  BRANCH=$(git branch --show-current 2>/dev/null || true)
+fi
 
 if printf '%s' "$CMD" | grep -qE '\bgit\s+commit\b'; then
   if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
@@ -29,8 +36,8 @@ if printf '%s' "$CMD" | grep -qE '\bgit\s+push\b'; then
     echo "Blocked: never push to main/master by name." >&2
     exit 2
   fi
-  if [ -f scripts/ci.sh ]; then
-    CI_OUTPUT=$(bash scripts/ci.sh 2>&1) || {
+  if [ -n "$GIT_ROOT" ] && [ -f "$GIT_ROOT/scripts/ci.sh" ]; then
+    CI_OUTPUT=$(cd "$GIT_ROOT" && bash scripts/ci.sh 2>&1) || {
       echo "Blocked: scripts/ci.sh failed. Fix before pushing:" >&2
       echo "$CI_OUTPUT" >&2
       exit 2
