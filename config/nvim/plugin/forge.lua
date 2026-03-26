@@ -146,13 +146,17 @@ local function checks_picker(f, num, filter, cached_checks)
     end
 
     if cached_checks then
-        forge_mod.log(('checks picker (%s #%s, cached)'):format(f.labels.pr_one, num))
+        forge_mod.log(
+            ('checks picker (%s #%s, cached)'):format(f.labels.pr_one, num)
+        )
         open_picker(cached_checks)
         return
     end
 
     if f.checks_json_cmd then
-        forge_mod.log_now(('fetching checks for %s #%s...'):format(f.labels.pr_one, num))
+        forge_mod.log_now(
+            ('fetching checks for %s #%s...'):format(f.labels.pr_one, num)
+        )
         vim.system(f:checks_json_cmd(num), { text = true }, function(result)
             vim.schedule(function()
                 local ok, checks = pcall(vim.json.decode, result.stdout or '[]')
@@ -189,7 +193,9 @@ local function run_forge_cmd(kind, num, label, cmd, success_msg, fail_msg)
     vim.system(cmd, { text = true }, function(result)
         vim.schedule(function()
             if result.code == 0 then
-                vim.notify(('[forge]: %s %s #%s'):format(success_msg, kind, num))
+                vim.notify(
+                    ('[forge]: %s %s #%s'):format(success_msg, kind, num)
+                )
             else
                 vim.notify(
                     '[forge]: ' .. cmd_error(result, fail_msg),
@@ -207,13 +213,21 @@ end
 local function issue_toggle_state(f, num, is_open)
     if is_open then
         run_forge_cmd(
-            'issue', num, 'closing', f:close_issue_cmd(num),
-            'closed', 'close failed'
+            'issue',
+            num,
+            'closing',
+            f:close_issue_cmd(num),
+            'closed',
+            'close failed'
         )
     else
         run_forge_cmd(
-            'issue', num, 'reopening', f:reopen_issue_cmd(num),
-            'reopened', 'reopen failed'
+            'issue',
+            num,
+            'reopening',
+            f:reopen_issue_cmd(num),
+            'reopened',
+            'reopen failed'
         )
     end
 end
@@ -243,8 +257,12 @@ local function pr_manage_picker(f, num)
     if can_write and is_open then
         add('Approve', function()
             run_forge_cmd(
-                kind, num, 'approving', f:approve_cmd(num),
-                'approved', 'approve failed'
+                kind,
+                num,
+                'approving',
+                f:approve_cmd(num),
+                'approved',
+                'approve failed'
             )
         end)
     end
@@ -253,9 +271,12 @@ local function pr_manage_picker(f, num)
         for _, method in ipairs(info.merge_methods) do
             add('Merge (' .. method .. ')', function()
                 run_forge_cmd(
-                    kind, num, 'merging (' .. method .. ')',
+                    kind,
+                    num,
+                    'merging (' .. method .. ')',
                     f:merge_cmd(num, method),
-                    'merged (' .. method .. ')', 'merge failed'
+                    'merged (' .. method .. ')',
+                    'merge failed'
                 )
             end)
         end
@@ -264,15 +285,23 @@ local function pr_manage_picker(f, num)
     if is_open then
         add('Close', function()
             run_forge_cmd(
-                kind, num, 'closing', f:close_cmd(num),
-                'closed', 'close failed'
+                kind,
+                num,
+                'closing',
+                f:close_cmd(num),
+                'closed',
+                'close failed'
             )
         end)
     else
         add('Reopen', function()
             run_forge_cmd(
-                kind, num, 'reopening', f:reopen_cmd(num),
-                'reopened', 'reopen failed'
+                kind,
+                num,
+                'reopening',
+                f:reopen_cmd(num),
+                'reopened',
+                'reopen failed'
             )
         end)
     end
@@ -285,8 +314,12 @@ local function pr_manage_picker(f, num)
             or 'marked as draft'
         add(draft_label, function()
             run_forge_cmd(
-                kind, num, 'toggling draft', draft_cmd,
-                draft_done, 'draft toggle failed'
+                kind,
+                num,
+                'toggling draft',
+                draft_cmd,
+                draft_done,
+                'draft toggle failed'
             )
         end)
     end
@@ -318,7 +351,9 @@ local function pr_actions(f, num)
         vim.system(f:checkout_cmd(num), { text = true }, function(result)
             vim.schedule(function()
                 if result.code == 0 then
-                    vim.notify(('[forge]: checked out %s #%s'):format(kind, num))
+                    vim.notify(
+                        ('[forge]: checked out %s #%s'):format(kind, num)
+                    )
                 else
                     vim.notify(
                         '[forge]: ' .. cmd_error(result, 'checkout failed'),
@@ -343,7 +378,9 @@ local function pr_actions(f, num)
         end
         local root = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
         local wt_path = vim.fs.normalize(root .. '/../' .. branch)
-        forge_mod.log_now(('fetching %s #%s into worktree...'):format(kind, num))
+        forge_mod.log_now(
+            ('fetching %s #%s into worktree...'):format(kind, num)
+        )
         vim.system(fetch_cmd, { text = true }, function()
             vim.system(
                 { 'git', 'worktree', 'add', wt_path, branch },
@@ -351,7 +388,9 @@ local function pr_actions(f, num)
                 function(result)
                     vim.schedule(function()
                         if result.code == 0 then
-                            vim.notify(('[forge]: worktree at %s'):format(wt_path))
+                            vim.notify(
+                                ('[forge]: worktree at %s'):format(wt_path)
+                            )
                         else
                             vim.notify(
                                 '[forge]: '
@@ -396,7 +435,9 @@ local function pr_actions(f, num)
                         )
                         forge_mod.log(
                             ('review ready for %s #%s against %s'):format(
-                                kind, num, base
+                                kind,
+                                num,
+                                base
                             )
                         )
                     end)
@@ -527,7 +568,9 @@ local function forge_picker(kind, state, f)
             open_pr_list(cached)
         else
             -- TODO: log_now doesn't render before fetch completes (fzf-lua screen cleanup race)
-            forge_mod.log_now(('fetching %s list (%s)...'):format(f.labels.pr, state))
+            forge_mod.log_now(
+                ('fetching %s list (%s)...'):format(f.labels.pr, state)
+            )
             vim.system(
                 f:list_pr_json_cmd(state),
                 { text = true },
@@ -1011,7 +1054,8 @@ local function close_review_view()
     pcall(vim.cmd, 'diffoff!')
 end
 
-local review_augroup = vim.api.nvim_create_augroup('ForgeReview', { clear = true })
+local review_augroup =
+    vim.api.nvim_create_augroup('ForgeReview', { clear = true })
 
 local function end_review()
     local review = require('forge').review
@@ -1052,7 +1096,12 @@ local function start_review(base, mode)
     local review = require('forge').review
     review.base = base
     review.mode = mode or 'unified'
-    vim.keymap.set('n', 's', toggle_review_mode, { desc = 'toggle review split/unified' })
+    vim.keymap.set(
+        'n',
+        's',
+        toggle_review_mode,
+        { desc = 'toggle review split/unified' }
+    )
     vim.api.nvim_clear_autocmds({ group = review_augroup })
     vim.api.nvim_create_autocmd('BufWipeout', {
         group = review_augroup,
@@ -1067,7 +1116,12 @@ local function review_nav(nav_cmd)
         if review.base and review.mode == 'split' then
             close_review_view()
         end
-        local wrap = { cnext = 'cfirst', cprev = 'clast', lnext = 'lfirst', lprev = 'llast' }
+        local wrap = {
+            cnext = 'cfirst',
+            cprev = 'clast',
+            lnext = 'lfirst',
+            lprev = 'llast',
+        }
         if not pcall(vim.cmd, nav_cmd) then
             if not pcall(vim.cmd, wrap[nav_cmd]) then
                 return
