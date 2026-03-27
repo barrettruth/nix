@@ -125,7 +125,7 @@ run)
   project_name="$(get_scope)"
   case "$project_name" in
   delta | barrettruth.com)
-    spawn_or_focus run 'pnpm dev'
+    spawn_or_focus run 'nix develop -c pnpm dev'
     ;;
   *)
     tmux display-message "mux: no run command for '$project_name'"
