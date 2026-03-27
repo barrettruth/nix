@@ -560,7 +560,8 @@ local function forge_picker(kind, state, f)
                         { 'ctrl-w', 'worktree' },
                         { 'ctrl-t', 'checks' },
                         { 'ctrl-x', 'browse' },
-                        { 'ctrl-a', 'actions' },
+                        { 'ctrl-e', 'manage' },
+                        { 'ctrl-a', 'new' },
                         { 'ctrl-o', 'toggle' },
                     }),
                 },
@@ -610,7 +611,7 @@ local function forge_picker(kind, state, f)
                             checks_picker(f, num)
                         end
                     end,
-                    ['ctrl-a'] = function(selected)
+                    ['ctrl-e'] = function(selected)
                         if not selected[1] then
                             return
                         end
@@ -618,6 +619,9 @@ local function forge_picker(kind, state, f)
                         if num then
                             pr_manage_picker(f, num)
                         end
+                    end,
+                    ['ctrl-a'] = function()
+                        forge_mod.create_pr()
                     end,
                     ['ctrl-o'] = function()
                         forge_picker(kind, next_state, f)
@@ -1137,3 +1141,27 @@ vim.keymap.set('n', ']q', review_nav('cnext'), { desc = 'next quickfix entry' })
 vim.keymap.set('n', '[q', review_nav('cprev'), { desc = 'prev quickfix entry' })
 vim.keymap.set('n', ']l', review_nav('lnext'), { desc = 'next loclist entry' })
 vim.keymap.set('n', '[l', review_nav('lprev'), { desc = 'prev loclist entry' })
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'fugitive',
+    callback = function(args)
+        local forge_mod = require('forge')
+        local f = forge_mod.detect()
+        if not f then
+            return
+        end
+        local buf = args.buf
+        vim.keymap.set('n', 'cpr', function()
+            forge_mod.create_pr({ draft = false })
+        end, { buffer = buf, desc = 'create PR' })
+        vim.keymap.set('n', 'cpd', function()
+            forge_mod.create_pr({ draft = true })
+        end, { buffer = buf, desc = 'create draft PR' })
+        vim.keymap.set('n', 'cpf', function()
+            forge_mod.create_pr({ instant = true })
+        end, { buffer = buf, desc = 'create PR (fill)' })
+        vim.keymap.set('n', 'cpw', function()
+            forge_mod.create_pr({ web = true })
+        end, { buffer = buf, desc = 'create PR (web)' })
+    end,
+})

@@ -239,6 +239,46 @@ function M:reopen_issue_cmd(num)
     return { 'tea', 'issues', 'reopen', num }
 end
 
+---@param title string
+---@param body string
+---@param base string
+---@param _draft boolean
+---@return string[]
+function M:create_pr_cmd(title, body, base, _draft)
+    return { 'tea', 'pr', 'create', '--title', title, '--description', body, '--base', base }
+end
+
+---@return string[]?
+function M:create_pr_web_cmd()
+    local branch = vim.trim(vim.fn.system('git branch --show-current'))
+    local base_url = forge.remote_web_url()
+    local default = vim.trim(vim.fn.system(
+        "git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'"
+    ))
+    if default == '' then
+        default = 'main'
+    end
+    vim.ui.open(('%s/compare/%s...%s'):format(base_url, default, branch))
+    return nil
+end
+
+---@return string[]
+function M:default_branch_cmd()
+    return {
+        'sh', '-c',
+        "git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'",
+    }
+end
+
+---@return string[]
+function M:template_paths()
+    return {
+        '.gitea/pull_request_template.md',
+        '.github/pull_request_template.md',
+        '.github/PULL_REQUEST_TEMPLATE.md',
+    }
+end
+
 ---@param _num string
 ---@param _is_draft boolean
 ---@return string[]?

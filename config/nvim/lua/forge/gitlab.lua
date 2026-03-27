@@ -304,6 +304,43 @@ function M:reopen_issue_cmd(num)
     return { 'glab', 'issue', 'reopen', num }
 end
 
+---@param title string
+---@param body string
+---@param base string
+---@param draft boolean
+---@return string[]
+function M:create_pr_cmd(title, body, base, draft)
+    local cmd = {
+        'glab', 'mr', 'create',
+        '--title', title,
+        '--description', body,
+        '--target-branch', base,
+        '--yes',
+    }
+    if draft then
+        table.insert(cmd, '--draft')
+    end
+    return cmd
+end
+
+---@return string[]
+function M:create_pr_web_cmd()
+    return { 'glab', 'mr', 'create', '--web' }
+end
+
+---@return string[]
+function M:default_branch_cmd()
+    return {
+        'sh', '-c',
+        "glab repo view -F json | jq -r '.default_branch'",
+    }
+end
+
+---@return string[]
+function M:template_paths()
+    return { '.gitlab/merge_request_templates/' }
+end
+
 ---@param num string
 ---@param is_draft boolean
 ---@return string[]?
