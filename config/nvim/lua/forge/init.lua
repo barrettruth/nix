@@ -2,10 +2,10 @@ local M = {}
 
 local hl_defaults = {
     ForgeComposeComment = 'Comment',
-    ForgeComposeBranch = 'Normal',
+    ForgeComposeBranch = 'Special',
     ForgeComposeForge = 'Type',
     ForgeComposeDraft = 'DiagnosticWarn',
-    ForgeComposeFile = 'Normal',
+    ForgeComposeFile = 'Directory',
     ForgeComposeAdded = 'Added',
     ForgeComposeRemoved = 'Removed',
 }
@@ -152,7 +152,6 @@ function M.detect()
         return nil
     end
     if forge_cache[root] then
-        M.log('forge cache hit (' .. forge_cache[root].name .. ')')
         return forge_cache[root]
     end
     local remote = vim.trim(vim.fn.system('git remote get-url origin'))
@@ -165,7 +164,6 @@ function M.detect()
     end
     local forge = require('forge.' .. name)
     forge_cache[root] = forge
-    M.log('detected ' .. name .. ' via origin remote')
     return forge
 end
 
@@ -174,15 +172,12 @@ end
 function M.repo_info(forge)
     local root = git_root()
     if root and repo_info_cache[root] then
-        M.log('repo_info cache hit')
         return repo_info_cache[root]
     end
-    M.log('fetching repo info...')
     local info = forge:repo_info()
     if root then
         repo_info_cache[root] = info
     end
-    M.log('repo_info fetched (permission: ' .. info.permission .. ')')
     return info
 end
 
@@ -197,9 +192,6 @@ end
 ---@param key string
 ---@return table[]?
 function M.get_list(key)
-    if list_cache[key] then
-        M.log('list cache hit (' .. key .. ')')
-    end
     return list_cache[key]
 end
 
@@ -207,17 +199,14 @@ end
 ---@param data table[]
 function M.set_list(key, data)
     list_cache[key] = data
-    M.log('list cache set (' .. key .. ', ' .. #data .. ' items)')
 end
 
 ---@param key string?
 function M.clear_list(key)
     if key then
         list_cache[key] = nil
-        M.log('list cache cleared (' .. key .. ')')
     else
         list_cache = {}
-        M.log('list cache cleared (all)')
     end
 end
 
@@ -226,7 +215,6 @@ function M.clear_cache()
     repo_info_cache = {}
     root_cache = {}
     list_cache = {}
-    M.log('all caches cleared')
 end
 
 ---@return string
@@ -821,10 +809,11 @@ local function open_compose_buffer(f, branch, base, draft)
 
     vim.api.nvim_set_current_buf(buf)
 
-    local ns = vim.api.nvim_create_namespace('forge_pr_comment')
+    local ns = vim.api.nvim_create_namespace('forge_compose')
     for i = comment_start, #lines do
         vim.api.nvim_buf_set_extmark(buf, ns, i - 1, 0, {
             line_hl_group = 'ForgeComposeComment',
+            priority = 200,
         })
     end
 
@@ -832,7 +821,7 @@ local function open_compose_buffer(f, branch, base, draft)
         vim.api.nvim_buf_set_extmark(buf, ns, m.line - 1, m.col, {
             end_col = m.end_col,
             hl_group = m.hl,
-            priority = 4097,
+            priority = 200,
         })
     end
 
@@ -846,7 +835,7 @@ local function open_compose_buffer(f, branch, base, draft)
                     vim.api.nvim_buf_set_extmark(buf, ns, i - 1, fname_start - 1, {
                         end_col = pipe - 2,
                         hl_group = 'ForgeComposeFile',
-                        priority = 4097,
+                        priority = 200,
                     })
                 end
                 for pos, run in line:gmatch('()([+-]+)') do
@@ -855,7 +844,7 @@ local function open_compose_buffer(f, branch, base, draft)
                         vim.api.nvim_buf_set_extmark(buf, ns, i - 1, pos - 1, {
                             end_col = pos - 1 + #run,
                             hl_group = hl,
-                            priority = 4097,
+                            priority = 200,
                         })
                     end
                 end
