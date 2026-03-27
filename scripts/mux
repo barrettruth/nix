@@ -31,6 +31,17 @@ is_adoptable() {
   [ "$_panes" -eq 1 ] && [ "$_cmd" = "$_shell" ] && [ "$_name" = "$_shell" ]
 }
 
+is_pane_idle() {
+  _target="${1:-}"
+  _shell=$(basename "$SHELL")
+  if [ -n "$_target" ]; then
+    _pane_cmd=$(tmux display-message -t "$_target" -p '#{pane_current_command}')
+  else
+    _pane_cmd=$(tmux display-message -p '#{pane_current_command}')
+  fi
+  [ "$_pane_cmd" = "$_shell" ]
+}
+
 spawn_or_focus() {
   scope=$(get_scope)
   name="${1}@${scope}"
@@ -40,15 +51,17 @@ spawn_or_focus() {
   cur_idx=$(tmux display-message -p '#{window_index}')
 
   if [ -n "$idx" ] && [ "$idx" = "$cur_idx" ]; then
-    return
+    [ -n "$cmd" ] && is_pane_idle && tmux send-keys C-u C-l "$cmd" Enter
   elif is_adoptable; then
     [ -n "$idx" ] && tmux kill-window -t ":${idx}"
     tmux rename-window "$name"
-    [ -n "$cmd" ] && tmux send-keys "exec $cmd" Enter
+    [ -n "$cmd" ] && tmux send-keys "$cmd" Enter
   elif [ -n "$idx" ]; then
     tmux select-window -t ":${idx}"
+    [ -n "$cmd" ] && is_pane_idle ":${idx}" && tmux send-keys -t ":${idx}" C-u C-l "$cmd" Enter
   elif [ -n "$cmd" ]; then
-    tmux new-window -c '#{pane_current_path}' -n "${name}" "$cmd"
+    tmux new-window -c '#{pane_current_path}' -n "${name}"
+    tmux send-keys "$cmd" Enter
   else
     tmux new-window -c '#{pane_current_path}' -n "${name}"
   fi
