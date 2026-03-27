@@ -281,6 +281,38 @@ function M:reopen_issue_cmd(num)
     return { 'gh', 'issue', 'reopen', num }
 end
 
+---@param title string
+---@param body string
+---@param base string
+---@param draft boolean
+---@return string[]
+function M:create_pr_cmd(title, body, base, draft)
+    local cmd = { 'gh', 'pr', 'create', '--title', title, '--body', body, '--base', base }
+    if draft then
+        table.insert(cmd, '--draft')
+    end
+    return cmd
+end
+
+---@return string[]
+function M:create_pr_web_cmd()
+    return { 'gh', 'pr', 'create', '--web' }
+end
+
+---@return string[]
+function M:default_branch_cmd()
+    return { 'gh', 'repo', 'view', '--json', 'defaultBranchRef', '--jq', '.defaultBranchRef.name' }
+end
+
+---@return string[]
+function M:template_paths()
+    return {
+        '.github/pull_request_template.md',
+        '.github/PULL_REQUEST_TEMPLATE.md',
+        '.github/PULL_REQUEST_TEMPLATE/',
+    }
+end
+
 ---@param num string
 ---@param is_draft boolean
 ---@return string[]?
