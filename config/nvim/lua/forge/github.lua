@@ -285,11 +285,16 @@ end
 ---@param body string
 ---@param base string
 ---@param draft boolean
+---@param reviewers string[]?
 ---@return string[]
-function M:create_pr_cmd(title, body, base, draft)
+function M:create_pr_cmd(title, body, base, draft, reviewers)
     local cmd = { 'gh', 'pr', 'create', '--title', title, '--body', body, '--base', base }
     if draft then
         table.insert(cmd, '--draft')
+    end
+    for _, r in ipairs(reviewers or {}) do
+        table.insert(cmd, '--reviewer')
+        table.insert(cmd, r)
     end
     return cmd
 end
@@ -334,7 +339,10 @@ function M:repo_info()
         'viewerPermission,squashMergeAllowed,rebaseMergeAllowed,mergeCommitAllowed',
     }, { text = true }):wait()
 
-    local data = vim.json.decode(result.stdout or '{}') or {}
+    local ok, data = pcall(vim.json.decode, result.stdout or '{}')
+    if not ok or type(data) ~= 'table' then
+        data = {}
+    end
     local methods = {}
     if data.squashMergeAllowed then
         table.insert(methods, 'squash')
@@ -364,7 +372,10 @@ function M:pr_state(num)
         'state,mergeable,reviewDecision,isDraft',
     }, { text = true }):wait()
 
-    local data = vim.json.decode(result.stdout or '{}') or {}
+    local ok, data = pcall(vim.json.decode, result.stdout or '{}')
+    if not ok or type(data) ~= 'table' then
+        data = {}
+    end
     return {
         state = data.state or 'UNKNOWN',
         mergeable = data.mergeable or 'UNKNOWN',

@@ -548,6 +548,13 @@ local function forge_picker(kind, state, f)
                     forge_mod.format_pr(pr, pr_fields, show_state)
                 )
             end
+            local function with_pr_num(selected, fn)
+                local num = selected[1] and selected[1]:match('[#!](%d+)')
+                if num then
+                    fn(num)
+                end
+            end
+
             require('fzf-lua').fzf_exec(lines, {
                 fzf_args = fzf_args,
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
@@ -567,58 +574,34 @@ local function forge_picker(kind, state, f)
                 },
                 actions = {
                     ['default'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_pr_num(selected, function(num)
                             pr_actions(f, num)['default']()
-                        end
+                        end)
                     end,
                     ['ctrl-x'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_pr_num(selected, function(num)
                             f:view_web(cli_kind, num)
-                        end
+                        end)
                     end,
                     ['ctrl-d'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_pr_num(selected, function(num)
                             pr_actions(f, num)['ctrl-d']()
-                        end
+                        end)
                     end,
                     ['ctrl-w'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_pr_num(selected, function(num)
                             pr_actions(f, num)['ctrl-w']()
-                        end
+                        end)
                     end,
                     ['ctrl-t'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
-                            checks_picker(f, num)
-                        end
+                        with_pr_num(selected, function(num)
+                            pr_actions(f, num)['ctrl-t']()
+                        end)
                     end,
                     ['ctrl-e'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
-                            pr_manage_picker(f, num)
-                        end
+                        with_pr_num(selected, function(num)
+                            pr_actions(f, num)['ctrl-a']()
+                        end)
                     end,
                     ['ctrl-a'] = function()
                         forge_mod.create_pr()
@@ -682,6 +665,13 @@ local function forge_picker(kind, state, f)
                     )
                 )
             end
+            local function with_issue_num(selected, fn)
+                local num = selected[1] and selected[1]:match('[#!](%d+)')
+                if num then
+                    fn(num)
+                end
+            end
+
             require('fzf-lua').fzf_exec(lines, {
                 fzf_args = fzf_args,
                 prompt = ('%s (%s)> '):format(f.labels[kind], state),
@@ -696,31 +686,19 @@ local function forge_picker(kind, state, f)
                 },
                 actions = {
                     ['default'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_issue_num(selected, function(num)
                             f:view_web(cli_kind, num)
-                        end
+                        end)
                     end,
                     ['ctrl-x'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_issue_num(selected, function(num)
                             f:view_web(cli_kind, num)
-                        end
+                        end)
                     end,
                     ['ctrl-s'] = function(selected)
-                        if not selected[1] then
-                            return
-                        end
-                        local num = selected[1]:match('[#!](%d+)')
-                        if num then
+                        with_issue_num(selected, function(num)
                             issue_toggle_state(f, num, state_map[num] ~= false)
-                        end
+                        end)
                     end,
                     ['ctrl-o'] = function()
                         forge_picker(kind, next_state, f)
@@ -960,6 +938,13 @@ local git_picker = function()
             table.insert(hints, 3, { 'ctrl-x', 'browse' })
         end
 
+        local function with_sha(selected, fn)
+            local sha = selected[1] and selected[1]:match('%S+')
+            if sha then
+                fn(sha)
+            end
+        end
+
         require('fzf-lua').fzf_exec(log_cmd, {
             fzf_args = fzf_args,
             prompt = 'Commits> ',
@@ -971,71 +956,55 @@ local git_picker = function()
             },
             actions = {
                 ['default'] = function(selected)
-                    if not selected[1] then
-                        return
-                    end
-                    local sha = selected[1]:match('%S+')
-                    if not sha then
-                        return
-                    end
-                    forge_mod.log_now('checking out ' .. sha .. '...')
-                    vim.system(
-                        { 'git', 'checkout', sha },
-                        { text = true },
-                        function(result)
-                            vim.schedule(function()
-                                if result.code == 0 then
-                                    vim.notify(
-                                        ('[forge]: checked out %s (detached)'):format(
-                                            sha
+                    with_sha(selected, function(sha)
+                        forge_mod.log_now('checking out ' .. sha .. '...')
+                        vim.system(
+                            { 'git', 'checkout', sha },
+                            { text = true },
+                            function(result)
+                                vim.schedule(function()
+                                    if result.code == 0 then
+                                        vim.notify(
+                                            ('[forge]: checked out %s (detached)'):format(
+                                                sha
+                                            )
                                         )
-                                    )
-                                else
-                                    vim.notify(
-                                        '[forge]: '
-                                            .. cmd_error(
-                                                result,
-                                                'checkout failed'
-                                            ),
-                                        vim.log.levels.ERROR
-                                    )
-                                end
-                                vim.cmd.redraw()
-                            end)
-                        end
-                    )
+                                    else
+                                        vim.notify(
+                                            '[forge]: '
+                                                .. cmd_error(
+                                                    result,
+                                                    'checkout failed'
+                                                ),
+                                            vim.log.levels.ERROR
+                                        )
+                                    end
+                                    vim.cmd.redraw()
+                                end)
+                            end
+                        )
+                    end)
                 end,
                 ['ctrl-d'] = function(selected)
-                    if not selected[1] then
-                        return
-                    end
-                    local sha = selected[1]:match('%S+')
-                    if not sha then
-                        return
-                    end
-                    local range = sha .. '^..' .. sha
-                    start_review(range)
-                    require('diffs.commands').greview(range)
-                    forge_mod.log_now('reviewing ' .. sha)
+                    with_sha(selected, function(sha)
+                        local range = sha .. '^..' .. sha
+                        start_review(range)
+                        require('diffs.commands').greview(range)
+                        forge_mod.log_now('reviewing ' .. sha)
+                    end)
                 end,
                 ['ctrl-x'] = function(selected)
-                    if not selected[1] then
-                        return
-                    end
-                    local sha = selected[1]:match('%S+')
-                    if sha and f then
-                        f:browse_commit(sha)
-                    end
+                    with_sha(selected, function(sha)
+                        if f then
+                            f:browse_commit(sha)
+                        end
+                    end)
                 end,
                 ['ctrl-y'] = function(selected)
-                    if not selected[1] then
-                        return
-                    end
-                    local sha = selected[1]:match('%S+')
-                    if sha then
+                    with_sha(selected, function(sha)
                         vim.fn.setreg('+', sha)
                         vim.notify('[forge]: copied ' .. sha)
-                    end
+                    end)
                 end,
             },
         })

@@ -308,8 +308,9 @@ end
 ---@param body string
 ---@param base string
 ---@param draft boolean
+---@param reviewers string[]?
 ---@return string[]
-function M:create_pr_cmd(title, body, base, draft)
+function M:create_pr_cmd(title, body, base, draft, reviewers)
     local cmd = {
         'glab', 'mr', 'create',
         '--title', title,
@@ -319,6 +320,10 @@ function M:create_pr_cmd(title, body, base, draft)
     }
     if draft then
         table.insert(cmd, '--draft')
+    end
+    for _, r in ipairs(reviewers or {}) do
+        table.insert(cmd, '--reviewer')
+        table.insert(cmd, r)
     end
     return cmd
 end
