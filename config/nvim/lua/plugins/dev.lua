@@ -6,6 +6,7 @@ local dev_plugins = {
     'pending.nvim',
     'cp.nvim',
     'diffs.nvim',
+    'forge.nvim',
     'preview.nvim',
     'fzf-lua',
     'nvim-lspconfig',
