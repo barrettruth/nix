@@ -77,9 +77,8 @@ end
 ---@param kind string
 ---@param num string
 function M:view_web(kind, num)
-    local slug = kind == 'pulls' and 'pulls' or 'issues'
     local base = forge.remote_web_url()
-    vim.ui.open(('%s/%s/%s'):format(base, slug, num))
+    vim.ui.open(('%s/%s/%s'):format(base, kind, num))
 end
 
 ---@param loc string
@@ -243,8 +242,9 @@ end
 ---@param body string
 ---@param base string
 ---@param _draft boolean
+---@param _reviewers string[]?
 ---@return string[]
-function M:create_pr_cmd(title, body, base, _draft)
+function M:create_pr_cmd(title, body, base, _draft, _reviewers)
     return { 'tea', 'pr', 'create', '--title', title, '--description', body, '--base', base }
 end
 

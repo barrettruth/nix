@@ -1,5 +1,19 @@
 local M = {}
 
+local hl_defaults = {
+    ForgeComposeComment = 'Comment',
+    ForgeComposeBranch = 'Normal',
+    ForgeComposeForge = 'Type',
+    ForgeComposeDraft = 'DiagnosticWarn',
+    ForgeComposeFile = 'Normal',
+    ForgeComposeAdded = 'Added',
+    ForgeComposeRemoved = 'Removed',
+}
+
+for group, link in pairs(hl_defaults) do
+    vim.api.nvim_set_hl(0, group, { default = true, link = link })
+end
+
 ---@param msg string
 ---@param level integer?
 function M.log(msg, level)
@@ -79,7 +93,7 @@ end
 ---@field close_issue_cmd fun(self: forge.Forge, num: string): string[]
 ---@field reopen_issue_cmd fun(self: forge.Forge, num: string): string[]
 ---@field draft_toggle_cmd fun(self: forge.Forge, num: string, is_draft: boolean): string[]?
----@field create_pr_cmd fun(self: forge.Forge, title: string, body: string, base: string, draft: boolean): string[]
+---@field create_pr_cmd fun(self: forge.Forge, title: string, body: string, base: string, draft: boolean, reviewers: string[]?): string[]
 ---@field create_pr_web_cmd fun(self: forge.Forge): string[]?
 ---@field default_branch_cmd fun(self: forge.Forge): string[]
 ---@field template_paths fun(self: forge.Forge): string[]
@@ -658,6 +672,62 @@ end
 
 ---@param f forge.Forge
 ---@param branch string
+---@param title string
+---@param body string
+---@param pr_base string
+---@param pr_draft boolean
+---@param pr_reviewers string[]?
+---@param buf integer?
+local function push_and_create(f, branch, title, body, pr_base, pr_draft, pr_reviewers, buf)
+    M.log_now('pushing and creating ' .. f.labels.pr_one .. '...')
+    vim.system(
+        { 'git', 'push', '-u', 'origin', branch },
+        { text = true },
+        function(push_result)
+            if push_result.code ~= 0 then
+                local msg = vim.trim(push_result.stderr or '')
+                if msg == '' then
+                    msg = 'push failed'
+                end
+                M.log(msg, vim.log.levels.ERROR)
+                return
+            end
+            vim.system(
+                f:create_pr_cmd(title, body, pr_base, pr_draft, pr_reviewers),
+                { text = true },
+                function(create_result)
+                    vim.schedule(function()
+                        if create_result.code == 0 then
+                            local url = vim.trim(create_result.stdout or '')
+                            if url ~= '' then
+                                vim.fn.setreg('+', url)
+                            end
+                            M.log_now(('created %s → %s'):format(f.labels.pr_one, url))
+                            M.clear_list()
+                            if buf and vim.api.nvim_buf_is_valid(buf) then
+                                vim.bo[buf].modified = false
+                                vim.api.nvim_buf_delete(buf, { force = true })
+                            end
+                        else
+                            local msg = vim.trim(create_result.stderr or '')
+                            if msg == '' then
+                                msg = vim.trim(create_result.stdout or '')
+                            end
+                            if msg == '' then
+                                msg = 'creation failed'
+                            end
+                            M.log_now(msg, vim.log.levels.ERROR)
+                        end
+                        vim.cmd.redraw()
+                    end)
+                end
+            )
+        end
+    )
+end
+
+---@param f forge.Forge
+---@param branch string
 ---@param base string
 ---@param draft boolean
 local function open_compose_buffer(f, branch, base, draft)
@@ -684,38 +754,67 @@ local function open_compose_buffer(f, branch, base, draft)
     table.insert(lines, '')
     local comment_start = #lines + 1
 
-    local draft_label = draft and ', draft' or ''
     local pr_kind = f.labels.pr_full:gsub('s$', '')
     local diff_stat = vim.fn.system(
         'git diff --stat origin/' .. base .. '..HEAD'
     ):gsub('%s+$', '')
 
-    table.insert(lines, '<!--')
-    table.insert(
-        lines,
-        ('  On branch %s against %s%s.'):format(branch, base, draft_label)
-    )
-    table.insert(
-        lines,
-        ('  Creating %s via %s.'):format(pr_kind, f.name)
-    )
+    ---@type {line: integer, col: integer, end_col: integer, hl: string}[]
+    local marks = {}
+
+    local function add_line(fmt, ...)
+        local text = fmt:format(...)
+        table.insert(lines, text)
+        return #lines
+    end
+
+    ---@param ln integer
+    ---@param start integer
+    ---@param len integer
+    ---@param hl string
+    local function mark(ln, start, len, hl)
+        table.insert(marks, { line = ln, col = start, end_col = start + len, hl = hl })
+    end
+
+    add_line('<!--')
+
+    local branch_prefix = '  On branch '
+    local against = ' against '
+    local ln = add_line('%s%s%s%s.', branch_prefix, branch, against, base)
+    mark(ln, #branch_prefix, #branch, 'ForgeComposeBranch')
+    mark(ln, #branch_prefix + #branch + #against, #base, 'ForgeComposeBranch')
+
+    local creating_prefix = '  Creating ' .. pr_kind .. ' via '
+    ln = add_line('%s%s.', creating_prefix, f.name)
+    mark(ln, #creating_prefix, #f.name, 'ForgeComposeForge')
+
+    add_line('')
+    local draft_val = draft and 'yes' or ''
+    local draft_prefix = '  Draft: '
+    ln = add_line('%s%s', draft_prefix, draft_val)
+    if draft_val ~= '' then
+        mark(ln, #draft_prefix, #draft_val, 'ForgeComposeDraft')
+    end
+
+    local reviewers_prefix = '  Reviewers: '
+    add_line('%s', reviewers_prefix)
+
     local stat_start, stat_end
     if diff_stat ~= '' then
-        table.insert(lines, '')
-        table.insert(
-            lines,
-            ('  Changes not in origin/%s:'):format(base)
-        )
-        table.insert(lines, '')
+        add_line('')
+        local changes_prefix = '  Changes not in origin/'
+        ln = add_line('%s%s:', changes_prefix, base)
+        mark(ln, #changes_prefix, #base, 'ForgeComposeBranch')
+        add_line('')
         stat_start = #lines + 1
         for _, sl in ipairs(vim.split(diff_stat, '\n', { plain = true })) do
             table.insert(lines, '  ' .. sl)
         end
         stat_end = #lines
     end
-    table.insert(lines, '')
-    table.insert(lines, '  An empty title or body aborts creation.')
-    table.insert(lines, '-->')
+    add_line('')
+    add_line('  An empty title or body aborts creation.')
+    add_line('-->')
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     vim.bo[buf].modified = false
@@ -725,7 +824,15 @@ local function open_compose_buffer(f, branch, base, draft)
     local ns = vim.api.nvim_create_namespace('forge_pr_comment')
     for i = comment_start, #lines do
         vim.api.nvim_buf_set_extmark(buf, ns, i - 1, 0, {
-            line_hl_group = 'Comment',
+            line_hl_group = 'ForgeComposeComment',
+        })
+    end
+
+    for _, m in ipairs(marks) do
+        vim.api.nvim_buf_set_extmark(buf, ns, m.line - 1, m.col, {
+            end_col = m.end_col,
+            hl_group = m.hl,
+            priority = 4097,
         })
     end
 
@@ -738,13 +845,13 @@ local function open_compose_buffer(f, branch, base, draft)
                 if fname_start then
                     vim.api.nvim_buf_set_extmark(buf, ns, i - 1, fname_start - 1, {
                         end_col = pipe - 2,
-                        hl_group = 'Normal',
+                        hl_group = 'ForgeComposeFile',
                         priority = 4097,
                     })
                 end
                 for pos, run in line:gmatch('()([+-]+)') do
                     if pos > pipe then
-                        local hl = run:sub(1, 1) == '+' and 'Added' or 'Removed'
+                        local hl = run:sub(1, 1) == '+' and 'ForgeComposeAdded' or 'ForgeComposeRemoved'
                         vim.api.nvim_buf_set_extmark(buf, ns, i - 1, pos - 1, {
                             end_col = pos - 1 + #run,
                             hl_group = hl,
@@ -756,40 +863,33 @@ local function open_compose_buffer(f, branch, base, draft)
         end
     end
 
-    vim.b[buf].forge_pr_base = base
-    vim.b[buf].forge_pr_draft = draft
-    vim.b[buf].forge_pr_forge = f.name
-    vim.b[buf].forge_pr_branch = branch
-
-    local branch_line = comment_start
-    local function update_branch_line()
-        local b = vim.b[buf].forge_pr_base or base
-        local d = vim.b[buf].forge_pr_draft
-        local draft_str = d and ', draft' or ''
-        local new_line =
-            ('  On branch %s against %s%s.'):format(branch, b, draft_str)
-        vim.api.nvim_buf_set_lines(
-            buf,
-            branch_line,
-            branch_line + 1,
-            false,
-            { new_line }
-        )
-    end
-
-    vim.keymap.set('n', '<localleader>d', function()
-        vim.b[buf].forge_pr_draft = not vim.b[buf].forge_pr_draft
-        update_branch_line()
-    end, { buffer = buf, desc = 'toggle draft' })
-
-    vim.keymap.set('n', '<localleader>b', function()
-        vim.ui.input({ prompt = 'Base branch: ', default = vim.b[buf].forge_pr_base }, function(input)
-            if input and input ~= '' then
-                vim.b[buf].forge_pr_base = input
-                update_branch_line()
+    ---@return boolean, string[], string
+    local function parse_comment()
+        local buf_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        local in_comment = false
+        local pr_draft = false
+        local pr_reviewers = {}
+        for _, l in ipairs(buf_lines) do
+            if l:match('^<!--') then
+                in_comment = true
+            elseif l:match('^%-%->') then
+                break
+            elseif in_comment then
+                local dv = l:match('^%s*Draft:%s*(.*)$')
+                if dv then
+                    dv = vim.trim(dv):lower()
+                    pr_draft = dv == 'yes' or dv == 'true'
+                end
+                local rv = l:match('^%s*Reviewers:%s*(.*)$')
+                if rv then
+                    for r in vim.trim(rv):gmatch('[^,%s]+') do
+                        table.insert(pr_reviewers, r)
+                    end
+                end
             end
-        end)
-    end, { buffer = buf, desc = 'change base branch' })
+        end
+        return pr_draft, pr_reviewers, base
+    end
 
     vim.api.nvim_create_autocmd('BufWriteCmd', {
         buffer = buf,
@@ -818,80 +918,10 @@ local function open_compose_buffer(f, branch, base, draft)
                 vim.api.nvim_buf_delete(buf, { force = true })
                 return
             end
-            local pr_base = vim.b[buf].forge_pr_base
-            local pr_draft = vim.b[buf].forge_pr_draft
 
-            M.log_now('pushing and creating ' .. f.labels.pr_one .. '...')
+            local pr_draft, pr_reviewers, pr_base = parse_comment()
 
-            vim.system(
-                { 'git', 'push', '-u', 'origin', branch },
-                { text = true },
-                function(push_result)
-                    if push_result.code ~= 0 then
-                        local msg = vim.trim(push_result.stderr or '')
-                        if msg == '' then
-                            msg = 'push failed'
-                        end
-                        M.log('[forge]: ' .. msg, vim.log.levels.ERROR)
-                        return
-                    end
-
-                    local detected = require('forge.' .. f.name)
-                    vim.system(
-                        detected:create_pr_cmd(
-                            pr_title,
-                            pr_body,
-                            pr_base,
-                            pr_draft
-                        ),
-                        { text = true },
-                        function(create_result)
-                            vim.schedule(function()
-                                if create_result.code == 0 then
-                                    local url =
-                                        vim.trim(create_result.stdout or '')
-                                    if url ~= '' then
-                                        vim.fn.setreg('+', url)
-                                    end
-                                    vim.notify(
-                                        ('[forge]: created %s → %s'):format(
-                                            f.labels.pr_one,
-                                            url
-                                        )
-                                    )
-                                    M.clear_list()
-                                    if
-                                        vim.api.nvim_buf_is_valid(buf)
-                                    then
-                                        vim.bo[buf].modified = false
-                                        vim.api.nvim_buf_delete(
-                                            buf,
-                                            { force = true }
-                                        )
-                                    end
-                                else
-                                    local msg = vim.trim(
-                                        create_result.stderr or ''
-                                    )
-                                    if msg == '' then
-                                        msg = vim.trim(
-                                            create_result.stdout or ''
-                                        )
-                                    end
-                                    if msg == '' then
-                                        msg = 'creation failed'
-                                    end
-                                    vim.notify(
-                                        '[forge]: ' .. msg,
-                                        vim.log.levels.ERROR
-                                    )
-                                end
-                                vim.cmd.redraw()
-                            end)
-                        end
-                    )
-                end
-            )
+            push_and_create(f, branch, pr_title, pr_body, pr_base, pr_draft, pr_reviewers, buf)
         end,
     })
 
@@ -931,15 +961,14 @@ function M.create_pr(opts)
         local num = vim.trim(result.stdout or '')
         vim.schedule(function()
             if num ~= '' and num ~= 'null' then
-                vim.notify(
-                    ('[forge]: %s #%s already exists for branch %s'):format(
+                M.log_now(
+                    ('%s #%s already exists for branch %s'):format(
                         f.labels.pr_one,
                         num,
                         branch
                     ),
                     vim.log.levels.WARN
                 )
-                vim.cmd.redraw()
                 return
             end
 
@@ -951,11 +980,7 @@ function M.create_pr(opts)
                     function(push_result)
                         vim.schedule(function()
                             if push_result.code ~= 0 then
-                                vim.notify(
-                                    '[forge]: push failed',
-                                    vim.log.levels.ERROR
-                                )
-                                vim.cmd.redraw()
+                                M.log_now('push failed', vim.log.levels.ERROR)
                                 return
                             end
                             local web_cmd = f:create_pr_web_cmd()
@@ -990,74 +1015,8 @@ function M.create_pr(opts)
                             return
                         end
                         if opts.instant then
-                            local title, body =
-                                fill_from_commits(branch, base)
-                            M.log_now(
-                                'pushing and creating '
-                                    .. f.labels.pr_one
-                                    .. '...'
-                            )
-                            vim.system(
-                                { 'git', 'push', '-u', 'origin', branch },
-                                { text = true },
-                                function(push_result)
-                                    if push_result.code ~= 0 then
-                                        M.log(
-                                            'push failed',
-                                            vim.log.levels.ERROR
-                                        )
-                                        return
-                                    end
-                                    vim.system(
-                                        f:create_pr_cmd(
-                                            title,
-                                            body,
-                                            base,
-                                            opts.draft or false
-                                        ),
-                                        { text = true },
-                                        function(create_result)
-                                            vim.schedule(function()
-                                                if
-                                                    create_result.code == 0
-                                                then
-                                                    local url = vim.trim(
-                                                        create_result.stdout
-                                                            or ''
-                                                    )
-                                                    if url ~= '' then
-                                                        vim.fn.setreg(
-                                                            '+',
-                                                            url
-                                                        )
-                                                    end
-                                                    vim.notify(
-                                                        ('[forge]: created %s → %s'):format(
-                                                            f.labels.pr_one,
-                                                            url
-                                                        )
-                                                    )
-                                                    M.clear_list()
-                                                else
-                                                    local msg = vim.trim(
-                                                        create_result.stderr
-                                                            or ''
-                                                    )
-                                                    if msg == '' then
-                                                        msg =
-                                                            'creation failed'
-                                                    end
-                                                    vim.notify(
-                                                        '[forge]: ' .. msg,
-                                                        vim.log.levels.ERROR
-                                                    )
-                                                end
-                                                vim.cmd.redraw()
-                                            end)
-                                        end
-                                    )
-                                end
-                            )
+                            local title, body = fill_from_commits(branch, base)
+                            push_and_create(f, branch, title, body, base, opts.draft or false)
                         else
                             open_compose_buffer(
                                 f,
