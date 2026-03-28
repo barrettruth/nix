@@ -12,6 +12,7 @@ in
 {
   flake.nixosConfigurations.xps15 = inputs.nixpkgs.lib.nixosSystem {
     modules = [
+      inputs.determinate.nixosModules.default
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       inputs.hyprland.nixosModules.default
       ../../hosts/xps15/configuration.nix
