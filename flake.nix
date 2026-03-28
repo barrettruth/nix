@@ -7,6 +7,7 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
@@ -22,134 +23,15 @@
   };
 
   outputs =
-    {
-      nixpkgs,
-      home-manager,
-      nixos-hardware,
-      hyprland,
-      zen-browser,
-      claude-code,
-      neovim-nightly,
-      disko,
-      direnv-instant,
-      vimdoc-language-server,
-      ...
-    }:
-    let
-      overlays = [
-        claude-code.overlays.default
-        neovim-nightly.overlays.default
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" ];
+
+      imports = [
+        ./modules/nixpkgs.nix
+        ./modules/devshells.nix
+        ./modules/hosts/xps15.nix
+        ./modules/hosts/netcup.nix
       ];
-
-      sharedUnfree = [
-        "slack"
-        "claude-code"
-        "claude"
-        "apple_cursor"
-      ];
-
-      mkPkgs =
-        system: extraUnfree:
-        import nixpkgs {
-          inherit system;
-          config.allowUnfreePredicate =
-            pkg: builtins.elem (nixpkgs.lib.getName pkg) (sharedUnfree ++ extraUnfree);
-          inherit overlays;
-        };
-
-      xps15Config = {
-        isNixOS = true;
-        isLinux = true;
-        isDarwin = false;
-        gpu = "nvidia";
-        backlightDevice = "intel_backlight";
-        platform = "x86_64-linux";
-      };
-    in
-    {
-      formatter.x86_64-linux = (mkPkgs "x86_64-linux" [ ]).nixfmt-tree;
-
-      devShells.x86_64-linux =
-        let
-          pkgs = mkPkgs "x86_64-linux" [ ];
-        in
-        {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.deadnix
-              pkgs.statix
-              pkgs.nixfmt
-              pkgs.pre-commit
-              pkgs.nodePackages.prettier
-              pkgs.shfmt
-              pkgs.stylua
-              pkgs.selene
-            ];
-          };
-          neovim = pkgs.mkShell {
-            packages = [
-              pkgs.prettier
-              pkgs.stylua
-              pkgs.selene
-              pkgs.lua-language-server
-              vimdoc-language-server.packages.x86_64-linux.default
-              (pkgs.luajit.withPackages (ps: [
-                ps.busted
-                ps.nlua
-              ]))
-            ];
-          };
-        };
-
-      nixosConfigurations.xps15 = nixpkgs.lib.nixosSystem {
-        modules = [
-          nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
-          hyprland.nixosModules.default
-          ./hosts/xps15/configuration.nix
-          {
-            nixpkgs.hostPlatform = "x86_64-linux";
-            nixpkgs.overlays = overlays;
-            nixpkgs.config.allowUnfreePredicate =
-              pkg:
-              builtins.elem (nixpkgs.lib.getName pkg) (
-                sharedUnfree
-                ++ [
-                  "nvidia-x11"
-                  "nvidia-settings"
-                  "tailscale"
-                  "libfprint-2-tod1-goodix"
-                  "brgenml1lpr"
-                  "cuda_cccl"
-                  "cuda_cudart"
-                  "libcublas"
-                  "cuda_nvcc"
-                ]
-              );
-          }
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "bak";
-            home-manager.sharedModules = [ direnv-instant.homeModules.direnv-instant ];
-            home-manager.users.barrett = import ./home/home.nix;
-            home-manager.extraSpecialArgs = {
-              inherit zen-browser hyprland;
-              hostConfig = xps15Config;
-            };
-          }
-        ];
-        specialArgs = {
-          inherit nixpkgs;
-        };
-      };
-
-      nixosConfigurations.netcup = nixpkgs.lib.nixosSystem {
-        modules = [
-          disko.nixosModules.disko
-          ./hosts/netcup/configuration.nix
-          { nixpkgs.hostPlatform = "x86_64-linux"; }
-        ];
-      };
     };
 }
