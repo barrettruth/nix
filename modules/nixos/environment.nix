@@ -1,6 +1,12 @@
 { hostConfig, ... }:
 let
-  inherit (hostConfig) homeDirectory XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME;
+  inherit (hostConfig)
+    homeDirectory
+    XDG_CONFIG_HOME
+    XDG_DATA_HOME
+    XDG_STATE_HOME
+    XDG_CACHE_HOME
+    ;
   repo = "${XDG_CONFIG_HOME}/nix";
 in
 {
