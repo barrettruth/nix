@@ -1,4 +1,10 @@
-{ pkgs, lib, hostConfig, zen-browser, hyprland, ... }:
+{
+  pkgs,
+  hostConfig,
+  zen-browser,
+  hyprland,
+  ...
+}:
 let
   sioyek-wrapped = pkgs.symlinkJoin {
     name = "sioyek";
@@ -12,7 +18,7 @@ let
     '';
   };
 
-  pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix {};
+  pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
 
   whisper = pkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 in

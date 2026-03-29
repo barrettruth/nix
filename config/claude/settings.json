@@ -1,21 +1,8 @@
 {
-  "model": "claude-opus-4-6",
-  "effortLevel": "high",
   "permissions": {
     "defaultMode": "acceptEdits"
   },
-  "notifications": {
-    "hints": "disabled"
-  },
-  "network_access": true,
-  "allowed_domains": [
-    "github.com",
-    "raw.githubusercontent.com",
-    "api.github.com"
-  ],
-  "tools": {
-    "web_fetch": true
-  },
+  "model": "claude-opus-4-6",
   "hooks": {
     "PreToolUse": [
       {
@@ -39,5 +26,19 @@
         ]
       }
     ]
-  }
+  },
+  "effortLevel": "high",
+  "notifications": {
+    "hints": "disabled"
+  },
+  "network_access": true,
+  "allowed_domains": [
+    "github.com",
+    "raw.githubusercontent.com",
+    "api.github.com"
+  ],
+  "tools": {
+    "web_fetch": true
+  },
+  "skipDangerousModePermissionPrompt": true
 }

@@ -1,4 +1,12 @@
-{ inputs, lib, overlays, sharedUnfree, palettes, themeGenerators, ... }:
+{
+  inputs,
+  lib,
+  overlays,
+  sharedUnfree,
+  palettes,
+  themeGenerators,
+  ...
+}:
 let
   hostConfig = {
     isNixOS = true;
@@ -45,7 +53,7 @@ in
       }
     ];
     specialArgs = {
-      nixpkgs = inputs.nixpkgs;
+      inherit (inputs) nixpkgs;
       inherit (inputs) zen-browser hyprland;
       inherit palettes themeGenerators hostConfig;
     };
