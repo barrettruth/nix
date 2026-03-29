@@ -70,6 +70,7 @@ let
     source ${pkgs.fzf}/share/fzf/completion.zsh
     eval "$(${pkgs.zoxide}/bin/zoxide init zsh)"
     alias ls="${pkgs.eza}/bin/eza --git"
+    source /home/barrett/.config/nix/config/zsh/zshrc
   '';
 
   tmuxConf = pkgs.writeText "tmux-wrapper" ''
