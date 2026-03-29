@@ -1,5 +1,0 @@
-git_protocol: https
-prompt: enabled
-aliases:
-    init: "!gh api --method PATCH /repos/\"$1\" -f delete_branch_on_merge=true -f allow_squash_merge=true -f allow_merge_commit=false -f allow_rebase_merge=true -f allow_auto_merge=true -f allow_update_branch=true -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=BLANK > /dev/null && gh api --method POST /repos/\"$1\"/rulesets --input ~/.config/github/ruleset.json > /dev/null && echo \"done: $1\""
-version: "1"
