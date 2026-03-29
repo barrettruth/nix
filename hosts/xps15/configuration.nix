@@ -2,10 +2,12 @@
   config,
   lib,
   pkgs,
+  hostConfig,
   ...
 }:
 
 let
+  inherit (hostConfig) username homeDirectory;
   tuigreet = lib.getExe pkgs.tuigreet;
   hyprSession = pkgs.writeShellScript "hypr-session" ''
     [ -e /etc/set-environment ] && . /etc/set-environment
@@ -84,13 +86,13 @@ in
 
   environment.etc."gitconfig".text = ''
     [safe]
-      directory = /home/barrett/.config/nix
-      directory = /home/barrett/.cache/nix/tarball-cache
+      directory = ${homeDirectory}/.config/nix
+      directory = ${homeDirectory}/.cache/nix/tarball-cache
   '';
 
   environment.binsh = "${pkgs.dash}/bin/dash";
 
-  users.users.barrett = {
+  users.users.${username} = {
     isNormalUser = true;
     extraGroups = [
       "wheel"
@@ -223,7 +225,7 @@ in
     ];
     trusted-users = [
       "root"
-      "barrett"
+      username
     ];
   };
 
