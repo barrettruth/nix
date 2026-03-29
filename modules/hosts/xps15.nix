@@ -15,12 +15,15 @@ in
       inputs.determinate.nixosModules.default
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       inputs.hyprland.nixosModules.default
+      inputs.direnv-instant.nixosModules.direnv-instant
       ../../hosts/xps15/configuration.nix
       ../nixos/packages.nix
       ../nixos/environment.nix
       ../nixos/services.nix
       ../nixos/activation.nix
       {
+        programs.direnv-instant.enable = true;
+        programs.direnv.nix-direnv.enable = true;
         nixpkgs.hostPlatform = hostConfig.platform;
         nixpkgs.overlays = overlays;
         nixpkgs.config.allowUnfreePredicate =

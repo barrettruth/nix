@@ -13,7 +13,7 @@
 	a = add
 	b = branch
 	c = commit
-	acp = !acp() { git add . && git commit -m \"$*\" && git push; }; acp
+	acp = "!acp() { git add . && git commit -m \"$*\" && git push; }; acp"
 	cane = commit --amend --no-edit
 	cf = config
 	ch = checkout
