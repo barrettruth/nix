@@ -337,6 +337,7 @@
       User = "delta";
       Group = "delta";
       StateDirectory = "delta";
+      EnvironmentFile = "/var/lib/delta/env";
     };
     environment = {
       NODE_ENV = "production";

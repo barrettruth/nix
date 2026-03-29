@@ -1,0 +1,24 @@
+font-family = Berkeley Mono
+font-codepoint-map = U+f101-U+f25c=nonicons
+font-feature = -calt
+font-size = 20
+adjust-cell-height = 10%
+theme = dark:midnight,light:daylight
+cursor-style-blink = false
+shell-integration-features = no-cursor
+window-decoration = false
+window-padding-x = 0
+window-padding-y = 0
+window-padding-color = background
+app-notifications = no-clipboard-copy,no-config-reload
+resize-overlay = never
+mouse-scroll-multiplier = 0.5
+quit-after-last-window-closed = true
+confirm-close-surface = false
+keybind = clear
+keybind = alt+r=reload_config
+keybind = alt+y=copy_to_clipboard
+keybind = alt+p=paste_from_clipboard
+keybind = alt+shift+h=decrease_font_size:1
+keybind = alt+shift+l=increase_font_size:1
+keybind = shift+enter=text:\n
