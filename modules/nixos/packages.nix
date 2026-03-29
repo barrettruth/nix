@@ -23,7 +23,7 @@ let
   whisper = pkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 in
 {
-  users.users.barrett.packages = with pkgs; [
+  users.users.${hostConfig.username}.packages = with pkgs; [
     awscli2
     pure-prompt
     tree

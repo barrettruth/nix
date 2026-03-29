@@ -8,7 +8,14 @@
   ...
 }:
 let
+  username = "barrett";
+  homeDirectory = "/home/${username}";
   hostConfig = {
+    inherit username homeDirectory;
+    XDG_CONFIG_HOME = "${homeDirectory}/.config";
+    XDG_DATA_HOME = "${homeDirectory}/.local/share";
+    XDG_STATE_HOME = "${homeDirectory}/.local/state";
+    XDG_CACHE_HOME = "${homeDirectory}/.cache";
     isNixOS = true;
     isLinux = true;
     isDarwin = false;

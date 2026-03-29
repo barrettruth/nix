@@ -2,12 +2,12 @@
   pkgs,
   palettes,
   themeGenerators,
+  hostConfig,
   ...
 }:
 let
-  cfg = "/home/barrett/.config";
-  repo = "/home/barrett/.config/nix";
-  home = "/home/barrett";
+  inherit (hostConfig) username homeDirectory XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME;
+  repo = "${XDG_CONFIG_HOME}/nix";
 
   themes = pkgs.runCommand "theme-files" { } ''
     mkdir -p $out/fzf/themes
@@ -80,13 +80,13 @@ let
 
   tmuxConf = pkgs.writeText "tmux-wrapper" ''
     run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
-    set -g @resurrect-dir '/home/barrett/.local/state/tmux/resurrect'
+    set -g @resurrect-dir '${XDG_STATE_HOME}/tmux/resurrect'
     set -g @resurrect-capture-pane-contents on
     run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
     set -g @continuum-restore 'on'
     set -g @continuum-save-interval '10'
     set -g status-right '#{E:@bar-content}'
-    source /home/barrett/.config/nix/config/tmux/tmux.conf
+    source ${repo}/config/tmux/tmux.conf
   '';
 
   hyprlandConf = pkgs.writeText "hyprland-wrapper" ''
@@ -100,135 +100,136 @@ let
     env = GSK_RENDERER,ngl
     env = __NV_PRIME_RENDER_OFFLOAD,1
     env = __VK_LAYER_NV_optimus,NVIDIA_only
-    source = /home/barrett/.config/nix/config/hypr/hyprland.conf
+    source = ${repo}/config/hypr/hyprland.conf
   '';
 
   mkSymlink = target: link: ''
     ln -sfn "${target}" "${link}"
-    chown -h barrett:users "${link}"
+    chown -h ${username}:users "${link}"
   '';
 
   mkDir = dir: ''
-    install -d -o barrett -g users "${dir}"
+    install -d -o ${username} -g users "${dir}"
   '';
 in
 {
   systemd.tmpfiles.rules = [
-    "L+ /home/barrett/.local/share/fonts - - - - /home/barrett/.config/nix/fonts"
-    "d /home/barrett/dev 0755 barrett users -"
-    "d /home/barrett/Pictures/Screensavers 0755 barrett users -"
-    "d /home/barrett/Pictures/Screenshots 0755 barrett users -"
-    "d /home/barrett/Pictures/wp 0755 barrett users -"
+    "L+ ${XDG_DATA_HOME}/fonts - - - - ${repo}/fonts"
+    "d ${homeDirectory}/dev 0755 ${username} users -"
+    "d ${homeDirectory}/Pictures/Screensavers 0755 ${username} users -"
+    "d ${homeDirectory}/Pictures/Screenshots 0755 ${username} users -"
+    "d ${homeDirectory}/Pictures/wp 0755 ${username} users -"
   ];
 
   system.activationScripts.userConfig.text = ''
-    ${mkDir "${cfg}/fzf/themes"}
-    ${mkDir "${cfg}/hypr/themes"}
-    ${mkDir "${cfg}/waybar/themes"}
-    ${mkDir "${cfg}/fuzzel/themes"}
-    ${mkDir "${cfg}/dunst/themes"}
-    ${mkDir "${cfg}/dunst/dunstrc.d"}
-    ${mkDir "${cfg}/sioyek/themes"}
-    ${mkDir "${cfg}/ghostty"}
-    ${mkDir "${cfg}/ghostty/themes"}
-    ${mkDir "${cfg}/git"}
-    ${mkDir "${cfg}/gh"}
-    ${mkDir "${cfg}/jj"}
-    ${mkDir "${cfg}/rg"}
-    ${mkDir "${cfg}/fd"}
-    ${mkDir "${cfg}/npm"}
-    ${mkDir "${cfg}/python"}
-    ${mkDir "${cfg}/luarocks"}
-    ${mkDir "${cfg}/latexmk"}
-    ${mkDir "${cfg}/github"}
-    ${mkDir "${cfg}/direnv"}
-    ${mkDir "${cfg}/claude"}
-    ${mkDir "${cfg}/zsh"}
-    ${mkDir "${cfg}/tmux/themes"}
-    ${mkDir "${home}/.ssh"}
+    ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/fuzzel/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
+    ${mkDir "${XDG_CONFIG_HOME}/sioyek/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
+    ${mkDir "${XDG_CONFIG_HOME}/ghostty/themes"}
+    ${mkDir "${XDG_CONFIG_HOME}/git"}
+    ${mkDir "${XDG_CONFIG_HOME}/gh"}
+    ${mkDir "${XDG_CONFIG_HOME}/jj"}
+    ${mkDir "${XDG_CONFIG_HOME}/rg"}
+    ${mkDir "${XDG_CONFIG_HOME}/fd"}
+    ${mkDir "${XDG_CONFIG_HOME}/npm"}
+    ${mkDir "${XDG_CONFIG_HOME}/python"}
+    ${mkDir "${XDG_CONFIG_HOME}/luarocks"}
+    ${mkDir "${XDG_CONFIG_HOME}/latexmk"}
+    ${mkDir "${XDG_CONFIG_HOME}/github"}
+    ${mkDir "${XDG_CONFIG_HOME}/direnv"}
+    ${mkDir "${XDG_CONFIG_HOME}/claude"}
+    ${mkDir "${XDG_CONFIG_HOME}/zsh"}
+    ${mkDir "${XDG_CONFIG_HOME}/tmux/themes"}
+    ${mkDir "${homeDirectory}/.ssh"}
 
-    ${mkSymlink "${themes}/fzf/themes/midnight" "${cfg}/fzf/themes/midnight"}
-    ${mkSymlink "${themes}/fzf/themes/daylight" "${cfg}/fzf/themes/daylight"}
-    ${mkSymlink "${themes}/hypr/themes/midnight.conf" "${cfg}/hypr/themes/midnight.conf"}
-    ${mkSymlink "${themes}/hypr/themes/daylight.conf" "${cfg}/hypr/themes/daylight.conf"}
-    ${mkSymlink "${themes}/waybar/themes/midnight.css" "${cfg}/waybar/themes/midnight.css"}
-    ${mkSymlink "${themes}/waybar/themes/daylight.css" "${cfg}/waybar/themes/daylight.css"}
-    ${mkSymlink "${themes}/fuzzel/themes/midnight.ini" "${cfg}/fuzzel/themes/midnight.ini"}
-    ${mkSymlink "${themes}/fuzzel/themes/daylight.ini" "${cfg}/fuzzel/themes/daylight.ini"}
-    ${mkSymlink "${themes}/dunst/themes/midnight.conf" "${cfg}/dunst/themes/midnight.conf"}
-    ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${cfg}/dunst/themes/daylight.conf"}
-    ${mkSymlink "${themes}/sioyek/themes/midnight.config" "${cfg}/sioyek/themes/midnight.config"}
-    ${mkSymlink "${themes}/sioyek/themes/daylight.config" "${cfg}/sioyek/themes/daylight.config"}
+    ${mkSymlink "${themes}/fzf/themes/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
+    ${mkSymlink "${themes}/fzf/themes/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
+    ${mkSymlink "${themes}/hypr/themes/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
+    ${mkSymlink "${themes}/hypr/themes/daylight.conf" "${XDG_CONFIG_HOME}/hypr/themes/daylight.conf"}
+    ${mkSymlink "${themes}/waybar/themes/midnight.css" "${XDG_CONFIG_HOME}/waybar/themes/midnight.css"}
+    ${mkSymlink "${themes}/waybar/themes/daylight.css" "${XDG_CONFIG_HOME}/waybar/themes/daylight.css"}
+    ${mkSymlink "${themes}/fuzzel/themes/midnight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/midnight.ini"}
+    ${mkSymlink "${themes}/fuzzel/themes/daylight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/daylight.ini"}
+    ${mkSymlink "${themes}/dunst/themes/midnight.conf" "${XDG_CONFIG_HOME}/dunst/themes/midnight.conf"}
+    ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
+    ${mkSymlink "${themes}/sioyek/themes/midnight.config" "${XDG_CONFIG_HOME}/sioyek/themes/midnight.config"}
+    ${mkSymlink "${themes}/sioyek/themes/daylight.config" "${XDG_CONFIG_HOME}/sioyek/themes/daylight.config"}
 
-    ${mkSymlink "${zshInit}" "${cfg}/zsh/.zshrc"}
-    ${mkSymlink "${tmuxConf}" "${cfg}/tmux/tmux.conf"}
-    ${mkSymlink "${hyprlandConf}" "${cfg}/hypr/hyprland.conf"}
+    ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
+    ${mkSymlink "${tmuxConf}" "${XDG_CONFIG_HOME}/tmux/tmux.conf"}
+    ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.conf"}
 
-    ${mkSymlink "${repo}/config/nvim" "${cfg}/nvim"}
-    ${mkSymlink "${repo}/config/ghostty/config" "${cfg}/ghostty/config"}
-    ${mkSymlink "${repo}/config/ghostty/themes" "${cfg}/ghostty/themes"}
-    ${mkSymlink "${repo}/config/git/config" "${cfg}/git/config"}
-    ${mkSymlink "${repo}/config/git/ignore" "${cfg}/git/ignore"}
-    ${mkSymlink "${repo}/config/ssh/config" "${home}/.ssh/config"}
-    ${mkSymlink "${repo}/config/gh/config.yaml" "${cfg}/gh/config.yaml"}
-    ${mkSymlink "${repo}/config/jj/config.toml" "${cfg}/jj/config.toml"}
-    ${mkSymlink "${repo}/config/waybar/config.jsonc" "${cfg}/waybar/config"}
-    ${mkSymlink "${repo}/config/waybar/style.css" "${cfg}/waybar/style.css"}
-    ${mkSymlink "${repo}/config/dunst/dunstrc" "${cfg}/dunst/dunstrc"}
-    ${mkSymlink "${repo}/config/fuzzel/fuzzel.ini" "${cfg}/fuzzel/fuzzel.ini"}
-    ${mkSymlink "${repo}/config/hypr/hyprpaper.conf" "${cfg}/hypr/hyprpaper.conf"}
-    ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${cfg}/hypr/hypridle.conf"}
-    ${mkSymlink "${repo}/config/hypr/hyprlock.conf" "${cfg}/hypr/hyprlock.conf"}
-    ${mkSymlink "${repo}/config/sioyek/keys_user.config" "${cfg}/sioyek/keys_user.config"}
-    ${mkSymlink "${repo}/config/sioyek/prefs_user.config" "${cfg}/sioyek/prefs_user.config"}
-    ${mkSymlink "${repo}/config/mimeapps.list" "${cfg}/mimeapps.list"}
-    ${mkSymlink "${repo}/config/electron-flags.conf" "${cfg}/electron-flags.conf"}
-    ${mkSymlink "${repo}/config/rg/config" "${cfg}/rg/config"}
-    ${mkSymlink "${repo}/config/fd/ignore" "${cfg}/fd/ignore"}
-    ${mkSymlink "${repo}/config/npm/npmrc" "${cfg}/npm/npmrc"}
-    ${mkSymlink "${repo}/config/python/pythonrc" "${cfg}/python/pythonrc"}
-    ${mkSymlink "${repo}/config/wgetrc" "${cfg}/wgetrc"}
-    ${mkSymlink "${repo}/config/luarocks/config.lua" "${cfg}/luarocks/config.lua"}
-    ${mkSymlink "${repo}/config/latexmk/latexmkrc" "${cfg}/latexmk/latexmkrc"}
-    ${mkSymlink "${repo}/config/github/ruleset.json" "${cfg}/github/ruleset.json"}
-    ${mkSymlink "${repo}/config/direnv/direnvrc" "${cfg}/direnv/direnvrc"}
-    ${mkSymlink "${repo}/config/direnv/config.toml" "${cfg}/direnv/config.toml"}
-    ${mkSymlink "${repo}/config/claude/settings.json" "${cfg}/claude/settings.json"}
-    ${mkSymlink "${repo}/config/claude/CLAUDE.md" "${cfg}/claude/CLAUDE.md"}
-    ${mkSymlink "${repo}/config/claude/rules" "${cfg}/claude/rules"}
-    ${mkSymlink "${repo}/config/claude/skills" "${cfg}/claude/skills"}
-    ${mkSymlink "${repo}/config/claude/hooks" "${cfg}/claude/hooks"}
-    ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${cfg}/tmux/themes/midnight.conf"}
-    ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${cfg}/tmux/themes/daylight.conf"}
+    ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
+    ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
+    ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
+    ${mkSymlink "${repo}/config/git/config" "${XDG_CONFIG_HOME}/git/config"}
+    ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
+    ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
+    cp -f "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"
+    chown ${username}:users "${XDG_CONFIG_HOME}/gh/config.yml"
+    ${mkSymlink "${repo}/config/jj/config.toml" "${XDG_CONFIG_HOME}/jj/config.toml"}
+    ${mkSymlink "${repo}/config/waybar/config.jsonc" "${XDG_CONFIG_HOME}/waybar/config"}
+    ${mkSymlink "${repo}/config/waybar/style.css" "${XDG_CONFIG_HOME}/waybar/style.css"}
+    ${mkSymlink "${repo}/config/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
+    ${mkSymlink "${repo}/config/fuzzel/fuzzel.ini" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
+    ${mkSymlink "${repo}/config/hypr/hyprpaper.conf" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
+    ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
+    ${mkSymlink "${repo}/config/hypr/hyprlock.conf" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
+    ${mkSymlink "${repo}/config/sioyek/keys_user.config" "${XDG_CONFIG_HOME}/sioyek/keys_user.config"}
+    ${mkSymlink "${repo}/config/sioyek/prefs_user.config" "${XDG_CONFIG_HOME}/sioyek/prefs_user.config"}
+    ${mkSymlink "${repo}/config/mimeapps.list" "${XDG_CONFIG_HOME}/mimeapps.list"}
+    ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
+    ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
+    ${mkSymlink "${repo}/config/fd/ignore" "${XDG_CONFIG_HOME}/fd/ignore"}
+    ${mkSymlink "${repo}/config/npm/npmrc" "${XDG_CONFIG_HOME}/npm/npmrc"}
+    ${mkSymlink "${repo}/config/python/pythonrc" "${XDG_CONFIG_HOME}/python/pythonrc"}
+    ${mkSymlink "${repo}/config/wgetrc" "${XDG_CONFIG_HOME}/wgetrc"}
+    ${mkSymlink "${repo}/config/luarocks/config.lua" "${XDG_CONFIG_HOME}/luarocks/config.lua"}
+    ${mkSymlink "${repo}/config/latexmk/latexmkrc" "${XDG_CONFIG_HOME}/latexmk/latexmkrc"}
+    ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
+    ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
+    ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
+    ${mkSymlink "${repo}/config/claude/settings.json" "${XDG_CONFIG_HOME}/claude/settings.json"}
+    ${mkSymlink "${repo}/config/claude/CLAUDE.md" "${XDG_CONFIG_HOME}/claude/CLAUDE.md"}
+    ${mkSymlink "${repo}/config/claude/rules" "${XDG_CONFIG_HOME}/claude/rules"}
+    ${mkSymlink "${repo}/config/claude/skills" "${XDG_CONFIG_HOME}/claude/skills"}
+    ${mkSymlink "${repo}/config/claude/hooks" "${XDG_CONFIG_HOME}/claude/hooks"}
+    ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${XDG_CONFIG_HOME}/tmux/themes/midnight.conf"}
+    ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${XDG_CONFIG_HOME}/tmux/themes/daylight.conf"}
 
     theme="midnight"
-    ln -sf "${cfg}/hypr/themes/$theme.conf" "${cfg}/hypr/themes/theme.conf"
-    chown -h barrett:users "${cfg}/hypr/themes/theme.conf"
-    ln -sf "${cfg}/waybar/themes/$theme.css" "${cfg}/waybar/themes/theme.css"
-    chown -h barrett:users "${cfg}/waybar/themes/theme.css"
-    ln -sf "${cfg}/fuzzel/themes/$theme.ini" "${cfg}/fuzzel/themes/theme.ini"
-    chown -h barrett:users "${cfg}/fuzzel/themes/theme.ini"
-    ln -sf "${cfg}/dunst/themes/$theme.conf" "${cfg}/dunst/dunstrc.d/theme.conf"
-    chown -h barrett:users "${cfg}/dunst/dunstrc.d/theme.conf"
-    ln -sf "${cfg}/sioyek/themes/$theme.config" "${cfg}/sioyek/themes/theme.config"
-    chown -h barrett:users "${cfg}/sioyek/themes/theme.config"
-    ln -sf "${cfg}/fzf/themes/$theme" "${cfg}/fzf/themes/theme"
-    chown -h barrett:users "${cfg}/fzf/themes/theme"
+    ln -sf "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
+    ln -sf "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+    ln -sf "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
+    ln -sf "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
+    ln -sf "${XDG_CONFIG_HOME}/sioyek/themes/$theme.config" "${XDG_CONFIG_HOME}/sioyek/themes/theme.config"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/sioyek/themes/theme.config"
+    ln -sf "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
 
     src="${repo}/config/screen"
-    dest="${home}/Pictures/Screensavers"
+    dest="${homeDirectory}/Pictures/Screensavers"
     if [ -d "$src" ]; then
       for f in "$src"/*; do
         [ -f "$f" ] || continue
         name=$(basename "$f")
         [ -L "$dest/$name" ] || ln -sf "$f" "$dest/$name"
       done
-      chown -h barrett:users "$dest"/* 2>/dev/null || true
+      chown -h ${username}:users "$dest"/* 2>/dev/null || true
     fi
 
-    if [ -d ${home}/.ssh ]; then
-      chmod 700 ${home}/.ssh
-      for f in ${home}/.ssh/*; do
+    if [ -d ${homeDirectory}/.ssh ]; then
+      chmod 700 ${homeDirectory}/.ssh
+      for f in ${homeDirectory}/.ssh/*; do
         [ -f "$f" ] || continue
         [ -L "$f" ] && continue
         case "$f" in
@@ -237,12 +238,12 @@ in
         esac
       done
     fi
-    if [ -d ${home}/.gnupg ]; then
-      find ${home}/.gnupg -type d -exec chmod 700 {} +
-      find ${home}/.gnupg -type f -exec chmod 600 {} +
+    if [ -d ${homeDirectory}/.gnupg ]; then
+      find ${homeDirectory}/.gnupg -type d -exec chmod 700 {} +
+      find ${homeDirectory}/.gnupg -type f -exec chmod 600 {} +
     fi
 
-    dir="${cfg}/aws"
+    dir="${XDG_CONFIG_HOME}/aws"
     mkdir -p "$dir"
     if [ ! -f "$dir/config" ]; then
       cat > "$dir/config" << 'AWSEOF'
@@ -251,19 +252,19 @@ in
     region = us-east-2
     output = json
     AWSEOF
-      chown barrett:users "$dir/config"
+      chown ${username}:users "$dir/config"
     fi
-    chown barrett:users "$dir"
+    chown ${username}:users "$dir"
 
-    model_dir="${home}/.local/share/whisper-models"
+    model_dir="${XDG_DATA_HOME}/whisper-models"
     model="ggml-large-v3-turbo-q5_0.bin"
     if [ ! -f "$model_dir/$model" ]; then
       mkdir -p "$model_dir"
       ${pkgs.curl}/bin/curl -L -o "$model_dir/$model" "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$model"
-      chown -R barrett:users "$model_dir"
+      chown -R ${username}:users "$model_dir"
     fi
 
-    zen_config="${home}/.zen"
+    zen_config="${homeDirectory}/.zen"
     repo_zen="${repo}/config/zen"
     if [ -d "$zen_config" ]; then
       profile=""
@@ -287,11 +288,11 @@ in
       fi
     fi
 
-    for link in ${home}/.nix-profile ${home}/.nix-defexpr; do
+    for link in ${homeDirectory}/.nix-profile ${homeDirectory}/.nix-defexpr; do
       [ -L "$link" ] && [ ! -e "$link" ] && rm "$link"
     done
 
-    [ -L ${home}/.zshenv ] && rm ${home}/.zshenv || true
+    [ -L ${homeDirectory}/.zshenv ] && rm ${homeDirectory}/.zshenv || true
 
     if [ ! -d ${repo}/fonts ] || [ -z "$(ls -A ${repo}/fonts 2>/dev/null)" ]; then
       echo "WARNING: ~/.config/nix/fonts is missing or empty"

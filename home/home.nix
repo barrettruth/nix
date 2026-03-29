@@ -25,9 +25,8 @@
   config = {
     theme = "midnight";
 
-    home.username = "barrett";
-    home.homeDirectory =
-      if hostConfig.isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}";
+    home.username = hostConfig.username;
+    home.homeDirectory = hostConfig.homeDirectory;
     home.stateVersion = "24.11";
 
     xdg.enable = true;

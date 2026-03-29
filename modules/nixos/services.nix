@@ -86,7 +86,7 @@
       description = "Whisper dictation server";
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${whisper}/bin/whisper-server --model /home/barrett/.local/share/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
+        ExecStart = "${whisper}/bin/whisper-server --model ${hostConfig.XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
       };
     };
 
