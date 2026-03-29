@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ ... }:
 {
   environment.sessionVariables = {
     EDITOR = "nvim";

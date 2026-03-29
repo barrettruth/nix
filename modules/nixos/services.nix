@@ -1,4 +1,4 @@
-{ pkgs, lib, hostConfig, ... }:
+{ pkgs, hostConfig, ... }:
 {
   programs.gnupg.agent = {
     enable = true;

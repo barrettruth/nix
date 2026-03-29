@@ -82,8 +82,7 @@ let
     "${toString (scaled / 1000)}.${pad3 (scaled - (scaled / 1000) * 1000)}";
 
   hexToRgb =
-    s:
-    "${byteToFloat (hexByte s 1)} ${byteToFloat (hexByte s 3)} ${byteToFloat (hexByte s 5)}";
+    s: "${byteToFloat (hexByte s 1)} ${byteToFloat (hexByte s 3)} ${byteToFloat (hexByte s 5)}";
 
   mkFzfTheme = palette: ''
     --color=fg:${palette.fg},bg:${palette.bg},hl:${palette.accent}

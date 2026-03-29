@@ -1,10 +1,15 @@
-{ pkgs, lib, config, palettes, themeGenerators, hostConfig, ... }:
+{
+  pkgs,
+  palettes,
+  themeGenerators,
+  ...
+}:
 let
   cfg = "/home/barrett/.config";
   repo = "/home/barrett/.config/nix";
   home = "/home/barrett";
 
-  themes = pkgs.runCommand "theme-files" {} ''
+  themes = pkgs.runCommand "theme-files" { } ''
     mkdir -p $out/fzf/themes
     mkdir -p $out/hypr/themes
     mkdir -p $out/waybar/themes
