@@ -74,6 +74,7 @@ return {
             vim.cmd.packadd('fzf-lua')
         end,
         cmd = 'Forge',
+        keys = { { '<c-g>', '<cmd>Forge<cr>' } },
     },
     {
         'barrettruth/diffs.nvim',

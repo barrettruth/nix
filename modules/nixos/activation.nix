@@ -170,7 +170,7 @@ in
     ${mkSymlink "${repo}/config/git/config" "${cfg}/git/config"}
     ${mkSymlink "${repo}/config/git/ignore" "${cfg}/git/ignore"}
     ${mkSymlink "${repo}/config/ssh/config" "${home}/.ssh/config"}
-    ${mkSymlink "${repo}/config/gh/config.yaml" "${cfg}/gh/config.yml"}
+    ${mkSymlink "${repo}/config/gh/config.yaml" "${cfg}/gh/config.yaml"}
     ${mkSymlink "${repo}/config/jj/config.toml" "${cfg}/jj/config.toml"}
     ${mkSymlink "${repo}/config/waybar/config.jsonc" "${cfg}/waybar/config"}
     ${mkSymlink "${repo}/config/waybar/style.css" "${cfg}/waybar/style.css"}
