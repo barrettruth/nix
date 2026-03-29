@@ -8,10 +8,7 @@
 let
   tuigreet = lib.getExe pkgs.tuigreet;
   hyprSession = pkgs.writeShellScript "hypr-session" ''
-    for _hm in "/etc/profiles/per-user/$(id -un)" "$HOME/.nix-profile"; do
-      [ -f "$_hm/etc/profile.d/hm-session-vars.sh" ] && . "$_hm/etc/profile.d/hm-session-vars.sh" && break
-    done
-    unset _hm
+    [ -e /etc/set-environment ] && . /etc/set-environment
     _tf="''${XDG_STATE_HOME:-$HOME/.local/state}/theme"
     THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
     export THEME

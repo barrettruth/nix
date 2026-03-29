@@ -1,0 +1,45 @@
+@import url("themes/theme.css");
+
+* {
+  font-family: "Berkeley Mono", "JetBrainsMono Nerd Font", monospace;
+  font-size: 14px;
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+}
+
+#workspaces button {
+  font-family: "Berkeley Mono", monospace;
+  padding: 0 7px;
+  min-width: 20px;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+
+#workspaces button:hover {
+  transition: none;
+}
+
+#custom-keyboard,
+#tray,
+#custom-sink,
+#custom-source,
+#network,
+#battery,
+#clock,
+#custom-power {
+  padding: 0 10px;
+}
+
+#window {
+  padding: 0 16px;
+}
+
+tooltip {
+  border-radius: 0;
+}
+
+#custom-power {
+  padding: 0 16px 0 10px;
+}

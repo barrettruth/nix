@@ -1,4 +1,4 @@
-{ inputs, lib, overlays, sharedUnfree, ... }:
+{ inputs, lib, overlays, sharedUnfree, palettes, themeGenerators, ... }:
 let
   hostConfig = {
     isNixOS = true;
@@ -16,6 +16,10 @@ in
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       inputs.hyprland.nixosModules.default
       ../../hosts/xps15/configuration.nix
+      ../nixos/packages.nix
+      ../nixos/environment.nix
+      ../nixos/services.nix
+      ../nixos/activation.nix
       {
         nixpkgs.hostPlatform = hostConfig.platform;
         nixpkgs.overlays = overlays;
@@ -36,21 +40,11 @@ in
             ]
           );
       }
-      inputs.home-manager.nixosModules.home-manager
-      {
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        home-manager.backupFileExtension = "bak";
-        home-manager.sharedModules = [ inputs.direnv-instant.homeModules.direnv-instant ];
-        home-manager.users.barrett = import ../../home/home.nix;
-        home-manager.extraSpecialArgs = {
-          inherit (inputs) zen-browser hyprland;
-          inherit hostConfig;
-        };
-      }
     ];
     specialArgs = {
       nixpkgs = inputs.nixpkgs;
+      inherit (inputs) zen-browser hyprland;
+      inherit palettes themeGenerators hostConfig;
     };
   };
 }

@@ -1,0 +1,29 @@
+Host *
+    AddKeysToAgent yes
+
+Host github.com
+    IdentityFile ~/.ssh/id_ed25519
+
+Host codeberg.org
+    IdentityFile ~/.ssh/id_ed25519
+
+Host jetson-nano
+    HostName 100.95.16.119
+    User charlie
+
+Host lightsail
+    HostName 52.87.124.139
+    User ec2-user
+    IdentityFile ~/.ssh/lightsail-keypair.pem
+    SetEnv TERM=xterm-256color
+
+Host uva-portal
+    HostName portal.cs.virginia.edu
+    User jxa9ev
+    IdentityFile ~/.ssh/uva_key
+
+Host uva-nvidia
+    HostName grasshopper02.cs.virginia.edu
+    User jxa9ev
+    ProxyJump uva-portal
+    IdentityFile ~/.ssh/uva_key

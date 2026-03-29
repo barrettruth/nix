@@ -1,0 +1,17 @@
+--hidden
+--column
+--no-heading
+--smart-case
+--no-follow
+--glob=!pnpm-lock.yaml
+--glob=!*.json
+--glob=!venv/
+--glob=!pyenv/
+--ignore-file=/home/barrett/.config/git/ignore
+--no-messages
+--color=auto
+--colors=line:style:nobold
+--colors=line:fg:242
+--colors=match:fg:green
+--colors=match:style:bold
+--colors=path:fg:blue

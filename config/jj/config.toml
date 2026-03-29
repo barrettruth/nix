@@ -1,0 +1,20 @@
+[user]
+name = "Barrett Ruth"
+email = "br.barrettruth@gmail.com"
+
+[signing]
+behavior = "own"
+backend = "gpg"
+key = "A6C96C9349D2FC81"
+
+[ui]
+editor = "nvim"
+pager = "less -FRX"
+diff-editor = ":builtin"
+merge-editor = "vimdiff"
+
+[git]
+sign-on-push = true
+
+[merge-tools.vimdiff]
+program = "nvim"

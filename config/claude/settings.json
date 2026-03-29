@@ -1,0 +1,43 @@
+{
+  "model": "claude-opus-4-6",
+  "effortLevel": "high",
+  "permissions": {
+    "defaultMode": "acceptEdits"
+  },
+  "notifications": {
+    "hints": "disabled"
+  },
+  "network_access": true,
+  "allowed_domains": [
+    "github.com",
+    "raw.githubusercontent.com",
+    "api.github.com"
+  ],
+  "tools": {
+    "web_fetch": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/barrett/.config/claude/hooks/guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/barrett/.config/claude/hooks/post-push.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

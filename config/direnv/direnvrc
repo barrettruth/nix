@@ -1,0 +1,6 @@
+layout_uv() {
+  if [[ ! -d .venv ]]; then
+    uv venv
+  fi
+  . .venv/bin/activate
+}
