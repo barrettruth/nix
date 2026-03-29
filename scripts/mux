@@ -51,14 +51,18 @@ spawn_or_focus() {
   cur_idx=$(tmux display-message -p '#{window_index}')
 
   if [ -n "$idx" ] && [ "$idx" = "$cur_idx" ]; then
-    [ -n "$cmd" ] && is_pane_idle && tmux send-keys C-u C-l "$cmd" Enter
+    if [ -n "$cmd" ] && is_pane_idle; then
+      tmux send-keys C-u C-l "$cmd" Enter
+    fi
   elif is_adoptable; then
     [ -n "$idx" ] && tmux kill-window -t ":${idx}"
     tmux rename-window "$name"
     [ -n "$cmd" ] && tmux send-keys "$cmd" Enter
   elif [ -n "$idx" ]; then
     tmux select-window -t ":${idx}"
-    [ -n "$cmd" ] && is_pane_idle ":${idx}" && tmux send-keys -t ":${idx}" C-u C-l "$cmd" Enter
+    if [ -n "$cmd" ] && is_pane_idle ":${idx}"; then
+      tmux send-keys -t ":${idx}" C-u C-l "$cmd" Enter
+    fi
   elif [ -n "$cmd" ]; then
     tmux new-window -c '#{pane_current_path}' -n "${name}"
     tmux send-keys "$cmd" Enter
