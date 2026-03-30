@@ -1,4 +1,4 @@
-{ pkgs, hostConfig, ... }:
+{ pkgs, hostConfig, whisperPkgs ? pkgs, ... }:
 {
   programs.gnupg.agent = {
     enable = true;
@@ -80,7 +80,7 @@
 
   systemd.user.services.whisper-dictation =
     let
-      whisper = pkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
+      whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
     in
     {
       description = "Whisper dictation server";

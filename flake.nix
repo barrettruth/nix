@@ -9,7 +9,7 @@
     claude-code.url = "github:ryoppippi/claude-code-overlay";
     hyprland.url = "github:hyprwm/Hyprland";
     neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
-    nixpkgs-master.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
+    nixpkgs-whisper.url = "github:nixos/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";

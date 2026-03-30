@@ -786,22 +786,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-master": {
-      "locked": {
-        "lastModified": 1773652428,
-        "narHash": "sha256-Y48hUFQEK5WoI2YyQJcJpkeasuNVydig8pLj0JvffpE=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "a499dfba7b52aac86504356512836550e9d49a5a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "a499dfba7b52aac86504356512836550e9d49a5a",
-        "type": "github"
-      }
-    },
     "nixpkgs-regression": {
       "locked": {
         "lastModified": 1643052045,
@@ -815,6 +799,22 @@
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "215d4d0fd80ca5163643b03a33fde804a29cc1e2",
+        "type": "github"
+      }
+    },
+    "nixpkgs-whisper": {
+      "locked": {
+        "lastModified": 1774106199,
+        "narHash": "sha256-US5Tda2sKmjrg2lNHQL3jRQ6p96cgfWh3J1QBliQ8Ws=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "6c9a78c09ff4d6c21d0319114873508a6ec01655",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "6c9a78c09ff4d6c21d0319114873508a6ec01655",
         "type": "github"
       }
     },
@@ -976,7 +976,7 @@
         "neovim-nightly": "neovim-nightly",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_7",
-        "nixpkgs-master": "nixpkgs-master",
+        "nixpkgs-whisper": "nixpkgs-whisper",
         "vimdoc-language-server": "vimdoc-language-server",
         "zen-browser": "zen-browser"
       }

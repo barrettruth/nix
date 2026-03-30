@@ -63,6 +63,17 @@ in
       inherit (inputs) nixpkgs;
       inherit (inputs) zen-browser hyprland;
       inherit palettes themeGenerators hostConfig;
+      whisperPkgs = import inputs.nixpkgs-whisper {
+        system = hostConfig.platform;
+        config.allowUnfreePredicate =
+          pkg:
+          builtins.elem (lib.getName pkg) [
+            "cuda_cccl"
+            "cuda_cudart"
+            "libcublas"
+            "cuda_nvcc"
+          ];
+      };
     };
   };
 }

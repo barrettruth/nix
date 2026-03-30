@@ -3,6 +3,7 @@
   hostConfig,
   zen-browser,
   hyprland,
+  whisperPkgs ? pkgs,
   ...
 }:
 let
@@ -20,7 +21,7 @@ let
 
   pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
 
-  whisper = pkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
+  whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 in
 {
   users.users.${hostConfig.username}.packages = with pkgs; [
