@@ -299,6 +299,16 @@ media)
   ss_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   rec_dir="${XDG_VIDEOS_DIR:-$HOME/Videos}"
   mkdir -p "$ss_dir" "$rec_dir"
+  rec_watchdog() {
+    (sleep 60 && if pgrep -x wf-recorder >/dev/null 2>&1; then
+      pkill -INT wf-recorder
+      sleep 0.5
+      f=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
+      rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+      [ -n "$f" ] && rm -f "$f"
+      notify-send -a ctl -t 2500 "screen capture" "recording cancelled (1m limit)"
+    fi) &
+  }
   cap_desktop="   Capture Screen"
   cap_area="   Capture Area"
   cap_window="   Capture Window"
@@ -326,12 +336,14 @@ media)
     echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "screen capture" "recording started"
     wf-recorder -f "$file" &
+    rec_watchdog
     ;;
   "$rec_area")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
     echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "screen capture" "recording started"
     wf-recorder -g "$(slurp)" -f "$file" &
+    rec_watchdog
     ;;
   "$rec_window")
     geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
@@ -339,6 +351,7 @@ media)
     echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     notify-send -a ctl -t 2500 "screen capture" "recording started"
     wf-recorder -g "$geom" -f "$file" &
+    rec_watchdog
     ;;
   "$ocr_area")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
