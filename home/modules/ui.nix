@@ -211,11 +211,11 @@ in
         format-charging = "{icon}";
         format-full = "{icon}";
         format-icons = [
-          ""
-          ""
-          ""
-          ""
-          ""
+          "󰂎"
+          "󰁻"
+          "󰁾"
+          "󰂀"
+          "󰁹"
         ];
         states = {
           hi = 30;
