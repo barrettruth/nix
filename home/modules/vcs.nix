@@ -210,6 +210,10 @@ in
         proxyJump = "uva-portal";
         identityFile = "~/.ssh/uva_key";
       };
+      "netcup" = {
+        hostname = "152.53.168.144";
+        user = "root";
+      };
     };
   };
 
