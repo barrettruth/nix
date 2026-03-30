@@ -162,10 +162,6 @@ in
 
   home.packages = [ pkgs.tea ];
 
-  programs.ssh.matchBlocks."codeberg.org" = {
-    identityFile = "~/.ssh/id_ed25519";
-  };
-
   programs.gh = {
     enable = true;
     settings = {
@@ -183,6 +179,16 @@ in
     matchBlocks = {
       "*" = {
         addKeysToAgent = "yes";
+      };
+      "deepracing" = {
+        user = "deepracing";
+        proxyJump = "portal.cs.virginia.edu";
+        hostName = "deepracinglambda.linklab.virginia.edu";
+        preferredAuthentications = "publickey,password";
+        pubkeyAuthentication = "yes";
+      };
+      "codeberg.org" = {
+        identityFile = "~/.ssh/id_ed25519";
       };
       "github.com" = {
         identityFile = "~/.ssh/id_ed25519";
