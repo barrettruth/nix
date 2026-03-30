@@ -12,6 +12,7 @@ let
   ripgrep = config.programs.ripgrep.enable;
 
   claude = true;
+  codex = true;
   rust = true;
   go = true;
   node = true;
@@ -49,7 +50,8 @@ in
     ++ lib.optionals hostConfig.isLinux [ xclip ]
     ++ lib.optionals rust [ rustup ]
     ++ lib.optionals python [ uv ]
-    ++ lib.optionals claude [ claude-code ];
+    ++ lib.optionals claude [ claude-code ]
+    ++ lib.optionals codex [ codex ];
 
   home.sessionVariables = lib.mkMerge [
     {

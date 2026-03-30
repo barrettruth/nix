@@ -78,17 +78,17 @@
     };
   };
 
-  systemd.user.services.whisper-dictation =
-    let
-      whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
-    in
-    {
-      description = "Whisper dictation server";
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = "${whisper}/bin/whisper-server --model ${hostConfig.XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
-      };
-    };
+  # systemd.user.services.whisper-dictation =
+  #   let
+  #     whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
+  #   in
+  #   {
+  #     description = "Whisper dictation server";
+  #     serviceConfig = {
+  #       Type = "simple";
+  #       ExecStart = "${whisper}/bin/whisper-server --model ${hostConfig.XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
+  #     };
+  #   };
 
   systemd.user.services.dconf-setup = {
     description = "Set dconf preferences";
