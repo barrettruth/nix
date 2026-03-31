@@ -114,14 +114,6 @@ Linux)
       dunstctl reload
     }
 
-    ghostty_themes="$cfg/ghostty/themes"
-    [ -f "$ghostty_themes/$theme" ] && {
-      ln -sf "$ghostty_themes/$theme" "$ghostty_themes/theme"
-      gdbus call --session --dest com.mitchellh.ghostty \
-        --object-path /com/mitchellh/ghostty \
-        --method org.gtk.Actions.Activate reload-config '[]' '{}' >/dev/null 2>&1 || true
-    }
-
   fi
   ;;
 Darwin)

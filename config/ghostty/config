@@ -3,7 +3,7 @@ font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt
 font-size = 20
 adjust-cell-height = 10%
-config-file = ?themes/theme
+theme = dark:midnight,light:daylight
 cursor-style-blink = false
 shell-integration-features = no-cursor
 window-decoration = false
