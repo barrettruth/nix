@@ -13,7 +13,7 @@ let
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/sioyek \
-        --set QT_QPA_PLATFORM xcb \
+        --set QT_QPA_PLATFORM wayland \
         --add-flags "--execute-command toggle_statusbar" \
         --add-flags "--execute-command toggle_synctex"
     '';
