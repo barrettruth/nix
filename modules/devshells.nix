@@ -12,7 +12,7 @@
             pkgs.statix
             pkgs.nixfmt
             pkgs.pre-commit
-            pkgs.nodePackages.prettier
+            pkgs.prettier
             pkgs.shfmt
             pkgs.stylua
             pkgs.selene

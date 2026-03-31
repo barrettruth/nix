@@ -88,6 +88,7 @@ in
     [safe]
       directory = ${homeDirectory}/.config/nix
       directory = ${homeDirectory}/.cache/nix/tarball-cache
+      directory = ${homeDirectory}/.cache/nix/tarball-cache-v2
   '';
 
   environment.binsh = "${pkgs.dash}/bin/dash";

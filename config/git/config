@@ -77,3 +77,6 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+[safe]
+	directory = /home/barrett/.cache/nix/tarball-cache-v2
+	directory = /home/barrett/.cache/nix/tarball-cache-v2
