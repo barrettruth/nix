@@ -92,11 +92,6 @@ Linux)
       ln -sf "$hypr_themes/$theme.conf" "$hypr_themes/theme.conf"
     }
 
-    sioyek_themes="$cfg/sioyek/themes"
-    [ -f "$sioyek_themes/$theme.config" ] && {
-      ln -sf "$sioyek_themes/$theme.config" "$sioyek_themes/theme.config"
-    }
-
     fzf_themes="$cfg/fzf/themes"
     [ -f "$fzf_themes/$theme" ] && {
       ln -sf "$fzf_themes/$theme" "$fzf_themes/theme"

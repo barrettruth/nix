@@ -7,17 +7,6 @@
   ...
 }:
 let
-  sioyek-wrapped = pkgs.symlinkJoin {
-    name = "sioyek";
-    paths = [ pkgs.sioyek ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      wrapProgram $out/bin/sioyek \
-        --add-flags "--execute-command toggle_statusbar" \
-        --add-flags "--execute-command toggle_synctex"
-    '';
-  };
-
   pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
 
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
@@ -110,8 +99,6 @@ in
     libreoffice-fresh
 
     zen-browser.packages.${hostConfig.platform}.default
-
-    sioyek-wrapped
 
     vesktop
     signal-desktop

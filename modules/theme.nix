@@ -145,32 +145,6 @@ let
     frame_color = "${palette.red}"
   '';
 
-  mkSioyekTheme =
-    palette: isDark:
-    ''
-      background_color ${hexToRgb palette.bg}
-      custom_background_color ${hexToRgb palette.bg}
-      text_highlight_color ${hexToRgb palette.bgAlt}
-      visual_mark_color ${hexToRgb palette.bgAlt} 1.0
-      custom_text_color ${hexToRgb palette.fg}
-      ui_text_color ${hexToRgb palette.fg}
-      ui_selected_text_color ${hexToRgb palette.fg}
-      link_highlight_color ${hexToRgb palette.accent}
-      search_highlight_color ${hexToRgb palette.accent}
-      synctex_highlight_color ${hexToRgb palette.accent}
-      highlight_color_a ${hexToRgb palette.blue}
-      highlight_color_b ${hexToRgb palette.green}
-      highlight_color_c ${hexToRgb palette.yellow}
-      highlight_color_d ${hexToRgb palette.red}
-      highlight_color_e ${hexToRgb palette.magenta}
-      highlight_color_f ${hexToRgb palette.cyan}
-      highlight_color_g ${hexToRgb palette.yellow}
-      ui_background_color ${hexToRgb palette.bg}
-      ui_selected_background_color ${hexToRgb palette.accent}
-      status_bar_color ${hexToRgb palette.bg}
-      status_bar_text_color ${hexToRgb palette.fg}
-    ''
-    + lib.optionalString isDark "startup_commands toggle_dark_mode\n";
 in
 {
   _module.args = {
@@ -182,7 +156,6 @@ in
         mkWaybarTheme
         mkFuzzelTheme
         mkDunstTheme
-        mkSioyekTheme
         ;
     };
   };
