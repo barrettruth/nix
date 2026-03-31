@@ -22,7 +22,7 @@ let
     mkdir -p $out/waybar/themes
     mkdir -p $out/fuzzel/themes
     mkdir -p $out/dunst/themes
-    mkdir -p $out/sioyek/themes
+
 
     cat > $out/fzf/themes/midnight << 'FZFMIDNIGHT'
     ${themeGenerators.mkFzfTheme palettes.midnight}
@@ -64,13 +64,7 @@ let
     ${themeGenerators.mkDunstTheme palettes.daylight}
     DUNSTDAYLIGHT
 
-    cat > $out/sioyek/themes/midnight.config << 'SIOYEKMIDNIGHT'
-    ${themeGenerators.mkSioyekTheme palettes.midnight true}
-    SIOYEKMIDNIGHT
 
-    cat > $out/sioyek/themes/daylight.config << 'SIOYEKDAYLIGHT'
-    ${themeGenerators.mkSioyekTheme palettes.daylight false}
-    SIOYEKDAYLIGHT
   '';
 
   zshInit = pkgs.writeText "zsh-init" ''
@@ -135,7 +129,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/fuzzel/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
-    ${mkDir "${XDG_CONFIG_HOME}/sioyek/themes"}
+
     ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
     ${mkDir "${XDG_CONFIG_HOME}/ghostty/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/git"}
@@ -164,8 +158,7 @@ in
     ${mkSymlink "${themes}/fuzzel/themes/daylight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/daylight.ini"}
     ${mkSymlink "${themes}/dunst/themes/midnight.conf" "${XDG_CONFIG_HOME}/dunst/themes/midnight.conf"}
     ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
-    ${mkSymlink "${themes}/sioyek/themes/midnight.config" "${XDG_CONFIG_HOME}/sioyek/themes/midnight.config"}
-    ${mkSymlink "${themes}/sioyek/themes/daylight.config" "${XDG_CONFIG_HOME}/sioyek/themes/daylight.config"}
+
 
     ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
     ${mkSymlink "${tmuxConf}" "${XDG_CONFIG_HOME}/tmux/tmux.conf"}
@@ -187,8 +180,7 @@ in
     ${mkSymlink "${repo}/config/hypr/hyprpaper.conf" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
     ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
     ${mkSymlink "${repo}/config/hypr/hyprlock.conf" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
-    ${mkSymlink "${repo}/config/sioyek/keys_user.config" "${XDG_CONFIG_HOME}/sioyek/keys_user.config"}
-    ${mkSymlink "${repo}/config/sioyek/prefs_user.config" "${XDG_CONFIG_HOME}/sioyek/prefs_user.config"}
+
     ${mkSymlink "${repo}/config/mimeapps.list" "${XDG_CONFIG_HOME}/mimeapps.list"}
     ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
     ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
@@ -218,8 +210,7 @@ in
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
     ln -sf "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
-    ln -sf "${XDG_CONFIG_HOME}/sioyek/themes/$theme.config" "${XDG_CONFIG_HOME}/sioyek/themes/theme.config"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/sioyek/themes/theme.config"
+
     ln -sf "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
 
