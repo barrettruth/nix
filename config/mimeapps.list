@@ -3,4 +3,5 @@ x-scheme-handler/http=zen-beta.desktop
 x-scheme-handler/https=zen-beta.desktop
 text/html=zen-beta.desktop
 text/plain=nvim.desktop
+application/pdf=org.pwmt.zathura.desktop
 x-scheme-handler/discord=vesktop.desktop

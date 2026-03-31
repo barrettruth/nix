@@ -100,6 +100,35 @@ let
     frame_color = "${palette.red}"
   '';
 
+  mkZathuraTheme = palette: ''
+    set default-bg "${palette.bg}"
+    set default-fg "${palette.fg}"
+    set statusbar-bg "${palette.bg}"
+    set statusbar-fg "${palette.fg}"
+    set inputbar-bg "${palette.bg}"
+    set inputbar-fg "${palette.fg}"
+    set notification-bg "${palette.bg}"
+    set notification-fg "${palette.fg}"
+    set notification-error-bg "${palette.bg}"
+    set notification-error-fg "${palette.red}"
+    set notification-warning-bg "${palette.bg}"
+    set notification-warning-fg "${palette.yellow}"
+    set highlight-color "${palette.accent}"
+    set highlight-active-color "${palette.green}"
+    set completion-bg "${palette.bgAlt}"
+    set completion-fg "${palette.fg}"
+    set completion-highlight-bg "${palette.accent}"
+    set completion-highlight-fg "${palette.bg}"
+    set recolor-darkcolor "${palette.fg}"
+    set recolor-lightcolor "${palette.bg}"
+    set render-loading-bg "${palette.bg}"
+    set render-loading-fg "${palette.fg}"
+    set index-bg "${palette.bg}"
+    set index-fg "${palette.fg}"
+    set index-active-bg "${palette.bgAlt}"
+    set index-active-fg "${palette.fg}"
+  '';
+
 in
 {
   _module.args = {
@@ -111,6 +140,7 @@ in
         mkWaybarTheme
         mkFuzzelTheme
         mkDunstTheme
+        mkZathuraTheme
         ;
     };
   };

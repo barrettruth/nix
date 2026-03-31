@@ -23,6 +23,7 @@ let
     mkdir -p $out/waybar/themes
     mkdir -p $out/fuzzel/themes
     mkdir -p $out/dunst/themes
+    mkdir -p $out/zathura/themes
 
 
     cat > $out/fzf/themes/midnight << 'FZFMIDNIGHT'
@@ -64,6 +65,14 @@ let
     cat > $out/dunst/themes/daylight.conf << 'DUNSTDAYLIGHT'
     ${themeGenerators.mkDunstTheme palettes.daylight}
     DUNSTDAYLIGHT
+
+    cat > $out/zathura/themes/midnight << 'ZATHURAMIDNIGHT'
+    ${themeGenerators.mkZathuraTheme palettes.midnight}
+    ZATHURAMIDNIGHT
+
+    cat > $out/zathura/themes/daylight << 'ZATHURADAYLIGHT'
+    ${themeGenerators.mkZathuraTheme palettes.daylight}
+    ZATHURADAYLIGHT
 
 
   '';
@@ -216,6 +225,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/fuzzel/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
+    ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
 
     ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
     ${mkDir "${XDG_CONFIG_HOME}/ghostty/themes"}
@@ -245,6 +255,8 @@ in
     ${mkSymlink "${themes}/fuzzel/themes/daylight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/daylight.ini"}
     ${mkSymlink "${themes}/dunst/themes/midnight.conf" "${XDG_CONFIG_HOME}/dunst/themes/midnight.conf"}
     ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
+    ${mkSymlink "${themes}/zathura/themes/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
+    ${mkSymlink "${themes}/zathura/themes/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
 
 
     ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
@@ -263,6 +275,7 @@ in
     ${mkSymlink "${repo}/config/waybar/config.jsonc" "${XDG_CONFIG_HOME}/waybar/config"}
     ${mkSymlink "${repo}/config/waybar/style.css" "${XDG_CONFIG_HOME}/waybar/style.css"}
     ${mkSymlink "${repo}/config/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
+    ${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}
     ${mkSymlink "${fuzzelConf}" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
     ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
     ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
@@ -300,6 +313,8 @@ in
 
     ln -sf "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
+    ln -sf "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/themes/theme"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/zathura/themes/theme"
 
     src="${repo}/config/screen"
     dest="${homeDirectory}/Pictures/Screensavers"

@@ -1,0 +1,8 @@
+include theme
+
+set font "Berkeley Mono 12"
+set selection-clipboard clipboard
+set recolor true
+set window-title-basename true
+set statusbar-home-tilde true
+set adjust-open best-fit
