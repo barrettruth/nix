@@ -67,3 +67,8 @@ if [[ -f /etc/NIXOS ]]; then
 fi
 
 [[ ! -r "$OPAMROOT/opam-init/init.zsh" ]] || source "$OPAMROOT/opam-init/init.zsh" > /dev/null 2> /dev/null
+
+if [[ ! -z "$TMUX" ]] && [[ ! -v $PURE_FIX ]]; then
+    tmux send-keys -t $(tmux display-message -p '#P') '^L'
+    PURE_FIX=0
+fi
