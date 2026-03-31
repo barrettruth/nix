@@ -1,4 +1,4 @@
-{ pkgs, modulesPath, ... }:
+{ pkgs, modulesPath, identity, ... }:
 
 {
   imports = [
@@ -65,12 +65,12 @@
   };
 
   users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM br.barrettruth@gmail.com"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
   ];
 
   security.acme = {
     acceptTerms = true;
-    defaults.email = "br.barrettruth@gmail.com";
+    defaults.email = identity.email;
   };
 
   services.nginx = {
@@ -78,17 +78,17 @@
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
     clientMaxBodySize = "512m";
-    virtualHosts."vault.barrettruth.com" = {
+    virtualHosts."vault.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
       locations."/".proxyPass = "http://127.0.0.1:8222";
     };
-    virtualHosts."git.barrettruth.com" = {
+    virtualHosts."git.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
       locations."/".proxyPass = "http://127.0.0.1:3000";
     };
-    virtualHosts."delta.barrettruth.com" = {
+    virtualHosts."delta.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
       locations."/".proxyPass = "http://127.0.0.1:3001";
@@ -100,7 +100,7 @@
     backupDir = "/var/backup/vaultwarden";
     environmentFile = "/var/lib/vaultwarden/vaultwarden.env";
     config = {
-      DOMAIN = "https://vault.barrettruth.com";
+      DOMAIN = "https://vault.${identity.domain}";
       SIGNUPS_ALLOWED = false;
       ROCKET_ADDRESS = "127.0.0.1";
       ROCKET_PORT = 8222;
@@ -113,10 +113,10 @@
     group = "git";
     settings = {
       server = {
-        DOMAIN = "git.barrettruth.com";
-        ROOT_URL = "https://git.barrettruth.com/";
+        DOMAIN = "git.${identity.domain}";
+        ROOT_URL = "https://git.${identity.domain}/";
         HTTP_PORT = 3000;
-        SSH_DOMAIN = "git.barrettruth.com";
+        SSH_DOMAIN = "git.${identity.domain}";
       };
       service.DISABLE_REGISTRATION = true;
       session.COOKIE_SECURE = true;

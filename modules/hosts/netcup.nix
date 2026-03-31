@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ inputs, identity, ... }:
 {
   flake.nixosConfigurations.netcup = inputs.nixpkgs.lib.nixosSystem {
     modules = [
@@ -6,5 +6,6 @@
       ../../hosts/netcup/configuration.nix
       { nixpkgs.hostPlatform = "x86_64-linux"; }
     ];
+    specialArgs = { inherit identity; };
   };
 }

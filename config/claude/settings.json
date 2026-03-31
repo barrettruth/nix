@@ -10,7 +10,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/barrett/.config/claude/hooks/guard.sh"
+            "command": "$HOME/.config/claude/hooks/guard.sh"
           }
         ]
       }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/barrett/.config/claude/hooks/post-push.sh"
+            "command": "$HOME/.config/claude/hooks/post-push.sh"
           }
         ]
       }

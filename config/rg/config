@@ -7,7 +7,7 @@
 --glob=!*.json
 --glob=!venv/
 --glob=!pyenv/
---ignore-file=/home/barrett/.config/git/ignore
+--ignore-file=~/.config/git/ignore
 --no-messages
 --color=auto
 --colors=line:style:nobold

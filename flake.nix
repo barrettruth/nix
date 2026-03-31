@@ -27,6 +27,7 @@
 
       imports = [
         ./modules/nixpkgs.nix
+        ./modules/identity.nix
         ./modules/theme.nix
         ./modules/devshells.nix
         ./modules/hosts/xps15.nix
