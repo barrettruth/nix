@@ -1,6 +1,7 @@
 {
   inputs,
   lib,
+  identity,
   overlays,
   sharedUnfree,
   palettes,
@@ -62,7 +63,7 @@ in
     specialArgs = {
       inherit (inputs) nixpkgs;
       inherit (inputs) zen-browser hyprland;
-      inherit palettes themeGenerators hostConfig;
+      inherit identity palettes themeGenerators hostConfig;
       whisperPkgs = import inputs.nixpkgs-whisper {
         system = hostConfig.platform;
         config.allowUnfreePredicate =
