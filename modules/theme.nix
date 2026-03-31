@@ -39,32 +39,6 @@ let
 
   hexToFuzzel = color: "${builtins.substring 1 6 color}ff";
 
-  hexDigit =
-    c:
-    {
-      "0" = 0;
-      "1" = 1;
-      "2" = 2;
-      "3" = 3;
-      "4" = 4;
-      "5" = 5;
-      "6" = 6;
-      "7" = 7;
-      "8" = 8;
-      "9" = 9;
-      "a" = 10;
-      "b" = 11;
-      "c" = 12;
-      "d" = 13;
-      "e" = 14;
-      "f" = 15;
-    }
-    .${c};
-
-  hexByte =
-    s: offset:
-    hexDigit (builtins.substring offset 1 s) * 16 + hexDigit (builtins.substring (offset + 1) 1 s);
-
   mkFzfTheme = palette: ''
     --color=fg:${palette.fg},bg:${palette.bg},hl:${palette.accent}
     --color=fg+:${palette.fg},bg+:${palette.bgAlt},hl+:${palette.accent}
