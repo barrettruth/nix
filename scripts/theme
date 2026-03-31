@@ -109,6 +109,11 @@ Linux)
       dunstctl reload
     }
 
+    zathura_themes="$cfg/zathura/themes"
+    [ -f "$zathura_themes/$theme" ] && {
+      ln -sf "$zathura_themes/$theme" "$zathura_themes/theme"
+    }
+
   fi
   ;;
 Darwin)

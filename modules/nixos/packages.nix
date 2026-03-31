@@ -95,6 +95,7 @@ in
     typst
     typstyle
     glab
+    zathura
     mpv
     libreoffice-fresh
 
