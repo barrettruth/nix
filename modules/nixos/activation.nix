@@ -108,7 +108,10 @@ let
   hyprpaperConf = pkgs.writeText "hyprpaper-conf" ''
     splash = false
 
-    wallpaper = ,${homeDirectory}/Pictures/Screensavers/wallpaper.jpg
+    wallpaper {
+      monitor =
+      path = ${homeDirectory}/Pictures/Screensavers/wallpaper.jpg
+    }
   '';
 
   hyprlockConf = pkgs.writeText "hyprlock-conf" ''
