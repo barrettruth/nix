@@ -1,8 +1,3 @@
-[user]
-	name = Barrett Ruth
-	email = br.barrettruth@gmail.com
-	signingKey = A6C96C9349D2FC81
-
 [commit]
 	gpgSign = true
 
@@ -77,6 +72,3 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
-[safe]
-	directory = /home/barrett/.cache/nix/tarball-cache-v2
-	directory = /home/barrett/.cache/nix/tarball-cache-v2

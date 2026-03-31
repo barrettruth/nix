@@ -43,7 +43,7 @@
     "rewrite": {},
   },
   "custom/sink": {
-    "exec": "/home/barrett/.config/nix/config/waybar/sink.sh",
+    "exec": "$HOME/.config/nix/config/waybar/sink.sh",
     "return-type": "json",
     "interval": 1,
     "on-click": "ctl audio sink",
@@ -53,7 +53,7 @@
     "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
   },
   "custom/source": {
-    "exec": "/home/barrett/.config/nix/config/waybar/source.sh",
+    "exec": "$HOME/.config/nix/config/waybar/source.sh",
     "return-type": "json",
     "interval": 1,
     "on-click": "ctl audio source",

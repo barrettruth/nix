@@ -3,6 +3,7 @@
   palettes,
   themeGenerators,
   hostConfig,
+  identity,
   ...
 }:
 let
@@ -104,6 +105,89 @@ let
     source = ${repo}/config/hypr/hyprland.conf
   '';
 
+  hyprpaperConf = pkgs.writeText "hyprpaper-conf" ''
+    splash = false
+
+    wallpaper = ,${homeDirectory}/Pictures/Screensavers/wallpaper.jpg
+  '';
+
+  hyprlockConf = pkgs.writeText "hyprlock-conf" ''
+    general {
+      hide_cursor = true
+      grace = 0
+    }
+
+    background {
+      monitor =
+      path = ${homeDirectory}/Pictures/Screensavers/lock.jpg
+    }
+
+    animations {
+      enabled = false
+    }
+
+    input-field {
+      monitor =
+      size = 600, 50
+      outline_thickness = 0
+      dots_text_format = *
+      dots_size = 0.9
+      dots_spacing = 0.3
+      dots_center = true
+      outer_color = rgba(00000000)
+      inner_color = rgba(00000000)
+      font_color = rgb(ffffff)
+      font_family = Berkeley Mono
+      check_color = rgb(98c379)
+      fail_color = rgb(ff6b6b)
+      fail_text = $FAIL
+      rounding = 0
+      placeholder_text =
+      position = 0, 0
+      halign = center
+      valign = center
+    }
+  '';
+
+  jjConf = pkgs.writeText "jj-config" ''
+    [user]
+    name = "${identity.fullName}"
+    email = "${identity.email}"
+
+    [signing]
+    behavior = "own"
+    backend = "gpg"
+    key = "${identity.gpgKey}"
+
+    [ui]
+    editor = "nvim"
+    pager = "less -FRX"
+    diff-editor = ":builtin"
+    merge-editor = "vimdiff"
+
+    [git]
+    sign-on-push = true
+
+    [merge-tools.vimdiff]
+    program = "nvim"
+  '';
+
+  gitConf = pkgs.writeText "git-wrapper" ''
+    [user]
+    	name = ${identity.fullName}
+    	email = ${identity.email}
+    	signingKey = ${identity.gpgKey}
+    [safe]
+    	directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
+    [include]
+    	path = ${repo}/config/git/config
+  '';
+
+  fuzzelConf = pkgs.writeText "fuzzel-wrapper" ''
+    include=${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini
+    include=${repo}/config/fuzzel/fuzzel.ini
+  '';
+
   mkSymlink = target: link: ''
     ln -sfn "${target}" "${link}"
     chown -h ${username}:users "${link}"
@@ -167,19 +251,19 @@ in
     ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
     ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
     ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
-    ${mkSymlink "${repo}/config/git/config" "${XDG_CONFIG_HOME}/git/config"}
+    ${mkSymlink "${gitConf}" "${XDG_CONFIG_HOME}/git/config"}
     ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
     ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
     cp -f "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"
     chown ${username}:users "${XDG_CONFIG_HOME}/gh/config.yml"
-    ${mkSymlink "${repo}/config/jj/config.toml" "${XDG_CONFIG_HOME}/jj/config.toml"}
+    ${mkSymlink "${jjConf}" "${XDG_CONFIG_HOME}/jj/config.toml"}
     ${mkSymlink "${repo}/config/waybar/config.jsonc" "${XDG_CONFIG_HOME}/waybar/config"}
     ${mkSymlink "${repo}/config/waybar/style.css" "${XDG_CONFIG_HOME}/waybar/style.css"}
     ${mkSymlink "${repo}/config/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
-    ${mkSymlink "${repo}/config/fuzzel/fuzzel.ini" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
-    ${mkSymlink "${repo}/config/hypr/hyprpaper.conf" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
+    ${mkSymlink "${fuzzelConf}" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
+    ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
     ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
-    ${mkSymlink "${repo}/config/hypr/hyprlock.conf" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
+    ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
 
     ${mkSymlink "${repo}/config/mimeapps.list" "${XDG_CONFIG_HOME}/mimeapps.list"}
     ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
