@@ -121,7 +121,9 @@ in
     enable = true;
     shellInit = ''
       export ZDOTDIR="$HOME/.config/zsh"
-      export THEME="midnight"
+      THEME="$(cat "''${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || THEME="midnight"
+      [ -z "$THEME" ] && THEME="midnight"
+      export THEME
     '';
   };
   # programs.hyprland = {

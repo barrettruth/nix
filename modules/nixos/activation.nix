@@ -173,7 +173,8 @@ in
 
     ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
     ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
-    ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
+    ${mkSymlink "${repo}/config/ghostty/themes/midnight" "${XDG_CONFIG_HOME}/ghostty/themes/midnight"}
+    ${mkSymlink "${repo}/config/ghostty/themes/daylight" "${XDG_CONFIG_HOME}/ghostty/themes/daylight"}
     ${mkSymlink "${repo}/config/git/config" "${XDG_CONFIG_HOME}/git/config"}
     ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
     ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
@@ -222,6 +223,8 @@ in
     chown -h ${username}:users "${XDG_CONFIG_HOME}/sioyek/themes/theme.config"
     ln -sf "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
+    ln -sf "${XDG_CONFIG_HOME}/ghostty/themes/$theme" "${XDG_CONFIG_HOME}/ghostty/themes/theme"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/ghostty/themes/theme"
 
     src="${repo}/config/screen"
     dest="${homeDirectory}/Pictures/Screensavers"
