@@ -6,3 +6,8 @@ set recolor true
 set window-title-basename true
 set statusbar-home-tilde true
 set adjust-open best-fit
+
+map j scroll up
+map k scroll down
+map J scroll half-up
+map K scroll half-down
