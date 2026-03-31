@@ -65,25 +65,6 @@ let
     s: offset:
     hexDigit (builtins.substring offset 1 s) * 16 + hexDigit (builtins.substring (offset + 1) 1 s);
 
-  pad3 =
-    n:
-    if n < 10 then
-      "00${toString n}"
-    else if n < 100 then
-      "0${toString n}"
-    else
-      toString n;
-
-  byteToFloat =
-    n:
-    let
-      scaled = (n * 1000 + 127) / 255;
-    in
-    "${toString (scaled / 1000)}.${pad3 (scaled - (scaled / 1000) * 1000)}";
-
-  hexToRgb =
-    s: "${byteToFloat (hexByte s 1)} ${byteToFloat (hexByte s 3)} ${byteToFloat (hexByte s 5)}";
-
   mkFzfTheme = palette: ''
     --color=fg:${palette.fg},bg:${palette.bg},hl:${palette.accent}
     --color=fg+:${palette.fg},bg+:${palette.bgAlt},hl+:${palette.accent}
