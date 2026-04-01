@@ -40,6 +40,9 @@ in
     GOPATH = "${XDG_DATA_HOME}/go";
     GOMODCACHE = "${XDG_CACHE_HOME}/go/mod";
     NPM_CONFIG_USERCONFIG = "${XDG_CONFIG_HOME}/npm/npmrc";
+    NPM_CONFIG_PREFIX = "${XDG_DATA_HOME}/npm";
+    NPM_CONFIG_CACHE = "${XDG_CACHE_HOME}/npm";
+    NPM_CONFIG_INIT_MODULE = "${XDG_CONFIG_HOME}/npm/config/npm-init.js";
     NODE_REPL_HISTORY = "${XDG_STATE_HOME}/node_repl_history";
     PNPM_HOME = "${XDG_DATA_HOME}/pnpm";
     PNPM_NO_UPDATE_NOTIFIER = "true";
