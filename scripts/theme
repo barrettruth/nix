@@ -14,41 +14,13 @@ require gsettings
 themes="daylight
 midnight"
 
-if [ "$1" = "toggle" ]; then
+if [ -n "$1" ]; then
+  theme="$1"
+else
   current="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)"
   case "$current" in
   midnight) theme="daylight" ;;
   *) theme="midnight" ;;
-  esac
-elif [ -n "$1" ]; then
-  theme="$1"
-else
-  case "$(uname)" in
-  Linux)
-    if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
-      require fuzzel
-      count="$(printf "%s\n" "$themes" | wc -l)"
-      theme="$(printf "%s\n" "$themes" | fuzzel --dmenu --hide-prompt --lines="$count")"
-    else
-      require dmenu
-      theme="$(printf "%s\n" "$themes" | dmenu -p 'select theme: ')"
-    fi
-    ;;
-  Darwin)
-    as_list="$(printf "%s\n" "$themes" | awk 'NF{printf "\"%s\",", $0}' | sed 's/,$//')"
-    theme="$(
-      osascript <<EOF
-set theList to {$as_list}
-set chosenTheme to (choose from list theList with title "Theme" with prompt "Pick a theme" OK button name "Apply" cancel button name "Cancel" without empty selection allowed)
-if chosenTheme is false then
-  return ""
-else
-  return item 1 of chosenTheme
-end if
-EOF
-    )"
-    ;;
-  *) exit 1 ;;
   esac
 fi
 

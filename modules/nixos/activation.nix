@@ -228,7 +228,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
 
     ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
-    ${mkDir "${XDG_CONFIG_HOME}/ghostty/themes"}
+    [ -d "${XDG_CONFIG_HOME}/ghostty/themes" ] && [ ! -L "${XDG_CONFIG_HOME}/ghostty/themes" ] && rm -rf "${XDG_CONFIG_HOME}/ghostty/themes"
     ${mkDir "${XDG_CONFIG_HOME}/git"}
     ${mkDir "${XDG_CONFIG_HOME}/gh"}
     ${mkDir "${XDG_CONFIG_HOME}/jj"}
