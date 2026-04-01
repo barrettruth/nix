@@ -183,7 +183,7 @@ in
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
-  xdg.portal = lib.mkIf config.programs.hyprland.enable {
+  xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
