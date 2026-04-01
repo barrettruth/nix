@@ -1,5 +1,7 @@
 {
   pkgs,
+  config,
+  lib,
   palettes,
   themeGenerators,
   hostConfig,
@@ -195,6 +197,19 @@ let
     	path = ${repo}/config/git/config
   '';
 
+  browserDesktop = if config.programs.chromium.enable then "chromium-browser.desktop" else "zen-beta.desktop";
+
+  mimeappsList = pkgs.writeText "mimeapps.list" ''
+    [Default Applications]
+    x-scheme-handler/http=${browserDesktop}
+    x-scheme-handler/https=${browserDesktop}
+    text/html=${browserDesktop}
+    text/plain=nvim.desktop
+    application/pdf=org.pwmt.zathura.desktop
+    x-scheme-handler/discord=vesktop.desktop
+    x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+  '';
+
   fuzzelConf = pkgs.writeText "fuzzel-wrapper" ''
     include=${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini
     include=${repo}/config/fuzzel/fuzzel.ini
@@ -281,7 +296,7 @@ in
     ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
     ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
 
-    ${mkSymlink "${repo}/config/mimeapps.list" "${XDG_CONFIG_HOME}/mimeapps.list"}
+    ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
     ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
     ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
     ${mkSymlink "${repo}/config/fd/ignore" "${XDG_CONFIG_HOME}/fd/ignore"}

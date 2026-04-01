@@ -1,4 +1,4 @@
-{ hostConfig, ... }:
+{ hostConfig, config, lib, ... }:
 let
   inherit (hostConfig)
     homeDirectory
@@ -20,7 +20,7 @@ in
     TERMINAL = "ghostty";
     TERM = "xterm-ghostty";
     TERMINFO = "${XDG_DATA_HOME}/terminfo";
-    BROWSER = "zen-beta";
+    BROWSER = if config.programs.chromium.enable then "chromium" else "zen-beta";
     FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
     FZF_DEFAULT_COMMAND = "rg --files --hidden";
     FZF_CTRL_T_COMMAND = "rg --files --hidden";
