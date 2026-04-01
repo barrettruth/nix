@@ -1,4 +1,9 @@
-{ pkgs, hostConfig, whisperPkgs ? pkgs, ... }:
+{
+  pkgs,
+  hostConfig,
+  whisperPkgs ? pkgs,
+  ...
+}:
 {
   programs.gnupg.agent = {
     enable = true;

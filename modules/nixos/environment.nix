@@ -1,4 +1,9 @@
-{ hostConfig, config, lib, ... }:
+{
+  hostConfig,
+  config,
+  lib,
+  ...
+}:
 let
   inherit (hostConfig)
     homeDirectory
