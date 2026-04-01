@@ -197,7 +197,8 @@ let
     	path = ${repo}/config/git/config
   '';
 
-  browserDesktop = if config.programs.chromium.enable then "chromium-browser.desktop" else "zen-beta.desktop";
+  browserDesktop =
+    if config.programs.chromium.enable then "chromium-browser.desktop" else "zen-beta.desktop";
 
   mimeappsList = pkgs.writeText "mimeapps.list" ''
     [Default Applications]
