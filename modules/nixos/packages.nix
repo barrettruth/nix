@@ -100,6 +100,7 @@ in
     libreoffice-fresh
 
     zen-browser.packages.${hostConfig.platform}.default
+    chromium
 
     vesktop
     signal-desktop
