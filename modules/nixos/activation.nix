@@ -1,7 +1,5 @@
 {
   pkgs,
-  config,
-  lib,
   palettes,
   themeGenerators,
   hostConfig,
@@ -197,8 +195,7 @@ let
     	path = ${repo}/config/git/config
   '';
 
-  browserDesktop =
-    if config.programs.chromium.enable then "chromium-browser.desktop" else "zen-beta.desktop";
+  browserDesktop = "chromium-browser.desktop";
 
   mimeappsList = pkgs.writeText "mimeapps.list" ''
     [Default Applications]
@@ -379,29 +376,6 @@ in
       chown -R ${username}:users "$model_dir"
     fi
 
-    zen_config="${homeDirectory}/.zen"
-    repo_zen="${repo}/config/zen"
-    if [ -d "$zen_config" ]; then
-      profile=""
-      for d in "$zen_config"/*.Default\ Profile; do
-        [ -d "$d" ] && profile="$d" && break
-      done
-      if [ -n "$profile" ]; then
-        mkdir -p "$profile/chrome"
-        for f in userChrome.css user.js containers.json handlers.json zen-keyboard-shortcuts.json; do
-          src="$repo_zen/$f"
-          if [ "$f" = "userChrome.css" ]; then
-            dest="$profile/chrome/$f"
-          else
-            dest="$profile/$f"
-          fi
-          [ -f "$src" ] || continue
-          [ -L "$dest" ] && continue
-          [ -f "$dest" ] && rm "$dest"
-          ln -s "$src" "$dest"
-        done
-      fi
-    fi
 
     for link in ${homeDirectory}/.nix-profile ${homeDirectory}/.nix-defexpr; do
       [ -L "$link" ] && [ ! -e "$link" ] && rm "$link"

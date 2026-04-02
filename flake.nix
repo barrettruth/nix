@@ -5,10 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-    zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
-    hyprland.url = "github:hyprwm/Hyprland";
-    neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-whisper.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
     disko = {
       url = "github:nix-community/disko";

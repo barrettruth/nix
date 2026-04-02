@@ -30,7 +30,6 @@ in
     modules = [
       inputs.determinate.nixosModules.default
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
-      inputs.hyprland.nixosModules.default
       inputs.direnv-instant.nixosModules.direnv-instant
       ../../hosts/xps15/configuration.nix
       ../nixos/packages.nix
@@ -62,7 +61,6 @@ in
     ];
     specialArgs = {
       inherit (inputs) nixpkgs;
-      inherit (inputs) zen-browser hyprland;
       inherit
         identity
         palettes
