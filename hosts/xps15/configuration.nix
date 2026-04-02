@@ -122,7 +122,22 @@ in
       ImportBookmarks = false;
       SafeBrowsingProtectionLevel = 1;
       DnsOverHttpsMode = "automatic";
+      BlockThirdPartyCookies = true;
+      CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
+      RestoreOnStartup = 1;
     };
+    extensions = [
+      # Bitwarden Password Manager
+      "nngceckbapebfimnlniiiahkandclblb"
+      # Dark Reader
+      "eimadpbcbfnmbkopoojfekhnkhdbieeh"
+      # uBlock Origin Lite
+      "ddkjiahejlhfcafbddmgiahcphecmpfh"
+      # React Developer Tools
+      "fmkadmapgofadopljbjfkapdkoienihi"
+      # Blank New Tab Page
+      "jaadjnlkjnhohljficgoddcjmndjfdmi"
+    ];
   };
 
   programs.zsh = {
