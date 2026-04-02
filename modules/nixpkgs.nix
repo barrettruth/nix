@@ -3,7 +3,6 @@ let
   overlays = [
     inputs.claude-code.overlays.default
     inputs.codex.overlays.default
-    inputs.neovim-nightly.overlays.default
   ];
 
   sharedUnfree = [

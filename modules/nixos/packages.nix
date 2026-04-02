@@ -1,8 +1,6 @@
 {
   pkgs,
   hostConfig,
-  zen-browser,
-  hyprland,
   whisperPkgs ? pkgs,
   ...
 }:
@@ -99,7 +97,6 @@ in
     mpv
     libreoffice-fresh
 
-    zen-browser.packages.${hostConfig.platform}.default
     chromium
 
     vesktop
@@ -123,8 +120,8 @@ in
     gsettings-desktop-schemas
     (python3.withPackages (ps: [ ps.pillow ]))
 
-    hyprland.packages.${hostConfig.platform}.hyprland
-    hyprland.packages.${hostConfig.platform}.xdg-desktop-portal-hyprland
+    pkgs.hyprland
+    pkgs.xdg-desktop-portal-hyprland
 
     fzf
     eza
