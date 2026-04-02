@@ -108,13 +108,20 @@ in
   programs.chromium = {
     enable = true;
     extraOpts = {
-      BrowserSigninEnabled = 0;
-      SyncDisabled = true;
-      PasswordManagerEnabled = false;
+      BrowserSigninEnabled = 1;
+      SyncDisabled = false;
+      SpellCheckServiceEnabled = true;
+      SearchSuggestEnabled = true;
+      UrlKeyedAnonymizedDataCollectionEnabled = true;
+      HttpsOnlyMode = "force_enabled";
       BookmarkBarEnabled = false;
-      DefaultSearchProviderEnabled = true;
-      DefaultSearchProviderName = "DuckDuckGo";
-      DefaultSearchProviderSearchURL = "https://duckduckgo.com/?q={searchTerms}";
+      PasswordManagerEnabled = false;
+      AutofillAddressEnabled = false;
+      AutofillCreditCardEnabled = false;
+      TranslateEnabled = true;
+      ImportBookmarks = false;
+      SafeBrowsingProtectionLevel = 1;
+      DnsOverHttpsMode = "automatic";
     };
   };
 
