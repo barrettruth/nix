@@ -34,6 +34,7 @@ in
     uv
     claude-code
     codex
+    devin
 
     bash-language-server
     basedpyright
