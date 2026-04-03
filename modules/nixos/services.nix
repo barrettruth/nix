@@ -4,54 +4,49 @@
   whisperPkgs ? pkgs,
   ...
 }:
+let
+  waylandGate = {
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    wantedBy = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -S \"$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\" ] && exit 0; sleep 0.5; done; exit 1'";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+  };
+in
 {
   programs.gnupg.agent = {
     enable = true;
     pinentryPackage = pkgs.pinentry-curses;
   };
 
-  systemd.user.services.hyprpaper = {
+  systemd.user.services.hyprpaper = waylandGate // {
     description = "Hyprpaper wallpaper daemon";
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
+    serviceConfig = waylandGate.serviceConfig // {
       ExecStart = "${pkgs.hyprpaper}/bin/hyprpaper";
-      Restart = "on-failure";
     };
   };
 
-  systemd.user.services.hypridle = {
+  systemd.user.services.hypridle = waylandGate // {
     description = "Hypridle idle daemon";
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
+    serviceConfig = waylandGate.serviceConfig // {
       ExecStart = "${pkgs.hypridle}/bin/hypridle";
-      Restart = "on-failure";
     };
   };
 
-  systemd.user.services.dunst = {
+  systemd.user.services.dunst = waylandGate // {
     description = "Dunst notification daemon";
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
+    serviceConfig = waylandGate.serviceConfig // {
       ExecStart = "${pkgs.dunst}/bin/dunst";
-      Restart = "on-failure";
     };
   };
 
-  systemd.user.services.cliphist = {
+  systemd.user.services.cliphist = waylandGate // {
     description = "Clipboard history";
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'until [ -S \"$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\" ]; do sleep 1; done'";
+    serviceConfig = waylandGate.serviceConfig // {
       ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
-      Restart = "on-failure";
     };
   };
 
