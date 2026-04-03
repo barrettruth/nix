@@ -127,6 +127,8 @@ in
       RestoreOnStartup = 1;
     };
     extensions = [
+      # Chrome Tabs Numbers
+      "enongpimpbipgpoigjoolmehalnmbemb"
       # Bitwarden Password Manager
       "nngceckbapebfimnlniiiahkandclblb"
       # Dark Reader
