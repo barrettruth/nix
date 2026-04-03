@@ -90,13 +90,13 @@ let
   '';
 
   tmuxConf = pkgs.writeText "tmux-wrapper" ''
-    run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
     set -g @resurrect-dir '${XDG_STATE_HOME}/tmux/resurrect'
     set -g @resurrect-capture-pane-contents on
-    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
+    run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
     set -g @continuum-restore 'on'
     set -g @continuum-save-interval '10'
     set -g status-right '#{E:@bar-content}'
+    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
     source ${repo}/config/tmux/tmux.conf
   '';
 
