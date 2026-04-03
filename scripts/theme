@@ -83,7 +83,11 @@ Linux)
 
     zathura_themes="$cfg/zathura/themes"
     [ -f "$zathura_themes/$theme" ] && {
-      ln -sf "$zathura_themes/$theme" "$zathura_themes/theme"
+      ln -sf "$zathura_themes/$theme" "$cfg/zathura/theme"
+      for pid in $(pgrep -x zathura 2>/dev/null); do
+        dbus-send --session --dest="org.pwmt.zathura.PID-$pid" \
+          --type=method_call /org/pwmt/zathura org.pwmt.zathura.SourceConfig 2>/dev/null || true
+      done
     }
 
   fi

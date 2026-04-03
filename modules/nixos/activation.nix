@@ -325,8 +325,8 @@ in
 
     ln -sf "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
-    ln -sf "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/themes/theme"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/zathura/themes/theme"
+    ln -sf "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"
+    chown -h ${username}:users "${XDG_CONFIG_HOME}/zathura/theme"
 
     src="${repo}/config/screen"
     dest="${homeDirectory}/Pictures/Screensavers"
