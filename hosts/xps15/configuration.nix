@@ -125,6 +125,7 @@ in
       BlockThirdPartyCookies = true;
       CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
       RestoreOnStartup = 1;
+      NewTabPageLocation = "chrome-extension://demmbkpegigoeiappcbliinlijmeoaop/newtab.html";
     };
     extensions = [
       # Bitwarden Password Manager
