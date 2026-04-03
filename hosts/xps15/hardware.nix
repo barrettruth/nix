@@ -7,8 +7,9 @@
   ];
 
   hardware.nvidia = {
-    open = true;
+    open = false;
     modesetting.enable = true;
+    powerManagement.enable = true;
     prime = {
       offload.enable = true;
       intelBusId = "PCI:0:2:0";
