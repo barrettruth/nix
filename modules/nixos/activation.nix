@@ -115,7 +115,7 @@ let
   '';
 
   hyprpaperConf = pkgs.writeText "hyprpaper-conf" ''
-    splash = false
+    splash = 0
 
     wallpaper {
       monitor =
