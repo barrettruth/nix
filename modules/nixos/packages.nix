@@ -98,7 +98,9 @@ in
     mpv
     libreoffice-fresh
 
-    chromium
+    (chromium.override {
+      commandLineArgs = "--silent-debugger-extension-api --load-extension=${hostConfig.XDG_CONFIG_HOME}/nix/config/chromium/extension";
+    })
 
     vesktop
     signal-desktop
