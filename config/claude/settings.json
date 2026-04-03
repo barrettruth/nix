@@ -27,7 +27,16 @@
       }
     ]
   },
+  "extraKnownMarketplaces": {
+    "vercel-vercel-plugin": {
+      "source": {
+        "source": "directory",
+        "path": "/home/barrett/.cache/plugins/github.com-vercel-vercel-plugin"
+      }
+    }
+  },
   "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
   "notifications": {
     "hints": "disabled"
   },
@@ -40,5 +49,7 @@
   "tools": {
     "web_fetch": true
   },
-  "skipDangerousModePermissionPrompt": true
+  "enabledPlugins": {
+    "vercel-plugin@vercel-vercel-plugin": true
+  }
 }
