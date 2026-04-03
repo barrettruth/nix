@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Midnight",
+  "version": "1.0",
+  "description": "Tab numbering, dark mode, and themed new tab",
+  "permissions": [
+    "tabs",
+    "tabGroups",
+    "scripting",
+    "storage",
+    "debugger"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["theme.js", "content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "commands": {
+    "toggle-dark": {
+      "suggested_key": { "default": "Alt+D" },
+      "description": "Toggle dark mode for current site"
+    }
+  }
+}

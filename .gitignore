@@ -2,3 +2,5 @@ result
 .direnv/
 .envrc
 fonts/
+config/chromium/extension/theme.css
+config/chromium/extension/theme.js

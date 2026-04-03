@@ -74,6 +74,16 @@ let
     ${themeGenerators.mkZathuraTheme palettes.daylight}
     ZATHURADAYLIGHT
 
+    mkdir -p $out/chromium
+
+    cat > $out/chromium/theme.css << 'CHROMECSS'
+    ${themeGenerators.mkChromeThemeCss}
+    CHROMECSS
+
+    cat > $out/chromium/theme.js << 'CHROMEJS'
+    ${themeGenerators.mkChromeThemeJs}
+    CHROMEJS
+
 
   '';
 
@@ -270,6 +280,9 @@ in
     ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
     ${mkSymlink "${themes}/zathura/themes/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
     ${mkSymlink "${themes}/zathura/themes/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
+
+    ${mkSymlink "${themes}/chromium/theme.css" "${repo}/config/chromium/extension/theme.css"}
+    ${mkSymlink "${themes}/chromium/theme.js" "${repo}/config/chromium/extension/theme.js"}
 
 
     ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}

@@ -127,18 +127,12 @@ in
       RestoreOnStartup = 1;
     };
     extensions = [
-      # Chrome Tabs Numbers
-      "enongpimpbipgpoigjoolmehalnmbemb"
       # Bitwarden Password Manager
       "nngceckbapebfimnlniiiahkandclblb"
-      # Dark Reader
-      "eimadpbcbfnmbkopoojfekhnkhdbieeh"
       # uBlock Origin Lite
       "ddkjiahejlhfcafbddmgiahcphecmpfh"
       # React Developer Tools
       "fmkadmapgofadopljbjfkapdkoienihi"
-      # Blank New Tab Page
-      "jaadjnlkjnhohljficgoddcjmndjfdmi"
     ];
   };
 
