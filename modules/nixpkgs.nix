@@ -11,6 +11,7 @@ let
     "claude-code"
     "claude"
     "apple_cursor"
+    "devin"
   ];
 in
 {
