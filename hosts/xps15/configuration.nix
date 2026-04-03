@@ -232,7 +232,6 @@ in
   };
 
   environment.systemPackages = with pkgs; [
-    vim
     wget
     git
     dash
