@@ -10,7 +10,7 @@
     return isDark ? MIDNIGHT : DAYLIGHT;
   }
 
-  // --- Favicon tab numbers ---
+  let faviconObserver;
 
   function setFavicon(number) {
     currentNumber = number;
@@ -26,19 +26,54 @@
     const href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 
     function apply() {
-      document.querySelectorAll("link[rel*='icon']").forEach((el) => el.remove());
-      const link = document.createElement("link");
-      link.rel = "icon";
-      link.type = "image/svg+xml";
+      if (!document.head) return;
+      document
+        .querySelectorAll("link[rel*='icon']:not(#midnight-tab-num)")
+        .forEach((el) => el.remove());
+      let link = document.getElementById("midnight-tab-num");
+      if (!link) {
+        link = document.createElement("link");
+        link.id = "midnight-tab-num";
+        link.rel = "icon";
+        link.type = "image/svg+xml";
+        document.head.appendChild(link);
+      }
       link.href = href;
-      document.head.appendChild(link);
     }
 
-    if (document.head) apply();
-    else document.addEventListener("DOMContentLoaded", apply, { once: true });
-  }
+    function guard() {
+      if (faviconObserver) faviconObserver.disconnect();
+      if (!document.head) return;
+      faviconObserver = new MutationObserver((muts) => {
+        for (const m of muts)
+          for (const n of m.addedNodes)
+            if (
+              n.nodeName === "LINK" &&
+              n.rel?.includes("icon") &&
+              n.id !== "midnight-tab-num"
+            ) {
+              n.remove();
+              apply();
+              return;
+            }
+      });
+      faviconObserver.observe(document.head, { childList: true });
+    }
 
-  // --- Dark mode: report system preference to background (CDP handles the rest) ---
+    if (document.readyState === "loading") {
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          apply();
+          guard();
+        },
+        { once: true },
+      );
+    } else {
+      apply();
+      guard();
+    }
+  }
 
   function reportTheme() {
     chrome.runtime.sendMessage({ type: "themeChanged", isDark });
@@ -52,8 +87,6 @@
 
   reportTheme();
 
-  // --- Init ---
-
   chrome.runtime.sendMessage({ type: "getNumber" }, (res) => {
     if (chrome.runtime.lastError) return;
     if (res?.number) setFavicon(res.number);
@@ -62,10 +95,6 @@
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "setNumber") setFavicon(msg.number);
   });
-
-  // --- Keybindings ---
-  // { ctrl, shift, alt, key, action, arg? }
-  // Add rows here to bind more shortcuts.
 
   const BINDINGS = [
     { ctrl: true, key: "[", action: "historyBack" },
@@ -85,7 +114,6 @@
   document.addEventListener(
     "keydown",
     (e) => {
-      // Ctrl+1-9: visible-tab switching
       if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
         const n = parseInt(e.key);
         if (n >= 1 && n <= 9) {
@@ -96,12 +124,15 @@
         }
       }
 
-      // General bindings table
       const b = matchBinding(e);
       if (b) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        chrome.runtime.sendMessage({ type: "action", action: b.action, arg: b.arg });
+        chrome.runtime.sendMessage({
+          type: "action",
+          action: b.action,
+          arg: b.arg,
+        });
       }
     },
     true,

@@ -1,7 +1,5 @@
 importScripts("theme.js");
 
-// --- Tab numbering (visible-tabs-only, collapsed groups skipped) ---
-
 const tabNumberCache = new Map();
 
 async function getVisibleTabs(windowId) {
@@ -33,7 +31,13 @@ async function recalculate(windowId) {
   }
 }
 
-for (const ev of ["onCreated", "onRemoved", "onMoved", "onDetached", "onAttached"])
+for (const ev of [
+  "onCreated",
+  "onRemoved",
+  "onMoved",
+  "onDetached",
+  "onAttached",
+])
   chrome.tabs[ev].addListener(() => recalculate());
 
 chrome.tabs.onUpdated.addListener((_id, info) => {
@@ -44,8 +48,6 @@ try {
   chrome.tabGroups.onUpdated.addListener(() => recalculate());
 } catch (_) {}
 
-// --- Tab switching (visible-index aware) ---
-
 async function switchToVisibleTab(number, windowId) {
   if (!windowId) windowId = (await chrome.windows.getCurrent()).id;
   const visible = await getVisibleTabs(windowId);
@@ -53,8 +55,6 @@ async function switchToVisibleTab(number, windowId) {
     number === 9 ? visible[visible.length - 1] : visible[number - 1];
   if (target) await chrome.tabs.update(target.id, { active: true });
 }
-
-// --- Dark mode (CDP: Emulation.setAutoDarkModeOverride) ---
 
 let systemIsDark = false;
 const attached = new Set();
@@ -92,9 +92,8 @@ async function applyDarkToTab(tabId) {
     return;
   }
 
-  const { disabledSites = [] } = await chrome.storage.local.get(
-    "disabledSites",
-  );
+  const { disabledSites = [] } =
+    await chrome.storage.local.get("disabledSites");
   const shouldDarken = systemIsDark && !disabledSites.includes(hostname);
 
   if (shouldDarken) {
@@ -132,9 +131,8 @@ async function toggleDark(tab) {
   } catch (_) {
     return;
   }
-  const { disabledSites = [] } = await chrome.storage.local.get(
-    "disabledSites",
-  );
+  const { disabledSites = [] } =
+    await chrome.storage.local.get("disabledSites");
   const idx = disabledSites.indexOf(hostname);
   if (idx === -1) disabledSites.push(hostname);
   else disabledSites.splice(idx, 1);
@@ -147,14 +145,10 @@ async function toggleDark(tab) {
   }
 }
 
-// --- Action dispatcher (for keybinding table) ---
-
 const ACTIONS = {
   historyBack: (tab) => chrome.tabs.goBack(tab.id),
   historyForward: (tab) => chrome.tabs.goForward(tab.id),
 };
-
-// --- Messages ---
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "switchTab") {
@@ -174,16 +168,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// --- Commands ---
-
 chrome.commands.onCommand.addListener((command) => {
   if (command === "toggle-dark")
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab) toggleDark(tab);
     });
 });
-
-// --- Init ---
 
 chrome.runtime.onInstalled.addListener(async () => {
   for (const tab of await chrome.tabs.query({})) {

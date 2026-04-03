@@ -32,6 +32,7 @@ jobs:
               - '**/*.md'
               - '**/*.toml'
               - '**/*.css'
+              - '**/*.js'
 
   nix-format:
     name: Nix Format Check
