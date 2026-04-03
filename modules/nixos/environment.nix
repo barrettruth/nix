@@ -64,6 +64,7 @@ in
     TEXMFVAR = "${XDG_CACHE_HOME}/texlive/texmf-var";
     TEXMFCONFIG = "${XDG_CONFIG_HOME}/texlive/texmf-config";
     CLAUDE_CONFIG_DIR = "${XDG_CONFIG_HOME}/claude";
+    DEVIN_PERMISSION_MODE = "dangerous";
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
     XCURSOR_SIZE = "24";
     XCURSOR_THEME = "macOS";
