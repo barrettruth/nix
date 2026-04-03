@@ -9,7 +9,7 @@ require() {
   done
 }
 
-require gsettings
+require dconf
 
 themes="daylight
 midnight"
@@ -35,8 +35,8 @@ export THEME="$theme"
 case "$(uname)" in
 Linux)
   case "$theme" in
-  midnight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' ;;
-  daylight) gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' ;;
+  midnight) dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'" ;;
+  daylight) dconf write /org/gnome/desktop/interface/color-scheme "'prefer-light'" ;;
   esac
 
   if command -v hyprctl >/dev/null 2>&1 && hyprctl monitors >/dev/null 2>&1; then
