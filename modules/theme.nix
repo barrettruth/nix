@@ -129,23 +129,28 @@ let
     set index-active-fg "${palette.fg}"
   '';
 
-  mkChromeThemeCss = let m = palettes.midnight; d = palettes.daylight; in ''
-    :root {
-      --bg: ${d.bg}; --fg: ${d.fg}; --bg-alt: ${d.bgAlt}; --fg-alt: ${d.fgAlt};
-      --border: ${d.border}; --accent: ${d.accent};
-      --green: ${d.green}; --red: ${d.red}; --yellow: ${d.yellow};
-      --blue: ${d.blue}; --magenta: ${d.magenta}; --cyan: ${d.cyan};
-    }
-    @media (prefers-color-scheme: dark) {
+  mkChromeThemeCss =
+    let
+      m = palettes.midnight;
+      d = palettes.daylight;
+    in
+    ''
       :root {
-        --bg: ${m.bg}; --fg: ${m.fg}; --bg-alt: ${m.bgAlt}; --fg-alt: ${m.fgAlt};
-        --border: ${m.border}; --accent: ${m.accent};
-        --green: ${m.green}; --red: ${m.red}; --yellow: ${m.yellow};
-        --blue: ${m.blue}; --magenta: ${m.magenta}; --cyan: ${m.cyan};
+        --bg: ${d.bg}; --fg: ${d.fg}; --bg-alt: ${d.bgAlt}; --fg-alt: ${d.fgAlt};
+        --border: ${d.border}; --accent: ${d.accent};
+        --green: ${d.green}; --red: ${d.red}; --yellow: ${d.yellow};
+        --blue: ${d.blue}; --magenta: ${d.magenta}; --cyan: ${d.cyan};
       }
-    }
-    html, body { margin: 0; background: var(--bg); color: var(--fg); min-height: 100vh; }
-  '';
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: ${m.bg}; --fg: ${m.fg}; --bg-alt: ${m.bgAlt}; --fg-alt: ${m.fgAlt};
+          --border: ${m.border}; --accent: ${m.accent};
+          --green: ${m.green}; --red: ${m.red}; --yellow: ${m.yellow};
+          --blue: ${m.blue}; --magenta: ${m.magenta}; --cyan: ${m.cyan};
+        }
+      }
+      html, body { margin: 0; background: var(--bg); color: var(--fg); min-height: 100vh; }
+    '';
 
   mkChromeThemeJs = ''
     var MIDNIGHT = ${builtins.toJSON palettes.midnight};
