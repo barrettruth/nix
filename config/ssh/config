@@ -17,6 +17,11 @@ Host lightsail
     IdentityFile ~/.ssh/lightsail-keypair.pem
     SetEnv TERM=xterm-256color
 
+Host netcup
+    HostName 152.53.168.144
+    User root
+    IdentityFile ~/.ssh/id_ed25519
+
 Host uva-portal
     HostName portal.cs.virginia.edu
     User jxa9ev
