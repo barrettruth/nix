@@ -14,7 +14,6 @@
     direnv-instant.url = "github:Mic92/direnv-instant";
     vimdoc-language-server.url = "github:barrettruth/vimdoc-language-server";
     codex.url = "github:sadjow/codex-cli-nix";
-    devin.url = "github:charliemeyer2000/devin-cli-overlay";
   };
 
   outputs =

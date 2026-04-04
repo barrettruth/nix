@@ -1,0 +1,13 @@
+{
+  "version": "2026.4.1-1",
+  "platforms": {
+    "x86_64-linux": {
+      "url": "https://static.devin.ai/cli/2026.4.1-1/devin-2026.4.1-1-x86_64-unknown-linux.tar.gz",
+      "hash": "sha256-71mHg2gmDU4veNKjS4n3E8TxU1UdRhcJDpWEN8JG8PY="
+    },
+    "aarch64-linux": {
+      "url": "https://static.devin.ai/cli/2026.4.1-1/devin-2026.4.1-1-aarch64-unknown-linux.tar.gz",
+      "hash": "sha256-8vhiDPa4tvpEDLEpV884qNNWCYjbZStaIHBSq2kwudM="
+    }
+  }
+}

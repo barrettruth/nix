@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+
+MANIFEST_URL="https://static.devin.ai/cli/current/manifest.json"
+SOURCES="$(dirname "$0")/../pkgs/devin-sources.json"
+
+hex2sri() { printf '%s' "$1" | xxd -r -p | base64 -w0 | xargs -I{} printf 'sha256-{}'; }
+
+manifest=$(curl -fsSL "$MANIFEST_URL")
+version=$(printf '%s' "$manifest" | jq -r '.version')
+current=$(jq -r '.version' "$SOURCES")
+
+if [ "$version" = "$current" ]; then
+  echo "devin: already at $version"
+  exit 0
+fi
+
+x86_hash=$(hex2sri "$(printf '%s' "$manifest" | jq -r '.platforms["x86_64-unknown-linux"].sha256')")
+arm_hash=$(hex2sri "$(printf '%s' "$manifest" | jq -r '.platforms["aarch64-unknown-linux"].sha256')")
+
+jq -n \
+  --arg v "$version" \
+  --arg x86_url "https://static.devin.ai/cli/$version/devin-$version-x86_64-unknown-linux.tar.gz" \
+  --arg x86_hash "$x86_hash" \
+  --arg arm_url "https://static.devin.ai/cli/$version/devin-$version-aarch64-unknown-linux.tar.gz" \
+  --arg arm_hash "$arm_hash" \
+  '{
+    version: $v,
+    platforms: {
+      "x86_64-linux": { url: $x86_url, hash: $x86_hash },
+      "aarch64-linux": { url: $arm_url, hash: $arm_hash }
+    }
+  }' > "$SOURCES"
+
+echo "devin: $current -> $version"

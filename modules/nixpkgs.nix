@@ -2,7 +2,6 @@
 let
   overlays = [
     inputs.codex.overlays.default
-    inputs.devin.overlays.default
   ];
 
   sharedUnfree = [

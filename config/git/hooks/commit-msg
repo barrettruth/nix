@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+msg_file="$1"
+
+sed -i \
+  -e '/^Co-Authored-By:.*[Dd]evin/d' \
+  -e '/^Co-Authored-By:.*[Cc]laude/d' \
+  -e '/^Co-Authored-By:.*[Cc]opilot/d' \
+  -e '/^Co-Authored-By:.*\[bot\]/d' \
+  -e '/^Signed-off-by:.*[Dd]evin/d' \
+  -e '/^Signed-off-by:.*[Cc]laude/d' \
+  -e '/^Signed-off-by:.*[Cc]opilot/d' \
+  -e '/^Signed-off-by:.*\[bot\]/d' \
+  -e '/^Generated with \[/d' \
+  "$msg_file"
+
+sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$msg_file"

@@ -8,6 +8,10 @@ let
   pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
 
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
+
+  devin = pkgs.callPackage ../../pkgs/devin.nix {
+    agentConfig = "${hostConfig.XDG_CONFIG_HOME}/devin/agent.yaml";
+  };
 in
 {
   users.users.${hostConfig.username}.packages = with pkgs; [
@@ -33,7 +37,7 @@ in
     rustup
     uv
     codex
-    devin-cli
+    devin
 
     bash-language-server
     basedpyright

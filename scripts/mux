@@ -122,8 +122,8 @@ switch)
   tmux switch -t "$session"
   ;;
 ai)
-  require claude
-  spawn_or_focus ai 'claude --dangerously-skip-permissions'
+  require devin
+  spawn_or_focus ai 'devin'
   ;;
 code)
   require nvim
