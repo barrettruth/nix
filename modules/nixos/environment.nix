@@ -63,6 +63,7 @@ in
     TEXMFHOME = "${XDG_DATA_HOME}/texmf";
     TEXMFVAR = "${XDG_CACHE_HOME}/texlive/texmf-var";
     TEXMFCONFIG = "${XDG_CONFIG_HOME}/texlive/texmf-config";
+    INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
     CLAUDE_CONFIG_DIR = "${XDG_CONFIG_HOME}/claude";
     DEVIN_PERMISSION_MODE = "dangerous";
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";

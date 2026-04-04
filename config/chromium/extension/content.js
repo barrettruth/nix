@@ -6,73 +6,35 @@
   let isDark = darkQuery.matches;
   let currentNumber = null;
 
-  function theme() {
-    return isDark ? MIDNIGHT : DAYLIGHT;
+  function stripPrefix(title) {
+    return title.replace(/^\d+\. /, "");
   }
 
-  let faviconObserver;
+  function applyPrefix() {
+    if (!currentNumber) return;
+    const base = stripPrefix(document.title);
+    const want = base ? `${currentNumber}. ${base}` : `${currentNumber}`;
+    if (document.title !== want) document.title = want;
+  }
 
-  function setFavicon(number) {
+  function setNumber(number) {
     currentNumber = number;
-    const t = theme();
-    const sz = number > 9 ? 14 : 20;
-    const y = number > 9 ? 21 : 22;
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">` +
-      `<rect width="32" height="32" rx="6" fill="${t.bgAlt}"/>` +
-      `<text x="16" y="${y}" text-anchor="middle" font-family="system-ui,sans-serif" ` +
-      `font-size="${sz}" font-weight="700" fill="${t.accent}">${number}</text></svg>`;
+    applyPrefix();
+  }
 
-    const href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  function observeTitle() {
+    if (!document.head) return;
+    new MutationObserver(() => applyPrefix()).observe(document.head, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
 
-    function apply() {
-      if (!document.head) return;
-      document
-        .querySelectorAll("link[rel*='icon']:not(#midnight-tab-num)")
-        .forEach((el) => el.remove());
-      let link = document.getElementById("midnight-tab-num");
-      if (!link) {
-        link = document.createElement("link");
-        link.id = "midnight-tab-num";
-        link.rel = "icon";
-        link.type = "image/svg+xml";
-        document.head.appendChild(link);
-      }
-      link.href = href;
-    }
-
-    function guard() {
-      if (faviconObserver) faviconObserver.disconnect();
-      if (!document.head) return;
-      faviconObserver = new MutationObserver((muts) => {
-        for (const m of muts)
-          for (const n of m.addedNodes)
-            if (
-              n.nodeName === "LINK" &&
-              n.rel?.includes("icon") &&
-              n.id !== "midnight-tab-num"
-            ) {
-              n.remove();
-              apply();
-              return;
-            }
-      });
-      faviconObserver.observe(document.head, { childList: true });
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener(
-        "DOMContentLoaded",
-        () => {
-          apply();
-          guard();
-        },
-        { once: true },
-      );
-    } else {
-      apply();
-      guard();
-    }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", observeTitle, { once: true });
+  } else {
+    observeTitle();
   }
 
   function reportTheme() {
@@ -82,18 +44,17 @@
   darkQuery.addEventListener("change", (e) => {
     isDark = e.matches;
     reportTheme();
-    if (currentNumber) setFavicon(currentNumber);
   });
 
   reportTheme();
 
   chrome.runtime.sendMessage({ type: "getNumber" }, (res) => {
     if (chrome.runtime.lastError) return;
-    if (res?.number) setFavicon(res.number);
+    if (res?.number) setNumber(res.number);
   });
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "setNumber") setFavicon(msg.number);
+    if (msg.type === "setNumber") setNumber(msg.number);
   });
 
   const BINDINGS = [

@@ -1,6 +1,17 @@
 importScripts("theme.js");
 
 const tabNumberCache = new Map();
+const extPorts = new Map();
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== "tab") return;
+  const tabId = port.sender?.tab?.id;
+  if (!tabId) return;
+  extPorts.set(tabId, port);
+  port.onDisconnect.addListener(() => extPorts.delete(tabId));
+  const num = tabNumberCache.get(tabId);
+  if (num) port.postMessage({ type: "setNumber", number: num });
+});
 
 async function getVisibleTabs(windowId) {
   const tabs = await chrome.tabs.query({ windowId });
@@ -26,7 +37,14 @@ async function recalculate(windowId) {
     if (tabNumberCache.get(tab.id) === num) continue;
     tabNumberCache.set(tab.id, num);
     try {
-      await chrome.tabs.sendMessage(tab.id, { type: "setNumber", number: num });
+      if (extPorts.has(tab.id)) {
+        extPorts.get(tab.id).postMessage({ type: "setNumber", number: num });
+      } else {
+        await chrome.tabs.sendMessage(tab.id, {
+          type: "setNumber",
+          number: num,
+        });
+      }
     } catch (_) {}
   }
 }
@@ -83,7 +101,12 @@ async function cdpSetDark(tabId, enabled) {
 
 async function applyDarkToTab(tabId) {
   const tab = await chrome.tabs.get(tabId).catch(() => null);
-  if (!tab?.url || tab.url.startsWith("chrome://")) return;
+  if (
+    !tab?.url ||
+    tab.url.startsWith("chrome://") ||
+    tab.url.startsWith(`chrome-extension://${chrome.runtime.id}`)
+  )
+    return;
 
   let hostname;
   try {
