@@ -60,6 +60,13 @@
   const BINDINGS = [
     { ctrl: true, key: "[", action: "historyBack" },
     { ctrl: true, key: "]", action: "historyForward" },
+    { ctrl: true, shift: true, key: "{", action: "moveTabLeft" },
+    { ctrl: true, shift: true, key: "}", action: "moveTabRight" },
+    {
+      ctrl: true,
+      key: "y",
+      local: () => navigator.clipboard.writeText(location.href),
+    },
   ];
 
   function matchBinding(e) {
@@ -89,11 +96,15 @@
       if (b) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        chrome.runtime.sendMessage({
-          type: "action",
-          action: b.action,
-          arg: b.arg,
-        });
+        if (b.local) {
+          b.local();
+        } else {
+          chrome.runtime.sendMessage({
+            type: "action",
+            action: b.action,
+            arg: b.arg,
+          });
+        }
       }
     },
     true,
