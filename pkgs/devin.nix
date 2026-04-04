@@ -12,7 +12,7 @@ let
   inherit (sourcesData) version;
   source =
     sourcesData.platforms.${stdenv.hostPlatform.system}
-    or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
+      or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
 in
 stdenv.mkDerivation {
   pname = "devin";
@@ -23,10 +23,11 @@ stdenv.mkDerivation {
   };
   sourceRoot = ".";
 
-  nativeBuildInputs =
-    [ installShellFiles ]
-    ++ lib.optionals (agentConfig != null) [ makeWrapper ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+  nativeBuildInputs = [
+    installShellFiles
+  ]
+  ++ lib.optionals (agentConfig != null) [ makeWrapper ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
 
   buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
     stdenv.cc.cc.lib
