@@ -105,8 +105,7 @@ let
     run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
     set -g @continuum-restore 'on'
     set -g @continuum-save-interval '10'
-    set -g status-right '#{E:@bar-content}'
-    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
+    set -g status-right '#(${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/scripts/continuum_save.sh)#{E:@bar-content}'
     source ${repo}/config/tmux/tmux.conf
   '';
 
