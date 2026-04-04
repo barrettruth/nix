@@ -129,7 +129,7 @@ return {
                 confirm = true,
                 save = 'auto',
                 extglob = true,
-                delete = { wipe = true, recursive = true },
+                delete = { wipe = true, recursive = true, trash = true },
                 float = { border = 'single' },
                 keymaps = {
                     ['<c-h>'] = false,

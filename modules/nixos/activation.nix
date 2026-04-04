@@ -261,6 +261,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/latexmk"}
     ${mkDir "${XDG_CONFIG_HOME}/github"}
     ${mkDir "${XDG_CONFIG_HOME}/direnv"}
+    ${mkDir "${XDG_CONFIG_HOME}/devin"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
     ${mkDir "${XDG_CONFIG_HOME}/tmux/themes"}
     ${mkDir "${homeDirectory}/.ssh"}
@@ -291,6 +292,7 @@ in
     ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
     ${mkSymlink "${gitConf}" "${XDG_CONFIG_HOME}/git/config"}
     ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
+    ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
     ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
     cp -f "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"
     chown ${username}:users "${XDG_CONFIG_HOME}/gh/config.yml"
@@ -315,6 +317,9 @@ in
     ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
     ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
     ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
+    ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
+    ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
+    ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/devin/skills"}
     ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${XDG_CONFIG_HOME}/tmux/themes/midnight.conf"}
     ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${XDG_CONFIG_HOME}/tmux/themes/daylight.conf"}
 
