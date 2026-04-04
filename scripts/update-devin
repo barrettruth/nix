@@ -30,6 +30,6 @@ jq -n \
       "x86_64-linux": { url: $x86_url, hash: $x86_hash },
       "aarch64-linux": { url: $arm_url, hash: $arm_hash }
     }
-  }' > "$SOURCES"
+  }' >"$SOURCES"
 
 echo "devin: $current -> $version"
