@@ -50,6 +50,12 @@ async function recalculate(windowId) {
   }
 }
 
+let recalcTimer = null;
+function scheduleRecalculate() {
+  clearTimeout(recalcTimer);
+  recalcTimer = setTimeout(() => recalculate(), 16);
+}
+
 for (const ev of [
   "onCreated",
   "onRemoved",
@@ -57,20 +63,32 @@ for (const ev of [
   "onDetached",
   "onAttached",
 ])
-  chrome.tabs[ev].addListener(() => recalculate());
+  chrome.tabs[ev].addListener(() => scheduleRecalculate());
 
-chrome.tabs.onUpdated.addListener((_id, info) => {
-  if (info.status === "complete") recalculate();
+chrome.tabs.onUpdated.addListener((tabId, info) => {
+  if (info.status === "complete") {
+    const num = tabNumberCache.get(tabId);
+    if (num != null) {
+      if (extPorts.has(tabId)) {
+        extPorts.get(tabId).postMessage({ type: "setNumber", number: num });
+      } else {
+        chrome.tabs
+          .sendMessage(tabId, { type: "setNumber", number: num })
+          .catch(() => {});
+      }
+    }
+    scheduleRecalculate();
+  }
 });
-chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   try {
     const tab = await chrome.tabs.get(tabId);
     if (tab.groupId !== -1) groupLastActive.set(tab.groupId, tabId);
   } catch (_) {}
-  recalculate(windowId);
+  scheduleRecalculate();
 });
 try {
-  chrome.tabGroups.onUpdated.addListener(() => recalculate());
+  chrome.tabGroups.onUpdated.addListener(() => scheduleRecalculate());
 } catch (_) {}
 
 async function switchToVisibleTab(number, windowId) {
@@ -253,6 +271,8 @@ chrome.commands.onCommand.addListener((command) => {
       if (tab) toggleDark(tab);
     });
 });
+
+recalculate();
 
 chrome.runtime.onInstalled.addListener(async () => {
   for (const tab of await chrome.tabs.query({})) {

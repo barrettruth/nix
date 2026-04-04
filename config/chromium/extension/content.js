@@ -5,16 +5,18 @@
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   let isDark = darkQuery.matches;
   let currentNumber = null;
-
-  function stripPrefix(title) {
-    return title.replace(/^\d+\. /, "");
-  }
+  let baseTitle = "";
+  let ourLastTitle = null;
 
   function applyPrefix() {
     if (!currentNumber) return;
-    const base = stripPrefix(document.title);
-    const want = base ? `${currentNumber}. ${base}` : `${currentNumber}`;
-    if (document.title !== want) document.title = want;
+    const want = baseTitle
+      ? `${currentNumber}. ${baseTitle}`
+      : String(currentNumber);
+    if (document.title !== want) {
+      ourLastTitle = want;
+      document.title = want;
+    }
   }
 
   function setNumber(number) {
@@ -24,11 +26,18 @@
 
   function observeTitle() {
     if (!document.head) return;
-    new MutationObserver(() => applyPrefix()).observe(document.head, {
+    if (document.title && document.title !== ourLastTitle)
+      baseTitle = document.title.replace(/^\d+\. /, "");
+    new MutationObserver(() => {
+      if (document.title === ourLastTitle) return;
+      baseTitle = document.title.replace(/^\d+\. /, "");
+      applyPrefix();
+    }).observe(document.head, {
       childList: true,
       subtree: true,
       characterData: true,
     });
+    applyPrefix();
   }
 
   if (document.readyState === "loading") {
