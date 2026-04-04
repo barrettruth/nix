@@ -1,15 +1,12 @@
 { lib, inputs, ... }:
 let
   overlays = [
-    inputs.claude-code.overlays.default
     inputs.codex.overlays.default
     inputs.devin.overlays.default
   ];
 
   sharedUnfree = [
     "slack"
-    "claude-code"
-    "claude"
     "apple_cursor"
     "devin"
   ];
