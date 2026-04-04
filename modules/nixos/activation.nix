@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   palettes,
   themeGenerators,
   hostConfig,
@@ -229,6 +230,14 @@ let
   mkDir = dir: ''
     install -d -o ${username} -g users "${dir}"
   '';
+
+  obsoletePaths = [
+    "${XDG_CONFIG_HOME}/libreoffice"
+    "${XDG_CACHE_HOME}/libreoffice"
+    "${XDG_STATE_HOME}/libreoffice"
+    "${XDG_DATA_HOME}/libreoffice"
+    "${XDG_DATA_HOME}/fonts/libreoffice"
+  ];
 in
 {
   systemd.tmpfiles.rules = [
@@ -240,6 +249,11 @@ in
   ];
 
   system.activationScripts.userConfig.text = ''
+    for path in ${lib.escapeShellArgs obsoletePaths}; do
+      [ -e "$path" ] || [ -L "$path" ] || continue
+      rm -rf "$path"
+    done
+
     ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
