@@ -1,6 +1,6 @@
 [global]
 font = Berkeley Mono 12
-width = (0, 450)
+width = (0, 500)
 height = (0, 120)
 origin = top-right
 offset = (16, 16)
