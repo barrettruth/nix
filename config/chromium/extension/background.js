@@ -2,6 +2,7 @@ importScripts("theme.js");
 
 const tabNumberCache = new Map();
 const extPorts = new Map();
+const groupLastActive = new Map();
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "tab") return;
@@ -61,7 +62,13 @@ for (const ev of [
 chrome.tabs.onUpdated.addListener((_id, info) => {
   if (info.status === "complete") recalculate();
 });
-chrome.tabs.onActivated.addListener(({ windowId }) => recalculate(windowId));
+chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.groupId !== -1) groupLastActive.set(tab.groupId, tabId);
+  } catch (_) {}
+  recalculate(windowId);
+});
 try {
   chrome.tabGroups.onUpdated.addListener(() => recalculate());
 } catch (_) {}
@@ -72,6 +79,44 @@ async function switchToVisibleTab(number, windowId) {
   const target =
     number === 9 ? visible[visible.length - 1] : visible[number - 1];
   if (target) await chrome.tabs.update(target.id, { active: true });
+}
+
+async function getOrderedGroups(windowId) {
+  const tabs = await chrome.tabs.query({ windowId });
+  const seen = new Set();
+  const ordered = [];
+  for (const tab of tabs) {
+    if (tab.groupId !== -1 && !seen.has(tab.groupId)) {
+      seen.add(tab.groupId);
+      ordered.push(tab.groupId);
+    }
+  }
+  return ordered;
+}
+
+async function switchWorkspace(index, windowId) {
+  if (!windowId) windowId = (await chrome.windows.getCurrent()).id;
+  const groupIds = await getOrderedGroups(windowId);
+  if (index >= groupIds.length) return;
+
+  const targetId = groupIds[index];
+  for (const gid of groupIds) {
+    await chrome.tabGroups.update(gid, { collapsed: gid !== targetId });
+  }
+
+  const lastTab = groupLastActive.get(targetId);
+  if (lastTab) {
+    try {
+      const tab = await chrome.tabs.get(lastTab);
+      if (tab.groupId === targetId) {
+        await chrome.tabs.update(lastTab, { active: true });
+        return;
+      }
+    } catch (_) {}
+  }
+
+  const tabs = await chrome.tabs.query({ windowId, groupId: targetId });
+  if (tabs.length > 0) await chrome.tabs.update(tabs[0].id, { active: true });
 }
 
 let systemIsDark = false;
@@ -142,7 +187,14 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
   if (info.status === "loading") applyDarkToTab(tabId);
 });
 
-chrome.tabs.onCreated.addListener((tab) => {
+chrome.tabs.onCreated.addListener(async (tab) => {
+  try {
+    const groups = await chrome.tabGroups.query({ windowId: tab.windowId });
+    const expanded = groups.find((g) => !g.collapsed);
+    if (expanded && tab.groupId === -1) {
+      await chrome.tabs.group({ tabIds: [tab.id], groupId: expanded.id });
+    }
+  } catch (_) {}
   if (systemIsDark) applyDarkToTab(tab.id);
 });
 
@@ -173,8 +225,8 @@ const ACTIONS = {
   historyForward: (tab) => chrome.tabs.goForward(tab.id),
   moveTabLeft: (tab) =>
     chrome.tabs.move(tab.id, { index: Math.max(0, tab.index - 1) }),
-  moveTabRight: (tab) =>
-    chrome.tabs.move(tab.id, { index: tab.index + 1 }),
+  moveTabRight: (tab) => chrome.tabs.move(tab.id, { index: tab.index + 1 }),
+  switchWorkspace: (tab, index) => switchWorkspace(index, tab.windowId),
 };
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

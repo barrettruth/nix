@@ -62,6 +62,10 @@
     { ctrl: true, key: "]", action: "historyForward" },
     { ctrl: true, shift: true, key: "{", action: "moveTabLeft" },
     { ctrl: true, shift: true, key: "}", action: "moveTabRight" },
+    { ctrl: true, shift: true, key: "H", action: "switchWorkspace", arg: 0 },
+    { ctrl: true, shift: true, key: "J", action: "switchWorkspace", arg: 1 },
+    { ctrl: true, shift: true, key: "K", action: "switchWorkspace", arg: 2 },
+    { ctrl: true, shift: true, key: "L", action: "switchWorkspace", arg: 3 },
     {
       ctrl: true,
       key: "y",
