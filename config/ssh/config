@@ -1,12 +1,6 @@
 Host *
     AddKeysToAgent yes
 
-Host github.com
-    IdentityFile ~/.ssh/id_ed25519
-
-Host codeberg.org
-    IdentityFile ~/.ssh/id_ed25519
-
 Host jetson-nano
     HostName 100.95.16.119
     User charlie
@@ -20,15 +14,14 @@ Host lightsail
 Host netcup
     HostName 152.53.168.144
     User root
-    IdentityFile ~/.ssh/id_ed25519
+
+Host uva-portal uva-nvidia
+    User jxa9ev
+    IdentityFile ~/.ssh/uva_key
 
 Host uva-portal
     HostName portal.cs.virginia.edu
-    User jxa9ev
-    IdentityFile ~/.ssh/uva_key
 
 Host uva-nvidia
     HostName grasshopper02.cs.virginia.edu
-    User jxa9ev
     ProxyJump uva-portal
-    IdentityFile ~/.ssh/uva_key
