@@ -71,16 +71,6 @@ spawn_or_focus() {
   fi
 }
 
-confirm() {
-  printf '%s ' "$1"
-  old=$(stty -g)
-  stty raw -echo
-  c=$(dd bs=1 count=1 2>/dev/null)
-  stty "$old"
-  printf '\n'
-  [ "$c" = "y" ]
-}
-
 case "$1" in
 bar)
   if [ "$(tmux show-options -gv mouse)" = "on" ]; then
@@ -152,13 +142,12 @@ run)
 shell)
   spawn_or_focus shell
   ;;
-open | cmd)
+open)
   require fzf
   export _MF="${XDG_RUNTIME_DIR:-/tmp}/mux-picker-mode"
-  printf '%s' "$1" >"$_MF"
+  printf open >"$_MF"
   export _SCOPE=$(get_scope)
   export _SESSION=$(tmux display-message -p '#S')
-  export _WINDOW=$(tmux display-message -p '#{window_index}:#{window_name}')
   export _ACCENT=$(tmux show -gv @accent 2>/dev/null | tr -d '#')
   [ -z "$_ACCENT" ] && _ACCENT="7aa2f7"
   export _FGALT=$(tmux show -gv @fgAlt 2>/dev/null | tr -d '#')
@@ -166,11 +155,11 @@ open | cmd)
   mux _list | fzf --reverse --ansi --no-info --no-scrollbar \
     --header "$(mux _header)" \
     --prompt "$(mux _prompt)" \
-    --pointer '│' \
-    --color "header:#${_FGALT},prompt:#${_ACCENT},pointer:#${_ACCENT}:regular,separator:#${_FGALT}" \
+    --pointer '▌' \
+    --color "header:#${_FGALT},prompt:#${_ACCENT},separator:#${_FGALT}" \
     --separator '' \
     --delimiter '\t' --with-nth 1 --accept-nth 2 \
-    --bind "ctrl-w:execute-silent(mux _toggle)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
+    --bind "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
     --bind "enter:become(mux _dispatch {2})" \
     --bind "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)"
   ;;
@@ -178,7 +167,7 @@ _prompt)
   _mode=$(cat "$_MF" 2>/dev/null || echo open)
   case "$_mode" in
   open) printf '@%s> ' "$_SCOPE" ;;
-  *) printf '%s> ' "$_SESSION" ;;
+  *)    printf 'open> ' ;;
   esac
   ;;
 _header)
@@ -188,11 +177,11 @@ _header)
   _mode=$(cat "$_MF" 2>/dev/null || echo open)
   case "$_mode" in
   open)
-    printf ':: %s<enter>%s open | %s<c-x>%s kill | %s<c-w>%s cmds' \
+    printf ':: %s<enter>%s open | %s<c-x>%s kill | %s<c-o>%s projects' \
       "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst"
     ;;
   *)
-    printf ':: %s<enter>%s run | %s<c-w>%s windows' \
+    printf ':: %s<enter>%s open | %s<c-o>%s windows' \
       "$_ac" "$_rst" "$_ac" "$_rst"
     ;;
   esac
@@ -213,23 +202,30 @@ _list)
       if [ -n "$_idx" ]; then
         printf '%s%s%s %s*%s%s\topen:%s\n' "$_ac" "$_t" "$_rst" "$_muted" "$_idx" "$_rst" "$_t"
       else
-        printf '%s%s%s\topen:%s\n' "$_muted" "$_t" "$_rst" "$_t"
+        printf '%s\topen:%s\n' "$_t" "$_t"
       fi
     done
     ;;
   *)
-    for _a in 'rename window' 'rename session' 'new window' 'kill pane' 'kill window' 'kill session' 'kill server'; do
-      printf '%s\tcmd:%s\n' "$_a" "$_a"
+    for _d in $(zoxide query -l 2>/dev/null); do
+      [ -d "$_d/.git" ] || continue
+      _name=$(basename "$_d")
+      if [ "$_name" = "$_SCOPE" ]; then
+        printf '%s%s%s\tproj:%s\n' "$_ac" "$_name" "$_rst" "$_d"
+      else
+        printf '%s\tproj:%s\n' "$_name" "$_d"
+      fi
     done
     ;;
   esac
   ;;
 _toggle)
-  _mode=$(cat "$_MF" 2>/dev/null || echo open)
-  case "$_mode" in
-  open) printf cmd >"$_MF" ;;
-  *) printf open >"$_MF" ;;
-  esac
+  _cur=$(cat "$_MF" 2>/dev/null || echo open)
+  if [ "$_cur" = "$2" ]; then
+    printf open >"$_MF"
+  else
+    printf '%s' "$2" >"$_MF"
+  fi
   ;;
 _dispatch)
   _input="$2"
@@ -237,6 +233,21 @@ _dispatch)
   _action="${_input#*:}"
   case "$_mode" in
   open) exec mux "$_action" ;;
+  proj)
+    _dir="$_action"
+    _proj=$(basename "$_dir")
+    _target="code@${_proj}"
+    _idx=$(tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$_target" '$1==n{print $2;exit}')
+    if [ -n "$_idx" ]; then
+      tmux select-window -t ":${_idx}"
+    elif is_adoptable; then
+      tmux rename-window "$_target"
+      tmux send-keys "cd '$_dir' && nvim ." Enter
+    else
+      tmux new-window -c "$_dir" -n "$_target"
+      tmux send-keys 'nvim .' Enter
+    fi
+    ;;
   kill)
     _submode="${_action%%:*}"
     _type="${_action#*:}"
@@ -245,33 +256,6 @@ _dispatch)
       _name="${_type}@${_SCOPE}"
       tmux kill-window -t "=$_name" 2>/dev/null
       ;;
-    esac
-    ;;
-  cmd)
-    case "$_action" in
-    'rename window')
-      _cur=$(tmux display-message -p '#{window_name}')
-      _name=$(printf '' | fzf --query "$_cur" --prompt 'name> ' \
-        --reverse --no-info --no-scrollbar --separator '' --pointer ' ' \
-        --bind 'enter:become(echo {q})')
-      [ -n "$_name" ] && tmux rename-window "$_name"
-      ;;
-    'rename session')
-      _cur=$(tmux display-message -p '#S')
-      _name=$(printf '' | fzf --query "$_cur" --prompt 'session> ' \
-        --reverse --no-info --no-scrollbar --separator '' --pointer ' ' \
-        --bind 'enter:become(echo {q})')
-      [ -n "$_name" ] && tmux rename-session "$_name"
-      ;;
-    'new window') tmux new-window -c '#{pane_current_path}' ;;
-    'kill pane') tmux kill-pane ;;
-    'kill window')
-      confirm "kill \"$(tmux display-message -p '#{window_name}')\"? [y/N]:" && tmux kill-window
-      ;;
-    'kill session')
-      confirm "kill \"$(tmux display-message -p '#S')\"? [y/N]:" && tmux kill-session
-      ;;
-    'kill server') confirm 'kill-server? [y/N]:' && tmux kill-server ;;
     esac
     ;;
   esac
