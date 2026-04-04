@@ -9,6 +9,43 @@ require() {
   done
 }
 
+whisper_idle_cancel() {
+  systemctl --user stop whisper-idle.timer whisper-idle.service 2>/dev/null
+}
+
+whisper_idle_schedule() {
+  delay="$1"
+  whisper_idle_cancel
+  systemd-run --user --quiet --unit=whisper-idle --on-active="${delay}s" systemctl --user stop whisper-dictation >/dev/null 2>&1
+}
+
+whisper_idle_timeout() {
+  history="$1"
+  now="$(date +%s)"
+  tmp="$history.tmp"
+  count=0
+  : >"$tmp"
+  if [ -f "$history" ]; then
+    while IFS= read -r ts; do
+      case "$ts" in
+      '' | *[!0-9]*) continue ;;
+      esac
+      if [ $((now - ts)) -le 600 ]; then
+        printf '%s\n' "$ts" >>"$tmp"
+        count=$((count + 1))
+      fi
+    done <"$history"
+  fi
+  printf '%s\n' "$now" >>"$tmp"
+  mv "$tmp" "$history"
+  count=$((count + 1))
+  case "$count" in
+  1) echo 20 ;;
+  2 | 3) echo 60 ;;
+  *) echo 180 ;;
+  esac
+}
+
 case "$1" in
 screenshot)
   dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
@@ -549,6 +586,7 @@ dictate)
   mkdir -p "$dtmp"
   dpid="$dtmp/rec_pid"
   daudio="$dtmp/recording.wav"
+  dhistory="$dtmp/history"
   dport=8178
 
   if [ -f "$dpid" ] && kill -0 "$(cat "$dpid")" 2>/dev/null; then
@@ -557,6 +595,7 @@ dictate)
     sleep 0.2
     if [ ! -s "$daudio" ]; then
       notify-send -a ctl -t 1250 "whisper" "no audio"
+      whisper_idle_schedule 15
       exit 1
     fi
     notify-send -a ctl -t 1250 "whisper" "transcribing..."
@@ -571,16 +610,16 @@ dictate)
     rm -f "$daudio"
     if [ -z "$text" ]; then
       notify-send -a ctl -t 1250 "whisper" "no speech detected"
+      whisper_idle_schedule 15
       exit 1
     fi
     printf '%s' "$text" | wl-copy
     notify-send -a ctl -t 1250 "whisper" "$text"
-    systemctl --user stop whisper-idle.timer 2>/dev/null
-    systemd-run --user --unit=whisper-idle --on-active=120 systemctl --user stop whisper-dictation 2>/dev/null
+    whisper_idle_schedule "$(whisper_idle_timeout "$dhistory")"
     exit 0
   fi
 
-  systemctl --user stop whisper-idle.timer 2>/dev/null
+  whisper_idle_cancel
   systemctl --user start whisper-dictation 2>/dev/null
   notify-send -a ctl -t 1250 "whisper" "recording..."
   pw-record "$daudio" &
