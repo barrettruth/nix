@@ -171,6 +171,10 @@ async function toggleDark(tab) {
 const ACTIONS = {
   historyBack: (tab) => chrome.tabs.goBack(tab.id),
   historyForward: (tab) => chrome.tabs.goForward(tab.id),
+  moveTabLeft: (tab) =>
+    chrome.tabs.move(tab.id, { index: Math.max(0, tab.index - 1) }),
+  moveTabRight: (tab) =>
+    chrome.tabs.move(tab.id, { index: tab.index + 1 }),
 };
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
