@@ -146,6 +146,7 @@ let
       extraPackages = with pkgs; [
         curl
         diffutils
+        docker
         fd
         gh
         gnumake
