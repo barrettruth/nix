@@ -192,6 +192,9 @@ let
         ProtectKernelTunables = lib.mkForce false;
         ProtectKernelModules = lib.mkForce false;
         ProtectKernelLogs = lib.mkForce false;
+        ExecStartPre = [
+          "${pkgs.coreutils}/bin/ln -sfn ${pkgs.github-runner}/lib/externals /var/lib/github-runner/${runnerId}/externals"
+        ];
       };
     };
 in
@@ -375,15 +378,6 @@ in
   ++ map (repoCfg: "d ${workDir repoCfg} 0750 github-runner github-runner -") repos;
 
   services.github-runners = lib.listToAttrs (map mkRunner repos);
-
-  systemd.services = lib.listToAttrs (map (
-    { repo, ... }:
-    lib.nameValuePair "github-runner-${sanitize repo}" {
-      preStart = lib.mkAfter ''
-        ln -sfn ${pkgs.github-runner}/lib/externals $RUNNER_ROOT/externals
-      '';
-    }
-  ) repos);
 
   environment.systemPackages = with pkgs; [
     vim
