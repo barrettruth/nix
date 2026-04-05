@@ -11,16 +11,89 @@ require() {
 
 require tmux
 
-get_scope() {
-  _path=$(tmux display-message -p '#{pane_current_path}')
-  _root=$(git -C "$_path" rev-parse --show-toplevel 2>/dev/null)
-  if [ -n "$_root" ]; then
-    basename "$_root"
-  elif [ "$_path" = "$HOME" ]; then
+scope_from_root() {
+  _root="$1"
+  if [ "$_root" = "$HOME" ]; then
     printf '~'
   else
-    basename "$_path"
+    basename "$_root"
   fi
+}
+
+get_root_from_path() {
+  _path="$1"
+  _root=$(git -C "$_path" rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$_root" ]; then
+    printf '%s' "$_root"
+  elif [ "$_path" = "$HOME" ]; then
+    printf '%s' "$HOME"
+  else
+    printf '%s' "$_path"
+  fi
+}
+
+get_managed_scope() {
+  _name=$(tmux display-message -p '#{window_name}')
+  case "$_name" in
+  ai@* | code@* | shell@* | run@* | git@*)
+    printf '%s' "${_name#*@}"
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+get_root() {
+  _scope=$(get_managed_scope 2>/dev/null || true)
+  if [ -n "$_scope" ]; then
+    _root=$(tmux show-options -wgv @mux_root 2>/dev/null || true)
+    if [ -n "$_root" ] && [ "$(scope_from_root "$_root")" = "$_scope" ]; then
+      printf '%s' "$_root"
+      return
+    fi
+    _path=$(tmux display-message -p '#{pane_start_path}')
+  else
+    _path=$(tmux display-message -p '#{pane_current_path}')
+  fi
+  get_root_from_path "$_path"
+}
+
+get_scope() {
+  _scope=$(get_managed_scope 2>/dev/null || true)
+  if [ -n "$_scope" ]; then
+    printf '%s' "$_scope"
+  else
+    scope_from_root "$(get_root)"
+  fi
+}
+
+set_root() {
+  _target="$1"
+  _root="$2"
+  if [ -n "$_target" ]; then
+    tmux set-option -t "$_target" -w @mux_root "$_root"
+  else
+    tmux set-option -w @mux_root "$_root"
+  fi
+}
+
+quote_sh() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+run_in_root() {
+  _root="$1"
+  _cmd="$2"
+  [ -n "$_cmd" ] && printf "cd %s && %s" "$(quote_sh "$_root")" "$_cmd"
+}
+
+new_window_for_scope() {
+  _name="$1"
+  _root="$2"
+  _idx=$(tmux new-window -P -F '#{window_index}' -c "$_root" -n "$_name")
+  set_root ":${_idx}" "$_root"
+  printf '%s' "$_idx"
 }
 
 is_adoptable() {
@@ -43,32 +116,87 @@ is_pane_idle() {
 }
 
 spawn_or_focus() {
+  root=$(get_root)
+  spawn_or_focus_in "$1" "$root" "$2"
+}
+
+spawn_or_focus_in() {
+  type="$1"
+  root="$2"
   scope=$(get_scope)
-  name="${1}@${scope}"
-  cmd="$2"
+  if [ "$(scope_from_root "$root")" != "$scope" ]; then
+    scope=$(scope_from_root "$root")
+  fi
+  name="${type}@${scope}"
+  cmd="$3"
 
   idx=$(tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }')
   cur_idx=$(tmux display-message -p '#{window_index}')
 
   if [ -n "$idx" ] && [ "$idx" = "$cur_idx" ]; then
     if [ -n "$cmd" ] && is_pane_idle; then
-      tmux send-keys C-u C-l "$cmd" Enter
+      set_root "" "$root"
+      tmux send-keys C-u C-l "$(run_in_root "$root" "$cmd")" Enter
     fi
   elif is_adoptable; then
     [ -n "$idx" ] && tmux kill-window -t ":${idx}"
     tmux rename-window "$name"
-    [ -n "$cmd" ] && tmux send-keys "$cmd" Enter
+    set_root "" "$root"
+    [ -n "$cmd" ] && tmux send-keys "$(run_in_root "$root" "$cmd")" Enter
   elif [ -n "$idx" ]; then
     tmux select-window -t ":${idx}"
+    set_root ":${idx}" "$root"
     if [ -n "$cmd" ] && is_pane_idle ":${idx}"; then
-      tmux send-keys -t ":${idx}" C-u C-l "$cmd" Enter
+      tmux send-keys -t ":${idx}" C-u C-l "$(run_in_root "$root" "$cmd")" Enter
     fi
   elif [ -n "$cmd" ]; then
-    tmux new-window -c '#{pane_current_path}' -n "${name}"
-    tmux send-keys "$cmd" Enter
+    idx=$(new_window_for_scope "$name" "$root")
+    tmux send-keys -t ":${idx}" "$cmd" Enter
   else
-    tmux new-window -c '#{pane_current_path}' -n "${name}"
+    new_window_for_scope "$name" "$root" >/dev/null
   fi
+}
+
+open_target() {
+  open_target_in_root "$1" "$(get_root)"
+}
+
+open_target_in_root() {
+  type="$1"
+  root="$2"
+  scope=$(scope_from_root "$root")
+
+  case "$type" in
+  ai)
+    require devin
+    spawn_or_focus_in ai "$root" 'devin'
+    ;;
+  code)
+    require nvim
+    spawn_or_focus_in code "$root" 'nvim .'
+    ;;
+  git)
+    require nvim git
+    if ! git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      tmux display-message "Not a git repository"
+    else
+      spawn_or_focus_in git "$root" 'nvim -c "Git|only"'
+    fi
+    ;;
+  run)
+    case "$scope" in
+    delta | barrettruth.com)
+      spawn_or_focus_in run "$root" 'nix develop -c pnpm dev'
+      ;;
+    *)
+      tmux display-message "mux: no run command for '$scope'"
+      ;;
+    esac
+    ;;
+  shell)
+    spawn_or_focus_in shell "$root"
+    ;;
+  esac
 }
 
 case "$1" in
@@ -112,35 +240,19 @@ switch)
   tmux switch -t "$session"
   ;;
 ai)
-  require devin
-  spawn_or_focus ai 'devin'
+  open_target ai
   ;;
 code)
-  require nvim
-  spawn_or_focus code 'nvim .'
+  open_target code
   ;;
 git)
-  require nvim git
-  pane_path=$(tmux display-message -p '#{pane_current_path}')
-  if ! git -C "$pane_path" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    tmux display-message "Not a git repository"
-  else
-    spawn_or_focus git 'nvim -c "Git|only"'
-  fi
+  open_target git
   ;;
 run)
-  project_name="$(get_scope)"
-  case "$project_name" in
-  delta | barrettruth.com)
-    spawn_or_focus run 'nix develop -c pnpm dev'
-    ;;
-  *)
-    tmux display-message "mux: no run command for '$project_name'"
-    ;;
-  esac
+  open_target run
   ;;
 shell)
-  spawn_or_focus shell
+  open_target shell
   ;;
 open)
   require fzf
@@ -160,7 +272,12 @@ open)
     --separator '' \
     --delimiter '\t' --with-nth 1 --accept-nth 2 \
     --bind "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
-    --bind "enter:become(mux _dispatch {2})" \
+    --bind "enter:ignore" \
+    --bind "ctrl-a:become(mux _picker_open ai {2})" \
+    --bind "ctrl-c:become(mux _picker_open code {2})" \
+    --bind "ctrl-s:become(mux _picker_open shell {2})" \
+    --bind "ctrl-r:become(mux _picker_open run {2})" \
+    --bind "ctrl-g:become(mux _picker_open git {2})" \
     --bind "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)"
   ;;
 _prompt)
@@ -177,12 +294,12 @@ _header)
   _mode=$(cat "$_MF" 2>/dev/null || echo open)
   case "$_mode" in
   open)
-    printf ':: %s<enter>%s open | %s<c-x>%s kill | %s<c-o>%s projects' \
-      "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst"
+    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^X%s kill %s^O%s projects' \
+      "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst"
     ;;
   *)
-    printf ':: %s<enter>%s open | %s<c-o>%s windows' \
-      "$_ac" "$_rst" "$_ac" "$_rst"
+    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^O%s windows' \
+      "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst"
     ;;
   esac
   ;;
@@ -234,19 +351,15 @@ _dispatch)
   case "$_mode" in
   open) exec mux "$_action" ;;
   proj)
+    _type=code
     _dir="$_action"
-    _proj=$(basename "$_dir")
-    _target="code@${_proj}"
-    _idx=$(tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$_target" '$1==n{print $2;exit}')
-    if [ -n "$_idx" ]; then
-      tmux select-window -t ":${_idx}"
-    elif is_adoptable; then
-      tmux rename-window "$_target"
-      tmux send-keys "cd '$_dir' && nvim ." Enter
-    else
-      tmux new-window -c "$_dir" -n "$_target"
-      tmux send-keys 'nvim .' Enter
-    fi
+    case "$_action" in
+    ai:* | code:* | shell:* | run:* | git:*)
+      _type="${_action%%:*}"
+      _dir="${_action#*:}"
+      ;;
+    esac
+    open_target_in_root "$_type" "$_dir"
     ;;
   kill)
     _submode="${_action%%:*}"
@@ -257,6 +370,21 @@ _dispatch)
       tmux kill-window -t "=$_name" 2>/dev/null
       ;;
     esac
+    ;;
+  esac
+  ;;
+_picker_open)
+  _type="$2"
+  _input="$3"
+  _mode=$(cat "$_MF" 2>/dev/null || echo open)
+  case "$_mode" in
+  open)
+    exec mux "$_type"
+    ;;
+  *)
+    _submode="${_input%%:*}"
+    _dir="${_input#*:}"
+    [ "$_submode" = "proj" ] && open_target_in_root "$_type" "$_dir"
     ;;
   esac
   ;;
