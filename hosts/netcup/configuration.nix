@@ -185,6 +185,13 @@ let
         ProtectSystem = lib.mkForce false;
         PrivateTmp = lib.mkForce false;
         BindPaths = lib.mkForce [ ];
+        ProtectProc = lib.mkForce "default";
+        ProtectControlGroups = lib.mkForce false;
+        RestrictNamespaces = lib.mkForce false;
+        SystemCallFilter = lib.mkForce [ ];
+        ProtectKernelTunables = lib.mkForce false;
+        ProtectKernelModules = lib.mkForce false;
+        ProtectKernelLogs = lib.mkForce false;
       };
     };
 in
