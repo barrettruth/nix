@@ -90,6 +90,13 @@ Linux)
       done
     }
 
+    pics="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screensavers"
+    themed_wp="$pics/wallpaper-$theme.jpg"
+    [ -f "$themed_wp" ] && {
+      ln -sf "$themed_wp" "$pics/wallpaper.jpg"
+      systemctl --user restart hyprpaper
+    }
+
   fi
   ;;
 Darwin)
