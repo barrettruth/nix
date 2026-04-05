@@ -114,13 +114,7 @@ let
     env = XCURSOR_SIZE,24
     env = HYPRCURSOR_SIZE,24
     env = HYPRCURSOR_THEME,macOS
-    env = LIBVA_DRIVER_NAME,nvidia
-    env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-    env = NVD_BACKEND,direct
-    env = GBM_BACKEND,nvidia-drm
     env = GSK_RENDERER,ngl
-    env = __NV_PRIME_RENDER_OFFLOAD,1
-    env = __VK_LAYER_NV_optimus,NVIDIA_only
     source = ${repo}/config/hypr/hyprland.conf
   '';
 
