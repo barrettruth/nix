@@ -40,6 +40,10 @@ let
       class = "general";
     }
     {
+      repo = "canola.nvim";
+      class = "general";
+    }
+    {
       repo = "canola-collection";
       class = "general";
     }
@@ -310,10 +314,13 @@ in
     shell = "${pkgs.bash}/bin/bash";
   };
 
+  virtualisation.docker.enable = true;
+
   users.users.github-runner = {
     isSystemUser = true;
     group = "github-runner";
     home = "/var/lib/github-runner";
+    extraGroups = [ "docker" ];
   };
 
   users.groups.git = { };
