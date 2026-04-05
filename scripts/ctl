@@ -406,6 +406,7 @@ wallpaper)
 # /// script
 # dependencies = ["pillow"]
 # ///
+import json
 import math
 import os
 import random
@@ -459,6 +460,19 @@ MAX_RETRIES = 20
 
 def random_location():
     return random.uniform(-60, 70), random.uniform(-180, 180)
+
+
+def reverse_geocode(lat, lon):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json&zoom=6&accept-language=en"
+        req = urllib.request.Request(url, headers={"User-Agent": "wallpaper-gen/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        addr = data.get("address", {})
+        name = addr.get("region") or addr.get("state") or addr.get("county") or addr.get("country")
+        return name
+    except Exception:
+        return None
 
 
 def get_resolution():
@@ -616,13 +630,15 @@ def gen():
         terrain_img = fetch_terrain(lat, lon, tiles_x, tiles_y, ZOOM)
         elevation, relief = decode_terrarium(terrain_img)
     elevation = elevation.crop((0, 0, min(elevation.width, W), min(elevation.height, H)))
-    for name, colors in THEMES.items():
+    place = reverse_geocode(lat, lon)
+    coords = f"{lat:.2f}, {lon:.2f}"
+    label = f"{place} ({coords})" if place else coords
+    for theme_name, colors in THEMES.items():
         img = render_contours(elevation, W, H, colors["bg"], colors["line"])
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype(FONT, 14)
-        label = f"{lat:.2f}, {lon:.2f}"
         draw.text((24, H - 38), label, fill=colors["label"], font=font)
-        img.save(f"{DIR}/wallpaper-{name}.jpg", quality=95)
+        img.save(f"{DIR}/wallpaper-{theme_name}.jpg", quality=95)
     try:
         with open(STATE) as f:
             theme = f.read().strip()
@@ -705,7 +721,7 @@ dictate)
       curl -s --max-time 1 "http://127.0.0.1:$dport/" >/dev/null 2>&1 && break
       sleep 0.1
     done
-    text=$(curl -sf "http://127.0.0.1:$dport/inference" \
+    text=$(curl -sf --max-time 60 "http://127.0.0.1:$dport/inference" \
       -F "file=@$daudio" \
       -F "language=${DICTATE_LANG:-en}" \
       -F "response_format=text" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
