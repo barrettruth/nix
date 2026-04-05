@@ -8,11 +8,22 @@
   let baseTitle = "";
   let ourLastTitle = null;
 
+  function getBaseTitle(title) {
+    if (ourLastTitle != null) title = title.split(ourLastTitle).join(baseTitle);
+    return title.replace(/^(?:\d+\. )+/, "");
+  }
+
+  function captureBaseTitle(title) {
+    const nextBaseTitle = getBaseTitle(title);
+    if (nextBaseTitle) baseTitle = nextBaseTitle;
+  }
+
   function applyPrefix() {
     if (!currentNumber) return;
-    const want = baseTitle
-      ? `${currentNumber}. ${baseTitle}`
-      : String(currentNumber);
+    if (!baseTitle && document.title && document.title !== ourLastTitle)
+      captureBaseTitle(document.title);
+    if (!baseTitle) return;
+    const want = `${currentNumber}. ${baseTitle}`;
     if (document.title !== want) {
       ourLastTitle = want;
       document.title = want;
@@ -27,10 +38,10 @@
   function observeTitle() {
     if (!document.head) return;
     if (document.title && document.title !== ourLastTitle)
-      baseTitle = document.title.replace(/^\d+\. /, "");
+      captureBaseTitle(document.title);
     new MutationObserver(() => {
       if (document.title === ourLastTitle) return;
-      baseTitle = document.title.replace(/^\d+\. /, "");
+      captureBaseTitle(document.title);
       applyPrefix();
     }).observe(document.head, {
       childList: true,

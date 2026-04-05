@@ -100,7 +100,7 @@ in
     zathura
     mpv
     (chromium.override {
-      commandLineArgs = "--silent-debugger-extension-api --load-extension=${hostConfig.XDG_CONFIG_HOME}/nix/config/chromium/extension";
+      commandLineArgs = "--silent-debugger-extension-api";
     })
 
     vesktop
