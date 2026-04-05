@@ -40,6 +40,10 @@ let
       class = "general";
     }
     {
+      repo = "canola.nvim";
+      class = "general";
+    }
+    {
       repo = "canola-collection";
       class = "general";
     }
@@ -141,6 +145,7 @@ let
       ];
       extraPackages = with pkgs; [
         curl
+        diffutils
         fd
         gh
         gnumake
@@ -163,6 +168,7 @@ let
         PIP_CACHE_DIR = "${cacheRoot}/pip";
         PRE_COMMIT_HOME = "${cacheRoot}/pre-commit";
         RUSTUP_HOME = "${cacheRoot}/rustup";
+        TMPDIR = "/var/lib/github-runner/tmp";
         UV_CACHE_DIR = "${cacheRoot}/uv";
         XDG_CACHE_HOME = "${cacheRoot}/xdg-cache";
         XDG_DATA_HOME = "${cacheRoot}/xdg-data";
@@ -172,7 +178,10 @@ let
         IOSchedulingClass = "best-effort";
         IOSchedulingPriority = 7;
         Nice = 10;
-        ReadWritePaths = [ cacheRoot ];
+        ReadWritePaths = [
+          cacheRoot
+          "/var/lib/github-runner/tmp"
+        ];
       };
     };
 in
@@ -195,6 +204,16 @@ in
   documentation.enable = false;
   hardware.enableRedistributableFirmware = false;
   fonts.fontconfig.enable = false;
+
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      icu
+      openssl
+      stdenv.cc.cc
+      zlib
+    ];
+  };
 
   networking = {
     hostName = "netcup";
@@ -310,10 +329,13 @@ in
     shell = "${pkgs.bash}/bin/bash";
   };
 
+  virtualisation.docker.enable = true;
+
   users.users.github-runner = {
     isSystemUser = true;
     group = "github-runner";
     home = "/var/lib/github-runner";
+    extraGroups = [ "docker" ];
   };
 
   users.groups.git = { };
@@ -323,6 +345,7 @@ in
     "d /etc/github-runner 0750 root root -"
     "d /var/cache/github-runner 0750 github-runner github-runner -"
     "d /var/lib/github-runner 0750 github-runner github-runner -"
+    "d /var/lib/github-runner/tmp 0750 github-runner github-runner -"
     "d /var/lib/github-runner/work 0750 github-runner github-runner -"
     "d /var/lib/github-runner/work/general 0750 github-runner github-runner -"
     "d /var/lib/github-runner/work/heavy 0750 github-runner github-runner -"
