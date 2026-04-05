@@ -200,6 +200,16 @@ in
   hardware.enableRedistributableFirmware = false;
   fonts.fontconfig.enable = false;
 
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      icu
+      openssl
+      stdenv.cc.cc
+      zlib
+    ];
+  };
+
   networking = {
     hostName = "netcup";
     useDHCP = false;
