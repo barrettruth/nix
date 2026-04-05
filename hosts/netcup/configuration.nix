@@ -376,6 +376,15 @@ in
 
   services.github-runners = lib.listToAttrs (map mkRunner repos);
 
+  systemd.services = lib.listToAttrs (map (
+    { repo, ... }:
+    lib.nameValuePair "github-runner-${sanitize repo}" {
+      preStart = lib.mkAfter ''
+        ln -sfn ${pkgs.github-runner}/lib/externals $RUNNER_ROOT/externals
+      '';
+    }
+  ) repos);
+
   environment.systemPackages = with pkgs; [
     vim
     git
