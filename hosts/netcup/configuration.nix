@@ -145,6 +145,7 @@ let
       ];
       extraPackages = with pkgs; [
         curl
+        diffutils
         fd
         gh
         gnumake
@@ -167,6 +168,7 @@ let
         PIP_CACHE_DIR = "${cacheRoot}/pip";
         PRE_COMMIT_HOME = "${cacheRoot}/pre-commit";
         RUSTUP_HOME = "${cacheRoot}/rustup";
+        TMPDIR = "/var/lib/github-runner/tmp";
         UV_CACHE_DIR = "${cacheRoot}/uv";
         XDG_CACHE_HOME = "${cacheRoot}/xdg-cache";
         XDG_DATA_HOME = "${cacheRoot}/xdg-data";
@@ -340,6 +342,7 @@ in
     "d /etc/github-runner 0750 root root -"
     "d /var/cache/github-runner 0750 github-runner github-runner -"
     "d /var/lib/github-runner 0750 github-runner github-runner -"
+    "d /var/lib/github-runner/tmp 0750 github-runner github-runner -"
     "d /var/lib/github-runner/work 0750 github-runner github-runner -"
     "d /var/lib/github-runner/work/general 0750 github-runner github-runner -"
     "d /var/lib/github-runner/work/heavy 0750 github-runner github-runner -"
