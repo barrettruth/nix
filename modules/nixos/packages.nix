@@ -122,7 +122,6 @@ in
     socat
     glib.bin
     gsettings-desktop-schemas
-    (python3.withPackages (ps: [ ps.pillow ]))
 
     pkgs.hyprland
     pkgs.xdg-desktop-portal-hyprland

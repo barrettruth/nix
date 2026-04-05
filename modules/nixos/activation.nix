@@ -1,6 +1,5 @@
 {
   pkgs,
-  lib,
   palettes,
   themeGenerators,
   hostConfig,
@@ -230,14 +229,6 @@ let
   mkDir = dir: ''
     install -d -o ${username} -g users "${dir}"
   '';
-
-  obsoletePaths = [
-    "${XDG_CONFIG_HOME}/libreoffice"
-    "${XDG_CACHE_HOME}/libreoffice"
-    "${XDG_STATE_HOME}/libreoffice"
-    "${XDG_DATA_HOME}/libreoffice"
-    "${XDG_DATA_HOME}/fonts/libreoffice"
-  ];
 in
 {
   systemd.tmpfiles.rules = [
@@ -249,11 +240,6 @@ in
   ];
 
   system.activationScripts.userConfig.text = ''
-    for path in ${lib.escapeShellArgs obsoletePaths}; do
-      [ -e "$path" ] || [ -L "$path" ] || continue
-      rm -rf "$path"
-    done
-
     ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
     ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
@@ -352,6 +338,13 @@ in
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
     ln -sf "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/zathura/theme"
+
+    wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
+    wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
+    [ -f "$wp_themed" ] && {
+      ln -sf "$wp_themed" "$wp_link"
+      chown -h ${username}:users "$wp_link"
+    }
 
     src="${repo}/config/screen"
     dest="${homeDirectory}/Pictures/Screensavers"

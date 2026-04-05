@@ -399,55 +399,149 @@ media)
   esac
   ;;
 wallpaper)
-  require python
-  python - "$2" <<'PYTHON'
+  require uv
+  _wp=$(mktemp /tmp/ctl_wp_XXXXXX.py)
+  trap 'rm -f "$_wp"' EXIT
+  cat > "$_wp" <<'PYTHON'
+# /// script
+# dependencies = ["pillow"]
+# ///
+import math
 import os
 import random
 import subprocess
 import sys
+import urllib.request
+from io import BytesIO
 
-try:
-    from PIL import Image, ImageDraw
-except ImportError:
-    print("ctl: missing dependency: pillow", file=sys.stderr)
-    sys.exit(1)
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 HOME = os.environ["HOME"]
 DIR = os.path.join(os.environ.get("XDG_PICTURES_DIR", os.path.join(HOME, "Pictures")), "Screensavers")
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local", "state")), "theme")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")), "wallpaper")
 os.makedirs(DIR, exist_ok=True)
+os.makedirs(CACHE, exist_ok=True)
+
+TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
+TILE_SIZE = 256
+ZOOM = 11
+CONTOUR_LEVELS = 20
+
+FONT = os.path.join(HOME, ".local", "share", "fonts", "berkeley-mono", "BerkeleyMono-Regular.ttf")
+
+THEMES = {
+    "midnight": {"bg": (0x12, 0x12, 0x12), "line": (0x2a, 0x2a, 0x2a), "label": (0x55, 0x55, 0x55)},
+    "daylight": {"bg": (0xf5, 0xf5, 0xf5), "line": (0xdc, 0xdc, 0xdc), "label": (0x88, 0x88, 0x88)},
+}
+
+LOCATIONS = [
+    (46.56, 7.69),
+    (36.10, -112.09),
+    (27.99, 86.93),
+    (61.22, 6.78),
+    (-50.94, -73.15),
+    (36.25, 137.60),
+    (39.11, -106.45),
+    (46.42, 11.84),
+    (44.07, 6.87),
+    (-43.59, 170.14),
+    (64.07, -16.20),
+    (28.60, 83.82),
+    (42.50, 44.50),
+    (47.07, 12.69),
+    (45.83, 6.86),
+]
+
+MIN_RELIEF = 400
+MAX_RETRIES = 20
+
+
+def random_location():
+    return random.uniform(-60, 70), random.uniform(-180, 180)
 
 
 def get_resolution():
     output = "1920x1080"
     if "WAYLAND_DISPLAY" in os.environ:
         desktop = os.environ.get("XDG_CURRENT_DESKTOP", "")
-        if desktop == "Hyprland":
-            output = (
-                subprocess.check_output(
+        try:
+            if desktop == "Hyprland":
+                output = subprocess.check_output(
                     "hyprctl monitors -j | jq -r '.[] | select(.focused==true) | .width, .height' | paste -sd x -",
                     shell=True,
-                )
-                .decode()
-                .strip()
-            )
-        elif desktop == "sway":
-            output = (
-                subprocess.check_output(
+                ).decode().strip()
+            elif desktop == "sway":
+                output = subprocess.check_output(
                     "swaymsg -t get_outputs -r | jq -r '.[] | select(.active==true) | .current_mode.width,.current_mode.height' | paste -sd x -",
                     shell=True,
-                )
-                .decode()
-                .strip()
-            )
-    else:
-        output = (
-            subprocess.check_output(
-                "xrandr | grep '*' | awk '{print $1}'", shell=True
-            )
-            .decode()
-            .strip()
-        )
-    return map(int, output.split("x"))
+                ).decode().strip()
+        except Exception:
+            pass
+    return tuple(map(int, output.split("x")))
+
+
+def lat_lon_to_tile(lat, lon, zoom):
+    n = 2 ** zoom
+    x = int(n * ((lon + 180) / 360))
+    lat_rad = math.radians(lat)
+    y = int(n * (1 - (math.log(math.tan(lat_rad) + 1 / math.cos(lat_rad)) / math.pi)) / 2)
+    return x, y
+
+
+def fetch_tile(z, x, y):
+    url = TILE_URL.format(z=z, x=x, y=y)
+    req = urllib.request.Request(url, headers={"User-Agent": "wallpaper-gen/1.0"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return Image.open(BytesIO(resp.read()))
+
+
+def fetch_terrain(lat, lon, tiles_x, tiles_y, zoom):
+    tag = f"{lat:.2f}_{lon:.2f}_z{zoom}_{tiles_x}x{tiles_y}"
+    cache_file = os.path.join(CACHE, f"terrain_{tag}.png")
+    if os.path.exists(cache_file):
+        return Image.open(cache_file)
+    cx, cy = lat_lon_to_tile(lat, lon, zoom)
+    sx, sy = cx - tiles_x // 2, cy - tiles_y // 2
+    full = Image.new("RGB", (tiles_x * TILE_SIZE, tiles_y * TILE_SIZE))
+    for ty in range(tiles_y):
+        for tx in range(tiles_x):
+            tile = fetch_tile(zoom, sx + tx, sy + ty)
+            full.paste(tile, (tx * TILE_SIZE, ty * TILE_SIZE))
+    full.save(cache_file)
+    return full
+
+
+def decode_terrarium(img):
+    raw_bytes = img.tobytes()
+    px_count = len(raw_bytes) // 3
+    raw = [0] * px_count
+    for i in range(px_count):
+        off = i * 3
+        raw[i] = (raw_bytes[off] << 8) | raw_bytes[off + 1]
+    lo, hi = min(raw), max(raw)
+    rng = hi - lo or 1
+    norm = bytearray((e - lo) * 255 // rng for e in raw)
+    return Image.frombytes("L", img.size, bytes(norm)), hi - lo
+
+
+def render_contours(elevation, W, H, bg, line_color):
+    S = 2
+    iW, iH = W * S, H * S
+    terrain = elevation.resize((iW, iH), Image.BICUBIC)
+    terrain = terrain.filter(ImageFilter.GaussianBlur(radius=15 * S))
+    step = max(1, 256 // CONTOUR_LEVELS)
+    terrain = terrain.point(lambda p: (p // step) * step)
+    eroded = terrain.filter(ImageFilter.MinFilter(3))
+    edges = ImageChops.subtract(terrain, eroded)
+    edges = edges.point(lambda p: 255 if p > 0 else 0)
+    edges = edges.filter(ImageFilter.MaxFilter(3))
+    edges = edges.filter(ImageFilter.GaussianBlur(radius=1.5 * S))
+    edges = edges.point(lambda p: 255 if p > 80 else 0)
+    bg_img = Image.new("RGB", (iW, iH), bg)
+    fg_img = Image.new("RGB", (iW, iH), line_color)
+    img = Image.composite(fg_img, bg_img, edges)
+    return img.resize((W, H), Image.LANCZOS)
 
 
 def lock():
@@ -504,46 +598,54 @@ def lock():
     img.save(f"{DIR}/lock.jpg", quality=95)
 
 
-def wall():
+def gen():
     W, H = get_resolution()
-
-    colors = [
-        "#aa0000",
-        "#ff3333",
-        "#ff7777",
-        "#ffbb55",
-        "#ffcc88",
-        "#ff88ff",
-        "#aaaaff",
-        "#77ddbb",
-        "#77ff77",
-        "#cccccc",
-    ]
-
-    colors.reverse()
-
-    img = Image.new("RGB", (W, H), "white")
-    draw = ImageDraw.Draw(img)
-
-    num_bars = len(colors)
-
-    for i, color in enumerate(reversed(colors)):
-        top = round(i * H / num_bars)
-        bottom = round((i + 1) * H / num_bars)
-        draw.rectangle([0, top, W, bottom], fill=color)
-
-    img.save(f"{DIR}/wallpaper.jpg", quality=95)
+    tiles_x = math.ceil(W / TILE_SIZE)
+    tiles_y = math.ceil(H / TILE_SIZE)
+    for attempt in range(MAX_RETRIES):
+        lat, lon = random_location()
+        try:
+            terrain_img = fetch_terrain(lat, lon, tiles_x, tiles_y, ZOOM)
+        except Exception:
+            continue
+        elevation, relief = decode_terrarium(terrain_img)
+        if relief >= MIN_RELIEF:
+            break
+    else:
+        lat, lon = random.choice(LOCATIONS)
+        terrain_img = fetch_terrain(lat, lon, tiles_x, tiles_y, ZOOM)
+        elevation, relief = decode_terrarium(terrain_img)
+    elevation = elevation.crop((0, 0, min(elevation.width, W), min(elevation.height, H)))
+    for name, colors in THEMES.items():
+        img = render_contours(elevation, W, H, colors["bg"], colors["line"])
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype(FONT, 14)
+        label = f"{lat:.2f}, {lon:.2f}"
+        draw.text((24, H - 38), label, fill=colors["label"], font=font)
+        img.save(f"{DIR}/wallpaper-{name}.jpg", quality=95)
+    try:
+        with open(STATE) as f:
+            theme = f.read().strip()
+    except FileNotFoundError:
+        theme = "midnight"
+    if theme not in THEMES:
+        theme = "midnight"
+    link = f"{DIR}/wallpaper.jpg"
+    if os.path.lexists(link):
+        os.unlink(link)
+    os.symlink(f"{DIR}/wallpaper-{theme}.jpg", link)
 
 
 cmd = sys.argv[1] if len(sys.argv) > 1 else None
 if cmd == "lock":
     lock()
-elif cmd == "wall":
-    wall()
+elif cmd == "gen":
+    gen()
 else:
-    print("Usage: ctl wallpaper {wall|lock}", file=sys.stderr)
+    print("Usage: ctl wallpaper {gen|lock}", file=sys.stderr)
     sys.exit(1)
 PYTHON
+  uv run --script "$_wp" "$2"
   ;;
 clip)
   require fuzzel cliphist wl-copy
