@@ -626,9 +626,21 @@ def gen():
         if relief >= MIN_RELIEF:
             break
     else:
-        lat, lon = random.choice(LOCATIONS)
-        terrain_img = fetch_terrain(lat, lon, tiles_x, tiles_y, ZOOM)
-        elevation, relief = decode_terrarium(terrain_img)
+        fallback = list(LOCATIONS)
+        random.shuffle(fallback)
+        cached = [loc for loc in fallback if os.path.exists(
+            os.path.join(CACHE, f"terrain_{loc[0]:.2f}_{loc[1]:.2f}_z{ZOOM}_{tiles_x}x{tiles_y}.png")
+        )]
+        for lat, lon in cached + fallback:
+            try:
+                terrain_img = fetch_terrain(lat, lon, tiles_x, tiles_y, ZOOM)
+            except Exception:
+                continue
+            elevation, relief = decode_terrarium(terrain_img)
+            if relief >= MIN_RELIEF:
+                break
+        else:
+            return
     elevation = elevation.crop((0, 0, min(elevation.width, W), min(elevation.height, H)))
     place = reverse_geocode(lat, lon)
     coords = f"{lat:.2f}, {lon:.2f}"
