@@ -178,7 +178,10 @@ let
         IOSchedulingClass = "best-effort";
         IOSchedulingPriority = 7;
         Nice = 10;
-        ReadWritePaths = [ cacheRoot ];
+        ReadWritePaths = [
+          cacheRoot
+          "/var/lib/github-runner/tmp"
+        ];
       };
     };
 in
