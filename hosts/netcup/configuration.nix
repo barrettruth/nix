@@ -162,6 +162,10 @@ let
         wget
         xz
         zip
+        (runCommand "sudo-wrapper" { } ''
+          mkdir -p $out/bin
+          ln -s /run/wrappers/bin/sudo $out/bin/sudo
+        '')
       ];
       extraEnvironment = {
         CARGO_HOME = "${cacheRoot}/cargo";
@@ -328,6 +332,18 @@ in
   };
 
   virtualisation.docker.enable = true;
+
+  security.sudo.extraRules = [
+    {
+      users = [ "github-runner" ];
+      commands = [
+        {
+          command = "ALL";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   users.users.github-runner = {
     isSystemUser = true;
