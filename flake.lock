@@ -415,11 +415,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1775126147,
-        "narHash": "sha256-J0dZU4atgcfo4QvM9D92uQ0Oe1eLTxBVXjJzdEMQpD0=",
+        "lastModified": 1775403759,
+        "narHash": "sha256-cGyKiTspHEUx3QwAnV3RfyT+VOXhHLs+NEr17HU34Wo=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "8d8c1fa5b412c223ffa47410867813290cdedfef",
+        "rev": "5e11f7acce6c3469bef9df154d78534fa7ae8b6c",
         "type": "github"
       },
       "original": {
@@ -537,11 +537,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1775321602,
-        "narHash": "sha256-4Uy9RUauRf9IjfykjrLRviKaMNX2fpmSdA/bvkYqgQY=",
+        "lastModified": 1775361752,
+        "narHash": "sha256-/V9K+QlDYgKLwJoj/Us1LsgBgTc2PbQMvUKw4kohi40=",
         "owner": "barrettruth",
         "repo": "vimdoc-language-server",
-        "rev": "c57cfbc5199b233b5f37763eb86d9c6d19910961",
+        "rev": "c72cb31be97c7b09465e06573f1263572b5f0606",
         "type": "github"
       },
       "original": {
