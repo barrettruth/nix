@@ -1,6 +1,6 @@
 std = "vim"
 
-exclude = [".luacheckrc"]
+exclude = [".luacheckrc", "config/luarocks/config.lua"]
 
 [rules]
 mixed_table = "allow"

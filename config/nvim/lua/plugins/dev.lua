@@ -48,11 +48,19 @@ return {
                         filter = '<c-o>',
                         refresh = '<c-r>',
                     },
-                    commits = {
-                        checkout = '<cr>',
-                        diff = '<c-d>',
+                    branch = {
                         browse = '<c-x>',
                         yank = '<c-y>',
+                        refresh = '<c-r>',
+                    },
+                    commit = {
+                        browse = '<c-x>',
+                        yank = '<c-y>',
+                        refresh = '<c-r>',
+                    },
+                    worktree = {
+                        yank = '<c-y>',
+                        refresh = '<c-r>',
                     },
                 },
                 display = {
