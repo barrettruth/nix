@@ -2,6 +2,8 @@ const port = chrome.runtime.connect({ name: "tab" });
 port.onMessage.addListener((msg) => {
   if (msg.type === "setNumber")
     document.title = `${msg.number}. ${document.title.replace(/^\d+\. /, "")}`;
+  else if (msg.type === "clearNumber")
+    document.title = document.title.replace(/^\d+\. /, "");
 });
 
 document.addEventListener(
