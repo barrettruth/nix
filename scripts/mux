@@ -199,6 +199,34 @@ open_target_in_root() {
   esac
 }
 
+show_picker() {
+  _start_mode="${1:-open}"
+  require fzf
+  export _MF="${XDG_RUNTIME_DIR:-/tmp}/mux-picker-mode"
+  printf '%s' "$_start_mode" >"$_MF"
+  export _SCOPE=$(get_scope)
+  export _SESSION=$(tmux display-message -p '#S')
+  export _ACCENT=$(tmux show -gv @accent 2>/dev/null | tr -d '#')
+  [ -z "$_ACCENT" ] && _ACCENT="7aa2f7"
+  export _FGALT=$(tmux show -gv @fgAlt 2>/dev/null | tr -d '#')
+  [ -z "$_FGALT" ] && _FGALT="666666"
+  mux _list | fzf --reverse --ansi --no-info --no-scrollbar \
+    --header "$(mux _header)" \
+    --prompt "$(mux _prompt)" \
+    --pointer '▌' \
+    --color "header:#${_FGALT},prompt:#${_ACCENT},separator:#${_FGALT}" \
+    --separator '' \
+    --delimiter '\t' --with-nth 1 --accept-nth 2 \
+    --bind "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
+    --bind "enter:ignore" \
+    --bind "ctrl-a:become(mux _picker_open ai {2})" \
+    --bind "ctrl-c:become(mux _picker_open code {2})" \
+    --bind "ctrl-s:become(mux _picker_open shell {2})" \
+    --bind "ctrl-r:become(mux _picker_open run {2})" \
+    --bind "ctrl-g:become(mux _picker_open git {2})" \
+    --bind "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)"
+}
+
 case "$1" in
 bar)
   if [ "$(tmux show-options -gv mouse)" = "on" ]; then
@@ -255,30 +283,10 @@ shell)
   open_target shell
   ;;
 open)
-  require fzf
-  export _MF="${XDG_RUNTIME_DIR:-/tmp}/mux-picker-mode"
-  printf open >"$_MF"
-  export _SCOPE=$(get_scope)
-  export _SESSION=$(tmux display-message -p '#S')
-  export _ACCENT=$(tmux show -gv @accent 2>/dev/null | tr -d '#')
-  [ -z "$_ACCENT" ] && _ACCENT="7aa2f7"
-  export _FGALT=$(tmux show -gv @fgAlt 2>/dev/null | tr -d '#')
-  [ -z "$_FGALT" ] && _FGALT="666666"
-  mux _list | fzf --reverse --ansi --no-info --no-scrollbar \
-    --header "$(mux _header)" \
-    --prompt "$(mux _prompt)" \
-    --pointer '▌' \
-    --color "header:#${_FGALT},prompt:#${_ACCENT},separator:#${_FGALT}" \
-    --separator '' \
-    --delimiter '\t' --with-nth 1 --accept-nth 2 \
-    --bind "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
-    --bind "enter:ignore" \
-    --bind "ctrl-a:become(mux _picker_open ai {2})" \
-    --bind "ctrl-c:become(mux _picker_open code {2})" \
-    --bind "ctrl-s:become(mux _picker_open shell {2})" \
-    --bind "ctrl-r:become(mux _picker_open run {2})" \
-    --bind "ctrl-g:become(mux _picker_open git {2})" \
-    --bind "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)"
+  show_picker open
+  ;;
+projects)
+  show_picker proj
   ;;
 _prompt)
   _mode=$(cat "$_MF" 2>/dev/null || echo open)
