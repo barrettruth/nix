@@ -68,6 +68,22 @@ return {
                 end
             end
 
+            local incremental_select = require('vim.treesitter._select')
+            vim.keymap.set('x', '+', function()
+                if vim.treesitter.get_parser(nil, nil, { error = false }) then
+                    incremental_select.select_parent(vim.v.count1)
+                else
+                    vim.lsp.buf.selection_range(vim.v.count1)
+                end
+            end, { desc = 'expand selection' })
+            vim.keymap.set('x', '-', function()
+                if vim.treesitter.get_parser(nil, nil, { error = false }) then
+                    incremental_select.select_child(vim.v.count1)
+                else
+                    vim.lsp.buf.selection_range(-vim.v.count1)
+                end
+            end, { desc = 'shrink selection' })
+
             local move = require('nvim-treesitter-textobjects.move')
             local move_textobjects = {
                 { 'a', '@parameter.inner' },
