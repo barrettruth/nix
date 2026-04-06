@@ -91,7 +91,12 @@ run_in_root() {
 new_window_for_scope() {
   _name="$1"
   _root="$2"
-  _idx=$(tmux new-window -P -F '#{window_index}' -c "$_root" -n "$_name")
+  _cmd="${3:-}"
+  if [ -n "$_cmd" ]; then
+    _idx=$(tmux new-window -P -F '#{window_index}' -c "$_root" -n "$_name" "$_cmd")
+  else
+    _idx=$(tmux new-window -P -F '#{window_index}' -c "$_root" -n "$_name")
+  fi
   set_root ":${_idx}" "$_root"
   printf '%s' "$_idx"
 }
@@ -150,8 +155,7 @@ spawn_or_focus_in() {
       tmux send-keys -t ":${idx}" C-u C-l "$(run_in_root "$root" "$cmd")" Enter
     fi
   elif [ -n "$cmd" ]; then
-    idx=$(new_window_for_scope "$name" "$root")
-    tmux send-keys -t ":${idx}" "$cmd" Enter
+    new_window_for_scope "$name" "$root" "$cmd" >/dev/null
   else
     new_window_for_scope "$name" "$root" >/dev/null
   fi
@@ -185,8 +189,11 @@ open_target_in_root() {
     ;;
   run)
     case "$scope" in
-    delta | barrettruth.com)
+    delta)
       spawn_or_focus_in run "$root" 'nix develop -c pnpm dev'
+      ;;
+    barrettruth.com)
+      spawn_or_focus_in run "$root" 'pnpm dev'
       ;;
     *)
       tmux display-message "mux: no run command for '$scope'"
