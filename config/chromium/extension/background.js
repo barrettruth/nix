@@ -34,17 +34,18 @@ async function recalculate(windowId) {
   const visible = await getVisibleTabs(windowId);
   for (let i = 0; i < visible.length; i++) {
     const tab = visible[i];
-    const num = i + 1;
+    const num =
+      i < 8 ? i + 1 : i === visible.length - 1 && visible.length >= 9 ? 9 : 0;
     if (tabNumberCache.get(tab.id) === num) continue;
     tabNumberCache.set(tab.id, num);
     try {
+      const msg = num
+        ? { type: "setNumber", number: num }
+        : { type: "clearNumber" };
       if (extPorts.has(tab.id)) {
-        extPorts.get(tab.id).postMessage({ type: "setNumber", number: num });
+        extPorts.get(tab.id).postMessage(msg);
       } else {
-        await chrome.tabs.sendMessage(tab.id, {
-          type: "setNumber",
-          number: num,
-        });
+        await chrome.tabs.sendMessage(tab.id, msg);
       }
     } catch (_) {}
   }
@@ -68,7 +69,7 @@ for (const ev of [
 chrome.tabs.onUpdated.addListener((tabId, info) => {
   if (info.status === "complete") {
     const num = tabNumberCache.get(tabId);
-    if (num != null) {
+    if (num) {
       if (extPorts.has(tabId)) {
         extPorts.get(tabId).postMessage({ type: "setNumber", number: num });
       } else {

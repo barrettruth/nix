@@ -35,6 +35,14 @@
     applyPrefix();
   }
 
+  function clearNumber() {
+    currentNumber = null;
+    if (baseTitle && ourLastTitle) {
+      ourLastTitle = null;
+      document.title = baseTitle;
+    }
+  }
+
   function observeTitle() {
     if (!document.head) return;
     if (document.title && document.title !== ourLastTitle)
@@ -75,6 +83,7 @@
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "setNumber") setNumber(msg.number);
+    else if (msg.type === "clearNumber") clearNumber();
   });
 
   const BINDINGS = [
