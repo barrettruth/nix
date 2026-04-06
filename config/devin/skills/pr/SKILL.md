@@ -54,19 +54,17 @@ Check for `.github/pull_request_template.md`.
 - Single-commit PRs: reuse the commit message header.
 - Multi-commit: write a summary that covers all changes.
 
-**Body:** if a PR template exists, fill it in. Otherwise:
+**Body:** if a PR template exists, fill it in exactly. Otherwise use exactly:
 
 ```
-## Problem
+Why: <1 sentence>
 
-<1-2 sentences>
-
-## Solution
-
-<1-2 sentences>
+How: <1-2 sentences>
 ```
 
 Concise prose. Backticks for code identifiers and file paths. No bullet walls.
+Do not use `Summary`, `Test Plan`, checklists, or any other invented sections.
+Always pass an explicit PR body to `gh pr create`. Do not rely on defaults.
 
 Present the title and body. Ask for approval.
 

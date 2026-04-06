@@ -45,7 +45,17 @@ git fetch origin main --quiet 2>/dev/null && \
 Check for `.github/pull_request_template.md`.
 
 - **Title:** `type(scope): imperative summary` from the commit(s).
-- **Body:** fill template or use Problem/Solution format.
+- **Body:** if a PR template exists, fill it in exactly. Otherwise use exactly:
+
+  ```
+  Why: <1 sentence>
+
+  How: <1-2 sentences>
+  ```
+
+  Do not use `Summary`, `Test Plan`, checklists, or any other invented
+  sections. Always pass an explicit PR body to `gh pr create`. Do not rely on
+  defaults.
 
 Do NOT present for approval. Proceed directly.
 
