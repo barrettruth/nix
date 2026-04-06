@@ -322,8 +322,10 @@ in
     [ -z "$theme" ] && theme="midnight"
     ln -sf "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
-    ln -sf "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+    if [ ! -L "${XDG_CONFIG_HOME}/waybar/themes/theme.css" ] && [ ! -e "${XDG_CONFIG_HOME}/waybar/themes/theme.css" ]; then
+      ln -sf "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+      chown -h ${username}:users "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+    fi
     ln -sf "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
     ln -sf "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
