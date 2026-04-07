@@ -254,7 +254,10 @@ async function toggleOverlayInActiveTab(disposition = "currentTab") {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
   try {
-    await chrome.tabs.sendMessage(tab.id, { type: "toggleOverlay", disposition });
+    await chrome.tabs.sendMessage(tab.id, {
+      type: "toggleOverlay",
+      disposition,
+    });
   } catch (_) {}
 }
 
@@ -300,8 +303,7 @@ chrome.commands.onCommand.addListener((command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab) toggleDark(tab);
     });
-  else if (command === "toggle-overlay")
-    toggleOverlayInActiveTab("currentTab");
+  else if (command === "toggle-overlay") toggleOverlayInActiveTab("currentTab");
   else if (command === "toggle-overlay-new-tab")
     toggleOverlayInActiveTab("newForegroundTab");
 });

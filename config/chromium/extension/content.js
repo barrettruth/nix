@@ -338,7 +338,8 @@
       const url = document.createElement("span");
 
       button.type = "button";
-      button.className = index === overlaySelectedIndex ? "result is-selected" : "result";
+      button.className =
+        index === overlaySelectedIndex ? "result is-selected" : "result";
       url.className = "result-url";
       fillHighlightedUrl(url, result.displayUrl || result.url);
 

@@ -27,7 +27,9 @@ function normalizeBase(value) {
 }
 
 function normalizeHost(value) {
-  return normalizeBase(value).replace(/^www\./i, "").toLowerCase();
+  return normalizeBase(value)
+    .replace(/^www\./i, "")
+    .toLowerCase();
 }
 
 function normalizeTitle(value) {
@@ -55,7 +57,9 @@ function extractTitleHead(value) {
 }
 
 function buildField(rawValue) {
-  const raw = String(rawValue || "").replace(/\s+/g, " ").trim();
+  const raw = String(rawValue || "")
+    .replace(/\s+/g, " ")
+    .trim();
   const base = normalizeBase(raw);
   const text = base.toLowerCase();
   const tokens = text.split(/[^a-z0-9]+/).filter(Boolean);
@@ -93,7 +97,10 @@ function buildBoundaryBonuses(raw, text) {
   for (let i = 0; i < text.length; i++) {
     const current = text[i];
     if (
-      !((current >= "a" && current <= "z") || (current >= "0" && current <= "9"))
+      !(
+        (current >= "a" && current <= "z") ||
+        (current >= "0" && current <= "9")
+      )
     )
       continue;
     if (i === 0) {
@@ -352,7 +359,9 @@ async function searchHistory(queryText, limit = OMNIBOX_RESULT_LIMIT) {
       b.entry.typedCount - a.entry.typedCount,
   );
 
-  return scored.slice(0, limit).map(({ entry, score }) => ({ ...entry, score }));
+  return scored
+    .slice(0, limit)
+    .map(({ entry, score }) => ({ ...entry, score }));
 }
 
 function escapeDescription(value) {
@@ -382,7 +391,10 @@ function toSuggestion(entry) {
 
 async function openOmniboxResult(url, disposition) {
   if (disposition === "currentTab") {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     if (tab?.id) {
       await chrome.tabs.update(tab.id, { url });
       return;
