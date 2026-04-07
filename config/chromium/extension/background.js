@@ -1,4 +1,6 @@
 importScripts("theme.js");
+importScripts("quick-score.min.js");
+importScripts("search.js");
 
 const tabNumberCache = new Map();
 const extPorts = new Map();
@@ -248,12 +250,39 @@ const ACTIONS = {
   switchWorkspace: (tab, index) => switchWorkspace(index, tab.windowId),
 };
 
+async function toggleOverlayInActiveTab(disposition = "currentTab") {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+  try {
+    await chrome.tabs.sendMessage(tab.id, { type: "toggleOverlay", disposition });
+  } catch (_) {}
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "switchTab") {
     switchToVisibleTab(msg.number, sender.tab?.windowId);
   } else if (msg.type === "action") {
     const fn = ACTIONS[msg.action];
     if (fn && sender.tab) fn(sender.tab, msg.arg);
+  } else if (msg.type === "searchHistory") {
+    Promise.resolve()
+      .then(() => searchHistory(msg.text || "", msg.limit || 11))
+      .then((results) =>
+        sendResponse({
+          results: results.map((result) => ({
+            url: result.url,
+            displayUrl: result.displayUrl,
+          })),
+        }),
+      )
+      .catch(() => sendResponse({ results: [] }));
+    return true;
+  } else if (msg.type === "openHistoryResult") {
+    if (msg.disposition === "newForegroundTab")
+      chrome.tabs.create({ url: msg.url, active: true }).catch(() => {});
+    else if (sender.tab?.id)
+      chrome.tabs.update(sender.tab.id, { url: msg.url }).catch(() => {});
+    else chrome.tabs.create({ url: msg.url, active: true }).catch(() => {});
   } else if (msg.type === "getNumber") {
     const num = tabNumberCache.get(sender.tab?.id);
     sendResponse({ number: num || null });
@@ -271,6 +300,10 @@ chrome.commands.onCommand.addListener((command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab) toggleDark(tab);
     });
+  else if (command === "toggle-overlay")
+    toggleOverlayInActiveTab("currentTab");
+  else if (command === "toggle-overlay-new-tab")
+    toggleOverlayInActiveTab("newForegroundTab");
 });
 
 recalculate();
