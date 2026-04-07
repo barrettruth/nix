@@ -278,29 +278,6 @@
       overlaySelectedIndex = 0;
       requestOverlayResults();
     });
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        moveOverlaySelection(1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        moveOverlaySelection(-1);
-      } else if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-        if (e.key === "n") {
-          e.preventDefault();
-          moveOverlaySelection(1);
-        } else if (e.key === "p") {
-          e.preventDefault();
-          moveOverlaySelection(-1);
-        }
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        openOverlayResult(overlaySelectedIndex);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        closeOverlay();
-      }
-    });
     backdrop.addEventListener("mousedown", (e) => {
       if (e.target === backdrop) closeOverlay();
     });
@@ -310,6 +287,40 @@
 
   function overlayIsOpen() {
     return !!overlay && overlay.backdrop.classList.contains("is-open");
+  }
+
+  function overlayOwnsEvent(e) {
+    return overlayIsOpen() && e.composedPath().includes(overlay.host);
+  }
+
+  function handleOverlayKeydown(e) {
+    if (!overlayOwnsEvent(e)) return false;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      moveOverlaySelection(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      moveOverlaySelection(-1);
+    } else if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+      if (e.key === "n") {
+        e.preventDefault();
+        moveOverlaySelection(1);
+      } else if (e.key === "p") {
+        e.preventDefault();
+        moveOverlaySelection(-1);
+      } else {
+        return false;
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      openOverlayResult(overlaySelectedIndex);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeOverlay();
+    } else {
+      return false;
+    }
+    return true;
   }
 
   function renderOverlayResults() {
@@ -501,6 +512,11 @@
   document.addEventListener(
     "keydown",
     (e) => {
+      if (overlayOwnsEvent(e)) {
+        handleOverlayKeydown(e);
+        e.stopImmediatePropagation();
+        return;
+      }
       if (overlayIsOpen()) return;
       if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
         const n = parseInt(e.key);
