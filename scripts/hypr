@@ -55,7 +55,7 @@ pull)
   alacritty) CLASS="Alacritty" ;;
   code | vscodium) CLASS="Code" ;;
   signal-desktop | signal) CLASS="signal" ;;
-  telegram-desktop | telegram) CLASS="TelegramDesktop" ;;
+  telegram-desktop | telegram) CLASS="org.telegram.desktop" ;;
   ghostty) CLASS="com.mitchellh.ghostty" ;;
   bitwarden-desktop | bitwarden) CLASS="Bitwarden" ;;
   slack) CLASS="Slack" ;;
@@ -147,7 +147,7 @@ spawnfocus)
   alacritty) CLASS="Alacritty" ;;
   code | vscodium) CLASS="Code" ;;
   signal-desktop | signal) CLASS="signal" ;;
-  telegram-desktop | telegram) CLASS="TelegramDesktop" ;;
+  telegram-desktop | telegram) CLASS="org.telegram.desktop" ;;
   ghostty) CLASS="com.mitchellh.ghostty" ;;
   bitwarden-desktop | bitwarden) CLASS="Bitwarden" ;;
   slack) CLASS="Slack" ;;
