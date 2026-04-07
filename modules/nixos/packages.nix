@@ -105,6 +105,7 @@ in
 
     vesktop
     signal-desktop
+    telegram-desktop
     element-desktop
 
     xdg-desktop-portal-gtk
