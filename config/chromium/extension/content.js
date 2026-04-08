@@ -13,6 +13,9 @@
   let overlayRequestId = 0;
   let overlayPreviousActive = null;
   let overlayDisposition = "currentTab";
+  let pendingKeySequence = "";
+  let pendingKeySequenceTimer = null;
+  const pageScrollStep = 60;
   const darkPalette =
     typeof MIDNIGHT === "object"
       ? MIDNIGHT
@@ -420,6 +423,7 @@
 
   function closeOverlay() {
     if (!overlayIsOpen()) return;
+    clearPendingKeySequence();
     overlay.backdrop.classList.remove("is-open");
     overlay.input.value = "";
     overlayResults = [];
@@ -442,6 +446,7 @@
 
   function openOverlay(disposition = "currentTab") {
     const state = ensureOverlay();
+    clearPendingKeySequence();
     overlayPreviousActive = document.activeElement;
     overlayRequestId++;
     overlaySelectedIndex = 0;
@@ -462,6 +467,128 @@
     }
     if (overlayIsOpen()) closeOverlay();
     else openOverlay(disposition);
+  }
+
+  function clearPendingKeySequence() {
+    pendingKeySequence = "";
+    clearTimeout(pendingKeySequenceTimer);
+    pendingKeySequenceTimer = null;
+  }
+
+  function queuePendingKeySequence(sequence, timeoutMs = 350) {
+    pendingKeySequence = sequence;
+    clearTimeout(pendingKeySequenceTimer);
+    pendingKeySequenceTimer = setTimeout(() => {
+      pendingKeySequence = "";
+      pendingKeySequenceTimer = null;
+    }, timeoutMs);
+  }
+
+  function focusedControlOwnsKeys(target) {
+    const active = document.activeElement;
+    if (
+      active &&
+      active !== document.body &&
+      active !== document.documentElement
+    )
+      return true;
+    if (!(target instanceof Element)) return false;
+    const owner = target.closest(
+      "input, textarea, select, button, summary, a[href], [contenteditable], [tabindex]:not([tabindex='-1']), [role='button'], [role='link'], [role='textbox']",
+    );
+    return (
+      !!owner && owner !== document.body && owner !== document.documentElement
+    );
+  }
+
+  function scrollHalfPage(direction) {
+    window.scrollBy(
+      0,
+      Math.max(1, Math.floor(window.innerHeight * 0.5)) * direction,
+    );
+  }
+
+  function scrollStep(x, y) {
+    window.scrollBy(pageScrollStep * x, pageScrollStep * y);
+  }
+
+  function scrollToTop() {
+    window.scrollTo(0, 0);
+  }
+
+  function scrollToBottom() {
+    const root =
+      document.scrollingElement || document.documentElement || document.body;
+    window.scrollTo(0, Math.max(0, root.scrollHeight - window.innerHeight));
+  }
+
+  function handlePageVimKeydown(e) {
+    if (focusedControlOwnsKeys(e.target)) {
+      clearPendingKeySequence();
+      return false;
+    }
+
+    if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+      if (!e.repeat && e.key === "g") {
+        e.preventDefault();
+        if (pendingKeySequence === "g") {
+          clearPendingKeySequence();
+          scrollToTop();
+        } else {
+          queuePendingKeySequence("g");
+        }
+        return true;
+      }
+      if (pendingKeySequence) {
+        clearPendingKeySequence();
+      }
+      if (e.key === "h") {
+        e.preventDefault();
+        scrollStep(-1, 0);
+        return true;
+      }
+      if (e.key === "j") {
+        e.preventDefault();
+        scrollStep(0, 1);
+        return true;
+      }
+      if (e.key === "k") {
+        e.preventDefault();
+        scrollStep(0, -1);
+        return true;
+      }
+      if (e.key === "l") {
+        e.preventDefault();
+        scrollStep(1, 0);
+        return true;
+      }
+    } else if (pendingKeySequence) {
+      clearPendingKeySequence();
+    }
+
+    if (!e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.key === "G") {
+      clearPendingKeySequence();
+      e.preventDefault();
+      scrollToBottom();
+      return true;
+    }
+
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+      if (e.key === "u") {
+        clearPendingKeySequence();
+        e.preventDefault();
+        scrollHalfPage(-1);
+        return true;
+      }
+      if (e.key === "d") {
+        clearPendingKeySequence();
+        e.preventDefault();
+        scrollHalfPage(1);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   darkQuery.addEventListener("change", (e) => {
@@ -519,6 +646,10 @@
         return;
       }
       if (overlayIsOpen()) return;
+      if (handlePageVimKeydown(e)) {
+        e.stopImmediatePropagation();
+        return;
+      }
       if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
         const n = parseInt(e.key);
         if (n >= 1 && n <= 9) {
