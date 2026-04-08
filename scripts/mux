@@ -1,9 +1,9 @@
 #!/bin/sh
 
 require() {
-  for cmd in "$@"; do
-    command -v "$cmd" >/dev/null 2>&1 || {
-      echo "mux: missing dependency: $cmd" >&2
+  for rq_cmd in "$@"; do
+    command -v "$rq_cmd" >/dev/null 2>&1 || {
+      echo "mux: missing dependency: $rq_cmd" >&2
       exit 1
     }
   done
@@ -12,31 +12,31 @@ require() {
 require tmux
 
 scope_from_root() {
-  _root="$1"
-  if [ "$_root" = "$HOME" ]; then
+  sfr_root="$1"
+  if [ "$sfr_root" = "$HOME" ]; then
     printf '~'
   else
-    basename "$_root"
+    basename "$sfr_root"
   fi
 }
 
 get_root_from_path() {
-  _path="$1"
-  _root=$(git -C "$_path" rev-parse --show-toplevel 2>/dev/null)
-  if [ -n "$_root" ]; then
-    printf '%s' "$_root"
-  elif [ "$_path" = "$HOME" ]; then
+  grfp_path="$1"
+  grfp_root=$(git -C "$grfp_path" rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$grfp_root" ]; then
+    printf '%s' "$grfp_root"
+  elif [ "$grfp_path" = "$HOME" ]; then
     printf '%s' "$HOME"
   else
-    printf '%s' "$_path"
+    printf '%s' "$grfp_path"
   fi
 }
 
 get_managed_scope() {
-  _name=$(tmux display-message -p '#{window_name}')
-  case "$_name" in
+  gms_name=$(tmux display-message -p '#{window_name}')
+  case "$gms_name" in
   ai@* | code@* | shell@* | run@* | git@*)
-    printf '%s' "${_name#*@}"
+    printf '%s' "${gms_name#*@}"
     ;;
   *)
     return 1
@@ -45,120 +45,335 @@ get_managed_scope() {
 }
 
 get_root() {
-  _scope=$(get_managed_scope 2>/dev/null || true)
-  if [ -n "$_scope" ]; then
-    _root=$(tmux show-options -wgv @mux_root 2>/dev/null || true)
-    if [ -n "$_root" ] && [ "$(scope_from_root "$_root")" = "$_scope" ]; then
-      printf '%s' "$_root"
+  gr_scope=$(get_managed_scope 2>/dev/null || true)
+  if [ -n "$gr_scope" ]; then
+    gr_root=$(tmux show-options -wgv @mux_root 2>/dev/null || true)
+    if [ -n "$gr_root" ] && [ "$(scope_from_root "$gr_root")" = "$gr_scope" ]; then
+      printf '%s' "$gr_root"
       return
     fi
-    _path=$(tmux display-message -p '#{pane_start_path}')
+    gr_path=$(tmux display-message -p '#{pane_start_path}')
   else
-    _path=$(tmux display-message -p '#{pane_current_path}')
+    gr_path=$(tmux display-message -p '#{pane_current_path}')
   fi
-  get_root_from_path "$_path"
+  get_root_from_path "$gr_path"
 }
 
 get_scope() {
-  _scope=$(get_managed_scope 2>/dev/null || true)
-  if [ -n "$_scope" ]; then
-    printf '%s' "$_scope"
+  gs_scope=$(get_managed_scope 2>/dev/null || true)
+  if [ -n "$gs_scope" ]; then
+    printf '%s' "$gs_scope"
   else
     scope_from_root "$(get_root)"
   fi
 }
 
 set_root() {
-  _target="$1"
-  _root="$2"
-  if [ -n "$_target" ]; then
-    tmux set-option -t "$_target" -w @mux_root "$_root"
+  sr_target="$1"
+  sr_root="$2"
+  if [ -n "$sr_target" ]; then
+    tmux set-option -t "$sr_target" -w @mux_root "$sr_root"
   else
-    tmux set-option -w @mux_root "$_root"
+    tmux set-option -w @mux_root "$sr_root"
   fi
 }
 
 quote_sh() {
-  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+  qs_input="$1"
+  printf "'%s'" "$(printf '%s' "$qs_input" | sed "s/'/'\\\\''/g")"
 }
 
 run_in_root() {
-  _root="$1"
-  _cmd="$2"
-  [ -n "$_cmd" ] && printf "cd %s && %s" "$(quote_sh "$_root")" "$_cmd"
+  rir_root="$1"
+  rir_cmd="$2"
+  [ -n "$rir_cmd" ] && printf "cd %s && %s" "$(quote_sh "$rir_root")" "$rir_cmd"
+}
+
+shell_path() {
+  printf '%s' "${SHELL:-/bin/sh}"
+}
+
+initial_shell_command() {
+  isc_channel="${1:-}"
+  isc_shell=$(shell_path)
+  if [ -n "$isc_channel" ]; then
+    printf "exec env PURE_FIX=0 MUX_READY_CHANNEL=%s %s -i" "$(quote_sh "$isc_channel")" "$(quote_sh "$isc_shell")"
+  else
+    printf "exec env PURE_FIX=0 %s -i" "$(quote_sh "$isc_shell")"
+  fi
+}
+
+initial_exec_command() {
+  iec_root="$1"
+  iec_cmd="$2"
+  iec_shell=$(shell_path)
+  iec_payload="$(run_in_root "$iec_root" "$iec_cmd"); exec env PURE_FIX=0 $(quote_sh "$iec_shell") -i"
+  printf "exec env PURE_FIX=0 %s -ic %s" "$(quote_sh "$iec_shell")" "$(quote_sh "$iec_payload")"
+}
+
+new_window_mode_for_target() {
+  nwm_type="$1"
+  case "$nwm_type" in
+  code | git)
+    printf 'exec'
+    ;;
+  run)
+    printf 'shell'
+    ;;
+  *)
+    printf 'plain'
+    ;;
+  esac
+}
+
+new_ready_channel() {
+  printf 'mux-ready-%s-%s' "$$" "$(date +%s%N)"
+}
+
+window_name_for() {
+  wnf_type="$1"
+  wnf_scope="$2"
+  printf '%s@%s' "$wnf_type" "$wnf_scope"
+}
+
+window_index_for_name() {
+  wifn_name="$1"
+  tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$wifn_name" '$1 == n { print $2; exit }'
+}
+
+current_window_index() {
+  tmux display-message -p '#{window_index}'
+}
+
+pane_path() {
+  pp_target="${1:-}"
+  if [ -n "$pp_target" ]; then
+    tmux display-message -t "$pp_target" -p '#{pane_current_path}'
+  else
+    tmux display-message -p '#{pane_current_path}'
+  fi
+}
+
+pane_command() {
+  pc_target="${1:-}"
+  if [ -n "$pc_target" ]; then
+    tmux display-message -t "$pc_target" -p '#{pane_current_command}'
+  else
+    tmux display-message -p '#{pane_current_command}'
+  fi
+}
+
+command_for_pane() {
+  cfp_target="$1"
+  cfp_root="$2"
+  cfp_cmd="$3"
+  cfp_path=$(pane_path "$cfp_target")
+  if [ "$cfp_path" = "$cfp_root" ]; then
+    printf '%s' "$cfp_cmd"
+  else
+    run_in_root "$cfp_root" "$cfp_cmd"
+  fi
+}
+
+send_cmd() {
+  sc_target="$1"
+  sc_root="$2"
+  sc_cmd="$3"
+  if [ -n "$sc_target" ]; then
+    tmux send-keys -t "$sc_target" C-u C-l "$(command_for_pane "$sc_target" "$sc_root" "$sc_cmd")" Enter
+  else
+    tmux send-keys C-u C-l "$(command_for_pane "" "$sc_root" "$sc_cmd")" Enter
+  fi
+}
+
+send_initial_cmd() {
+  sic_target="$1"
+  sic_root="$2"
+  sic_cmd="$3"
+  if [ -n "$sic_target" ]; then
+    tmux send-keys -t "$sic_target" "$(command_for_pane "$sic_target" "$sic_root" "$sic_cmd")" Enter
+  else
+    tmux send-keys "$(command_for_pane "" "$sic_root" "$sic_cmd")" Enter
+  fi
+}
+
+schedule_initial_cmd() {
+  scd_target="$1"
+  scd_cmd="$2"
+  scd_channel="${3:-}"
+  if [ -n "$scd_channel" ]; then
+    scd_payload="tmux wait-for $(quote_sh "$scd_channel"); tmux send-keys -t $(quote_sh "$scd_target") $(quote_sh "$scd_cmd") Enter"
+  else
+    scd_payload="tmux send-keys -t $(quote_sh "$scd_target") $(quote_sh "$scd_cmd") Enter"
+  fi
+  tmux run-shell -b "$scd_payload"
+}
+
+window_index_from_info() {
+  wifi_info="$1"
+  wifi_tab=$(printf '\t')
+  printf '%s' "${wifi_info%%"$wifi_tab"*}"
+}
+
+pane_id_from_info() {
+  pifi_info="$1"
+  pifi_tab=$(printf '\t')
+  printf '%s' "${pifi_info#*"$pifi_tab"}"
+}
+
+new_window_info_for_scope() {
+  nwifs_name="$1"
+  nwifs_root="$2"
+  nwifs_cmd="${3:-}"
+  nwifs_fmt=$(printf '#{window_index}\t#{pane_id}')
+  if [ -n "$nwifs_cmd" ]; then
+    nwifs_info=$(tmux new-window -P -F "$nwifs_fmt" -c "$nwifs_root" -n "$nwifs_name" "$nwifs_cmd")
+  else
+    nwifs_info=$(tmux new-window -P -F "$nwifs_fmt" -c "$nwifs_root" -n "$nwifs_name")
+  fi
+  nwifs_idx=$(window_index_from_info "$nwifs_info")
+  set_root ":${nwifs_idx}" "$nwifs_root"
+  printf '%s' "$nwifs_info"
 }
 
 new_window_for_scope() {
-  _name="$1"
-  _root="$2"
-  _cmd="${3:-}"
-  if [ -n "$_cmd" ]; then
-    _idx=$(tmux new-window -P -F '#{window_index}' -c "$_root" -n "$_name" "$_cmd")
-  else
-    _idx=$(tmux new-window -P -F '#{window_index}' -c "$_root" -n "$_name")
-  fi
-  set_root ":${_idx}" "$_root"
-  printf '%s' "$_idx"
+  nwfs_info=$(new_window_info_for_scope "$@")
+  window_index_from_info "$nwfs_info"
 }
 
 is_adoptable() {
-  _shell=$(basename "$SHELL")
-  _name=$(tmux display-message -p '#{window_name}')
-  _cmd=$(tmux display-message -p '#{pane_current_command}')
-  _panes=$(tmux display-message -p '#{window_panes}')
-  [ "$_panes" -eq 1 ] && [ "$_cmd" = "$_shell" ] && [ "$_name" = "$_shell" ]
+  ia_shell=$(basename "$SHELL")
+  ia_name=$(tmux display-message -p '#{window_name}')
+  ia_cmd=$(pane_command)
+  ia_panes=$(tmux display-message -p '#{window_panes}')
+  [ "$ia_panes" -eq 1 ] && [ "$ia_cmd" = "$ia_shell" ] && [ "$ia_name" = "$ia_shell" ]
 }
 
 is_pane_idle() {
-  _target="${1:-}"
-  _shell=$(basename "$SHELL")
-  if [ -n "$_target" ]; then
-    _pane_cmd=$(tmux display-message -t "$_target" -p '#{pane_current_command}')
-  else
-    _pane_cmd=$(tmux display-message -p '#{pane_current_command}')
-  fi
-  [ "$_pane_cmd" = "$_shell" ]
-}
-
-spawn_or_focus() {
-  root=$(get_root)
-  spawn_or_focus_in "$1" "$root" "$2"
+  ipi_target="${1:-}"
+  ipi_shell=$(basename "$SHELL")
+  ipi_pane_cmd=$(pane_command "$ipi_target")
+  [ "$ipi_pane_cmd" = "$ipi_shell" ]
 }
 
 spawn_or_focus_in() {
-  type="$1"
-  root="$2"
-  scope=$(get_scope)
-  if [ "$(scope_from_root "$root")" != "$scope" ]; then
-    scope=$(scope_from_root "$root")
-  fi
-  name="${type}@${scope}"
-  cmd="$3"
+  sofi_type="$1"
+  sofi_root="$2"
+  sofi_cmd="${3:-}"
+  sofi_mode="${4:-plain}"
+  sofi_scope=$(scope_from_root "$sofi_root")
+  sofi_name=$(window_name_for "$sofi_type" "$sofi_scope")
+  sofi_idx=$(window_index_for_name "$sofi_name")
+  sofi_cur_idx=$(current_window_index)
 
-  idx=$(tmux list-windows -F '#{window_name}	#{window_index}' | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }')
-  cur_idx=$(tmux display-message -p '#{window_index}')
-
-  if [ -n "$idx" ] && [ "$idx" = "$cur_idx" ]; then
-    if [ -n "$cmd" ] && is_pane_idle; then
-      set_root "" "$root"
-      tmux send-keys C-u C-l "$(run_in_root "$root" "$cmd")" Enter
+  if [ -n "$sofi_idx" ] && [ "$sofi_idx" = "$sofi_cur_idx" ]; then
+    if [ -n "$sofi_cmd" ] && is_pane_idle; then
+      set_root "" "$sofi_root"
+      send_cmd "" "$sofi_root" "$sofi_cmd"
     fi
-  elif is_adoptable; then
-    [ -n "$idx" ] && tmux kill-window -t ":${idx}"
-    tmux rename-window "$name"
-    set_root "" "$root"
-    [ -n "$cmd" ] && tmux send-keys "$(run_in_root "$root" "$cmd")" Enter
-  elif [ -n "$idx" ]; then
-    tmux select-window -t ":${idx}"
-    set_root ":${idx}" "$root"
-    if [ -n "$cmd" ] && is_pane_idle ":${idx}"; then
-      tmux send-keys -t ":${idx}" C-u C-l "$(run_in_root "$root" "$cmd")" Enter
-    fi
-  elif [ -n "$cmd" ]; then
-    new_window_for_scope "$name" "$root" "$cmd" >/dev/null
-  else
-    new_window_for_scope "$name" "$root" >/dev/null
+    return
   fi
+
+  if is_adoptable; then
+    [ -n "$sofi_idx" ] && tmux kill-window -t ":${sofi_idx}"
+    tmux rename-window "$sofi_name"
+    set_root "" "$sofi_root"
+    [ -n "$sofi_cmd" ] && send_cmd "" "$sofi_root" "$sofi_cmd"
+    return
+  fi
+
+  if [ -n "$sofi_idx" ]; then
+    tmux select-window -t ":${sofi_idx}"
+    set_root ":${sofi_idx}" "$sofi_root"
+    if [ -n "$sofi_cmd" ] && is_pane_idle ":${sofi_idx}"; then
+      send_cmd ":${sofi_idx}" "$sofi_root" "$sofi_cmd"
+    fi
+    return
+  fi
+
+  case "$sofi_mode" in
+  exec)
+    if [ -n "$sofi_cmd" ]; then
+      sofi_idx=$(new_window_for_scope "$sofi_name" "$sofi_root" "$(initial_exec_command "$sofi_root" "$sofi_cmd")")
+    else
+      sofi_idx=$(new_window_for_scope "$sofi_name" "$sofi_root")
+    fi
+    ;;
+  shell)
+    sofi_channel=$(new_ready_channel)
+    sofi_info=$(new_window_info_for_scope "$sofi_name" "$sofi_root" "$(initial_shell_command "$sofi_channel")")
+    sofi_idx=$(window_index_from_info "$sofi_info")
+    if [ -n "$sofi_cmd" ]; then
+      sofi_pane=$(pane_id_from_info "$sofi_info")
+      schedule_initial_cmd "$sofi_pane" "$sofi_cmd" "$sofi_channel"
+    fi
+    ;;
+  *)
+    sofi_idx=$(new_window_for_scope "$sofi_name" "$sofi_root")
+    if [ -n "$sofi_cmd" ]; then
+      sleep 0.1
+      send_initial_cmd ":${sofi_idx}" "$sofi_root" "$sofi_cmd"
+    fi
+    ;;
+  esac
+}
+
+run_command_for_scope() {
+  rcfs_scope="$1"
+  case "$rcfs_scope" in
+  neovim)
+    printf 'make'
+    ;;
+  delta)
+    printf 'nix develop -c pnpm dev'
+    ;;
+  barrettruth.com)
+    printf 'pnpm dev'
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+command_for_target() {
+  cft_type="$1"
+  cft_scope="$2"
+  case "$cft_type" in
+  ai)
+    printf 'devin'
+    ;;
+  code)
+    printf 'nvim .'
+    ;;
+  git)
+    printf 'nvim -c "Git|only"'
+    ;;
+  run)
+    run_command_for_scope "$cft_scope"
+    ;;
+  shell)
+    :
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+require_target_dependencies() {
+  rtd_type="$1"
+  case "$rtd_type" in
+  ai)
+    require devin
+    ;;
+  code)
+    require nvim
+    ;;
+  git)
+    require nvim git
+    ;;
+  esac
 }
 
 open_target() {
@@ -166,57 +381,62 @@ open_target() {
 }
 
 open_target_in_root() {
-  type="$1"
-  root="$2"
-  scope=$(scope_from_root "$root")
+  otir_type="$1"
+  otir_root="$2"
+  otir_scope=$(scope_from_root "$otir_root")
+  otir_mode=$(new_window_mode_for_target "$otir_type")
 
-  case "$type" in
-  ai)
-    require devin
-    spawn_or_focus_in ai "$root" 'devin'
-    ;;
-  code)
-    require nvim
-    spawn_or_focus_in code "$root" 'nvim .'
-    ;;
+  require_target_dependencies "$otir_type"
+
+  case "$otir_type" in
   git)
-    require nvim git
-    if ! git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if ! git -C "$otir_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       tmux display-message "Not a git repository"
-    else
-      spawn_or_focus_in git "$root" 'nvim -c "Git|only"'
+      return 1
     fi
     ;;
-  run)
-    case "$scope" in
-    delta)
-      spawn_or_focus_in run "$root" 'nix develop -c pnpm dev'
-      ;;
-    barrettruth.com)
-      spawn_or_focus_in run "$root" 'pnpm dev'
-      ;;
-    *)
-      tmux display-message "mux: no run command for '$scope'"
+  esac
+
+  if ! otir_cmd=$(command_for_target "$otir_type" "$otir_scope"); then
+    case "$otir_type" in
+    run)
+      tmux display-message "mux: no run command for '$otir_scope'"
       ;;
     esac
-    ;;
-  shell)
-    spawn_or_focus_in shell "$root"
-    ;;
-  esac
+    return 1
+  fi
+
+  spawn_or_focus_in "$otir_type" "$otir_root" "$otir_cmd" "$otir_mode"
+}
+
+picker_mode() {
+  cat "$_MF" 2>/dev/null || echo open
+}
+
+set_picker_mode() {
+  spm_mode="$1"
+  printf '%s' "$spm_mode" >"$_MF"
+}
+
+color_escape() {
+  ce_hex="$1"
+  printf '\033[38;2;%d;%d;%dm' "0x${ce_hex%????}" "0x$(printf '%.2s' "${ce_hex#??}")" "0x${ce_hex#????}"
 }
 
 show_picker() {
-  _start_mode="${1:-open}"
+  sp_start_mode="${1:-open}"
   require fzf
-  export _MF="${XDG_RUNTIME_DIR:-/tmp}/mux-picker-mode"
-  printf '%s' "$_start_mode" >"$_MF"
-  export _SCOPE=$(get_scope)
-  export _SESSION=$(tmux display-message -p '#S')
-  export _ACCENT=$(tmux show -gv @accent 2>/dev/null | tr -d '#')
-  [ -z "$_ACCENT" ] && _ACCENT="7aa2f7"
-  export _FGALT=$(tmux show -gv @fgAlt 2>/dev/null | tr -d '#')
-  [ -z "$_FGALT" ] && _FGALT="666666"
+  _MF="${XDG_RUNTIME_DIR:-/tmp}/mux-picker-mode"
+  export _MF
+  set_picker_mode "$sp_start_mode"
+  _SCOPE=$(get_scope)
+  export _SCOPE
+  _ACCENT=$(tmux show -gv @accent 2>/dev/null | tr -d '#')
+  [ -n "$_ACCENT" ] || _ACCENT="7aa2f7"
+  export _ACCENT
+  _FGALT=$(tmux show -gv @fgAlt 2>/dev/null | tr -d '#')
+  [ -n "$_FGALT" ] || _FGALT="666666"
+  export _FGALT
   mux _list | fzf --reverse --ansi --no-info --no-scrollbar \
     --header "$(mux _header)" \
     --prompt "$(mux _prompt)" \
@@ -234,176 +454,249 @@ show_picker() {
     --bind "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)"
 }
 
-case "$1" in
-bar)
-  if [ "$(tmux show-options -gv mouse)" = "on" ]; then
-    indicator='#{?pane_in_mode,[mouse#{@c}copy],[mouse]}'
-  else
-    indicator='#{?pane_in_mode,[copy],}'
-  fi
-  set -f
-  keys="H J K L"
-  bar_content=""
-  i=0
-  total=$(tmux ls -F x | wc -l)
-  for line in $(tmux ls -F '#{session_id}:#{session_name}'); do
-    sid="${line%%:*}"
-    sname="${line#*:}"
-    if [ $i -lt 4 ]; then
-      key=$(echo "$keys" | cut -d' ' -f $((i + 1)))
-    elif [ $i -eq $((total - 1)) ]; then
-      key='$'
+picker_prompt() {
+  ppr_mode=$(picker_mode)
+  case "$ppr_mode" in
+  open)
+    printf '@%s> ' "$_SCOPE"
+    ;;
+  *)
+    printf 'open> '
+    ;;
+  esac
+}
+
+picker_header() {
+  ph_ac=$(color_escape "${_ACCENT:-7aa2f7}")
+  ph_rst=$(printf '\033[0m')
+  ph_mode=$(picker_mode)
+  case "$ph_mode" in
+  open)
+    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^X%s kill %s^O%s projects' \
+      "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst"
+    ;;
+  *)
+    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^O%s windows' \
+      "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst"
+    ;;
+  esac
+}
+
+list_open_entries() {
+  loe_ac=$(color_escape "${_ACCENT:-7aa2f7}")
+  loe_muted=$(color_escape "${_FGALT:-666666}")
+  loe_rst=$(printf '\033[0m')
+  loe_windows=$(tmux list-windows -F '#{window_name}	#{window_index}')
+  for loe_type in ai code shell run git; do
+    loe_name=$(window_name_for "$loe_type" "$_SCOPE")
+    loe_idx=$(printf '%s\n' "$loe_windows" | awk -F'\t' -v n="$loe_name" '$1 == n { print $2; exit }')
+    if [ -n "$loe_idx" ]; then
+      printf '%s%s%s %s*%s%s\topen:%s\n' "$loe_ac" "$loe_type" "$loe_rst" "$loe_muted" "$loe_idx" "$loe_rst" "$loe_type"
     else
-      key='?'
+      printf '%s\topen:%s\n' "$loe_type" "$loe_type"
     fi
-    star="#{?#{==:#S,$sname},#[fg=#{@accent}]*#[default],}"
-    [ -n "$bar_content" ] && bar_content="$bar_content │ "
-    bar_content="$bar_content#[range=session|${sid}]${star}$key#[fg=#{@accent}]:#[default]$sname#[norange]"
-    i=$((i + 1))
   done
-  set +f
+}
+
+list_project_entries() {
+  lpe_ac=$(color_escape "${_ACCENT:-7aa2f7}")
+  lpe_rst=$(printf '\033[0m')
+  lpe_projects=$(zoxide query -l 2>/dev/null || true)
+  [ -n "$lpe_projects" ] || return 0
+  while IFS= read -r lpe_dir; do
+    [ -n "$lpe_dir" ] || continue
+    lpe_root=$(git -C "$lpe_dir" rev-parse --show-toplevel 2>/dev/null || true)
+    [ "$lpe_root" = "$lpe_dir" ] || continue
+    lpe_name=$(basename "$lpe_dir")
+    if [ "$lpe_name" = "$_SCOPE" ]; then
+      printf '%s%s%s\tproj:%s\n' "$lpe_ac" "$lpe_name" "$lpe_rst" "$lpe_dir"
+    else
+      printf '%s\tproj:%s\n' "$lpe_name" "$lpe_dir"
+    fi
+  done <<EOF
+$lpe_projects
+EOF
+}
+
+picker_list() {
+  pl_mode=$(picker_mode)
+  case "$pl_mode" in
+  open)
+    list_open_entries
+    ;;
+  *)
+    list_project_entries
+    ;;
+  esac
+}
+
+toggle_picker_mode() {
+  tpm_target_mode="$1"
+  tpm_mode=$(picker_mode)
+  if [ "$tpm_mode" = "$tpm_target_mode" ]; then
+    set_picker_mode open
+  else
+    set_picker_mode "$tpm_target_mode"
+  fi
+}
+
+dispatch_picker_action() {
+  dpa_input="$1"
+  dpa_mode="${dpa_input%%:*}"
+  dpa_action="${dpa_input#*:}"
+  case "$dpa_mode" in
+  open)
+    exec mux "$dpa_action"
+    ;;
+  proj)
+    dpa_type=code
+    dpa_dir="$dpa_action"
+    case "$dpa_action" in
+    ai:* | code:* | shell:* | run:* | git:*)
+      dpa_type="${dpa_action%%:*}"
+      dpa_dir="${dpa_action#*:}"
+      ;;
+    esac
+    open_target_in_root "$dpa_type" "$dpa_dir"
+    ;;
+  kill)
+    dpa_submode="${dpa_action%%:*}"
+    dpa_type="${dpa_action#*:}"
+    case "$dpa_submode" in
+    open)
+      dpa_name=$(window_name_for "$dpa_type" "$_SCOPE")
+      tmux kill-window -t "=$dpa_name" 2>/dev/null
+      ;;
+    esac
+    ;;
+  esac
+}
+
+picker_open_target() {
+  pot_type="$1"
+  pot_input="$2"
+  pot_mode=$(picker_mode)
+  case "$pot_mode" in
+  open)
+    exec mux "$pot_type"
+    ;;
+  *)
+    pot_submode="${pot_input%%:*}"
+    pot_dir="${pot_input#*:}"
+    [ "$pot_submode" = "proj" ] && open_target_in_root "$pot_type" "$pot_dir"
+    ;;
+  esac
+}
+
+session_key() {
+  sk_index="$1"
+  sk_total="$2"
+  case "$sk_index" in
+  0)
+    printf 'H'
+    ;;
+  1)
+    printf 'J'
+    ;;
+  2)
+    printf 'K'
+    ;;
+  3)
+    printf 'L'
+    ;;
+  *)
+    if [ "$sk_index" -eq "$((sk_total - 1))" ]; then
+      printf '$'
+    else
+      printf '?'
+    fi
+    ;;
+  esac
+}
+
+render_bar() {
+  if [ "$(tmux show-options -gv mouse)" = "on" ]; then
+    rb_indicator='#{?pane_in_mode,[mouse#{@c}copy],[mouse]}'
+  else
+    rb_indicator='#{?pane_in_mode,[copy],}'
+  fi
+
+  rb_sessions=$(tmux ls -F '#{session_id}	#{session_name}')
+  rb_bar_content=""
+
+  if [ -n "$rb_sessions" ]; then
+    rb_tab=$(printf '\t')
+    rb_total=$(printf '%s\n' "$rb_sessions" | wc -l | tr -d ' ')
+    rb_index=0
+
+    while IFS= read -r rb_line; do
+      [ -n "$rb_line" ] || continue
+      rb_sid=${rb_line%%"${rb_tab}"*}
+      rb_sname=${rb_line#*"${rb_tab}"}
+      rb_key=$(session_key "$rb_index" "$rb_total")
+      rb_star="#{?#{==:#S,$rb_sname},#[fg=#{@accent}]*#[default],}"
+      [ -n "$rb_bar_content" ] && rb_bar_content="$rb_bar_content │ "
+      rb_bar_content="$rb_bar_content#[range=session|${rb_sid}]${rb_star}${rb_key}#[fg=#{@accent}]:#[default]${rb_sname}#[norange]"
+      rb_index=$((rb_index + 1))
+    done <<EOF
+$rb_sessions
+EOF
+  fi
+
   tmux set -g status-left-length 80
   tmux set -g status-right-length 80
   tmux set -g status-left ' '
   tmux set -g window-status-format '#[range=window|#{window_index}]#{?window_last_flag,#[fg=#{@accent}]-#[default],}#{window_index}#[fg=#{@accent}]:#[default]#{window_name}#[norange]'
   tmux set -g window-status-current-format '#[range=window|#{window_index}]#[fg=#{@accent}]*#[default]#{window_index}#[fg=#{@accent}]:#[default]#{window_name}#[norange]'
   tmux set -g window-status-separator ' │ '
-  tmux set -g @bar-content "$indicator $bar_content "
-  ;;
-switch)
-  session="$(tmux ls -F '#S' | tail -n "+$(($2 + 1))" | head -1)"
-  tmux switch -t "$session"
-  ;;
-ai)
-  open_target ai
-  ;;
-code)
-  open_target code
-  ;;
-git)
-  open_target git
-  ;;
-run)
-  open_target run
-  ;;
-shell)
-  open_target shell
-  ;;
-open)
-  show_picker open
-  ;;
-projects)
-  show_picker proj
-  ;;
-_prompt)
-  _mode=$(cat "$_MF" 2>/dev/null || echo open)
-  case "$_mode" in
-  open) printf '@%s> ' "$_SCOPE" ;;
-  *)    printf 'open> ' ;;
-  esac
-  ;;
-_header)
-  _h="${_ACCENT:-7aa2f7}"
-  _ac=$(printf '\033[38;2;%d;%d;%dm' "0x${_h%????}" "0x$(printf '%.2s' "${_h#??}")" "0x${_h#????}")
-  _rst=$(printf '\033[0m')
-  _mode=$(cat "$_MF" 2>/dev/null || echo open)
-  case "$_mode" in
+  tmux set -g @bar-content "$rb_indicator $rb_bar_content "
+}
+
+switch_session() {
+  ss_slot="$1"
+  ss_session=$(tmux ls -F '#S' | sed -n "$((ss_slot + 1))p")
+  [ -n "$ss_session" ] && tmux switch -t "$ss_session"
+}
+
+main() {
+  case "${1:-}" in
+  bar)
+    render_bar
+    ;;
+  switch)
+    switch_session "$2"
+    ;;
+  ai | code | git | run | shell)
+    open_target "$1"
+    ;;
   open)
-    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^X%s kill %s^O%s projects' \
-      "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst"
+    show_picker open
+    ;;
+  projects)
+    show_picker proj
+    ;;
+  _prompt)
+    picker_prompt
+    ;;
+  _header)
+    picker_header
+    ;;
+  _list)
+    picker_list
+    ;;
+  _toggle)
+    toggle_picker_mode "$2"
+    ;;
+  _dispatch)
+    dispatch_picker_action "$2"
+    ;;
+  _picker_open)
+    picker_open_target "$2" "$3"
     ;;
   *)
-    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^O%s windows' \
-      "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst" "$_ac" "$_rst"
+    tmux attach 2>/dev/null || tmux new-session
     ;;
   esac
-  ;;
-_list)
-  _h="${_ACCENT:-7aa2f7}"
-  _ac=$(printf '\033[38;2;%d;%d;%dm' "0x${_h%????}" "0x$(printf '%.2s' "${_h#??}")" "0x${_h#????}")
-  _fa="${_FGALT:-666666}"
-  _muted=$(printf '\033[38;2;%d;%d;%dm' "0x${_fa%????}" "0x$(printf '%.2s' "${_fa#??}")" "0x${_fa#????}")
-  _rst=$(printf '\033[0m')
-  _mode=$(cat "$_MF" 2>/dev/null || echo open)
-  case "$_mode" in
-  open)
-    _windows=$(tmux list-windows -F '#{window_name}	#{window_index}')
-    for _t in ai code shell run git; do
-      _name="${_t}@${_SCOPE}"
-      _idx=$(printf '%s\n' "$_windows" | awk -F'\t' -v n="$_name" '$1==n{print $2;exit}')
-      if [ -n "$_idx" ]; then
-        printf '%s%s%s %s*%s%s\topen:%s\n' "$_ac" "$_t" "$_rst" "$_muted" "$_idx" "$_rst" "$_t"
-      else
-        printf '%s\topen:%s\n' "$_t" "$_t"
-      fi
-    done
-    ;;
-  *)
-    for _d in $(zoxide query -l 2>/dev/null); do
-      [ -d "$_d/.git" ] || continue
-      _name=$(basename "$_d")
-      if [ "$_name" = "$_SCOPE" ]; then
-        printf '%s%s%s\tproj:%s\n' "$_ac" "$_name" "$_rst" "$_d"
-      else
-        printf '%s\tproj:%s\n' "$_name" "$_d"
-      fi
-    done
-    ;;
-  esac
-  ;;
-_toggle)
-  _cur=$(cat "$_MF" 2>/dev/null || echo open)
-  if [ "$_cur" = "$2" ]; then
-    printf open >"$_MF"
-  else
-    printf '%s' "$2" >"$_MF"
-  fi
-  ;;
-_dispatch)
-  _input="$2"
-  _mode="${_input%%:*}"
-  _action="${_input#*:}"
-  case "$_mode" in
-  open) exec mux "$_action" ;;
-  proj)
-    _type=code
-    _dir="$_action"
-    case "$_action" in
-    ai:* | code:* | shell:* | run:* | git:*)
-      _type="${_action%%:*}"
-      _dir="${_action#*:}"
-      ;;
-    esac
-    open_target_in_root "$_type" "$_dir"
-    ;;
-  kill)
-    _submode="${_action%%:*}"
-    _type="${_action#*:}"
-    case "$_submode" in
-    open)
-      _name="${_type}@${_SCOPE}"
-      tmux kill-window -t "=$_name" 2>/dev/null
-      ;;
-    esac
-    ;;
-  esac
-  ;;
-_picker_open)
-  _type="$2"
-  _input="$3"
-  _mode=$(cat "$_MF" 2>/dev/null || echo open)
-  case "$_mode" in
-  open)
-    exec mux "$_type"
-    ;;
-  *)
-    _submode="${_input%%:*}"
-    _dir="${_input#*:}"
-    [ "$_submode" = "proj" ] && open_target_in_root "$_type" "$_dir"
-    ;;
-  esac
-  ;;
-*)
-  tmux attach 2>/dev/null || tmux new-session
-  ;;
-esac
+}
+
+main "$@"
