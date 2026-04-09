@@ -21,6 +21,10 @@ system-instructions:
     If GPG signing fails on any git operation, retry with --no-gpg-sign
     rather than stopping or asking.
   - >
+    When creating pull request descriptions, follow any existing PR template
+    exactly. If no template exists, do not invent a test plan or use
+    checklists or checkboxes; use concise prose instead.
+  - >
     Never end a response with "Would you like..." or a similar opt-in
     follow-up suggestion. If the user already asked for work, do the next
     obvious step; otherwise stop after answering. Ask a follow-up question
