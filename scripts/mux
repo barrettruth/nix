@@ -379,16 +379,6 @@ require_role_dependencies() {
   esac
 }
 
-global_actions_file() {
-  printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/mux.conf"
-}
-
-project_action_files_for_root() {
-  pafr_root="$1"
-  [ -f "$pafr_root/.mux.conf" ] && printf '%s\n' "$pafr_root/.mux.conf"
-  [ -f "$pafr_root/config/tmux/mux.conf" ] && printf '%s\n' "$pafr_root/config/tmux/mux.conf"
-}
-
 legacy_run_command_for_scope() {
   lrcfs_scope="$1"
   case "$lrcfs_scope" in
@@ -410,48 +400,62 @@ legacy_run_command_for_scope() {
   esac
 }
 
-built_in_action_definitions_for_root() {
-  biadfr_root="$1"
-  biadfr_scope=$(scope_from_root "$biadfr_root")
-  printf 'git\tclose\tnvim -c "Git|only"\n'
-  if biadfr_legacy_run=$(legacy_run_command_for_scope "$biadfr_scope"); then
-    printf 'run\tkeep\t%s\n' "$biadfr_legacy_run"
-  fi
+build_command_for_scope() {
+  bcfs_scope="$1"
+  case "$bcfs_scope" in
+  tmux)
+    printf 'make -j "$(nproc)" -C build'
+    ;;
+  *)
+    return 1
+    ;;
+  esac
 }
 
-action_definition_lines_for_root() {
-  adlfr_root="$1"
-  built_in_action_definitions_for_root "$adlfr_root"
-  adlfr_global=$(global_actions_file)
-  [ -f "$adlfr_global" ] && cat "$adlfr_global"
-  project_action_files_for_root "$adlfr_root" | while IFS= read -r adlfr_file; do
-    [ -n "$adlfr_file" ] || continue
-    cat "$adlfr_file"
-  done
+action_policy_for() {
+  apf_name="$1"
+  case "$apf_name" in
+  git)
+    printf 'close'
+    ;;
+  run | build)
+    printf 'keep'
+    ;;
+  *)
+    return 1
+    ;;
+  esac
 }
 
-resolve_action_definition_for_root() {
-  radfr_root="$1"
-  radfr_action="$2"
-  radfr_tab=$(printf '\t')
-  radfr_policy=""
-  radfr_cmd=""
-  while IFS="$radfr_tab" read -r radfr_name radfr_line_policy radfr_line_cmd; do
-    [ -n "$radfr_name" ] || continue
-    [ "$radfr_name" = "$radfr_action" ] || continue
-    [ -n "$radfr_line_policy" ] || continue
-    radfr_policy="$radfr_line_policy"
-    radfr_cmd="$radfr_line_cmd"
-  done <<EOF2
-$(action_definition_lines_for_root "$radfr_root")
-EOF2
-  [ -n "$radfr_policy" ] || return 1
-  printf '%s\t%s' "$radfr_policy" "$radfr_cmd"
+action_command_for_root() {
+  acfr_name="$1"
+  acfr_root="$2"
+  acfr_scope=$(scope_from_root "$acfr_root")
+  case "$acfr_name" in
+  git)
+    printf 'nvim -c "Git|only"'
+    ;;
+  run)
+    legacy_run_command_for_scope "$acfr_scope"
+    ;;
+  build)
+    build_command_for_scope "$acfr_scope"
+    ;;
+  *)
+    return 1
+    ;;
+  esac
 }
 
 list_action_names_for_root() {
   lafr_root="$1"
-  action_definition_lines_for_root "$lafr_root" | awk -F'\t' 'NF && $1 != "" && !seen[$1]++ { print $1 }'
+  printf 'git\n'
+  if action_command_for_root run "$lafr_root" >/dev/null 2>&1; then
+    printf 'run\n'
+  fi
+  if action_command_for_root build "$lafr_root" >/dev/null 2>&1; then
+    printf 'build\n'
+  fi
 }
 
 open_role() {
@@ -480,7 +484,6 @@ open_action_in_root() {
   oair_name="$1"
   oair_root="$2"
   oair_scope=$(scope_from_root "$oair_root")
-  oair_tab=$(printf '\t')
 
   case "$oair_name" in
   git)
@@ -491,13 +494,15 @@ open_action_in_root() {
     ;;
   esac
 
-  if ! oair_def=$(resolve_action_definition_for_root "$oair_root" "$oair_name"); then
+  if ! oair_cmd=$(action_command_for_root "$oair_name" "$oair_root"); then
     tmux display-message "mux: no action '$oair_name' for '$oair_scope'"
     return 1
   fi
 
-  oair_policy=${oair_def%%"$oair_tab"*}
-  oair_cmd=${oair_def#*"$oair_tab"}
+  if ! oair_policy=$(action_policy_for "$oair_name"); then
+    tmux display-message "mux: bad policy for '$oair_name'"
+    return 1
+  fi
 
   case "$oair_policy" in
   keep)
@@ -623,11 +628,9 @@ list_open_entries() {
 
   list_action_names_for_root "$_ROOT" | while IFS= read -r loe_action; do
     [ -n "$loe_action" ] || continue
-    if ! loe_def=$(resolve_action_definition_for_root "$_ROOT" "$loe_action"); then
+    if ! loe_policy=$(action_policy_for "$loe_action"); then
       continue
     fi
-    loe_tab=$(printf '\t')
-    loe_policy=${loe_def%%"$loe_tab"*}
     loe_window_name=""
     [ "$loe_policy" = keep ] && loe_window_name=$(window_name_for "$loe_action" "$_SCOPE")
     format_open_entry "$loe_action" "action:$loe_action" "$loe_window_name" "$loe_policy"
@@ -773,7 +776,7 @@ render_bar() {
     rb_indicator='#{?pane_in_mode,[copy],}'
   fi
 
-  rb_sessions=$(tmux ls -F '#{session_id}\t#{session_name}')
+  rb_sessions=$(tmux ls -F '#{session_id}	#{session_name}')
   rb_bar_content=''
 
   if [ -n "$rb_sessions" ]; then
