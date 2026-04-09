@@ -76,12 +76,12 @@ The tracker has grouped tables. Each issue/PR appears in exactly ONE section.
 
 ### Issue status values
 
-| Status | Meaning |
-|--------|---------|
-| `open` | Unresolved |
-| `fixed (#NN)` | Fixed in this fork, with fork PR link |
-| `cherry-picked (#NN)` | Resolved by cherry-picking upstream PR |
-| `not actionable -- reason` | Won't fix, with explanation |
+| Status                     | Meaning                                |
+| -------------------------- | -------------------------------------- |
+| `open`                     | Unresolved                             |
+| `fixed (#NN)`              | Fixed in this fork, with fork PR link  |
+| `cherry-picked (#NN)`      | Resolved by cherry-picking upstream PR |
+| `not actionable -- reason` | Won't fix, with explanation            |
 
 ### Rules
 
