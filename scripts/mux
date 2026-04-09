@@ -33,9 +33,18 @@ get_root_from_path() {
 }
 
 get_managed_scope() {
+  gms_scope=$(tmux show-options -wgv @mux_scope 2>/dev/null || true)
+  if [ -n "$gms_scope" ]; then
+    printf '%s' "$gms_scope"
+    return
+  fi
+
+  gms_root=$(tmux show-options -wgv @mux_root 2>/dev/null || true)
+  [ -n "$gms_root" ] || return 1
+
   gms_name=$(tmux display-message -p '#{window_name}')
   case "$gms_name" in
-  ai@* | code@* | shell@* | run@* | git@*)
+  *@*)
     printf '%s' "${gms_name#*@}"
     ;;
   *)
@@ -68,14 +77,33 @@ get_scope() {
   fi
 }
 
-set_root() {
-  sr_target="$1"
-  sr_root="$2"
-  if [ -n "$sr_target" ]; then
-    tmux set-option -t "$sr_target" -w @mux_root "$sr_root"
+set_window_option() {
+  swo_target="$1"
+  swo_name="$2"
+  swo_value="$3"
+  if [ -n "$swo_target" ]; then
+    tmux set-option -t "$swo_target" -w "$swo_name" "$swo_value"
   else
-    tmux set-option -w @mux_root "$sr_root"
+    tmux set-option -w "$swo_name" "$swo_value"
   fi
+}
+
+set_root() {
+  set_window_option "$1" @mux_root "$2"
+}
+
+set_window_meta() {
+  swm_target="$1"
+  swm_kind="$2"
+  swm_name="$3"
+  swm_scope="$4"
+  swm_root="$5"
+  swm_policy="$6"
+  set_window_option "$swm_target" @mux_kind "$swm_kind"
+  set_window_option "$swm_target" @mux_name "$swm_name"
+  set_window_option "$swm_target" @mux_scope "$swm_scope"
+  set_window_option "$swm_target" @mux_root "$swm_root"
+  set_window_option "$swm_target" @mux_policy "$swm_policy"
 }
 
 quote_sh() {
@@ -103,27 +131,20 @@ initial_shell_command() {
   fi
 }
 
-initial_exec_command() {
-  iec_root="$1"
-  iec_cmd="$2"
-  iec_shell=$(shell_path)
-  iec_payload="$(run_in_root "$iec_root" "$iec_cmd"); exec env PURE_FIX=0 $(quote_sh "$iec_shell") -i"
-  printf "exec env PURE_FIX=0 %s -ic %s" "$(quote_sh "$iec_shell")" "$(quote_sh "$iec_payload")"
+close_action_command() {
+  cac_root="$1"
+  cac_cmd="$2"
+  cac_shell=$(shell_path)
+  cac_payload=$(run_in_root "$cac_root" "$cac_cmd")
+  printf "exec env PURE_FIX=0 %s -ic %s" "$(quote_sh "$cac_shell")" "$(quote_sh "$cac_payload")"
 }
 
-new_window_mode_for_target() {
-  nwm_type="$1"
-  case "$nwm_type" in
-  code | git)
-    printf 'exec'
-    ;;
-  run)
-    printf 'shell'
-    ;;
-  *)
-    printf 'plain'
-    ;;
-  esac
+keep_on_fail_action_command() {
+  kof_root="$1"
+  kof_cmd="$2"
+  kof_shell=$(shell_path)
+  kof_payload="$(run_in_root "$kof_root" "$kof_cmd"); kof_status=\$?; if [ \"\$kof_status\" -eq 0 ]; then tmux kill-window -t \"\$TMUX_PANE\"; exit 0; fi; exec env PURE_FIX=0 $(quote_sh "$kof_shell") -i"
+  printf "exec env PURE_FIX=0 %s -ic %s" "$(quote_sh "$kof_shell")" "$(quote_sh "$kof_payload")"
 }
 
 new_ready_channel() {
@@ -131,9 +152,9 @@ new_ready_channel() {
 }
 
 window_name_for() {
-  wnf_type="$1"
+  wnf_name="$1"
   wnf_scope="$2"
-  printf '%s@%s' "$wnf_type" "$wnf_scope"
+  printf '%s@%s' "$wnf_name" "$wnf_scope"
 }
 
 window_index_for_name() {
@@ -222,17 +243,21 @@ pane_id_from_info() {
 }
 
 new_window_info_for_scope() {
-  nwifs_name="$1"
+  nwifs_window_name="$1"
   nwifs_root="$2"
   nwifs_cmd="${3:-}"
+  nwifs_kind="$4"
+  nwifs_name="$5"
+  nwifs_policy="$6"
+  nwifs_scope=$(scope_from_root "$nwifs_root")
   nwifs_fmt=$(printf '#{window_index}\t#{pane_id}')
   if [ -n "$nwifs_cmd" ]; then
-    nwifs_info=$(tmux new-window -P -F "$nwifs_fmt" -c "$nwifs_root" -n "$nwifs_name" "$nwifs_cmd")
+    nwifs_info=$(tmux new-window -P -F "$nwifs_fmt" -c "$nwifs_root" -n "$nwifs_window_name" "$nwifs_cmd")
   else
-    nwifs_info=$(tmux new-window -P -F "$nwifs_fmt" -c "$nwifs_root" -n "$nwifs_name")
+    nwifs_info=$(tmux new-window -P -F "$nwifs_fmt" -c "$nwifs_root" -n "$nwifs_window_name")
   fi
   nwifs_idx=$(window_index_from_info "$nwifs_info")
-  set_root ":${nwifs_idx}" "$nwifs_root"
+  set_window_meta ":${nwifs_idx}" "$nwifs_kind" "$nwifs_name" "$nwifs_scope" "$nwifs_root" "$nwifs_policy"
   printf '%s' "$nwifs_info"
 }
 
@@ -256,73 +281,122 @@ is_pane_idle() {
   [ "$ipi_pane_cmd" = "$ipi_shell" ]
 }
 
-spawn_or_focus_in() {
-  sofi_type="$1"
-  sofi_root="$2"
-  sofi_cmd="${3:-}"
-  sofi_mode="${4:-plain}"
-  sofi_scope=$(scope_from_root "$sofi_root")
-  sofi_name=$(window_name_for "$sofi_type" "$sofi_scope")
-  sofi_idx=$(window_index_for_name "$sofi_name")
-  sofi_cur_idx=$(current_window_index)
+spawn_or_focus_managed() {
+  sofm_kind="$1"
+  sofm_name="$2"
+  sofm_root="$3"
+  sofm_cmd="${4:-}"
+  sofm_policy="${5:-keep}"
+  sofm_scope=$(scope_from_root "$sofm_root")
+  sofm_window_name=$(window_name_for "$sofm_name" "$sofm_scope")
+  sofm_idx=$(window_index_for_name "$sofm_window_name")
+  sofm_cur_idx=$(current_window_index)
 
-  if [ -n "$sofi_idx" ] && [ "$sofi_idx" = "$sofi_cur_idx" ]; then
-    if [ -n "$sofi_cmd" ] && is_pane_idle; then
-      set_root "" "$sofi_root"
-      send_cmd "" "$sofi_root" "$sofi_cmd"
+  if [ -n "$sofm_idx" ] && [ "$sofm_idx" = "$sofm_cur_idx" ]; then
+    set_window_meta "" "$sofm_kind" "$sofm_name" "$sofm_scope" "$sofm_root" "$sofm_policy"
+    if [ -n "$sofm_cmd" ] && is_pane_idle; then
+      send_cmd "" "$sofm_root" "$sofm_cmd"
     fi
     return
   fi
 
   if is_adoptable; then
-    [ -n "$sofi_idx" ] && tmux kill-window -t ":${sofi_idx}"
-    tmux rename-window "$sofi_name"
-    set_root "" "$sofi_root"
-    [ -n "$sofi_cmd" ] && send_cmd "" "$sofi_root" "$sofi_cmd"
+    [ -n "$sofm_idx" ] && tmux kill-window -t ":${sofm_idx}"
+    tmux rename-window "$sofm_window_name"
+    set_window_meta "" "$sofm_kind" "$sofm_name" "$sofm_scope" "$sofm_root" "$sofm_policy"
+    [ -n "$sofm_cmd" ] && send_cmd "" "$sofm_root" "$sofm_cmd"
     return
   fi
 
-  if [ -n "$sofi_idx" ]; then
-    tmux select-window -t ":${sofi_idx}"
-    set_root ":${sofi_idx}" "$sofi_root"
-    if [ -n "$sofi_cmd" ] && is_pane_idle ":${sofi_idx}"; then
-      send_cmd ":${sofi_idx}" "$sofi_root" "$sofi_cmd"
+  if [ -n "$sofm_idx" ]; then
+    tmux select-window -t ":${sofm_idx}"
+    set_window_meta ":${sofm_idx}" "$sofm_kind" "$sofm_name" "$sofm_scope" "$sofm_root" "$sofm_policy"
+    if [ -n "$sofm_cmd" ] && is_pane_idle ":${sofm_idx}"; then
+      send_cmd ":${sofm_idx}" "$sofm_root" "$sofm_cmd"
     fi
     return
   fi
 
-  case "$sofi_mode" in
-  exec)
-    if [ -n "$sofi_cmd" ]; then
-      sofi_idx=$(new_window_for_scope "$sofi_name" "$sofi_root" "$(initial_exec_command "$sofi_root" "$sofi_cmd")")
-    else
-      sofi_idx=$(new_window_for_scope "$sofi_name" "$sofi_root")
-    fi
+  if [ -n "$sofm_cmd" ]; then
+    sofm_channel=$(new_ready_channel)
+    sofm_info=$(new_window_info_for_scope "$sofm_window_name" "$sofm_root" "$(initial_shell_command "$sofm_channel")" "$sofm_kind" "$sofm_name" "$sofm_policy")
+    sofm_pane=$(pane_id_from_info "$sofm_info")
+    schedule_initial_cmd "$sofm_pane" "$sofm_cmd" "$sofm_channel"
+    return
+  fi
+
+  new_window_for_scope "$sofm_window_name" "$sofm_root" "" "$sofm_kind" "$sofm_name" "$sofm_policy" >/dev/null
+}
+
+spawn_action_close() {
+  sac_name="$1"
+  sac_root="$2"
+  sac_cmd="$3"
+  sac_scope=$(scope_from_root "$sac_root")
+  sac_window_name=$(window_name_for "$sac_name" "$sac_scope")
+  new_window_for_scope "$sac_window_name" "$sac_root" "$(close_action_command "$sac_root" "$sac_cmd")" action "$sac_name" close >/dev/null
+}
+
+spawn_action_keep_on_fail() {
+  sakof_name="$1"
+  sakof_root="$2"
+  sakof_cmd="$3"
+  sakof_scope=$(scope_from_root "$sakof_root")
+  sakof_window_name=$(window_name_for "$sakof_name" "$sakof_scope")
+  new_window_for_scope "$sakof_window_name" "$sakof_root" "$(keep_on_fail_action_command "$sakof_root" "$sakof_cmd")" action "$sakof_name" keep_on_fail >/dev/null
+}
+
+role_command_for() {
+  rcf_name="$1"
+  case "$rcf_name" in
+  ai)
+    printf 'devin'
+    ;;
+  code)
+    printf 'nvim .'
     ;;
   shell)
-    sofi_channel=$(new_ready_channel)
-    sofi_info=$(new_window_info_for_scope "$sofi_name" "$sofi_root" "$(initial_shell_command "$sofi_channel")")
-    sofi_idx=$(window_index_from_info "$sofi_info")
-    if [ -n "$sofi_cmd" ]; then
-      sofi_pane=$(pane_id_from_info "$sofi_info")
-      schedule_initial_cmd "$sofi_pane" "$sofi_cmd" "$sofi_channel"
-    fi
+    :
     ;;
   *)
-    sofi_idx=$(new_window_for_scope "$sofi_name" "$sofi_root")
-    if [ -n "$sofi_cmd" ]; then
-      sleep 0.1
-      send_initial_cmd ":${sofi_idx}" "$sofi_root" "$sofi_cmd"
-    fi
+    return 1
     ;;
   esac
 }
 
-run_command_for_scope() {
-  rcfs_scope="$1"
-  case "$rcfs_scope" in
+require_role_dependencies() {
+  rrd_name="$1"
+  case "$rrd_name" in
+  ai)
+    require devin
+    ;;
+  code)
+    require nvim
+    ;;
+  shell)
+    :
+    ;;
+  esac
+}
+
+global_actions_file() {
+  printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/mux.conf"
+}
+
+project_action_files_for_root() {
+  pafr_root="$1"
+  [ -f "$pafr_root/.mux.conf" ] && printf '%s\n' "$pafr_root/.mux.conf"
+  [ -f "$pafr_root/config/tmux/mux.conf" ] && printf '%s\n' "$pafr_root/config/tmux/mux.conf"
+}
+
+legacy_run_command_for_scope() {
+  lrcfs_scope="$1"
+  case "$lrcfs_scope" in
   neovim)
     printf 'make'
+    ;;
+  tmux)
+    printf 'make -j "$(nproc)" -C build'
     ;;
   delta)
     printf 'nix develop -c pnpm dev'
@@ -336,77 +410,110 @@ run_command_for_scope() {
   esac
 }
 
-command_for_target() {
-  cft_type="$1"
-  cft_scope="$2"
-  case "$cft_type" in
-  ai)
-    printf 'devin'
-    ;;
-  code)
-    printf 'nvim .'
-    ;;
-  git)
-    printf 'nvim -c "Git|only"'
-    ;;
-  run)
-    run_command_for_scope "$cft_scope"
-    ;;
-  shell)
-    :
-    ;;
-  *)
+built_in_action_definitions_for_root() {
+  biadfr_root="$1"
+  biadfr_scope=$(scope_from_root "$biadfr_root")
+  printf 'git\tclose\tnvim -c "Git|only"\n'
+  if biadfr_legacy_run=$(legacy_run_command_for_scope "$biadfr_scope"); then
+    printf 'run\tkeep\t%s\n' "$biadfr_legacy_run"
+  fi
+}
+
+action_definition_lines_for_root() {
+  adlfr_root="$1"
+  built_in_action_definitions_for_root "$adlfr_root"
+  adlfr_global=$(global_actions_file)
+  [ -f "$adlfr_global" ] && cat "$adlfr_global"
+  project_action_files_for_root "$adlfr_root" | while IFS= read -r adlfr_file; do
+    [ -n "$adlfr_file" ] || continue
+    cat "$adlfr_file"
+  done
+}
+
+resolve_action_definition_for_root() {
+  radfr_root="$1"
+  radfr_action="$2"
+  radfr_tab=$(printf '\t')
+  radfr_policy=""
+  radfr_cmd=""
+  while IFS="$radfr_tab" read -r radfr_name radfr_line_policy radfr_line_cmd; do
+    [ -n "$radfr_name" ] || continue
+    [ "$radfr_name" = "$radfr_action" ] || continue
+    [ -n "$radfr_line_policy" ] || continue
+    radfr_policy="$radfr_line_policy"
+    radfr_cmd="$radfr_line_cmd"
+  done <<EOF2
+$(action_definition_lines_for_root "$radfr_root")
+EOF2
+  [ -n "$radfr_policy" ] || return 1
+  printf '%s\t%s' "$radfr_policy" "$radfr_cmd"
+}
+
+list_action_names_for_root() {
+  lafr_root="$1"
+  action_definition_lines_for_root "$lafr_root" | awk -F'\t' 'NF && $1 != "" && !seen[$1]++ { print $1 }'
+}
+
+open_role() {
+  open_role_in_root "$1" "$(get_root)"
+}
+
+open_role_in_root() {
+  orir_name="$1"
+  orir_root="$2"
+
+  require_role_dependencies "$orir_name"
+
+  if ! orir_cmd=$(role_command_for "$orir_name"); then
+    tmux display-message "mux: unknown role '$orir_name'"
     return 1
-    ;;
-  esac
+  fi
+
+  spawn_or_focus_managed role "$orir_name" "$orir_root" "$orir_cmd" keep
 }
 
-require_target_dependencies() {
-  rtd_type="$1"
-  case "$rtd_type" in
-  ai)
-    require devin
-    ;;
-  code)
-    require nvim
-    ;;
+open_action() {
+  open_action_in_root "$1" "$(get_root)"
+}
+
+open_action_in_root() {
+  oair_name="$1"
+  oair_root="$2"
+  oair_scope=$(scope_from_root "$oair_root")
+  oair_tab=$(printf '\t')
+
+  case "$oair_name" in
   git)
-    require nvim git
-    ;;
-  esac
-}
-
-open_target() {
-  open_target_in_root "$1" "$(get_root)"
-}
-
-open_target_in_root() {
-  otir_type="$1"
-  otir_root="$2"
-  otir_scope=$(scope_from_root "$otir_root")
-  otir_mode=$(new_window_mode_for_target "$otir_type")
-
-  require_target_dependencies "$otir_type"
-
-  case "$otir_type" in
-  git)
-    if ! git -C "$otir_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if ! git -C "$oair_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       tmux display-message "Not a git repository"
       return 1
     fi
     ;;
   esac
 
-  if ! otir_cmd=$(command_for_target "$otir_type" "$otir_scope"); then
-    case "$otir_type" in
-    run)
-      tmux display-message "mux: no run command for '$otir_scope'"
-      ;;
-    esac
+  if ! oair_def=$(resolve_action_definition_for_root "$oair_root" "$oair_name"); then
+    tmux display-message "mux: no action '$oair_name' for '$oair_scope'"
     return 1
   fi
 
-  spawn_or_focus_in "$otir_type" "$otir_root" "$otir_cmd" "$otir_mode"
+  oair_policy=${oair_def%%"$oair_tab"*}
+  oair_cmd=${oair_def#*"$oair_tab"}
+
+  case "$oair_policy" in
+  keep)
+    spawn_or_focus_managed action "$oair_name" "$oair_root" "$oair_cmd" "$oair_policy"
+    ;;
+  close)
+    spawn_action_close "$oair_name" "$oair_root" "$oair_cmd"
+    ;;
+  keep_on_fail)
+    spawn_action_keep_on_fail "$oair_name" "$oair_root" "$oair_cmd"
+    ;;
+  *)
+    tmux display-message "mux: bad policy '$oair_policy' for '$oair_name'"
+    return 1
+    ;;
+  esac
 }
 
 picker_mode() {
@@ -429,13 +536,15 @@ show_picker() {
   _MF="${XDG_RUNTIME_DIR:-/tmp}/mux-picker-mode"
   export _MF
   set_picker_mode "$sp_start_mode"
-  _SCOPE=$(get_scope)
+  _ROOT=$(get_root)
+  export _ROOT
+  _SCOPE=$(scope_from_root "$_ROOT")
   export _SCOPE
   _ACCENT=$(tmux show -gv @accent 2>/dev/null | tr -d '#')
-  [ -n "$_ACCENT" ] || _ACCENT="7aa2f7"
+  [ -n "$_ACCENT" ] || _ACCENT='7aa2f7'
   export _ACCENT
   _FGALT=$(tmux show -gv @fgAlt 2>/dev/null | tr -d '#')
-  [ -n "$_FGALT" ] || _FGALT="666666"
+  [ -n "$_FGALT" ] || _FGALT='666666'
   export _FGALT
   mux _list | fzf --reverse --ansi --no-info --no-scrollbar \
     --header "$(mux _header)" \
@@ -445,12 +554,12 @@ show_picker() {
     --separator '' \
     --delimiter '\t' --with-nth 1 --accept-nth 2 \
     --bind "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
-    --bind "enter:ignore" \
-    --bind "ctrl-a:become(mux _picker_open ai {2})" \
-    --bind "ctrl-c:become(mux _picker_open code {2})" \
-    --bind "ctrl-s:become(mux _picker_open shell {2})" \
-    --bind "ctrl-r:become(mux _picker_open run {2})" \
-    --bind "ctrl-g:become(mux _picker_open git {2})" \
+    --bind "enter:become(mux _dispatch {2})" \
+    --bind "ctrl-a:become(mux _picker_open role ai {2})" \
+    --bind "ctrl-c:become(mux _picker_open role code {2})" \
+    --bind "ctrl-s:become(mux _picker_open role shell {2})" \
+    --bind "ctrl-r:become(mux _picker_open action run {2})" \
+    --bind "ctrl-g:become(mux _picker_open action git {2})" \
     --bind "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)"
 }
 
@@ -482,19 +591,46 @@ picker_header() {
   esac
 }
 
+format_open_entry() {
+  foe_label="$1"
+  foe_token="$2"
+  foe_window_name="${3:-}"
+  foe_policy="${4:-}"
+  foe_ac=$(color_escape "${_ACCENT:-7aa2f7}")
+  foe_muted=$(color_escape "${_FGALT:-666666}")
+  foe_rst=$(printf '\033[0m')
+  foe_idx=""
+
+  if [ -n "$foe_window_name" ]; then
+    foe_idx=$(window_index_for_name "$foe_window_name")
+  fi
+
+  foe_suffix=""
+  [ -n "$foe_policy" ] && foe_suffix=" ${foe_muted}[${foe_policy}]${foe_rst}"
+
+  if [ -n "$foe_idx" ]; then
+    printf '%s%s%s%s %s*%s%s\t%s\n' "$foe_ac" "$foe_label" "$foe_rst" "$foe_suffix" "$foe_muted" "$foe_idx" "$foe_rst" "$foe_token"
+  else
+    printf '%s%s%s\t%s\n' "$foe_label" "$foe_suffix" "$foe_rst" "$foe_token"
+  fi
+}
+
 list_open_entries() {
-  loe_ac=$(color_escape "${_ACCENT:-7aa2f7}")
-  loe_muted=$(color_escape "${_FGALT:-666666}")
-  loe_rst=$(printf '\033[0m')
-  loe_windows=$(tmux list-windows -F '#{window_name}	#{window_index}')
-  for loe_type in ai code shell run git; do
-    loe_name=$(window_name_for "$loe_type" "$_SCOPE")
-    loe_idx=$(printf '%s\n' "$loe_windows" | awk -F'\t' -v n="$loe_name" '$1 == n { print $2; exit }')
-    if [ -n "$loe_idx" ]; then
-      printf '%s%s%s %s*%s%s\topen:%s\n' "$loe_ac" "$loe_type" "$loe_rst" "$loe_muted" "$loe_idx" "$loe_rst" "$loe_type"
-    else
-      printf '%s\topen:%s\n' "$loe_type" "$loe_type"
+  for loe_role in ai code shell; do
+    loe_window_name=$(window_name_for "$loe_role" "$_SCOPE")
+    format_open_entry "$loe_role" "role:$loe_role" "$loe_window_name"
+  done
+
+  list_action_names_for_root "$_ROOT" | while IFS= read -r loe_action; do
+    [ -n "$loe_action" ] || continue
+    if ! loe_def=$(resolve_action_definition_for_root "$_ROOT" "$loe_action"); then
+      continue
     fi
+    loe_tab=$(printf '\t')
+    loe_policy=${loe_def%%"$loe_tab"*}
+    loe_window_name=""
+    [ "$loe_policy" = keep ] && loe_window_name=$(window_name_for "$loe_action" "$_SCOPE")
+    format_open_entry "$loe_action" "action:$loe_action" "$loe_window_name" "$loe_policy"
   done
 }
 
@@ -513,9 +649,9 @@ list_project_entries() {
     else
       printf '%s\tproj:%s\n' "$lpe_name" "$lpe_dir"
     fi
-  done <<EOF
+  done <<EOF2
 $lpe_projects
-EOF
+EOF2
 }
 
 picker_list() {
@@ -540,50 +676,66 @@ toggle_picker_mode() {
   fi
 }
 
+kill_picker_target() {
+  kpt_input="$1"
+  kpt_kind=${kpt_input%%:*}
+  kpt_name=${kpt_input#*:}
+  kpt_window_name=$(window_name_for "$kpt_name" "$_SCOPE")
+  case "$kpt_kind" in
+  role | action)
+    tmux kill-window -t "=$kpt_window_name" 2>/dev/null
+    ;;
+  esac
+}
+
 dispatch_picker_action() {
   dpa_input="$1"
-  dpa_mode="${dpa_input%%:*}"
-  dpa_action="${dpa_input#*:}"
+  dpa_mode=${dpa_input%%:*}
+  dpa_rest=${dpa_input#*:}
   case "$dpa_mode" in
-  open)
-    exec mux "$dpa_action"
+  role)
+    exec mux role "$dpa_rest"
+    ;;
+  action)
+    exec mux action "$dpa_rest"
     ;;
   proj)
-    dpa_type=code
-    dpa_dir="$dpa_action"
-    case "$dpa_action" in
-    ai:* | code:* | shell:* | run:* | git:*)
-      dpa_type="${dpa_action%%:*}"
-      dpa_dir="${dpa_action#*:}"
-      ;;
-    esac
-    open_target_in_root "$dpa_type" "$dpa_dir"
+    open_role_in_root code "$dpa_rest"
     ;;
   kill)
-    dpa_submode="${dpa_action%%:*}"
-    dpa_type="${dpa_action#*:}"
-    case "$dpa_submode" in
-    open)
-      dpa_name=$(window_name_for "$dpa_type" "$_SCOPE")
-      tmux kill-window -t "=$dpa_name" 2>/dev/null
-      ;;
-    esac
+    kill_picker_target "$dpa_rest"
     ;;
   esac
 }
 
 picker_open_target() {
-  pot_type="$1"
-  pot_input="$2"
+  pot_kind="$1"
+  pot_name="$2"
+  pot_input="$3"
   pot_mode=$(picker_mode)
   case "$pot_mode" in
   open)
-    exec mux "$pot_type"
+    case "$pot_kind" in
+    role)
+      exec mux role "$pot_name"
+      ;;
+    action)
+      exec mux action "$pot_name"
+      ;;
+    esac
     ;;
   *)
-    pot_submode="${pot_input%%:*}"
-    pot_dir="${pot_input#*:}"
-    [ "$pot_submode" = "proj" ] && open_target_in_root "$pot_type" "$pot_dir"
+    pot_submode=${pot_input%%:*}
+    pot_dir=${pot_input#*:}
+    [ "$pot_submode" = proj ] || return
+    case "$pot_kind" in
+    role)
+      open_role_in_root "$pot_name" "$pot_dir"
+      ;;
+    action)
+      open_action_in_root "$pot_name" "$pot_dir"
+      ;;
+    esac
     ;;
   esac
 }
@@ -615,14 +767,14 @@ session_key() {
 }
 
 render_bar() {
-  if [ "$(tmux show-options -gv mouse)" = "on" ]; then
+  if [ "$(tmux show-options -gv mouse)" = on ]; then
     rb_indicator='#{?pane_in_mode,[mouse#{@c}copy],[mouse]}'
   else
     rb_indicator='#{?pane_in_mode,[copy],}'
   fi
 
-  rb_sessions=$(tmux ls -F '#{session_id}	#{session_name}')
-  rb_bar_content=""
+  rb_sessions=$(tmux ls -F '#{session_id}\t#{session_name}')
+  rb_bar_content=''
 
   if [ -n "$rb_sessions" ]; then
     rb_tab=$(printf '\t')
@@ -638,9 +790,9 @@ render_bar() {
       [ -n "$rb_bar_content" ] && rb_bar_content="$rb_bar_content │ "
       rb_bar_content="$rb_bar_content#[range=session|${rb_sid}]${rb_star}${rb_key}#[fg=#{@accent}]:#[default]${rb_sname}#[norange]"
       rb_index=$((rb_index + 1))
-    done <<EOF
+    done <<EOF2
 $rb_sessions
-EOF
+EOF2
   fi
 
   tmux set -g status-left-length 80
@@ -666,8 +818,20 @@ main() {
   switch)
     switch_session "$2"
     ;;
-  ai | code | git | run | shell)
-    open_target "$1"
+  role)
+    open_role "$2"
+    ;;
+  action)
+    open_action "$2"
+    ;;
+  ai | code | shell)
+    open_role "$1"
+    ;;
+  git)
+    open_action git
+    ;;
+  run)
+    open_action "${2:-run}"
     ;;
   open)
     show_picker open
@@ -691,7 +855,7 @@ main() {
     dispatch_picker_action "$2"
     ;;
   _picker_open)
-    picker_open_target "$2" "$3"
+    picker_open_target "$2" "$3" "$4"
     ;;
   *)
     tmux attach 2>/dev/null || tmux new-session

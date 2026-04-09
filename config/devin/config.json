@@ -1,6 +1,6 @@
 {
   "agent": {
-    "model": "gpt-5-4-xhigh-priority"
+    "model": "gpt-5-4-high-priority"
   },
   "shell": {
     "setup_complete": true
