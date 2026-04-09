@@ -51,6 +51,7 @@ Both run concurrently. Do not wait for them — proceed to step 3.
 Check for `.github/pull_request_template.md`.
 
 **Title:** `type(scope): imperative summary` — max 72 chars.
+
 - Single-commit PRs: reuse the commit message header.
 - Multi-commit: write a summary that covers all changes.
 
@@ -73,11 +74,11 @@ Present the title and body. Ask for approval.
 After approval, **wait for all background checks to complete**. Poll if needed.
 Do not proceed until both have finished.
 
-| Result | Action |
-|--------|--------|
-| CI failed | Show full output. **Stop.** Do not push or create the PR. |
-| Conflicts detected | Show conflicting paths. **Stop.** Offer to rebase onto `origin/main`. |
-| CI passed + no conflicts | Proceed to step 5. |
+| Result                   | Action                                                                |
+| ------------------------ | --------------------------------------------------------------------- |
+| CI failed                | Show full output. **Stop.** Do not push or create the PR.             |
+| Conflicts detected       | Show conflicting paths. **Stop.** Offer to rebase onto `origin/main`. |
+| CI passed + no conflicts | Proceed to step 5.                                                    |
 
 This gate is non-negotiable. There is no override. If the user wants to skip
 CI, they must push manually — this skill will not do it.
