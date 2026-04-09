@@ -352,7 +352,7 @@ role_command_for() {
   ai)
     printf 'devin'
     ;;
-  code)
+  dev)
     printf 'nvim .'
     ;;
   shell)
@@ -370,7 +370,7 @@ require_role_dependencies() {
   ai)
     require devin
     ;;
-  code)
+  dev)
     require nvim
     ;;
   shell)
@@ -561,7 +561,7 @@ show_picker() {
     --bind "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)" \
     --bind "enter:become(mux _dispatch {2})" \
     --bind "ctrl-a:become(mux _picker_open role ai {2})" \
-    --bind "ctrl-c:become(mux _picker_open role code {2})" \
+    --bind "ctrl-d:become(mux _picker_open role dev {2})" \
     --bind "ctrl-s:become(mux _picker_open role shell {2})" \
     --bind "ctrl-r:become(mux _picker_open action run {2})" \
     --bind "ctrl-g:become(mux _picker_open action git {2})" \
@@ -586,11 +586,11 @@ picker_header() {
   ph_mode=$(picker_mode)
   case "$ph_mode" in
   open)
-    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^X%s kill %s^O%s projects' \
+    printf ':: %s^A%s ai %s^D%s dev %s^S%s shell %s^R%s run %s^G%s git %s^X%s kill %s^O%s projects' \
       "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst"
     ;;
   *)
-    printf ':: %s^A%s ai %s^C%s code %s^S%s shell %s^R%s run %s^G%s git %s^O%s windows' \
+    printf ':: %s^A%s ai %s^D%s dev %s^S%s shell %s^R%s run %s^G%s git %s^O%s windows' \
       "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst" "$ph_ac" "$ph_rst"
     ;;
   esac
@@ -621,7 +621,7 @@ format_open_entry() {
 }
 
 list_open_entries() {
-  for loe_role in ai code shell; do
+  for loe_role in ai dev shell; do
     loe_window_name=$(window_name_for "$loe_role" "$_SCOPE")
     format_open_entry "$loe_role" "role:$loe_role" "$loe_window_name"
   done
@@ -703,7 +703,7 @@ dispatch_picker_action() {
     exec mux action "$dpa_rest"
     ;;
   proj)
-    open_role_in_root code "$dpa_rest"
+    open_role_in_root dev "$dpa_rest"
     ;;
   kill)
     kill_picker_target "$dpa_rest"
@@ -827,8 +827,12 @@ main() {
   action)
     open_action "$2"
     ;;
-  ai | code | shell)
+  ai | dev | shell)
     open_role "$1"
+    ;;
+  code)
+    printf 'mux: unknown role: code\n' >&2
+    exit 1
     ;;
   git)
     open_action git
