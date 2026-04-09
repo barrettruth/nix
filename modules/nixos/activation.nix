@@ -256,6 +256,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/latexmk"}
     ${mkDir "${XDG_CONFIG_HOME}/github"}
     ${mkDir "${XDG_CONFIG_HOME}/direnv"}
+    ${mkDir "${XDG_CONFIG_HOME}/claude"}
     ${mkDir "${XDG_CONFIG_HOME}/devin"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
     ${mkDir "${XDG_CONFIG_HOME}/tmux/themes"}
@@ -312,6 +313,11 @@ in
     ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
     ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
     ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
+    ${mkSymlink "${repo}/config/claude/settings.json" "${XDG_CONFIG_HOME}/claude/settings.json"}
+    ${mkSymlink "${repo}/config/claude/CLAUDE.md" "${XDG_CONFIG_HOME}/claude/CLAUDE.md"}
+    ${mkSymlink "${repo}/config/claude/rules" "${XDG_CONFIG_HOME}/claude/rules"}
+    ${mkSymlink "${repo}/config/claude/skills" "${XDG_CONFIG_HOME}/claude/skills"}
+    ${mkSymlink "${repo}/config/claude/hooks" "${XDG_CONFIG_HOME}/claude/hooks"}
     ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
     ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
     ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/devin/skills"}

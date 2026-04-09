@@ -27,6 +27,9 @@
       }
     ]
   },
+  "enabledPlugins": {
+    "vercel-plugin@vercel-vercel-plugin": true
+  },
   "extraKnownMarketplaces": {
     "vercel-vercel-plugin": {
       "source": {
@@ -48,8 +51,5 @@
   ],
   "tools": {
     "web_fetch": true
-  },
-  "enabledPlugins": {
-    "vercel-plugin@vercel-vercel-plugin": true
   }
 }
