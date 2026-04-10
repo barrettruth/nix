@@ -27,57 +27,6 @@ return {
     {
         'barrettruth/forge.nvim',
         enabled = true,
-        before = function()
-            vim.g.forge = {
-                ci = { lines = 5000 },
-                keys = {
-                    pr = {
-                        checkout = '<cr>',
-                        diff = '<c-d>',
-                        worktree = '<c-w>',
-                        ci = '<c-t>',
-                        browse = '<c-x>',
-                        manage = '<c-e>',
-                        create = '<c-a>',
-                        filter = '<c-o>',
-                        refresh = '<c-r>',
-                    },
-                    issue = {
-                        browse = '<cr>',
-                        close = '<c-s>',
-                        filter = '<c-o>',
-                        refresh = '<c-r>',
-                    },
-                    branch = {
-                        browse = '<c-x>',
-                        yank = '<c-y>',
-                        refresh = '<c-r>',
-                    },
-                    commit = {
-                        browse = '<c-x>',
-                        yank = '<c-y>',
-                        refresh = '<c-r>',
-                    },
-                    worktree = {
-                        yank = '<c-y>',
-                        refresh = '<c-r>',
-                    },
-                },
-                display = {
-                    widths = {
-                        title = 50,
-                        author = 12,
-                        name = 40,
-                        branch = 20,
-                    },
-                    limits = {
-                        pulls = 50,
-                        issues = 50,
-                        runs = 20,
-                    },
-                },
-            }
-        end,
         after = function()
             vim.cmd.packadd('fzf-lua')
         end,

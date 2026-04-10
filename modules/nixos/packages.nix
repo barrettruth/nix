@@ -36,6 +36,7 @@ in
 
     rustup
     uv
+    python3
     claude-code
     codex
     devin
