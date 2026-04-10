@@ -6,7 +6,7 @@ vim.pack.add({
 return {
     'nvimdev/guard.nvim',
     before = function()
-        vim.cmd.packadd('guard-collection')
+        require('config.lz').load('guard-collection')
         vim.g.guard_config = {
             fmt_on_save = false,
             save_on_fmt = true,

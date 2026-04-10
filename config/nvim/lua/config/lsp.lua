@@ -4,7 +4,7 @@ local Methods = vim.lsp.protocol.Methods
 
 local function fzf_or(fzf_cmd, fallback)
     return function()
-        pcall(require('lz.n').trigger_load, 'ibhagwan/fzf-lua')
+        require('config.lz').load('ibhagwan/fzf-lua')
         if pcall(require, 'fzf-lua') then
             vim.cmd('FzfLua ' .. fzf_cmd)
         else

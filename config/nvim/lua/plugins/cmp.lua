@@ -36,12 +36,14 @@ return {
     event = { 'InsertEnter', 'LspAttach' },
     keys = { { '<c-n>', mode = 'i' } },
     before = function()
-        vim.cmd.packadd('lazydev.nvim')
-        vim.cmd.packadd('blink-cmp-git')
-        vim.cmd.packadd('blink-cmp-env')
-        vim.cmd.packadd('blink-cmp-ssh')
-        vim.cmd.packadd('blink-cmp-tmux')
-        vim.cmd.packadd('blink-cmp-ghostty')
+        require('config.lz').load({
+            'folke/lazydev.nvim',
+            'blink-cmp-git',
+            'blink-cmp-env',
+            'blink-cmp-ssh',
+            'blink-cmp-tmux',
+            'blink-cmp-ghostty',
+        })
     end,
     after = function()
         ---@module 'blink.cmp'

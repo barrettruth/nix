@@ -28,7 +28,7 @@ return {
         'barrettruth/forge.nvim',
         enabled = true,
         after = function()
-            vim.cmd.packadd('fzf-lua')
+            require('config.lz').load('ibhagwan/fzf-lua')
         end,
         cmd = 'Forge',
         keys = {
@@ -117,7 +117,7 @@ return {
             }
         end,
         after = function()
-            vim.cmd.packadd('canola-collection')
+            require('config.lz').load('canola-collection')
 
             local show_all = false
             vim.api.nvim_create_autocmd('FileType', {
@@ -357,7 +357,7 @@ return {
             }
         end,
         after = function()
-            vim.cmd.packadd('fzf-lua')
+            require('config.lz').load('ibhagwan/fzf-lua')
         end,
     },
     {
