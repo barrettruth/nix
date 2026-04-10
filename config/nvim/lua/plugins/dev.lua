@@ -31,7 +31,25 @@ return {
             vim.cmd.packadd('fzf-lua')
         end,
         cmd = 'Forge',
-        keys = { { '<c-g>', '<cmd>Forge<cr>' } },
+        keys = {
+            { '<leader>gg', '<cmd>Forge<cr>', desc = 'forge' },
+            { '<leader>gp', '<cmd>Forge pr<cr>', desc = 'forge prs' },
+            { '<leader>gi', '<cmd>Forge issue<cr>', desc = 'forge issues' },
+            { '<leader>gc', '<cmd>Forge ci<cr>', desc = 'forge ci' },
+            { '<leader>gB', '<cmd>Forge browse<cr>', desc = 'forge browse' },
+            { '<leader>gr', '<cmd>Forge release<cr>', desc = 'forge releases' },
+            {
+                '<leader>gb',
+                '<cmd>Forge branches<cr>',
+                desc = 'forge branches',
+            },
+            { '<leader>gC', '<cmd>Forge commits<cr>', desc = 'forge commits' },
+            {
+                '<leader>gw',
+                '<cmd>Forge worktrees<cr>',
+                desc = 'forge worktrees',
+            },
+        },
     },
     {
         'barrettruth/diffs.nvim',
@@ -46,9 +64,7 @@ return {
                     gutter = true,
                     vim = {
                         enabled = true,
-                        -- max_lines = 500,
                     },
-                    -- treesitter = { max_lines = 10 },
                     intra = {
                         enabled = true,
                         algorithm = 'vscode',
