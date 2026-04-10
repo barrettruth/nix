@@ -7,15 +7,6 @@
 
 let
   inherit (hostConfig) username homeDirectory;
-  tuigreet = lib.getExe pkgs.tuigreet;
-  hyprSession = pkgs.writeShellScript "hypr-session" ''
-    [ -e /etc/set-environment ] && . /etc/set-environment
-    _tf="''${XDG_STATE_HOME:-$HOME/.local/state}/theme"
-    THEME="$(cat "$_tf" 2>/dev/null)" || THEME="midnight"
-    export THEME
-    unset _tf
-    exec start-hyprland
-  '';
 in
 {
   imports = [
@@ -184,14 +175,6 @@ in
     jack.enable = true;
     pulse.enable = true;
     wireplumber.enable = true;
-  };
-
-  services.greetd = {
-    enable = true;
-    settings.default_session = {
-      command = "${tuigreet} --time --asterisks --cmd ${hyprSession}";
-      user = "greeter";
-    };
   };
 
   services.openssh.enable = true;
