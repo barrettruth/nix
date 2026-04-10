@@ -135,6 +135,12 @@ in
       [ -z "$THEME" ] && THEME="midnight"
       export THEME
     '';
+    loginShellInit = ''
+      if [[ -z "$DISPLAY$WAYLAND_DISPLAY" && "$(tty)" == /dev/tty1 ]]; then
+        [ -e /etc/set-environment ] && . /etc/set-environment
+        exec start-hyprland
+      fi
+    '';
   };
   # programs.hyprland = {
   #   enable = true;
