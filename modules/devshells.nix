@@ -8,6 +8,7 @@
       devShells = {
         default = pkgs.mkShell {
           packages = [
+            pkgs.xxd
             pkgs.deadnix
             pkgs.statix
             pkgs.nixfmt
