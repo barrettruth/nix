@@ -94,6 +94,26 @@
         "url": "https://install.determinate.systems/determinate-nixd/tag/v3.17.3/x86_64-linux"
       }
     },
+    "devin": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775866113,
+        "narHash": "sha256-HwPk/jTA4WpwcWagYQQEmhPmJKCznbOQ79+6xeTbKbw=",
+        "owner": "charliemeyer2000",
+        "repo": "devin-cli-overlay",
+        "rev": "7df6c719259618289e76817450a543fb39547188",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "devin-cli-overlay",
+        "type": "github"
+      }
+    },
     "direnv-instant": {
       "inputs": {
         "flake-parts": "flake-parts_2",
@@ -484,6 +504,7 @@
         "claude-code": "claude-code",
         "codex": "codex",
         "determinate": "determinate",
+        "devin": "devin",
         "direnv-instant": "direnv-instant",
         "disko": "disko",
         "flake-parts": "flake-parts_3",
