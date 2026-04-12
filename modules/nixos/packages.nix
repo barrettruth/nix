@@ -9,8 +9,14 @@ let
 
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 
-  devin = pkgs.callPackage ../../pkgs/devin.nix {
-    agentConfig = "${hostConfig.XDG_CONFIG_HOME}/devin/agent.yaml";
+  devin = pkgs.symlinkJoin {
+    name = "devin";
+    paths = [ pkgs."devin-cli" ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/devin \
+        --add-flags "--agent-config ${hostConfig.XDG_CONFIG_HOME}/devin/agent.yaml"
+    '';
   };
 in
 {

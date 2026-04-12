@@ -6,6 +6,10 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     claude-code.url = "github:ryoppippi/claude-code-overlay";
+    devin = {
+      url = "github:charliemeyer2000/devin-cli-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs-whisper.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
     disko = {
       url = "github:nix-community/disko";
