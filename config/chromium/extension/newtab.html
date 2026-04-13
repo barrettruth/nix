@@ -13,7 +13,9 @@
         root.style.color = isDark ? "#e0e0e0" : "#1a1a1a";
       };
       applyScheme(colorScheme.matches);
-      colorScheme.addEventListener("change", (event) => applyScheme(event.matches));
+      colorScheme.addEventListener("change", (event) =>
+        applyScheme(event.matches),
+      );
     </script>
     <style>
       :root {
