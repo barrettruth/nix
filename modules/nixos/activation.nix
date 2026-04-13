@@ -258,8 +258,13 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/direnv"}
     ${mkDir "${XDG_CONFIG_HOME}/claude"}
     ${mkDir "${XDG_CONFIG_HOME}/devin"}
+    ${mkDir "${XDG_CONFIG_HOME}/vim"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
     ${mkDir "${XDG_CONFIG_HOME}/tmux/themes"}
+    ${mkDir "${XDG_STATE_HOME}/zsh"}
+    ${mkDir "${XDG_DATA_HOME}/vim"}
+    ${mkDir "${XDG_STATE_HOME}/vim"}
+    ${mkDir "${XDG_CACHE_HOME}/vim"}
     ${mkDir "${homeDirectory}/.ssh"}
 
     ${mkSymlink "${themes}/fzf/themes/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
@@ -321,6 +326,7 @@ in
     ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
     ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
     ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/devin/skills"}
+    ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
     ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${XDG_CONFIG_HOME}/tmux/themes/midnight.conf"}
     ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${XDG_CONFIG_HOME}/tmux/themes/daylight.conf"}
 

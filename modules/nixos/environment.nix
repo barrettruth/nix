@@ -20,6 +20,8 @@ in
     TERMINAL = "ghostty";
     TERM = "xterm-ghostty";
     TERMINFO = "${XDG_DATA_HOME}/terminfo";
+    VIMINIT =
+      "let $MYVIMRC = expand('$XDG_CONFIG_HOME/vim/vimrc') | if filereadable($MYVIMRC) | execute 'source ' . fnameescape($MYVIMRC) | endif";
     BROWSER = "chromium";
     FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
     FZF_DEFAULT_COMMAND = "rg --files --hidden";
