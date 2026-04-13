@@ -144,6 +144,7 @@ in
     nix-direnv
     tmux
     neovim
+    vim
     gh
     jujutsu
     gnupg
