@@ -27,6 +27,7 @@ jobs:
               - '**/*.lua'
             prettier:
               - '**/*.json'
+              - '**/*.html'
               - '**/*.yaml'
               - '**/*.yml'
               - '**/*.md'
