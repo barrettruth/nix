@@ -210,7 +210,14 @@ in
 
   security.sudo.enable = true;
 
-  fonts.enableDefaultPackages = true;
+  fonts.packages = with pkgs; [
+    dejavu_fonts
+    freefont_ttf
+    gyre-fonts
+    liberation_ttf
+    unifont
+    noto-fonts-color-emoji
+  ];
   fonts.fontconfig.defaultFonts = {
     sansSerif = [ "SF Pro Display" ];
     monospace = [ "Berkeley Mono" ];
