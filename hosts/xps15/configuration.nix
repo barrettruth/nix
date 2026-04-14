@@ -210,6 +210,7 @@ in
 
   security.sudo.enable = true;
 
+  fonts.enableDefaultPackages = true;
   fonts.fontconfig.defaultFonts = {
     sansSerif = [ "SF Pro Display" ];
     monospace = [ "Berkeley Mono" ];
