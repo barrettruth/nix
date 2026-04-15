@@ -9,6 +9,6 @@ nix develop --command statix check
 nix develop --command stylua --check config/nvim
 git ls-files '*.lua' | xargs nix develop --command selene --display-style quiet --config config/nvim/selene.toml
 
-nix develop --command shfmt -i 2 -d scripts/ config/claude/hooks/guard.sh
+nix develop --command shfmt -i 2 -d scripts/
 
 nix develop --command prettier --check .
