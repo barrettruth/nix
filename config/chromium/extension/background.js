@@ -208,14 +208,7 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
   if (info.status === "loading") applyDarkToTab(tabId);
 });
 
-chrome.tabs.onCreated.addListener(async (tab) => {
-  try {
-    const groups = await chrome.tabGroups.query({ windowId: tab.windowId });
-    const expanded = groups.find((g) => !g.collapsed);
-    if (expanded && tab.groupId === -1) {
-      await chrome.tabs.group({ tabIds: [tab.id], groupId: expanded.id });
-    }
-  } catch (_) {}
+chrome.tabs.onCreated.addListener((tab) => {
   if (systemIsDark) applyDarkToTab(tab.id);
 });
 
@@ -253,11 +246,10 @@ const ACTIONS = {
 async function toggleOverlayInActiveTab(disposition = "currentTab") {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
+  const msg = { type: "toggleOverlay", disposition };
   try {
-    await chrome.tabs.sendMessage(tab.id, {
-      type: "toggleOverlay",
-      disposition,
-    });
+    if (extPorts.has(tab.id)) extPorts.get(tab.id).postMessage(msg);
+    else await chrome.tabs.sendMessage(tab.id, msg);
   } catch (_) {}
 }
 
