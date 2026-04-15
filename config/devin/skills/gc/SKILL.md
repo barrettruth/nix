@@ -15,8 +15,8 @@ These rules are absolute. Do not proceed if any would be violated.
 - **No main commits.** If on `main` or `master`, create a feature branch first.
 - **No AI attribution.** Never add `Co-Authored-By`, `Signed-off-by`, or any
   AI/tool attribution in commits.
-- **No AI config files.** Exclude from staging: `CLAUDE.md`, `AGENTS.md`,
-  `.claude/`, `.devin/`, `.cursor/`, `.windsurf/`, `.agents/`.
+- **No AI config files.** Exclude from staging: `AGENTS.md`, `.devin/`,
+  `.cursor/`, `.windsurf/`, `.agents/`.
 - **One logical change.** If the diff contains unrelated changes, ask which
   subset to include. Refactors, formatting, and features are separate commits.
 - **GPG fallback.** If signing fails, retry with `--no-gpg-sign`.

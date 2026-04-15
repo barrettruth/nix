@@ -110,18 +110,6 @@ if command -v tmux >/dev/null 2>&1 && tmux list-sessions >/dev/null 2>&1; then
   tmux setenv -g THEME "$theme"
 fi
 
-if command -v claude >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-  CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude}/.claude.json"
-  case "$theme" in
-  midnight) claude_theme='dark' ;;
-  daylight) claude_theme='light' ;;
-  esac
-  [ -f "$CLAUDE_CONFIG" ] && {
-    jq ".theme=\"$claude_theme\"" "$CLAUDE_CONFIG" >"$CLAUDE_CONFIG.tmp" &&
-      mv "$CLAUDE_CONFIG.tmp" "$CLAUDE_CONFIG"
-  }
-fi
-
 for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
   [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf_reload\").reload()')" 2>/dev/null || true
 done
