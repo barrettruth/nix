@@ -217,7 +217,7 @@ let
   '';
 
   mkSymlink = target: link: ''
-    ln -sfn "${target}" "${link}"
+    ln -sfnT "${target}" "${link}"
     chown -h ${username}:users "${link}"
   '';
 

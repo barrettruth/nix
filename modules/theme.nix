@@ -9,6 +9,8 @@ let
       border = "#3d3d3d";
       accent = "#7aa2f7";
       green = "#98c379";
+      zathuraHighlightColor = "rgba(122,162,247,0.369701)";
+      zathuraHighlightActiveColor = "rgba(152,195,121,0.325217)";
       red = "#ff6b6b";
       yellow = "#e5c07b";
       blue = "#7aa2f7";
@@ -25,6 +27,8 @@ let
       border = "#e8e8e8";
       accent = "#3b5bdb";
       green = "#2d7f3e";
+      zathuraHighlightColor = "rgba(59,91,219,0.544157)";
+      zathuraHighlightActiveColor = "rgba(45,127,62,0.588445)";
       red = "#c7254e";
       yellow = "#996800";
       blue = "#3b5bdb";
@@ -113,8 +117,8 @@ let
     set notification-error-fg "${palette.red}"
     set notification-warning-bg "${palette.bg}"
     set notification-warning-fg "${palette.yellow}"
-    set highlight-color "${palette.accent}"
-    set highlight-active-color "${palette.green}"
+    set highlight-color "${palette.zathuraHighlightColor}"
+    set highlight-active-color "${palette.zathuraHighlightActiveColor}"
     set completion-bg "${palette.bgAlt}"
     set completion-fg "${palette.fg}"
     set completion-highlight-bg "${palette.accent}"

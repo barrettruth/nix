@@ -22,6 +22,40 @@ for _, name in ipairs(dev_plugins) do
 end
 
 local synctex_pdf = {}
+local synctex_socket = '/tmp/nvim-preview.sock'
+
+local function ensure_synctex_server()
+    if vim.tbl_contains(vim.fn.serverlist(), synctex_socket) then
+        return
+    end
+    if vim.uv.fs_stat(synctex_socket) then
+        local probe = vim.system(
+            { 'nvim', '--server', synctex_socket, '--remote-expr', '1' },
+            { text = true }
+        ):wait()
+        if probe.code == 0 then
+            return
+        end
+        vim.fn.delete(synctex_socket)
+    end
+    local ok, err = pcall(vim.fn.serverstart, synctex_socket)
+    if not ok then
+        vim.notify(err, vim.log.levels.WARN)
+    end
+end
+
+local function forward_search_zathura()
+    local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
+    if not pdf then
+        return
+    end
+    vim.fn.jobstart({
+        'zathura',
+        '--synctex-forward',
+        vim.fn.line('.') .. ':0:' .. vim.fn.expand('%:p'),
+        pdf,
+    })
+end
 
 return {
     {
@@ -369,6 +403,8 @@ return {
         'barrettruth/preview.nvim',
         ft = { 'typst', 'tex', 'markdown', 'plantuml' },
         before = function()
+            ensure_synctex_server()
+
             vim.filetype.add({
                 extension = { puml = 'plantuml', pu = 'plantuml' },
             })
@@ -392,20 +428,7 @@ return {
                 ),
                 pattern = '*.tex',
                 callback = function()
-                    local pdf = synctex_pdf[vim.api.nvim_get_current_buf()]
-                    if pdf then
-                        vim.fn.jobstart({
-                            'sioyek',
-                            '--instance-name',
-                            'preview',
-                            '--reuse-window',
-                            '--forward-search-file',
-                            vim.fn.expand('%:p'),
-                            '--forward-search-line',
-                            tostring(vim.fn.line('.')),
-                            pdf,
-                        })
-                    end
+                    forward_search_zathura()
                 end,
             })
             vim.g.preview = {
@@ -417,11 +440,11 @@ return {
                             .. '.html'
                     end,
                 },
-                typst = { open = { 'sioyek', '--new-instance' } },
+                typst = { open = { 'zathura' } },
                 plantuml = true,
                 mermaid = true,
                 latex = {
-                    open = { 'sioyek', '--instance-name', 'preview' },
+                    open = { 'zathura' },
                     args = function(ctx)
                         local dir = vim.fn.fnamemodify(ctx.file, ':h')
                             .. '/build'
