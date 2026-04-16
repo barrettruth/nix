@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   hostConfig,
   whisperPkgs ? pkgs,
   ...
@@ -20,153 +21,153 @@ let
   };
 in
 {
-  users.users.${hostConfig.username}.packages = with pkgs; [
-    awscli2
-    pure-prompt
-    tree
-    typos
-    jq
-    curl
-    wget
-    unzip
-    tesseract
-    gnumake
-    gcc
-    file
-    ffmpeg
-    poppler-utils
-    librsvg
-    imagemagick
-    luarocks
-    xclip
+  users.users.${hostConfig.username}.packages =
+    with pkgs;
+    [
+      awscli2
+      pure-prompt
+      tree
+      typos
+      jq
+      curl
+      wget
+      unzip
+      tesseract
+      gnumake
+      gcc
+      file
+      ffmpeg
+      poppler-utils
+      librsvg
+      imagemagick
+      luarocks
 
-    rustup
-    uv
-    python3
-    codex
-    devin
+      rustup
+      uv
+      python3
+      codex
+      devin
 
-    bash-language-server
-    basedpyright
-    clang-tools
-    emmet-language-server
-    lua-language-server
-    mdx-language-server
-    pandoc
-    pytest-language-server
-    ruff
-    tinymist
-    vtsls
-    vscode-langservers-extracted
-    nixd
+      bash-language-server
+      basedpyright
+      clang-tools
+      emmet-language-server
+      lua-language-server
+      mdx-language-server
+      pandoc
+      pytest-language-server
+      ruff
+      tinymist
+      vtsls
+      vscode-langservers-extracted
+      nixd
 
-    black
-    buf
-    cbfmt
-    cmake-format
-    isort
-    prettierd
-    shfmt
-    stylua
+      black
+      buf
+      cbfmt
+      cmake-format
+      isort
+      prettierd
+      shfmt
+      stylua
 
-    checkmake
-    cpplint
-    eslint_d
-    hadolint
-    mypy
-    selene
-    shellcheck
-    deadnix
-    statix
+      checkmake
+      cpplint
+      eslint_d
+      hadolint
+      mypy
+      selene
+      shellcheck
+      deadnix
+      statix
 
-    nodejs
-    bun
-    lua
-    tree-sitter
-    nixfmt-tree
-    biber
-    (texlive.combine {
-      inherit (texlive)
-        scheme-small
-        latexindent
-        latexmk
-        lastpage
-        pgf
-        collection-fontsrecommended
-        ;
-    })
+      nodejs
+      bun
+      lua
+      tree-sitter
+      nixfmt-tree
 
-    tea
-    git-lfs
+      tea
+      git-lfs
 
-    slack
-    gemini-cli
-    typst
-    typstyle
-    glab
-    zathura
-    mpv
-    (chromium.override {
-      commandLineArgs = "--silent-debugger-extension-api";
-    })
+      gemini-cli
+      typst
+      typstyle
+      glab
 
-    vesktop
-    signal-desktop
-    telegram-desktop
-    element-desktop
+      psmisc
+      brightnessctl
+      socat
+      glib.bin
 
-    xdg-desktop-portal-gtk
-    hyprlock
-    nerd-fonts.jetbrains-mono
-    papirus-icon-theme
-    psmisc
-    fuzzel
-    wl-clipboard
-    grim
-    slurp
-    wf-recorder
-    libnotify
-    brightnessctl
-    socat
-    glib.bin
-    gsettings-desktop-schemas
+      fzf
+      eza
+      zoxide
+      ripgrep
+      fd
+      direnv
+      nix-direnv
+      tmux
+      neovim
+      vim
+      gh
+      jujutsu
+      gnupg
 
-    pkgs.hyprland
-    pkgs.xdg-desktop-portal-hyprland
+      ghostty
 
-    fzf
-    eza
-    zoxide
-    ripgrep
-    fd
-    direnv
-    nix-direnv
-    tmux
-    neovim
-    vim
-    gh
-    jujutsu
-    gnupg
+      whisper
 
-    ghostty
+      tmuxPlugins.resurrect
+      tmuxPlugins.continuum
 
-    apple-cursor
-
-    whisper
-
-    tmuxPlugins.resurrect
-    tmuxPlugins.continuum
-
-    zsh-syntax-highlighting
-    zsh-autosuggestions
-
-    waybar
-
-    dunst
-
-    hyprpaper
-    hypridle
-
-    cliphist
-  ];
+      zsh-syntax-highlighting
+      zsh-autosuggestions
+    ]
+    ++ lib.optionals hostConfig.enableTexlive [
+      biber
+      (texlive.combine {
+        inherit (texlive)
+          scheme-small
+          latexindent
+          latexmk
+          lastpage
+          pgf
+          collection-fontsrecommended
+          ;
+      })
+    ]
+    ++ lib.optionals hostConfig.enableDesktop [
+      slack
+      zathura
+      mpv
+      (chromium.override {
+        commandLineArgs = "--silent-debugger-extension-api";
+      })
+      vesktop
+      signal-desktop
+      telegram-desktop
+      element-desktop
+      xdg-desktop-portal-gtk
+      nerd-fonts.jetbrains-mono
+      papirus-icon-theme
+      apple-cursor
+      libnotify
+      gsettings-desktop-schemas
+    ]
+    ++ lib.optionals hostConfig.enableWayland [
+      hyprlock
+      fuzzel
+      wl-clipboard
+      grim
+      slurp
+      wf-recorder
+      pkgs.hyprland
+      pkgs.xdg-desktop-portal-hyprland
+      waybar
+      dunst
+      hyprpaper
+      hypridle
+      cliphist
+    ];
 }

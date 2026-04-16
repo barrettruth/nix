@@ -23,6 +23,10 @@ let
     gpu = "nvidia";
     backlightDevice = "intel_backlight";
     platform = "x86_64-linux";
+    enableX11 = false;
+    enableWayland = true;
+    enableDesktop = true;
+    enableTexlive = true;
   };
 in
 {
@@ -36,6 +40,7 @@ in
       ../nixos/environment.nix
       ../nixos/services.nix
       ../nixos/activation.nix
+      ../nixos/profiles/x11.nix
       {
         programs.direnv-instant.enable = true;
         programs.direnv.nix-direnv.enable = true;
