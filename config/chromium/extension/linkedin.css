@@ -1,0 +1,5 @@
+[data-finite-scroll-hotkey-context="FEED"],
+[data-testid="mainFeed"],
+.feed-new-update-pill__new-update-button {
+  display: none !important;
+}

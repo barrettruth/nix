@@ -62,7 +62,6 @@
   };
 
   services.openssh = {
-    enable = true;
     settings = {
       PermitRootLogin = "prohibit-password";
       PasswordAuthentication = false;
@@ -389,14 +388,6 @@
       OnCalendar = "daily";
       Persistent = true;
     };
-  };
-
-  nix.settings = {
-    auto-optimise-store = true;
-    experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
   };
 
   nix.gc = {

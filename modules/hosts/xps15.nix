@@ -36,11 +36,13 @@ in
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       inputs.direnv-instant.nixosModules.direnv-instant
       ../../hosts/xps15/configuration.nix
-      ../nixos/packages.nix
-      ../nixos/environment.nix
-      ../nixos/services.nix
-      ../nixos/activation.nix
-      ../nixos/profiles/x11.nix
+      ../nixos/common/nix.nix
+      ../nixos/common/ssh.nix
+      ../nixos/desktop/packages.nix
+      ../nixos/desktop/environment.nix
+      ../nixos/desktop/services.nix
+      ../nixos/desktop/activation.nix
+      ../nixos/desktop/profiles/x11.nix
       {
         programs.direnv-instant.enable = true;
         programs.direnv.nix-direnv.enable = true;
