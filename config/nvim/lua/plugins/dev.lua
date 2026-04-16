@@ -66,23 +66,47 @@ return {
         end,
         cmd = 'Forge',
         keys = {
-            { '<leader>gg', [[<cmd>lua require('forge').open()<cr>]], desc = 'forge' },
-            { '<leader>gp', [[<cmd>lua require('forge').open('prs')<cr>]], desc = 'forge prs' },
-            { '<leader>gi', [[<cmd>lua require('forge').open('issues')<cr>]], desc = 'forge issues' },
-            { '<leader>gc', [[<cmd>lua require('forge').open('ci')<cr>]], desc = 'forge ci' },
+            {
+                '<leader>gg',
+                [[<cmd>lua require('forge').open()<cr>]],
+                desc = 'forge',
+            },
+            {
+                '<leader>gp',
+                [[<cmd>lua require('forge').open('prs')<cr>]],
+                desc = 'forge prs',
+            },
+            {
+                '<leader>gi',
+                [[<cmd>lua require('forge').open('issues')<cr>]],
+                desc = 'forge issues',
+            },
+            {
+                '<leader>gc',
+                [[<cmd>lua require('forge').open('ci')<cr>]],
+                desc = 'forge ci',
+            },
             {
                 '<leader>gB',
                 [[<cmd>lua require('forge').open('browse')<cr>]],
                 mode = { 'n', 'x' },
                 desc = 'forge browse',
             },
-            { '<leader>gr', [[<cmd>lua require('forge').open('releases')<cr>]], desc = 'forge releases' },
+            {
+                '<leader>gr',
+                [[<cmd>lua require('forge').open('releases')<cr>]],
+                desc = 'forge releases',
+            },
             {
                 '<leader>gb',
                 [[<cmd>lua require('forge').open('branches')<cr>]],
                 desc = 'forge branches',
             },
-            { '<leader>gC', [[<cmd>lua require('forge').open('commits')<cr>]], desc = 'forge commits' },
+            {
+                '<leader>gC',
+                [[<cmd>lua require('forge').open('commits')<cr>]],
+                desc = 'forge commits',
+            },
             {
                 '<leader>gw',
                 [[<cmd>lua require('forge').open('worktrees')<cr>]],
