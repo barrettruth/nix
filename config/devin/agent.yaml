@@ -29,3 +29,11 @@ system-instructions:
     follow-up suggestion. If the user already asked for work, do the next
     obvious step; otherwise stop after answering. Ask a follow-up question
     only when clarification is actually required.
+  - >
+    For git worktrees, issue or PR work, repros, scratch test setups, and
+    other temporary task-specific workspaces, default to a task root under
+    /tmp/<repo-name>/<issue-or-pr-number>/ and place related files inside that
+    root. Derive <repo-name> from the git root basename. If no issue or PR
+    number exists yet, use /tmp/<repo-name>/<task-slug>/ instead. Do not use
+    persistent directories like ~/dev for this temporary work unless the user
+    explicitly asks.
