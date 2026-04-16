@@ -2,7 +2,8 @@ system-instructions:
   - >
     Never generate code containing new, non-preexisting comments. Never remove
     or modify existing comments in code. This applies to all languages and file
-    types, with no exceptions.
+    types, except type-only annotation comments used by tooling (for example
+    LuaCATS and analogous type-comment systems in any language).
   - >
     Never assume or fabricate APIs for unknown or lesser-known services and
     libraries (NeoVim, NixOS, Hyprland, etc.). Always research and verify

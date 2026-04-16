@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   palettes,
   themeGenerators,
   hostConfig,
@@ -221,6 +222,19 @@ let
     chown -h ${username}:users "${link}"
   '';
 
+  mkMutableConfig = source: target: ''
+    if [ -L "${target}" ]; then
+      targetPath="$(readlink -f "${target}" || true)"
+      sourcePath="$(readlink -f "${source}")"
+      if [ "$targetPath" = "$sourcePath" ]; then
+        rm -f "${target}"
+        install -Dm600 -o ${username} -g users "${source}" "${target}"
+      fi
+    elif [ ! -e "${target}" ]; then
+      install -Dm600 -o ${username} -g users "${source}" "${target}"
+    fi
+  '';
+
   mkDir = dir: ''
     install -d -o ${username} -g users "${dir}"
   '';
@@ -236,12 +250,6 @@ in
 
   system.activationScripts.userConfig.text = ''
     ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
-    ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
-    ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
-    ${mkDir "${XDG_CONFIG_HOME}/fuzzel/themes"}
-    ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
-    ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
-    ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
 
     ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
     [ -d "${XDG_CONFIG_HOME}/ghostty/themes" ] && [ ! -L "${XDG_CONFIG_HOME}/ghostty/themes" ] && rm -rf "${XDG_CONFIG_HOME}/ghostty/themes"
@@ -253,7 +261,6 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/npm"}
     ${mkDir "${XDG_CONFIG_HOME}/python"}
     ${mkDir "${XDG_CONFIG_HOME}/luarocks"}
-    ${mkDir "${XDG_CONFIG_HOME}/latexmk"}
     ${mkDir "${XDG_CONFIG_HOME}/github"}
     ${mkDir "${XDG_CONFIG_HOME}/direnv"}
     ${mkDir "${XDG_CONFIG_HOME}/devin"}
@@ -266,26 +273,56 @@ in
     ${mkDir "${XDG_CACHE_HOME}/vim"}
     ${mkDir "${homeDirectory}/.ssh"}
 
+    ${lib.optionalString hostConfig.enableWayland ''
+      ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/fuzzel/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
+
+      ${mkSymlink "${themes}/hypr/themes/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
+      ${mkSymlink "${themes}/hypr/themes/daylight.conf" "${XDG_CONFIG_HOME}/hypr/themes/daylight.conf"}
+      ${mkSymlink "${themes}/waybar/themes/midnight.css" "${XDG_CONFIG_HOME}/waybar/themes/midnight.css"}
+      ${mkSymlink "${themes}/waybar/themes/daylight.css" "${XDG_CONFIG_HOME}/waybar/themes/daylight.css"}
+      ${mkSymlink "${themes}/fuzzel/themes/midnight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/midnight.ini"}
+      ${mkSymlink "${themes}/fuzzel/themes/daylight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/daylight.ini"}
+      ${mkSymlink "${themes}/dunst/themes/midnight.conf" "${XDG_CONFIG_HOME}/dunst/themes/midnight.conf"}
+      ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
+
+      ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.conf"}
+      ${mkSymlink "${repo}/config/waybar/config.jsonc" "${XDG_CONFIG_HOME}/waybar/config"}
+      ${mkSymlink "${repo}/config/waybar/style.css" "${XDG_CONFIG_HOME}/waybar/style.css"}
+      ${mkSymlink "${repo}/config/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
+      ${mkSymlink "${fuzzelConf}" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
+      ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
+      ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
+      ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
+    ''}
+
+    ${lib.optionalString hostConfig.enableDesktop ''
+      ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
+
+      ${mkSymlink "${themes}/zathura/themes/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
+      ${mkSymlink "${themes}/zathura/themes/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
+
+      ${mkSymlink "${themes}/chromium/theme.css" "${repo}/config/chromium/extension/theme.css"}
+      ${mkSymlink "${themes}/chromium/theme.js" "${repo}/config/chromium/extension/theme.js"}
+
+      ${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}
+      ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
+      ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
+    ''}
+
+    ${lib.optionalString hostConfig.enableTexlive ''
+      ${mkDir "${XDG_CONFIG_HOME}/latexmk"}
+      ${mkSymlink "${repo}/config/latexmk/latexmkrc" "${XDG_CONFIG_HOME}/latexmk/latexmkrc"}
+    ''}
+
     ${mkSymlink "${themes}/fzf/themes/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
     ${mkSymlink "${themes}/fzf/themes/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
-    ${mkSymlink "${themes}/hypr/themes/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
-    ${mkSymlink "${themes}/hypr/themes/daylight.conf" "${XDG_CONFIG_HOME}/hypr/themes/daylight.conf"}
-    ${mkSymlink "${themes}/waybar/themes/midnight.css" "${XDG_CONFIG_HOME}/waybar/themes/midnight.css"}
-    ${mkSymlink "${themes}/waybar/themes/daylight.css" "${XDG_CONFIG_HOME}/waybar/themes/daylight.css"}
-    ${mkSymlink "${themes}/fuzzel/themes/midnight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/midnight.ini"}
-    ${mkSymlink "${themes}/fuzzel/themes/daylight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/daylight.ini"}
-    ${mkSymlink "${themes}/dunst/themes/midnight.conf" "${XDG_CONFIG_HOME}/dunst/themes/midnight.conf"}
-    ${mkSymlink "${themes}/dunst/themes/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
-    ${mkSymlink "${themes}/zathura/themes/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
-    ${mkSymlink "${themes}/zathura/themes/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
-
-    ${mkSymlink "${themes}/chromium/theme.css" "${repo}/config/chromium/extension/theme.css"}
-    ${mkSymlink "${themes}/chromium/theme.js" "${repo}/config/chromium/extension/theme.js"}
-
 
     ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
     ${mkSymlink "${tmuxConf}" "${XDG_CONFIG_HOME}/tmux/tmux.conf"}
-    ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.conf"}
 
     ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
     ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
@@ -297,27 +334,16 @@ in
     cp -f "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"
     chown ${username}:users "${XDG_CONFIG_HOME}/gh/config.yml"
     ${mkSymlink "${jjConf}" "${XDG_CONFIG_HOME}/jj/config.toml"}
-    ${mkSymlink "${repo}/config/waybar/config.jsonc" "${XDG_CONFIG_HOME}/waybar/config"}
-    ${mkSymlink "${repo}/config/waybar/style.css" "${XDG_CONFIG_HOME}/waybar/style.css"}
-    ${mkSymlink "${repo}/config/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
-    ${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}
-    ${mkSymlink "${fuzzelConf}" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
-    ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
-    ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
-    ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
 
-    ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
-    ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
     ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
     ${mkSymlink "${repo}/config/fd/ignore" "${XDG_CONFIG_HOME}/fd/ignore"}
     ${mkSymlink "${repo}/config/python/pythonrc" "${XDG_CONFIG_HOME}/python/pythonrc"}
     ${mkSymlink "${repo}/config/wgetrc" "${XDG_CONFIG_HOME}/wgetrc"}
     ${mkSymlink "${repo}/config/luarocks/config.lua" "${XDG_CONFIG_HOME}/luarocks/config.lua"}
-    ${mkSymlink "${repo}/config/latexmk/latexmkrc" "${XDG_CONFIG_HOME}/latexmk/latexmkrc"}
     ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
     ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
     ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
-    ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
+    ${mkMutableConfig "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
     ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
     ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/devin/skills"}
     ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
@@ -326,28 +352,34 @@ in
 
     theme="$(cat "${XDG_STATE_HOME}/theme" 2>/dev/null)" || theme="midnight"
     [ -z "$theme" ] && theme="midnight"
-    ln -sf "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
-    if [ ! -L "${XDG_CONFIG_HOME}/waybar/themes/theme.css" ] && [ ! -e "${XDG_CONFIG_HOME}/waybar/themes/theme.css" ]; then
-      ln -sf "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
-      chown -h ${username}:users "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
-    fi
-    ln -sf "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
-    ln -sf "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
+
+    ${lib.optionalString hostConfig.enableWayland ''
+      ln -sf "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
+      chown -h ${username}:users "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"
+      if [ ! -L "${XDG_CONFIG_HOME}/waybar/themes/theme.css" ] && [ ! -e "${XDG_CONFIG_HOME}/waybar/themes/theme.css" ]; then
+        ln -sf "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+        chown -h ${username}:users "${XDG_CONFIG_HOME}/waybar/themes/theme.css"
+      fi
+      ln -sf "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
+      chown -h ${username}:users "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"
+      ln -sf "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
+      chown -h ${username}:users "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"
+
+      wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
+      wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
+      [ -f "$wp_themed" ] && {
+        ln -sf "$wp_themed" "$wp_link"
+        chown -h ${username}:users "$wp_link"
+      }
+    ''}
 
     ln -sf "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"
     chown -h ${username}:users "${XDG_CONFIG_HOME}/fzf/themes/theme"
-    ln -sf "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"
-    chown -h ${username}:users "${XDG_CONFIG_HOME}/zathura/theme"
 
-    wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
-    wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
-    [ -f "$wp_themed" ] && {
-      ln -sf "$wp_themed" "$wp_link"
-      chown -h ${username}:users "$wp_link"
-    }
+    ${lib.optionalString hostConfig.enableDesktop ''
+      ln -sf "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"
+      chown -h ${username}:users "${XDG_CONFIG_HOME}/zathura/theme"
+    ''}
 
     src="${repo}/config/screen"
     dest="${homeDirectory}/Pictures/Screensavers"
