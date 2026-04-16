@@ -24,6 +24,11 @@
       "js": ["theme.js", "content.js"],
       "run_at": "document_start",
       "all_frames": false
+    },
+    {
+      "matches": ["*://*.linkedin.com/*"],
+      "css": ["linkedin.css"],
+      "run_at": "document_start"
     }
   ],
   "commands": {

@@ -6,7 +6,7 @@
   ...
 }:
 let
-  pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
+  pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
 
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 

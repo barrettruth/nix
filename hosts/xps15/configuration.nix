@@ -183,7 +183,6 @@ in
     wireplumber.enable = true;
   };
 
-  services.openssh.enable = true;
   services.tailscale.enable = true;
 
   virtualisation.docker.enable = true;
@@ -234,12 +233,7 @@ in
   ];
 
   nix.settings = {
-    auto-optimise-store = true;
     use-xdg-base-directories = true;
-    experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
     trusted-users = [
       "root"
       username
