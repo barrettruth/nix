@@ -48,8 +48,25 @@
       "description": "Toggle history overlay for new-tab opening"
     },
     "toggle-dark": {
-      "suggested_key": { "default": "Alt+D" },
       "description": "Toggle dark mode for current site"
+    },
+    "move-tab-left": {
+      "description": "Move current tab left"
+    },
+    "move-tab-right": {
+      "description": "Move current tab right"
+    },
+    "switch-workspace-1": {
+      "description": "Switch to browser workspace 1"
+    },
+    "switch-workspace-2": {
+      "description": "Switch to browser workspace 2"
+    },
+    "switch-workspace-3": {
+      "description": "Switch to browser workspace 3"
+    },
+    "switch-workspace-4": {
+      "description": "Switch to browser workspace 4"
     }
   }
 }

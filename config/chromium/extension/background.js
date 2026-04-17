@@ -233,6 +233,24 @@ async function dispatchToggleOverlay(disposition = "currentTab") {
   } catch (_) {}
 }
 
+async function withActiveTab(fn) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+  await fn(tab);
+}
+
+const COMMANDS = {
+  "toggle-dark": () => withActiveTab((tab) => toggleDark(tab)),
+  "toggle-overlay": () => dispatchToggleOverlay("currentTab"),
+  "toggle-overlay-new-tab": () => dispatchToggleOverlay("newForegroundTab"),
+  "move-tab-left": () => withActiveTab((tab) => ACTIONS.moveTabLeft(tab)),
+  "move-tab-right": () => withActiveTab((tab) => ACTIONS.moveTabRight(tab)),
+  "switch-workspace-1": () => switchWorkspace(0),
+  "switch-workspace-2": () => switchWorkspace(1),
+  "switch-workspace-3": () => switchWorkspace(2),
+  "switch-workspace-4": () => switchWorkspace(3),
+};
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "switchTab") {
     switchToVisibleTab(msg.number, sender.tab?.windowId);
@@ -271,13 +289,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command === "toggle-dark")
-    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-      if (tab) toggleDark(tab);
-    });
-  else if (command === "toggle-overlay") dispatchToggleOverlay("currentTab");
-  else if (command === "toggle-overlay-new-tab")
-    dispatchToggleOverlay("newForegroundTab");
+  const handler = COMMANDS[command];
+  if (handler) handler();
 });
 
 recalculate();
