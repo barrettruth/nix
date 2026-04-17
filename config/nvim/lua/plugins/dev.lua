@@ -97,21 +97,6 @@ return {
                 [[<cmd>lua require('forge').open('releases')<cr>]],
                 desc = 'forge releases',
             },
-            {
-                '<leader>gb',
-                [[<cmd>lua require('forge').open('branches')<cr>]],
-                desc = 'forge branches',
-            },
-            {
-                '<leader>gC',
-                [[<cmd>lua require('forge').open('commits')<cr>]],
-                desc = 'forge commits',
-            },
-            {
-                '<leader>gw',
-                [[<cmd>lua require('forge').open('worktrees')<cr>]],
-                desc = 'forge worktrees',
-            },
         },
     },
     {
