@@ -308,6 +308,13 @@ in
       ${mkSymlink "${themes}/chromium/theme.css" "${repo}/config/chromium/extension/theme.css"}
       ${mkSymlink "${themes}/chromium/theme.js" "${repo}/config/chromium/extension/theme.js"}
 
+      for profile in "${XDG_CONFIG_HOME}"/chromium/Default "${XDG_CONFIG_HOME}"/chromium/Profile\ *; do
+        prefs="$profile/Preferences"
+        [ -f "$prefs" ] || continue
+        ${pkgs.python3}/bin/python "${repo}/config/chromium/seed_shortcuts.py" "$prefs"
+        chown ${username}:users "$prefs"
+      done
+
       ${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
       ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
