@@ -226,7 +226,10 @@ async function dispatchToggleOverlay(disposition = "currentTab") {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
   try {
-    await chrome.tabs.sendMessage(tab.id, { type: "toggleOverlay", disposition });
+    await chrome.tabs.sendMessage(tab.id, {
+      type: "toggleOverlay",
+      disposition,
+    });
   } catch (_) {}
 }
 
