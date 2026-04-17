@@ -3,18 +3,7 @@ importScripts("quick-score.min.js");
 importScripts("search.js");
 
 const tabNumberCache = new Map();
-const extPorts = new Map();
 const groupLastActive = new Map();
-
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name !== "tab") return;
-  const tabId = port.sender?.tab?.id;
-  if (!tabId) return;
-  extPorts.set(tabId, port);
-  port.onDisconnect.addListener(() => extPorts.delete(tabId));
-  const num = tabNumberCache.get(tabId);
-  if (num) port.postMessage({ type: "setNumber", number: num });
-});
 
 async function getVisibleTabs(windowId) {
   const tabs = await chrome.tabs.query({ windowId });
@@ -40,16 +29,10 @@ async function recalculate(windowId) {
       i < 8 ? i + 1 : i === visible.length - 1 && visible.length >= 9 ? 9 : 0;
     if (tabNumberCache.get(tab.id) === num) continue;
     tabNumberCache.set(tab.id, num);
-    try {
-      const msg = num
-        ? { type: "setNumber", number: num }
-        : { type: "clearNumber" };
-      if (extPorts.has(tab.id)) {
-        extPorts.get(tab.id).postMessage(msg);
-      } else {
-        await chrome.tabs.sendMessage(tab.id, msg);
-      }
-    } catch (_) {}
+    const msg = num
+      ? { type: "setNumber", number: num }
+      : { type: "clearNumber" };
+    chrome.tabs.sendMessage(tab.id, msg).catch(() => {});
   }
 }
 
@@ -72,13 +55,9 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
   if (info.status === "complete") {
     const num = tabNumberCache.get(tabId);
     if (num) {
-      if (extPorts.has(tabId)) {
-        extPorts.get(tabId).postMessage({ type: "setNumber", number: num });
-      } else {
-        chrome.tabs
-          .sendMessage(tabId, { type: "setNumber", number: num })
-          .catch(() => {});
-      }
+      chrome.tabs
+        .sendMessage(tabId, { type: "setNumber", number: num })
+        .catch(() => {});
     }
     scheduleRecalculate();
   }
@@ -243,13 +222,11 @@ const ACTIONS = {
   switchWorkspace: (tab, index) => switchWorkspace(index, tab.windowId),
 };
 
-async function toggleOverlayInActiveTab(disposition = "currentTab") {
+async function dispatchToggleOverlay(disposition = "currentTab") {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
-  const msg = { type: "toggleOverlay", disposition };
   try {
-    if (extPorts.has(tab.id)) extPorts.get(tab.id).postMessage(msg);
-    else await chrome.tabs.sendMessage(tab.id, msg);
+    await chrome.tabs.sendMessage(tab.id, { type: "toggleOverlay", disposition });
   } catch (_) {}
 }
 
@@ -295,9 +272,9 @@ chrome.commands.onCommand.addListener((command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab) toggleDark(tab);
     });
-  else if (command === "toggle-overlay") toggleOverlayInActiveTab("currentTab");
+  else if (command === "toggle-overlay") dispatchToggleOverlay("currentTab");
   else if (command === "toggle-overlay-new-tab")
-    toggleOverlayInActiveTab("newForegroundTab");
+    dispatchToggleOverlay("newForegroundTab");
 });
 
 recalculate();

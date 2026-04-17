@@ -16,6 +16,7 @@
   let pendingKeySequence = "";
   let pendingKeySequenceTimer = null;
   const pageScrollStep = 60;
+  const overlayPageStep = 5;
   const darkPalette =
     typeof MIDNIGHT === "object"
       ? MIDNIGHT
@@ -78,15 +79,50 @@
     }
   }
 
+  let titleObserver = null;
+  let torn = false;
+  let detectPort = null;
+
+  function tearDown() {
+    if (torn) return;
+    torn = true;
+    try {
+      titleObserver?.disconnect();
+    } catch (_) {}
+    titleObserver = null;
+    try {
+      detectPort?.disconnect();
+    } catch (_) {}
+    detectPort = null;
+    if (overlay?.host?.parentNode) {
+      try {
+        overlay.host.parentNode.removeChild(overlay.host);
+      } catch (_) {}
+    }
+    overlay = null;
+  }
+
+  function isOrphan() {
+    if (torn) return true;
+    if (!chrome.runtime?.id) {
+      tearDown();
+      return true;
+    }
+    return false;
+  }
+
   function observeTitle() {
+    if (isOrphan()) return;
     if (!document.head) return;
     if (document.title && document.title !== ourLastTitle)
       captureBaseTitle(document.title);
-    new MutationObserver(() => {
+    titleObserver = new MutationObserver(() => {
+      if (isOrphan()) return;
       if (document.title === ourLastTitle) return;
       captureBaseTitle(document.title);
       applyPrefix();
-    }).observe(document.head, {
+    });
+    titleObserver.observe(document.head, {
       childList: true,
       subtree: true,
       characterData: true,
@@ -100,8 +136,37 @@
     observeTitle();
   }
 
+  function startOrphanDetection() {
+    if (torn) return;
+    try {
+      detectPort = chrome.runtime.connect({ name: "orphan-detect" });
+    } catch (_) {
+      tearDown();
+      return;
+    }
+    detectPort.onDisconnect.addListener(() => {
+      detectPort = null;
+      if (torn) return;
+      if (!chrome.runtime?.id) {
+        tearDown();
+        return;
+      }
+      setTimeout(startOrphanDetection, 500);
+    });
+  }
+  startOrphanDetection();
+
+  function safeSend(...args) {
+    if (isOrphan()) return;
+    try {
+      return chrome.runtime.sendMessage(...args);
+    } catch (_) {
+      tearDown();
+    }
+  }
+
   function reportTheme() {
-    chrome.runtime.sendMessage({ type: "themeChanged", isDark });
+    safeSend({ type: "themeChanged", isDark });
   }
 
   function overlayPalette() {
@@ -311,6 +376,12 @@
       } else if (e.key === "p") {
         e.preventDefault();
         moveOverlaySelection(-1);
+      } else if (e.key === "f") {
+        e.preventDefault();
+        moveOverlaySelection(overlayPageStep);
+      } else if (e.key === "b") {
+        e.preventDefault();
+        moveOverlaySelection(-overlayPageStep);
       } else {
         return false;
       }
@@ -400,7 +471,7 @@
     const state = ensureOverlay();
     const requestId = ++overlayRequestId;
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await safeSend({
         type: "searchHistory",
         text: state.input.value,
         limit: 11,
@@ -437,7 +508,7 @@
     const result = overlayResults[index];
     if (!result?.url) return;
     closeOverlay();
-    chrome.runtime.sendMessage({
+    safeSend({
       type: "openHistoryResult",
       url: result.url,
       disposition: overlayDisposition,
@@ -592,6 +663,7 @@
   }
 
   darkQuery.addEventListener("change", (e) => {
+    if (isOrphan()) return;
     isDark = e.matches;
     applyOverlayTheme();
     reportTheme();
@@ -599,12 +671,13 @@
 
   reportTheme();
 
-  chrome.runtime.sendMessage({ type: "getNumber" }, (res) => {
+  safeSend({ type: "getNumber" }, (res) => {
     if (chrome.runtime.lastError) return;
     if (res?.number) setNumber(res.number);
   });
 
   chrome.runtime.onMessage.addListener((msg) => {
+    if (isOrphan()) return;
     if (msg.type === "setNumber") setNumber(msg.number);
     else if (msg.type === "clearNumber") clearNumber();
     else if (msg.type === "toggleOverlay")
@@ -640,6 +713,7 @@
   document.addEventListener(
     "keydown",
     (e) => {
+      if (isOrphan()) return;
       if (overlayOwnsEvent(e)) {
         handleOverlayKeydown(e);
         e.stopImmediatePropagation();
@@ -655,7 +729,7 @@
         if (n >= 1 && n <= 9) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          chrome.runtime.sendMessage({ type: "switchTab", number: n });
+          safeSend({ type: "switchTab", number: n });
           return;
         }
       }
@@ -667,7 +741,7 @@
         if (b.local) {
           b.local();
         } else {
-          chrome.runtime.sendMessage({
+          safeSend({
             type: "action",
             action: b.action,
             arg: b.arg,
@@ -677,4 +751,15 @@
     },
     true,
   );
+
+  for (const type of ["keyup", "keypress"]) {
+    document.addEventListener(
+      type,
+      (e) => {
+        if (isOrphan()) return;
+        if (overlayOwnsEvent(e)) e.stopImmediatePropagation();
+      },
+      true,
+    );
+  }
 })();
