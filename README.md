@@ -13,7 +13,7 @@ Hosts a Dell XPS 9500 Laptop and NetCup NixOS VPS.
 
 ```
 flake.nix
-hosts/xps15/
+hosts/
 modules/
   hosts/
   nixos/
