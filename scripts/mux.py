@@ -402,6 +402,7 @@ def ensure_role_dependencies(name: str) -> None:
 
 
 def run_command_for_scope(scope: str) -> str | None:
+    # TODO: move to justifle
     match scope:
         case "neovim":
             return "make"
@@ -416,6 +417,7 @@ def run_command_for_scope(scope: str) -> str | None:
 
 
 def build_command_for_scope(scope: str) -> str | None:
+    # TODO: move to just
     match scope:
         case "tmux":
             return 'make -j "$(nproc)" -C build'
@@ -435,6 +437,7 @@ def action_policy_for(name: str) -> ActionPolicy | None:
 
 def action_command_for_root(name: str, root: str) -> str | None:
     scope = scope_from_root(root)
+    # TODO: move to just, checking for `[Jj]ustfile first`
     match name:
         case "git":
             return 'nvim -c "Git|only"'

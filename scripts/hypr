@@ -61,7 +61,7 @@ pull)
   slack) CLASS="Slack" ;;
   discord) CLASS="discord" ;;
   vesktop) CLASS="vesktop" ;;
-  element-desktop | element) CLASS="element" ;;
+  element-desktop | element) CLASS="electron" ;;
   *) CLASS="$APP" ;;
   esac
 
