@@ -70,11 +70,6 @@ fi
 
 [[ ! -r "$OPAMROOT/opam-init/init.zsh" ]] || source "$OPAMROOT/opam-init/init.zsh" > /dev/null 2> /dev/null
 
-if [[ ! -z "$TMUX" ]] && [[ ! -v $PURE_FIX ]]; then
-    tmux send-keys -t $(tmux display-message -p '#{pane_id}') C-l
-    PURE_FIX=0
-fi
-
 if [[ -n "$TMUX" ]] && [[ -n "$MUX_READY_CHANNEL" ]]; then
     mux_ready_precmd() {
         tmux wait-for -S "$MUX_READY_CHANNEL"

@@ -38,3 +38,10 @@ system-instructions:
     number exists yet, use /tmp/<repo-name>/<task-slug>/ instead. Do not use
     persistent directories like ~/dev for this temporary work unless the user
     explicitly asks.
+  - >
+    When working in a repository, detect repo-root `justfile`/`Justfile`,
+    `flake.nix`, and `.envrc` early. If the `just-nix` skill is available and
+    the repo uses these files, invoke it before implementing or verifying
+    changes. Prefer repo `just` recipes over ad-hoc commands, do not invent
+    recipe names, and prefer the repo's nix shell for verification when the
+    repo uses Nix or direnv.
