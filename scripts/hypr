@@ -155,7 +155,7 @@ spawnfocus)
   discord) CLASS="discord" ;;
   vesktop) CLASS="vesktop" ;;
   cinny-desktop | cinny) CLASS="cinny" ;;
-  element-desktop | element) CLASS="element" ;;
+  element-desktop | element) CLASS="electron" ;;
   *) CLASS="$APP" ;;
   esac
 
