@@ -225,21 +225,6 @@ def current_path() -> str:
     return pane_path()
 
 
-def picker_target_path(mode: PickerMode, token: str = "") -> str:
-    if mode == "open":
-        return current_path()
-    kind, _, value = token.partition(":")
-    if kind == "proj" and value:
-        return value
-    return current_path()
-
-
-def picker_visible_commands(
-    mode: PickerMode, token: str = ""
-) -> list[ManagedCommandSpec]:
-    return visible_commands_for_path(picker_target_path(mode, token))
-
-
 def scope_from_path(path: str) -> str:
     return "~" if path == HOME else base_name(path)
 
@@ -489,12 +474,24 @@ def picker_prompt(mode: PickerMode) -> str:
     return f"@{scope_from_path(current_path())}> " if mode == "open" else "open> "
 
 
-def picker_header(mode: PickerMode, token: str = "") -> str:
+def picker_header_commands(mode: PickerMode) -> list[ManagedCommandSpec]:
+    if mode == "open":
+        return visible_commands_for_path(current_path())
+    return [command for command in managed_commands() if command.always_visible]
+
+
+def picker_bind_commands(mode: PickerMode) -> list[ManagedCommandSpec]:
+    if mode == "open":
+        return picker_header_commands(mode)
+    return list(managed_commands())
+
+
+def picker_header(mode: PickerMode) -> str:
     accent = color_escape(tmux_color("@accent", "7aa2f7"))
     reset = "\033[0m"
     parts = [
         f"{accent}{display_key(command.key)}{reset} {command.name}"
-        for command in picker_visible_commands(mode, token)
+        for command in picker_header_commands(mode)
     ]
     match mode:
         case "open":
@@ -502,13 +499,6 @@ def picker_header(mode: PickerMode, token: str = "") -> str:
         case _:
             parts.append(f"{accent}^O{reset} windows")
     return f":: {' '.join(parts)}"
-
-
-def picker_binding_actions(mode: PickerMode, token: str = "") -> str:
-    actions = [f"unbind({fzf_key(command.key)})" for command in managed_commands()]
-    for command in picker_visible_commands(mode, token):
-        actions.append(f"rebind({fzf_key(command.key)})")
-    return "+".join(actions)
 
 
 def format_open_entry(label: str, token: str, window_name: str = "") -> str:
@@ -634,6 +624,7 @@ def show_picker(mode: PickerMode = "open") -> int:
     accent = tmux_color("@accent", "7aa2f7")
     fgalt = tmux_color("@fgAlt", "666666")
     toggle_command = "projects" if mode == "open" else "open"
+    header = picker_header(mode)
     command = [
         "fzf",
         "--reverse",
@@ -641,7 +632,7 @@ def show_picker(mode: PickerMode = "open") -> int:
         "--no-info",
         "--no-scrollbar",
         "--header",
-        picker_header(mode),
+        header,
         "--prompt",
         picker_prompt(mode),
         "--pointer",
@@ -657,21 +648,11 @@ def show_picker(mode: PickerMode = "open") -> int:
         "--accept-nth",
         "2",
         "--bind",
-        (
-            f"result:transform-header(mux _header {mode} {{2}})"
-            f"+transform(mux _bindings {mode} {{2}})"
-        ),
-        "--bind",
-        (
-            f"focus:transform-header(mux _header {mode} {{2}})"
-            f"+transform(mux _bindings {mode} {{2}})"
-        ),
-        "--bind",
         f"ctrl-o:become(mux {toggle_command})",
         "--bind",
         "enter:become(mux _dispatch {2})",
     ]
-    for managed in managed_commands():
+    for managed in picker_bind_commands(mode):
         command.extend(
             [
                 "--bind",
@@ -799,26 +780,6 @@ def main(argv: list[str]) -> int:
             return show_picker("open")
         case ["projects"]:
             return show_picker("proj")
-        case ["_header", mode]:
-            if not (picker_mode := picker_mode_from_arg(mode)):
-                return usage_error("_header requires mode open or proj")
-            _ = sys.stdout.write(picker_header(picker_mode))
-            return 0
-        case ["_header", mode, token]:
-            if not (picker_mode := picker_mode_from_arg(mode)):
-                return usage_error("_header requires mode open or proj")
-            _ = sys.stdout.write(picker_header(picker_mode, token))
-            return 0
-        case ["_bindings", mode]:
-            if not (picker_mode := picker_mode_from_arg(mode)):
-                return usage_error("_bindings requires mode open or proj")
-            _ = sys.stdout.write(picker_binding_actions(picker_mode))
-            return 0
-        case ["_bindings", mode, token]:
-            if not (picker_mode := picker_mode_from_arg(mode)):
-                return usage_error("_bindings requires mode open or proj")
-            _ = sys.stdout.write(picker_binding_actions(picker_mode, token))
-            return 0
         case ["_dispatch", value]:
             return dispatch_picker_action(value)
         case ["_picker_open", mode, kind, name, value]:
@@ -833,10 +794,6 @@ def main(argv: list[str]) -> int:
             return usage_error("action requires a name")
         case ["_dispatch"]:
             return usage_error("_dispatch requires a value")
-        case ["_bindings", *_]:
-            return usage_error("_bindings accepts mode and at most one token")
-        case ["_header", *_]:
-            return usage_error("_header requires a mode and accepts at most one token")
         case ["_picker_open"] | ["_picker_open", _] | ["_picker_open", _, _] | ["_picker_open", _, _, _]:
             return usage_error("_picker_open requires mode, kind, name, and value")
         case [command, *_]:
