@@ -123,6 +123,51 @@ def base_name(path: str) -> str:
     return "/" if stripped == "/" else os.path.basename(stripped)
 
 
+def display_path_parts(path: str) -> tuple[str, ...]:
+    normalized = os.path.normpath(path)
+    if normalized == HOME:
+        return ("~",)
+    home_prefix = f"{HOME}{os.sep}"
+    if normalized.startswith(home_prefix):
+        relative = normalized.removeprefix(home_prefix)
+        return ("~", *(part for part in relative.split(os.sep) if part))
+    parts = tuple(part for part in normalized.split(os.sep) if part)
+    return ("/", *parts) if normalized.startswith(os.sep) else parts
+
+
+def project_context_parts(path: str) -> tuple[str, ...]:
+    parts = display_path_parts(path)
+    return parts[:-1] or parts
+
+
+def format_path_parts(parts: Sequence[str]) -> str:
+    if not parts:
+        return ""
+    if parts[0] == "~":
+        return "~" if len(parts) == 1 else f"~/{'/'.join(parts[1:])}"
+    if parts[0] == "/":
+        return "/" if len(parts) == 1 else f"/{'/'.join(parts[1:])}"
+    return "/".join(parts)
+
+
+def project_name_contexts(paths: Sequence[str]) -> dict[str, str]:
+    if len(paths) < 2:
+        return {}
+    contexts = {path: project_context_parts(path) for path in paths}
+    max_depth = max(len(parts) for parts in contexts.values())
+    for depth in range(1, max_depth + 1):
+        suffixes = {
+            path: parts[-depth:] if len(parts) >= depth else parts
+            for path, parts in contexts.items()
+        }
+        if len(set(suffixes.values())) == len(paths):
+            return {
+                path: format_path_parts(parts)
+                for path, parts in suffixes.items()
+            }
+    return {path: format_path_parts(parts) for path, parts in contexts.items()}
+
+
 def quote_sh(value: str) -> str:
     return shlex.quote(value)
 
@@ -131,6 +176,8 @@ def canonical_name(name: str) -> str:
     match name:
         case "code":
             return "edit"
+        case "shell":
+            return "prompt"
         case _:
             return name
 
@@ -140,7 +187,7 @@ def managed_commands() -> tuple[ManagedCommandSpec, ...]:
     commands = (
         ManagedCommandSpec("ai", "role", "a", always_visible=True),
         ManagedCommandSpec("edit", "role", "e", always_visible=True),
-        ManagedCommandSpec("shell", "role", "s", always_visible=True),
+        ManagedCommandSpec("prompt", "role", "p", always_visible=True),
         ManagedCommandSpec("git", "action", "g", always_visible=True),
         ManagedCommandSpec("run", "action", "r"),
         ManagedCommandSpec("build", "action", "b"),
@@ -377,7 +424,7 @@ def role_command_for(name: str) -> str | None:
             return "devin"
         case "edit":
             return "nvim ."
-        case "shell":
+        case "prompt":
             return ""
         case _:
             return None
@@ -504,11 +551,20 @@ def picker_header(mode: PickerMode) -> str:
 def format_open_entry(label: str, token: str, window_name: str = "") -> str:
     accent = color_escape(tmux_color("@accent", "7aa2f7"))
     reset = "\033[0m"
-    index = window_index_for_name(window_name) if window_name else ""
-    if index:
-        muted = color_escape(tmux_color("@fgAlt", "666666"))
-        return f"{accent}{label}{reset} {muted}*{index}{reset}\t{token}"
+    if window_name and window_index_for_name(window_name):
+        return f"{accent}{label}{reset}\t{token}"
     return f"{label}{reset}\t{token}"
+
+
+def format_project_entry(
+    label: str, token: str, *, context: str = "", is_current: bool = False
+) -> str:
+    accent = color_escape(tmux_color("@accent", "7aa2f7"))
+    muted = color_escape(tmux_color("@fgAlt", "666666"))
+    reset = "\033[0m"
+    prefix = f"{accent}{label}{reset}" if is_current else label
+    suffix = f" {muted}· {context}{reset}" if context else ""
+    return f"{prefix}{suffix}\t{token}"
 
 
 def list_open_entries() -> str:
@@ -538,10 +594,8 @@ def list_open_entries() -> str:
 def list_project_entries() -> str:
     if not (projects := maybe_output(["zoxide", "query", "-l"])):
         return ""
-    accent = color_escape(tmux_color("@accent", "7aa2f7"))
-    reset = "\033[0m"
     path = current_path()
-    lines: list[str] = []
+    directories: list[str] = []
     for directory in projects.splitlines():
         if not directory:
             continue
@@ -550,11 +604,15 @@ def list_project_entries() -> str:
             != directory
         ):
             continue
-        name = base_name(directory)
-        if directory == path:
-            lines.append(f"{accent}{name}{reset}\tproj:{directory}")
-        else:
-            lines.append(f"{name}\tproj:{directory}")
+        directories.append(directory)
+    lines = [
+        format_project_entry(
+            format_path_parts(display_path_parts(directory)),
+            f"proj:{directory}",
+            is_current=directory == path,
+        )
+        for directory in directories
+    ]
     return "\n".join(lines) + ("\n" if lines else "")
 
 
