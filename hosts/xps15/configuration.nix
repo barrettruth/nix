@@ -34,6 +34,7 @@ in
     "loglevel=3"
     "quiet"
   ];
+  boot.tmp.cleanOnBoot = true;
 
   boot.kernel.sysctl = {
     "net.ipv4.ipfrag_time" = 3;

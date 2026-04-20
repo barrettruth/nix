@@ -36,6 +36,11 @@ If a `justfile` exists, run `just --summary` before using any recipe names.
 
 - If the repo has `flake.nix` or `.envrc`, assume commands may need the repo's
   Nix shell.
+- If the repo has `.envrc` and `direnv` is available, prefer
+  `direnv exec <repo-root> <command>` for one-shot commands that should use the
+  default dev shell. This reuses nix-direnv's cached environment and avoids the
+  persistent `/tmp/nix-develop-*` and `/tmp/nix-shell.*` churn caused by
+  repeated `nix develop --command ...`.
 - For CI-like verification, prefer `nix develop .#ci --command just ci` when
   the repo defines both `.#ci` and `ci`.
 - Otherwise use the narrowest documented shell entrypoint, such as
