@@ -34,6 +34,7 @@ in
       unzip
       tesseract
       gnumake
+      just
       gcc
       file
       ffmpeg
@@ -76,6 +77,7 @@ in
       eslint_d
       hadolint
       mypy
+      ty
       selene
       shellcheck
       deadnix
