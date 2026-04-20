@@ -12,7 +12,7 @@ from typing import Literal
 
 HOME = os.path.expanduser("~")
 
-RoleName = Literal["ai", "dev", "shell"]
+RoleName = Literal["ai", "code", "shell"]
 ActionName = Literal["git", "run", "build"]
 ManagedKind = Literal["role", "action"]
 ActionPolicy = Literal["keep", "close", "keep_on_fail"]
@@ -383,7 +383,7 @@ def role_command_for(name: str) -> str | None:
     match name:
         case "ai":
             return "devin"
-        case "dev":
+        case "code":
             return "nvim ."
         case "shell":
             return ""
@@ -395,7 +395,7 @@ def ensure_role_dependencies(name: str) -> None:
     match name:
         case "ai":
             ensure_command("devin")
-        case "dev":
+        case "code":
             ensure_command("nvim")
         case _:
             return
@@ -535,12 +535,12 @@ def picker_header() -> str:
     match picker_mode():
         case "open":
             return (
-                f":: {accent}^A{reset} ai {accent}^D{reset} dev {accent}^S{reset} shell "
+                f":: {accent}^A{reset} ai {accent}^C{reset} code {accent}^S{reset} shell "
                 f"{accent}^R{reset} run {accent}^G{reset} git {accent}^X{reset} kill {accent}^O{reset} projects"
             )
         case _:
             return (
-                f":: {accent}^A{reset} ai {accent}^D{reset} dev {accent}^S{reset} shell "
+                f":: {accent}^A{reset} ai {accent}^C{reset} code {accent}^S{reset} shell "
                 f"{accent}^R{reset} run {accent}^G{reset} git {accent}^O{reset} windows"
             )
 
@@ -563,7 +563,7 @@ def list_open_entries() -> str:
     root = os.environ["_ROOT"]
     lines = [
         format_open_entry("ai", "role:ai", window_name_for("ai", scope)),
-        format_open_entry("dev", "role:dev", window_name_for("dev", scope)),
+        format_open_entry("code", "role:code", window_name_for("code", scope)),
         format_open_entry("shell", "role:shell", window_name_for("shell", scope)),
     ]
     for action in list_action_names_for_root(root):
@@ -627,7 +627,7 @@ def dispatch_picker_action(value: str) -> int:
             return open_action(rest)
         case "proj":
             try:
-                open_role_in_root("dev", rest)
+                open_role_in_root("code", rest)
             except MuxError as exc:
                 _ = tmux("display-message", str(exc))
                 return 1
@@ -711,7 +711,7 @@ def show_picker(start_mode: str = "open") -> int:
         "--bind",
         "ctrl-a:become(mux _picker_open role ai {2})",
         "--bind",
-        "ctrl-d:become(mux _picker_open role dev {2})",
+        "ctrl-d:become(mux _picker_open role code {2})",
         "--bind",
         "ctrl-s:become(mux _picker_open role shell {2})",
         "--bind",
@@ -814,7 +814,7 @@ def main(argv: list[str]) -> int:
             return open_role(name)
         case ["action", name]:
             return open_action(name)
-        case [("ai" | "dev" | "shell") as command]:
+        case [("ai" | "code" | "shell") as command]:
             return open_role(command)
         case ["code"]:
             _ = sys.stderr.write("mux: unknown role: code\n")
