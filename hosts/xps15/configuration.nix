@@ -46,6 +46,7 @@ in
     enable = true;
     settings = {
       General.EnableNetworkConfiguration = true;
+      Network.NameResolvingService = "resolvconf";
       Settings.AutoConnect = true;
     };
   };
