@@ -13,3 +13,4 @@ map K scroll up
 map J scroll down
 map k scroll half-up
 map j scroll half-down
+map b toggle_statusbar
