@@ -7,19 +7,26 @@ import subprocess
 import sys
 import time
 from collections.abc import Sequence
+from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
 HOME = os.path.expanduser("~")
 
-RoleName = Literal["ai", "code", "shell"]
-ActionName = Literal["git", "run", "build"]
 ManagedKind = Literal["role", "action"]
-ActionPolicy = Literal["keep", "close", "keep_on_fail"]
 
 
 class MuxError(Exception):
     pass
+
+
+@dataclass(frozen=True)
+class ManagedCommandSpec:
+    name: str
+    kind: ManagedKind
+    key: str
+    always_visible: bool = False
 
 
 def fail(message: str, code: int = 1) -> None:
@@ -120,6 +127,113 @@ def quote_sh(value: str) -> str:
     return shlex.quote(value)
 
 
+def canonical_name(name: str) -> str:
+    match name:
+        case "code":
+            return "edit"
+        case _:
+            return name
+
+
+@lru_cache(maxsize=1)
+def managed_commands() -> tuple[ManagedCommandSpec, ...]:
+    commands = (
+        ManagedCommandSpec("ai", "role", "a", always_visible=True),
+        ManagedCommandSpec("edit", "role", "e", always_visible=True),
+        ManagedCommandSpec("shell", "role", "s", always_visible=True),
+        ManagedCommandSpec("git", "action", "g", always_visible=True),
+        ManagedCommandSpec("run", "action", "r"),
+        ManagedCommandSpec("build", "action", "b"),
+        ManagedCommandSpec("test", "action", "t"),
+    )
+    names: set[str] = set()
+    keys: set[str] = set()
+    for command in commands:
+        if len(command.key) != 1 or not command.key.islower():
+            raise ValueError(f"mux: bad key '{command.key}' for '{command.name}'")
+        if command.name in names:
+            raise ValueError(f"mux: duplicate command '{command.name}'")
+        if command.key in keys:
+            raise ValueError(f"mux: duplicate key '{command.key}'")
+        names.add(command.name)
+        keys.add(command.key)
+    return commands
+
+
+def command_for_name(name: str) -> ManagedCommandSpec | None:
+    resolved = canonical_name(name)
+    for command in managed_commands():
+        if command.name == resolved:
+            return command
+    return None
+
+
+def managed_just_action_names() -> tuple[str, ...]:
+    return tuple(
+        command.name
+        for command in managed_commands()
+        if command.kind == "action" and not command.always_visible
+    )
+
+
+def tmux_key(letter: str) -> str:
+    return f"C-{letter}"
+
+
+def fzf_key(letter: str) -> str:
+    return f"ctrl-{letter}"
+
+
+def display_key(letter: str) -> str:
+    return f"^{letter.upper()}"
+
+
+@lru_cache(maxsize=None)
+def justfile_path(root: str) -> str:
+    for name in ("Justfile", "justfile", ".justfile"):
+        path = os.path.join(root, name)
+        if os.path.isfile(path):
+            return path
+    return ""
+
+
+@lru_cache(maxsize=None)
+def just_recipes_for_root(root: str) -> frozenset[str]:
+    if shutil.which("just") is None:
+        return frozenset()
+    if not (justfile := justfile_path(root)):
+        return frozenset()
+    if not (
+        summary := maybe_output(
+            ["just", "--justfile", justfile, "--working-directory", root, "--summary"]
+        )
+    ):
+        return frozenset()
+    return frozenset(summary.split())
+
+
+def visible_commands_for_root(root: str) -> list[ManagedCommandSpec]:
+    recipes = just_recipes_for_root(root)
+    return [
+        command
+        for command in managed_commands()
+        if command.always_visible or command.name in recipes
+    ]
+
+
+def picker_target_root(token: str = "") -> str:
+    if picker_mode() == "open":
+        return os.environ["_ROOT"]
+    kind, _, value = token.partition(":")
+    if kind == "proj" and value:
+        return value
+    return os.environ["_ROOT"]
+
+
+def picker_visible_commands(token: str = "") -> list[ManagedCommandSpec]:
+    return visible_commands_for_root(picker_target_root(token))
+
+
 def scope_from_root(root: str) -> str:
     return "~" if root == HOME else base_name(root)
 
@@ -167,13 +281,11 @@ def set_window_meta(
     name: str,
     scope: str,
     root: str,
-    policy: ActionPolicy,
 ) -> None:
     set_window_option(target, "@mux_kind", kind)
     set_window_option(target, "@mux_name", name)
     set_window_option(target, "@mux_scope", scope)
     set_window_option(target, "@mux_root", root)
-    set_window_option(target, "@mux_policy", policy)
 
 
 def run_in_root(root: str, command: str) -> str:
@@ -187,23 +299,8 @@ def shell_path() -> str:
 def initial_shell_command(channel: str = "") -> str:
     shell = shell_path()
     if channel:
-        return f"exec env PURE_FIX=0 MUX_READY_CHANNEL={quote_sh(channel)} {quote_sh(shell)} -i"
-    return f"exec env PURE_FIX=0 {quote_sh(shell)} -i"
-
-
-def close_action_command(root: str, command: str) -> str:
-    shell = shell_path()
-    payload = run_in_root(root, command)
-    return f"exec env PURE_FIX=0 {quote_sh(shell)} -ic {quote_sh(payload)}"
-
-
-def keep_on_fail_action_command(root: str, command: str) -> str:
-    shell = shell_path()
-    payload = (
-        f'{run_in_root(root, command)}; kof_status=$?; if [ "$kof_status" -eq 0 ]; '
-        f'then tmux kill-window -t "$TMUX_PANE"; exit 0; fi; exec env PURE_FIX=0 {quote_sh(shell)} -i'
-    )
-    return f"exec env PURE_FIX=0 {quote_sh(shell)} -ic {quote_sh(payload)}"
+        return f"exec env MUX_READY_CHANNEL={quote_sh(channel)} {quote_sh(shell)} -i"
+    return f"exec {quote_sh(shell)} -i"
 
 
 def new_ready_channel() -> str:
@@ -275,7 +372,6 @@ def new_window_info_for_scope(
     command: str,
     kind: ManagedKind,
     name: str,
-    policy: ActionPolicy,
 ) -> tuple[str, str]:
     scope = scope_from_root(root)
     args = [
@@ -292,7 +388,7 @@ def new_window_info_for_scope(
         args.append(command)
     info = tmux_output(*args)
     index, _, pane_id = info.partition("\t")
-    set_window_meta(f":{index}", kind, name, scope, root, policy)
+    set_window_meta(f":{index}", kind, name, scope, root)
     return index, pane_id
 
 
@@ -313,7 +409,6 @@ def spawn_or_focus_managed(
     name: str,
     root: str,
     command: str = "",
-    policy: ActionPolicy = "keep",
 ) -> None:
     scope = scope_from_root(root)
     window_name = window_name_for(name, scope)
@@ -321,7 +416,7 @@ def spawn_or_focus_managed(
     current_index = current_window_index()
 
     if index and index == current_index:
-        set_window_meta(None, kind, name, scope, root, policy)
+        set_window_meta(None, kind, name, scope, root)
         if command and is_pane_idle():
             send_cmd(None, root, command)
         return
@@ -330,14 +425,14 @@ def spawn_or_focus_managed(
         if index:
             _ = tmux("kill-window", "-t", f":{index}")
         _ = tmux("rename-window", window_name)
-        set_window_meta(None, kind, name, scope, root, policy)
+        set_window_meta(None, kind, name, scope, root)
         if command:
             send_cmd(None, root, command)
         return
 
     if index:
         _ = tmux("select-window", "-t", f":{index}")
-        set_window_meta(f":{index}", kind, name, scope, root, policy)
+        set_window_meta(f":{index}", kind, name, scope, root)
         if command and is_pane_idle(f":{index}"):
             send_cmd(f":{index}", root, command)
         return
@@ -345,45 +440,19 @@ def spawn_or_focus_managed(
     if command:
         channel = new_ready_channel()
         _, pane_id = new_window_info_for_scope(
-            window_name, root, initial_shell_command(channel), kind, name, policy
+            window_name, root, initial_shell_command(channel), kind, name
         )
         schedule_initial_cmd(pane_id, command, channel)
         return
 
-    _ = new_window_info_for_scope(window_name, root, "", kind, name, policy)
-
-
-def spawn_action_close(name: str, root: str, command: str) -> None:
-    scope = scope_from_root(root)
-    window_name = window_name_for(name, scope)
-    index = window_index_for_name(window_name)
-    if index:
-        _ = tmux("select-window", "-t", f":{index}")
-        set_window_meta(f":{index}", "action", name, scope, root, "close")
-        return
-    _ = new_window_info_for_scope(
-        window_name, root, close_action_command(root, command), "action", name, "close"
-    )
-
-
-def spawn_action_keep_on_fail(name: str, root: str, command: str) -> None:
-    scope = scope_from_root(root)
-    window_name = window_name_for(name, scope)
-    _ = new_window_info_for_scope(
-        window_name,
-        root,
-        keep_on_fail_action_command(root, command),
-        "action",
-        name,
-        "keep_on_fail",
-    )
+    _ = new_window_info_for_scope(window_name, root, "", kind, name)
 
 
 def role_command_for(name: str) -> str | None:
-    match name:
+    match canonical_name(name):
         case "ai":
             return "devin"
-        case "code":
+        case "edit":
             return "nvim ."
         case "shell":
             return ""
@@ -392,10 +461,10 @@ def role_command_for(name: str) -> str | None:
 
 
 def ensure_role_dependencies(name: str) -> None:
-    match name:
+    match canonical_name(name):
         case "ai":
             ensure_command("devin")
-        case "code":
+        case "edit":
             ensure_command("nvim")
         case _:
             return
@@ -425,41 +494,33 @@ def build_command_for_scope(scope: str) -> str | None:
             return None
 
 
-def action_policy_for(name: str) -> ActionPolicy | None:
-    match name:
-        case "git":
-            return "close"
-        case "run" | "build":
-            return "keep"
-        case _:
-            return None
-
-
 def action_command_for_root(name: str, root: str) -> str | None:
-    scope = scope_from_root(root)
+    name = canonical_name(name)
     # TODO: move to just, checking for `[Jj]ustfile first`
     match name:
         case "git":
             return 'nvim -c "Git|only"'
-        case "run":
-            return run_command_for_scope(scope)
-        case "build":
-            return build_command_for_scope(scope)
+        case action if action in managed_just_action_names():
+            if not justfile_path(root):
+                return None
+            if action not in just_recipes_for_root(root):
+                return None
+            return f"just {quote_sh(action)}"
         case _:
             return None
-
-
-def list_action_names_for_root(root: str) -> list[ActionName]:
-    names: list[ActionName] = ["git"]
-    for action in ("run", "build"):
-        if action_command_for_root(action, root):
-            names.append(action)
-    return names
 
 
 def usage_error(message: str) -> int:
     _ = sys.stderr.write(f"mux: {message}\n")
     return 1
+
+
+def open_managed(name: str) -> int:
+    if not (command := command_for_name(name)):
+        return usage_error(f"unknown command: {name}")
+    if command.kind == "role":
+        return open_role(command.name)
+    return open_action(command.name)
 
 
 def open_role(name: str) -> int:
@@ -472,10 +533,13 @@ def open_role(name: str) -> int:
 
 
 def open_role_in_root(name: str, root: str) -> None:
+    name = canonical_name(name)
+    if not (role := command_for_name(name)) or role.kind != "role":
+        raise MuxError(f"mux: unknown role '{name}'")
     ensure_role_dependencies(name)
     if (command := role_command_for(name)) is None:
         raise MuxError(f"mux: unknown role '{name}'")
-    spawn_or_focus_managed("role", name, root, command, "keep")
+    spawn_or_focus_managed("role", name, root, command)
 
 
 def open_action(name: str) -> int:
@@ -488,22 +552,15 @@ def open_action(name: str) -> int:
 
 
 def open_action_in_root(name: str, root: str) -> None:
+    name = canonical_name(name)
+    if not (action := command_for_name(name)) or action.kind != "action":
+        raise MuxError(f"mux: no action '{name}' for '{scope_from_root(root)}'")
     scope = scope_from_root(root)
     if name == "git" and not git_ok(root, "rev-parse", "--is-inside-work-tree"):
         raise MuxError("Not a git repository")
     if (command := action_command_for_root(name, root)) is None:
         raise MuxError(f"mux: no action '{name}' for '{scope}'")
-    if (policy := action_policy_for(name)) is None:
-        raise MuxError(f"mux: bad policy for '{name}'")
-    match policy:
-        case "keep":
-            spawn_or_focus_managed("action", name, root, command, policy)
-        case "close":
-            spawn_action_close(name, root, command)
-        case "keep_on_fail":
-            spawn_action_keep_on_fail(name, root, command)
-        case _:
-            raise MuxError(f"mux: bad policy '{policy}' for '{name}'")
+    spawn_or_focus_managed("action", name, root, command)
 
 
 def picker_mode() -> str:
@@ -529,48 +586,60 @@ def picker_prompt() -> str:
     return f"@{os.environ['_SCOPE']}> " if picker_mode() == "open" else "open> "
 
 
-def picker_header() -> str:
+def picker_header(token: str = "") -> str:
     accent = color_escape(os.environ.get("_ACCENT", "7aa2f7"))
     reset = "\033[0m"
-    match picker_mode():
+    mode = picker_mode()
+    parts = [
+        f"{accent}{display_key(command.key)}{reset} {command.name}"
+        for command in picker_visible_commands(token)
+    ]
+    match mode:
         case "open":
-            return (
-                f":: {accent}^A{reset} ai {accent}^C{reset} code {accent}^S{reset} shell "
-                f"{accent}^R{reset} run {accent}^G{reset} git {accent}^X{reset} kill {accent}^O{reset} projects"
-            )
+            parts.append(f"{accent}^O{reset} projects")
         case _:
-            return (
-                f":: {accent}^A{reset} ai {accent}^C{reset} code {accent}^S{reset} shell "
-                f"{accent}^R{reset} run {accent}^G{reset} git {accent}^O{reset} windows"
-            )
+            parts.append(f"{accent}^O{reset} windows")
+    return f":: {' '.join(parts)}"
 
 
-def format_open_entry(
-    label: str, token: str, window_name: str = "", policy: str = ""
-) -> str:
+def picker_binding_actions(token: str = "") -> str:
+    actions = [f"unbind({fzf_key(command.key)})" for command in managed_commands()]
+    for command in picker_visible_commands(token):
+        actions.append(f"rebind({fzf_key(command.key)})")
+    return "+".join(actions)
+
+
+def format_open_entry(label: str, token: str, window_name: str = "") -> str:
     accent = color_escape(os.environ.get("_ACCENT", "7aa2f7"))
-    muted = color_escape(os.environ.get("_FGALT", "666666"))
     reset = "\033[0m"
     index = window_index_for_name(window_name) if window_name else ""
-    suffix = f" {muted}[{policy}]{reset}" if policy else ""
     if index:
-        return f"{accent}{label}{reset}{suffix} {muted}*{index}{reset}\t{token}"
-    return f"{label}{suffix}{reset}\t{token}"
+        muted = color_escape(os.environ.get("_FGALT", "666666"))
+        return f"{accent}{label}{reset} {muted}*{index}{reset}\t{token}"
+    return f"{label}{reset}\t{token}"
 
 
 def list_open_entries() -> str:
     scope = os.environ["_SCOPE"]
     root = os.environ["_ROOT"]
-    lines = [
-        format_open_entry("ai", "role:ai", window_name_for("ai", scope)),
-        format_open_entry("code", "role:code", window_name_for("code", scope)),
-        format_open_entry("shell", "role:shell", window_name_for("shell", scope)),
-    ]
-    for action in list_action_names_for_root(root):
-        if (policy := action_policy_for(action)) is None:
+    lines: list[str] = []
+    for command in visible_commands_for_root(root):
+        if command.kind == "role":
+            lines.append(
+                format_open_entry(
+                    command.name,
+                    f"role:{command.name}",
+                    window_name_for(command.name, scope),
+                )
+            )
             continue
-        window_name = window_name_for(action, scope) if policy == "keep" else ""
-        lines.append(format_open_entry(action, f"action:{action}", window_name, policy))
+        lines.append(
+            format_open_entry(
+                command.name,
+                f"action:{command.name}",
+                window_name_for(command.name, scope),
+            )
+        )
     return "\n".join(lines) + ("\n" if lines else "")
 
 
@@ -605,19 +674,6 @@ def toggle_picker_mode(target_mode: str) -> None:
     set_picker_mode("open" if picker_mode() == target_mode else target_mode)
 
 
-def kill_picker_target(value: str) -> None:
-    kind, _, name = value.partition(":")
-    window_name = window_name_for(name, os.environ["_SCOPE"])
-    if kind in {"role", "action"}:
-        _ = tmux(
-            "kill-window",
-            "-t",
-            f"={window_name}",
-            check=False,
-            stderr=subprocess.DEVNULL,
-        )
-
-
 def dispatch_picker_action(value: str) -> int:
     mode, _, rest = value.partition(":")
     match mode:
@@ -627,13 +683,10 @@ def dispatch_picker_action(value: str) -> int:
             return open_action(rest)
         case "proj":
             try:
-                open_role_in_root("code", rest)
+                open_role_in_root("edit", rest)
             except MuxError as exc:
                 _ = tmux("display-message", str(exc))
                 return 1
-            return 0
-        case "kill":
-            kill_picker_target(rest)
             return 0
         case _:
             return 0
@@ -705,22 +758,24 @@ def show_picker(start_mode: str = "open") -> int:
         "--accept-nth",
         "2",
         "--bind",
-        "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header)+transform-prompt(mux _prompt)",
+        "result:transform-header(mux _header {2})+transform(mux _bindings {2})",
+        "--bind",
+        "focus:transform-header(mux _header {2})+transform(mux _bindings {2})",
+        "--bind",
+        "ctrl-o:execute-silent(mux _toggle proj)+reload(mux _list)+transform-header(mux _header {2})+transform-prompt(mux _prompt)+transform(mux _bindings {2})",
         "--bind",
         "enter:become(mux _dispatch {2})",
-        "--bind",
-        "ctrl-a:become(mux _picker_open role ai {2})",
-        "--bind",
-        "ctrl-d:become(mux _picker_open role code {2})",
-        "--bind",
-        "ctrl-s:become(mux _picker_open role shell {2})",
-        "--bind",
-        "ctrl-r:become(mux _picker_open action run {2})",
-        "--bind",
-        "ctrl-g:become(mux _picker_open action git {2})",
-        "--bind",
-        "ctrl-x:execute-silent(mux _dispatch kill:{2})+reload(mux _list)+transform-header(mux _header)",
     ]
+    for managed in managed_commands():
+        command.extend(
+            [
+                "--bind",
+                (
+                    f"{fzf_key(managed.key)}:become("
+                    f"mux _picker_open {managed.kind} {managed.name} {{2}})"
+                ),
+            ]
+        )
     return subprocess.run(
         command, input=picker_list(), text=True, env=os.environ.copy(), check=False
     ).returncode
@@ -778,6 +833,19 @@ def render_bar() -> int:
     return 0
 
 
+def apply_managed_binds() -> int:
+    for key in ("a", "b", "c", "e", "g", "r", "s", "t"):
+        _ = tmux(
+            "unbind-key",
+            tmux_key(key),
+            check=False,
+            stderr=subprocess.DEVNULL,
+        )
+    for command in managed_commands():
+        _ = tmux("bind-key", tmux_key(command.key), "run", f"mux {command.name}")
+    return 0
+
+
 def switch_session(slot: str) -> int:
     sessions = [
         line for line in maybe_output(["tmux", "ls", "-F", "#S"]).splitlines() if line
@@ -803,26 +871,22 @@ def attach_or_new_session() -> int:
 
 def main(argv: list[str]) -> int:
     ensure_command("tmux")
+
     match argv:
         case []:
             return attach_or_new_session()
         case ["bar"]:
             return render_bar()
+        case ["_apply_binds"]:
+            return apply_managed_binds()
         case ["switch", slot]:
             return switch_session(slot)
         case ["role", name]:
             return open_role(name)
         case ["action", name]:
             return open_action(name)
-        case [("ai" | "code" | "shell") as command]:
-            return open_role(command)
-        case ["code"]:
-            _ = sys.stderr.write("mux: unknown role: code\n")
-            return 1
-        case ["git"]:
-            return open_action("git")
-        case ["run"]:
-            return open_action("run")
+        case [name] if command_for_name(name):
+            return open_managed(name)
         case ["run", name]:
             return open_action(name)
         case ["open"]:
@@ -834,6 +898,15 @@ def main(argv: list[str]) -> int:
             return 0
         case ["_header"]:
             _ = sys.stdout.write(picker_header())
+            return 0
+        case ["_header", token]:
+            _ = sys.stdout.write(picker_header(token))
+            return 0
+        case ["_bindings"]:
+            _ = sys.stdout.write(picker_binding_actions())
+            return 0
+        case ["_bindings", token]:
+            _ = sys.stdout.write(picker_binding_actions(token))
             return 0
         case ["_list"]:
             _ = sys.stdout.write(picker_list())
@@ -855,10 +928,15 @@ def main(argv: list[str]) -> int:
             return usage_error("_toggle requires a mode")
         case ["_dispatch"]:
             return usage_error("_dispatch requires a value")
+        case ["_bindings", *_]:
+            return usage_error("_bindings accepts at most one token")
         case ["_picker_open"] | ["_picker_open", _] | ["_picker_open", _, _]:
             return usage_error("_picker_open requires kind, name, and value")
         case [command, *_]:
             return usage_error(f"unknown command: {command}")
+        case _:
+            pass
+
     return 1
 
 
