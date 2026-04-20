@@ -12,10 +12,36 @@ from the start. The PR is never created if either fails.
 ## Guardrails (non-negotiable)
 
 - **No main push.** Never push to `main`/`master` by branch name or refspec.
-- **No broken CI.** If `scripts/ci.sh` exists and fails, stop. No PR.
+- **No broken CI.** If the repo defines a recognized CI entrypoint and it
+  fails, stop. No PR.
 - **No conflicts.** If merge conflicts exist against `origin/main`, stop. No PR.
 - **No force-push.**
 - **No AI attribution.** No `Co-Authored-By`, `Signed-off-by`, or tool mentions.
+
+## CI command detection
+
+Determine the repo CI command at the git root in this order:
+
+1. If the repo has `justfile` / `Justfile` and `just --summary` includes `ci`:
+   - if the repo also has `flake.nix`, use:
+
+     ```
+     nix develop .#ci --command just ci 2>&1
+     ```
+
+   - otherwise use:
+
+     ```
+     just ci 2>&1
+     ```
+
+2. Otherwise, if `scripts/ci.sh` exists, use:
+
+   ```
+   bash scripts/ci.sh 2>&1
+   ```
+
+3. Otherwise, there is no recognized repo CI entrypoint.
 
 ## Workflow
 
@@ -31,11 +57,8 @@ Gather branch, commit log, and diffstat. Check stop conditions:
 
 Start these BEFORE drafting. Use background shell execution.
 
-**CI** — only if `scripts/ci.sh` exists at the git root:
-
-```
-bash scripts/ci.sh 2>&1
-```
+**CI** — only if CI command detection found a recognized repo entrypoint.
+Launch the detected command in the background.
 
 **Conflict detection:**
 

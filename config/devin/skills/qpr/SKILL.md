@@ -20,6 +20,31 @@ Same as `/pr`. Non-negotiable:
 - No force-push.
 - No AI attribution.
 
+## CI command detection
+
+Determine the repo CI command at the git root in this order:
+
+1. If the repo has `justfile` / `Justfile` and `just --summary` includes `ci`:
+   - if the repo also has `flake.nix`, use:
+
+     ```
+     nix develop .#ci --command just ci 2>&1
+     ```
+
+   - otherwise use:
+
+     ```
+     just ci 2>&1
+     ```
+
+2. Otherwise, if `scripts/ci.sh` exists, use:
+
+   ```
+   bash scripts/ci.sh 2>&1
+   ```
+
+3. Otherwise, there is no recognized repo CI entrypoint.
+
 ## Workflow
 
 ### 1. Pre-flight
@@ -31,7 +56,8 @@ Gather branch, commit log ahead of `main`, and diffstat.
 
 ### 2. Launch background checks (immediately, in parallel)
 
-**CI** — if `scripts/ci.sh` exists: `bash scripts/ci.sh 2>&1`
+**CI** — if CI command detection found a recognized repo entrypoint, launch the
+detected command in the background.
 
 **Conflict detection:**
 

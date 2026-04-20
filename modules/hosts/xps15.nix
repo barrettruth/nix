@@ -46,6 +46,10 @@ in
       {
         programs.direnv-instant.enable = true;
         programs.direnv.nix-direnv.enable = true;
+        programs.direnv.settings.global = {
+          hide_env_diff = true;
+          log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
+        };
         nixpkgs.hostPlatform = hostConfig.platform;
         nixpkgs.overlays = overlays;
         nixpkgs.config.allowUnfreePredicate =
