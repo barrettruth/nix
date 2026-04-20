@@ -149,6 +149,7 @@ in
       vesktop
       signal-desktop
       telegram-desktop
+      cinny-desktop
       element-desktop
       xdg-desktop-portal-gtk
       nerd-fonts.jetbrains-mono
