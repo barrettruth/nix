@@ -16,7 +16,6 @@
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     direnv-instant.url = "github:Mic92/direnv-instant";
-    vimdoc-language-server.url = "github:barrettruth/vimdoc-language-server";
     codex.url = "github:sadjow/codex-cli-nix";
   };
 

@@ -1,7 +1,7 @@
 { ... }:
 {
   perSystem =
-    { pkgs, inputs', ... }:
+    { pkgs, ... }:
     {
       formatter = pkgs.nixfmt-tree;
 
@@ -25,7 +25,7 @@
             pkgs.stylua
             pkgs.selene
             pkgs.lua-language-server
-            inputs'.vimdoc-language-server.packages.default
+            pkgs.vimdoc-language-server
             (pkgs.luajit.withPackages (ps: [
               ps.busted
               ps.nlua
