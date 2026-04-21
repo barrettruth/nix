@@ -9,6 +9,58 @@ require() {
   done
 }
 
+app_class() {
+  case "$1" in
+  google-chrome | google-chrome-stable) printf '%s\n' "google-chrome" ;;
+  chromium) printf '%s\n' "Chromium" ;;
+  zen | zen-browser) printf '%s\n' "zen" ;;
+  firefox) printf '%s\n' "firefox" ;;
+  alacritty) printf '%s\n' "Alacritty" ;;
+  code | vscodium) printf '%s\n' "Code" ;;
+  signal-desktop | signal) printf '%s\n' "signal" ;;
+  telegram-desktop | telegram) printf '%s\n' "org.telegram.desktop" ;;
+  ghostty) printf '%s\n' "com.mitchellh.ghostty" ;;
+  bitwarden-desktop | bitwarden) printf '%s\n' "Bitwarden" ;;
+  slack) printf '%s\n' "Slack" ;;
+  discord) printf '%s\n' "discord" ;;
+  vesktop) printf '%s\n' "vesktop" ;;
+  cinny-desktop | cinny) printf '%s\n' "cinny" ;;
+  element-desktop | element) printf '%s\n' "electron" ;;
+  *) printf '%s\n' "$1" ;;
+  esac
+}
+
+client_rows() {
+  hyprctl -j clients 2>/dev/null | jq -r --arg class "$1" '
+    .[]? | select(
+      ((.xdgTag // "") | ascii_downcase | contains($class | ascii_downcase)) or
+      ((.initialClass // "") | ascii_downcase | contains($class | ascii_downcase)) or
+      ((.class // "") | ascii_downcase | contains($class | ascii_downcase))
+    ) | "\(.class)\t\(.title // "no title")\t\(.address)"
+  '
+}
+
+active_workspace_id() {
+  hyprctl activeworkspace -j | jq -r '.id'
+}
+
+window_workspace_id() {
+  hyprctl clients -j | jq -r --arg addr "$1" '.[] | select(.address == $addr) | .workspace.id'
+}
+
+quote_arg() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+build_exec_command() {
+  CMD=$(quote_arg "$1")
+  shift
+  for arg in "$@"; do
+    CMD="$CMD $(quote_arg "$arg")"
+  done
+  printf '%s\n' "$CMD"
+}
+
 usage() {
   cat <<EOF
 Usage: hypr <subcommand> [app] [args...]
@@ -47,50 +99,22 @@ exit)
 pull)
   require hyprctl jq fuzzel
   APP="$1"
-  case "$APP" in
-  google-chrome | google-chrome-stable) CLASS="google-chrome" ;;
-  chromium) CLASS="Chromium" ;;
-  zen | zen-browser) CLASS="zen" ;;
-  firefox) CLASS="firefox" ;;
-  alacritty) CLASS="Alacritty" ;;
-  code | vscodium) CLASS="Code" ;;
-  signal-desktop | signal) CLASS="signal" ;;
-  telegram-desktop | telegram) CLASS="org.telegram.desktop" ;;
-  ghostty) CLASS="com.mitchellh.ghostty" ;;
-  bitwarden-desktop | bitwarden) CLASS="Bitwarden" ;;
-  slack) CLASS="Slack" ;;
-  discord) CLASS="discord" ;;
-  vesktop) CLASS="vesktop" ;;
-  cinny-desktop | cinny) CLASS="cinny" ;;
-  element-desktop | element) CLASS="electron" ;;
-  *) CLASS="$APP" ;;
-  esac
+  CLASS=$(app_class "$APP")
 
-  CUR_WS=$(hyprctl activeworkspace -j | jq -r '.id')
-
+  CUR_WS=$(active_workspace_id)
   CUR_ADDR=$(hyprctl -j activewindow | jq -r '.address // empty')
-
-  WIN_ADDRS=$(hyprctl -j clients 2>/dev/null | jq -r --arg pat "$CLASS" '
-    .[]?
-    | select(
-        (.class?               | ascii_downcase | contains($pat | ascii_downcase)) or
-        (.initialClass?        | ascii_downcase | contains($pat | ascii_downcase)) or
-        (.xdgTag? // ""        | ascii_downcase | contains($pat | ascii_downcase))
-      )
-    | "\(.class)\t\(.title // "no title")\t\(.address)"
-  ')
-
-  WIN_COUNT=$(echo "$WIN_ADDRS" | grep -c '^' || :)
+  WIN_ADDRS=$(client_rows "$CLASS")
+  WIN_COUNT=$(printf '%s\n' "$WIN_ADDRS" | grep -c . || :)
 
   if [ "$WIN_COUNT" -eq 0 ]; then
     exit 0
   fi
 
   if [ "$WIN_COUNT" -eq 1 ]; then
-    WIN_ADDR=$(echo "$WIN_ADDRS" | awk -F'\t' '{print $3}')
+    WIN_ADDR=$(printf '%s\n' "$WIN_ADDRS" | awk -F'\t' '{print $3}')
   else
     ROFI_LINES=$(
-      echo "$WIN_ADDRS" |
+      printf '%s\n' "$WIN_ADDRS" |
         awk -F'\t' -v cur="$CUR_ADDR" '
         $3 != cur { printf "%s : %s\t%s\n", $1, $2, $3 }
       '
@@ -98,11 +122,11 @@ pull)
 
     [ -z "$ROFI_LINES" ] && exit 0
 
-    SELECTED=$(echo "$ROFI_LINES" | fuzzel --dmenu --prompt="pull:  ")
+    SELECTED=$(printf '%s\n' "$ROFI_LINES" | fuzzel --dmenu --prompt="pull:  ")
 
     [ -z "$SELECTED" ] && exit 0
 
-    WIN_ADDR=$(echo "$SELECTED" | awk -F'\t' '{print $2}')
+    WIN_ADDR=$(printf '%s\n' "$SELECTED" | awk -F'\t' '{print $2}')
   fi
 
   [ -z "$WIN_ADDR" ] && exit 0
@@ -140,51 +164,27 @@ spawnfocus)
   }
   shift
 
-  case "$APP" in
-  google-chrome | google-chrome-stable) CLASS="google-chrome" ;;
-  chromium) CLASS="Chromium" ;;
-  zen | zen-browser) CLASS="zen" ;;
-  firefox) CLASS="firefox" ;;
-  alacritty) CLASS="Alacritty" ;;
-  code | vscodium) CLASS="Code" ;;
-  signal-desktop | signal) CLASS="signal" ;;
-  telegram-desktop | telegram) CLASS="org.telegram.desktop" ;;
-  ghostty) CLASS="com.mitchellh.ghostty" ;;
-  bitwarden-desktop | bitwarden) CLASS="Bitwarden" ;;
-  slack) CLASS="Slack" ;;
-  discord) CLASS="discord" ;;
-  vesktop) CLASS="vesktop" ;;
-  cinny-desktop | cinny) CLASS="cinny" ;;
-  element-desktop | element) CLASS="electron" ;;
-  *) CLASS="$APP" ;;
-  esac
-
-  WIN_ADDRS=$(hyprctl -j clients 2>/dev/null | jq -r --arg class "$CLASS" '
-    .[]? | select(
-      ((.xdgTag // "") | ascii_downcase | contains($class | ascii_downcase)) or
-      ((.initialClass // "") | ascii_downcase | contains($class | ascii_downcase)) or
-      ((.class // "") | ascii_downcase | contains($class | ascii_downcase))
-    ) | "\(.class)\t\(.title)\t\(.address)"
-  ')
-
-  WIN_COUNT=$(echo "$WIN_ADDRS" | grep -c .)
+  CLASS=$(app_class "$APP")
+  WIN_ADDRS=$(client_rows "$CLASS")
+  WIN_COUNT=$(printf '%s\n' "$WIN_ADDRS" | grep -c . || :)
 
   if [ "$WIN_COUNT" -eq 0 ]; then
     WIN_ADDR=""
   elif [ "$WIN_COUNT" -eq 1 ]; then
-    WIN_ADDR=$(echo "$WIN_ADDRS" | awk -F'\t' '{print $3}')
-  elif [ "$WIN_COUNT" -gt 1 ]; then
-    SELECTED=$(echo "$WIN_ADDRS" | awk -F'\t' '{print $1 ": " $2 "\t" $3}' | fuzzel --dmenu --prompt="window:  ")
+    WIN_ADDR=$(printf '%s\n' "$WIN_ADDRS" | awk -F'\t' '{print $3}')
+  else
+    SELECTED=$(printf '%s\n' "$WIN_ADDRS" | awk -F'\t' '{print $1 ": " $2 "\t" $3}' | fuzzel --dmenu --prompt="window:  ")
 
     if [ -z "$SELECTED" ]; then
       exit 0
     fi
 
-    WIN_ADDR=$(echo "$SELECTED" | awk -F'\t' '{print $2}')
+    WIN_ADDR=$(printf '%s\n' "$SELECTED" | awk -F'\t' '{print $2}')
   fi
+
   if [ -n "$WIN_ADDR" ]; then
     if [ -n "$WS" ]; then
-      WIN_WS=$(hyprctl clients -j | jq -r --arg addr "$WIN_ADDR" '.[] | select(.address == $addr) | .workspace.id')
+      WIN_WS=$(window_workspace_id "$WIN_ADDR")
 
       if [ "$WIN_WS" != "$WS" ]; then
         hyprctl dispatch movetoworkspacesilent "$WS,address:$WIN_ADDR"
@@ -192,32 +192,25 @@ spawnfocus)
 
       hyprctl dispatch workspace "$WS"
     else
-      WIN_WS=$(hyprctl clients -j | jq -r --arg addr "$WIN_ADDR" '.[] | select(.address == $addr) | .workspace.id')
-
+      WIN_WS=$(window_workspace_id "$WIN_ADDR")
       hyprctl dispatch workspace "$WIN_WS"
     fi
 
     hyprctl dispatch focuswindow "address:$WIN_ADDR"
   else
-    EXISTING_HEX=$(hyprctl -j clients 2>/dev/null | jq -r --arg class "$CLASS" '
-      .[]? | select(
-        ((.xdgTag // "") | ascii_downcase | contains($class | ascii_downcase)) or
-        ((.initialClass // "") | ascii_downcase | contains($class | ascii_downcase)) or
-        ((.class // "") | ascii_downcase | contains($class | ascii_downcase))
-      ) | .address | ltrimstr("0x")
-    ' | tr '\n' ' ')
+    EXISTING_HEX=$(printf '%s\n' "$WIN_ADDRS" | awk -F'\t' 'NF { sub(/^0x/, "", $3); printf "%s ", $3 }')
 
     if [ -n "$WS" ]; then
       hyprctl dispatch workspace "$WS"
-    fi
-
-    if [ $# -eq 0 ]; then
+      LAUNCH_CMD=$(build_exec_command "$APP" "$@")
+      hyprctl dispatch exec "[workspace $WS silent; no_initial_focus] $LAUNCH_CMD"
+    elif [ $# -eq 0 ]; then
       "$APP" &
     else
       "$APP" "$@" &
     fi
 
-    socat -u UNIX-CONNECT:"$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" - | while read -r line; do
+    socat -u UNIX-CONNECT:"$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" - 2>/dev/null | while IFS= read -r line; do
       case "$line" in
       openwindow*)
         window_id=$(echo "$line" | cut -d'>' -f3 | cut -d',' -f1)
@@ -231,9 +224,17 @@ spawnfocus)
           *)
             addr="0x$window_id"
             if [ -n "$WS" ]; then
-              hyprctl dispatch movetoworkspacesilent "$WS,address:$addr"
+              WIN_WS=$(window_workspace_id "$addr")
+              if [ "$WIN_WS" != "$WS" ]; then
+                hyprctl dispatch movetoworkspacesilent "$WS,address:$addr"
+              fi
+              CUR_WS=$(active_workspace_id)
+              if [ "$CUR_WS" = "$WS" ]; then
+                hyprctl dispatch focuswindow "address:$addr"
+              fi
+            else
+              hyprctl dispatch focuswindow "address:$addr"
             fi
-            hyprctl dispatch focuswindow "address:$addr"
             break
             ;;
           esac
