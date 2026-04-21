@@ -249,14 +249,14 @@ volume)
 wifi)
   case "$2" in
   pick)
-    require fuzzel
+    require fuzzel iwctl
     station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
     [ -z "$station" ] && {
       echo "ctl: no wifi device found" >&2
       exit 1
     }
-    while :; do
-      networks=$(iwctl station "$station" get-networks 2>/dev/null |
+    wifi_networks() {
+      iwctl station "$station" get-networks 2>/dev/null |
         sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' |
         awk 'NR>4 && /\S/ && !/^[[:space:]]*-/' |
         awk '{
@@ -282,7 +282,23 @@ wifi)
             sub(/[[:space:]]*$/, "", security)
             printf "%s\t%s\t%s\t%s\n", ssid, security, signal, active
           }
-        }')
+        }'
+    }
+    wifi_rescan() {
+      scan_prev="$1"
+      scan_cur=""
+      iwctl station "$station" scan >/dev/null 2>&1 &
+      scan_retry=0
+      while [ "$scan_retry" -lt 10 ]; do
+        scan_cur=$(wifi_networks)
+        [ -n "$scan_cur" ] && [ "$scan_cur" != "$scan_prev" ] && break
+        scan_retry=$((scan_retry + 1))
+        sleep 0.2
+      done
+      [ -n "$scan_cur" ] && printf '%s\n' "$scan_cur" || printf '%s\n' "$scan_prev"
+    }
+    networks=$(wifi_networks)
+    while :; do
       [ -z "$networks" ] && exit 0
       w1=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=12}{l=length($1);if(l>m)m=l}END{print m}')
       w2=$(printf '%s\n' "$networks" | awk -F'\t' 'BEGIN{m=8}{l=length($2);if(l>m)m=l}END{print m}')
@@ -301,7 +317,10 @@ wifi)
           --mesg="$header" --mesg-mode=expand \
           --font="Berkeley Mono:size=12" --width="$fw")
       rc=$?
-      [ "$rc" = 10 ] && continue
+      [ "$rc" = 10 ] && {
+        networks=$(wifi_rescan "$networks")
+        continue
+      }
       [ -z "$ssid" ] && exit 0
       break
     done
