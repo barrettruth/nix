@@ -8,7 +8,6 @@ local dev_plugins = {
     'diffs.nvim',
     'forge.nvim',
     'preview.nvim',
-    'fzf-lua',
     'nvim-lspconfig',
 }
 
@@ -67,30 +66,26 @@ return {
         cmd = 'Forge',
         keys = {
             {
-                '<leader>gg',
-                function()
-                    require('config.forge').open()
-                end,
-                desc = 'forge wrapper',
-            },
-            {
                 '<leader>gp',
                 function()
-                    require('config.forge').load().open('prs.open')
+                    require('config.lz').load('barrettruth/forge.nvim')
+                    require('forge').open('prs.open')
                 end,
                 desc = 'forge prs',
             },
             {
                 '<leader>gi',
                 function()
-                    require('config.forge').load().open('issues.open')
+                    require('config.lz').load('barrettruth/forge.nvim')
+                    require('forge').open('issues.open')
                 end,
                 desc = 'forge issues',
             },
             {
                 '<leader>gt',
                 function()
-                    require('config.forge').load().open('ci.current_branch')
+                    require('config.lz').load('barrettruth/forge.nvim')
+                    require('forge').open('ci.current_branch')
                 end,
                 desc = 'forge ci',
             },
@@ -121,15 +116,25 @@ return {
             {
                 '<leader>gB',
                 function()
-                    require('config.forge').load().open('browse.contextual')
+                    require('config.lz').load('barrettruth/forge.nvim')
+                    require('forge').open('browse.contextual')
                 end,
                 mode = { 'n', 'x' },
                 desc = 'forge browse',
             },
             {
+                '<leader>gs',
+                function()
+                    require('config.lz').load('ibhagwan/fzf-lua')
+                    require('fzf-lua').git_stash()
+                end,
+                desc = 'forge stash',
+            },
+            {
                 '<leader>gr',
                 function()
-                    require('config.forge').load().open('releases.all')
+                    require('config.lz').load('barrettruth/forge.nvim')
+                    require('forge').open('releases.all')
                 end,
                 desc = 'forge releases',
             },

@@ -2,9 +2,97 @@ return {
     'ibhagwan/fzf-lua',
     after = function()
         local fzf = require('fzf-lua')
+        local actions = require('fzf-lua.actions')
+        local utils = require('fzf-lua.utils')
         local has_nonicons = pcall(require, 'nonicons')
 
+        local function set_clipboard(text)
+            local ok = pcall(vim.fn.setreg, '+', text)
+            if not ok then
+                pcall(vim.fn.setreg, '"', text)
+            end
+        end
+
+        local function load_forge_ops()
+            require('config.lz').load('barrettruth/forge.nvim')
+            return require('forge.ops')
+        end
+
+        local function branch_name(selected)
+            local line = selected and selected[1]
+            if type(line) ~= 'string' or line == '' then
+                return nil
+            end
+            if line:match('%(HEAD detached') or line:match('%(no branch') then
+                return nil
+            end
+            local _, branch = line:match('%s-([%+%*]?)%s+([^ ]+)')
+            if not branch then
+                return nil
+            end
+            if branch:find('^remotes/') then
+                branch = branch:match('remotes/.-/(.-)$') or branch
+            end
+            if branch == 'HEAD' or branch == '' then
+                return nil
+            end
+            return branch
+        end
+
+        local function browse_branch(selected)
+            local branch = branch_name(selected)
+            if not branch then
+                utils.warn('cannot browse detached HEAD')
+                return
+            end
+            load_forge_ops().browse_branch(branch)
+        end
+
+        local function copy_branch(selected)
+            local branch = branch_name(selected)
+            if not branch then
+                return
+            end
+            set_clipboard(branch)
+            utils.info("Copied branch '%s'.", branch)
+        end
+
+        local function worktree_path(selected)
+            local line = selected and selected[1]
+            if type(line) ~= 'string' or line == '' then
+                return nil
+            end
+            return line:match('^[^%s]+')
+        end
+
+        local function worktree_branch(selected)
+            local line = selected and selected[1]
+            if type(line) ~= 'string' or line == '' then
+                return nil
+            end
+            return line:match('%[([^%]]+)%]')
+        end
+
+        local function browse_worktree(selected)
+            local branch = worktree_branch(selected)
+            if not branch then
+                utils.warn('cannot browse detached worktree')
+                return
+            end
+            load_forge_ops().browse_branch(branch)
+        end
+
+        local function copy_worktree(selected)
+            local path = worktree_path(selected)
+            if not path then
+                return
+            end
+            set_clipboard(path)
+            utils.info("Copied worktree path '%s'.", path)
+        end
+
         local opts = {
+            [1] = false,
             file_icon_padding = ' ',
             files = {
                 cmd = vim.env.FZF_CTRL_T_COMMAND,
@@ -73,7 +161,12 @@ return {
                             :gsub('--color=[^%s]+', '')
                     ),
                     actions = {
-                        ['ctrl-x'] = false,
+                        ['ctrl-x'] = browse_worktree,
+                        ['ctrl-y'] = copy_worktree,
+                        ['ctrl-d'] = {
+                            fn = actions.git_worktree_del,
+                            reload = true,
+                        },
                     },
                 },
                 branches = {
@@ -82,6 +175,14 @@ return {
                             :gsub('%-%-bind=ctrl%-a:select%-all', '')
                             :gsub('--color=[^%s]+', '')
                     ),
+                    actions = {
+                        ['ctrl-x'] = browse_branch,
+                        ['ctrl-y'] = copy_branch,
+                        ['ctrl-d'] = {
+                            fn = actions.git_branch_del,
+                            reload = true,
+                        },
+                    },
                 },
             },
         }
