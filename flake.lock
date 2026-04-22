@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1776713392,
-        "narHash": "sha256-xOR40+2BkeaZc/dQy74bp2JVL9ywTl758/ZlX71zg/E=",
+        "lastModified": 1776799156,
+        "narHash": "sha256-qaMsAUfm5LMHJd/csXmp6xdESYFkyDKCjlx9QdxynVo=",
         "owner": "sadjow",
         "repo": "codex-cli-nix",
-        "rev": "cef514b87b004714d432cf073635e7e1ab8a2bf8",
+        "rev": "0c2a4f7df15f9f9f304a5aaa82660b42e177a422",
         "type": "github"
       },
       "original": {
@@ -83,11 +83,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1775866113,
-        "narHash": "sha256-HwPk/jTA4WpwcWagYQQEmhPmJKCznbOQ79+6xeTbKbw=",
+        "lastModified": 1776753099,
+        "narHash": "sha256-7Pp7+cwBBjan/2nkkeHczhzRjoRd5DmeUnXwFj3TH0c=",
         "owner": "charliemeyer2000",
         "repo": "devin-cli-overlay",
-        "rev": "7df6c719259618289e76817450a543fb39547188",
+        "rev": "f75fe96a2b97caa331715cf36fc3990f73557970",
         "type": "github"
       },
       "original": {
