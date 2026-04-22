@@ -4,6 +4,7 @@ return {
         local fzf = require('fzf-lua')
         local actions = require('fzf-lua.actions')
         local utils = require('fzf-lua.utils')
+        local preview = require('config.fzf.preview')
         local has_nonicons = pcall(require, 'nonicons')
 
         local function set_clipboard(text)
@@ -92,7 +93,6 @@ return {
         end
 
         local opts = {
-            [1] = false,
             file_icon_padding = ' ',
             files = {
                 cmd = vim.env.FZF_CTRL_T_COMMAND,
@@ -153,6 +153,36 @@ return {
                 files = {
                     cmd = 'git ls-files --cached --others --exclude-standard',
                     git_icons = false,
+                },
+                status = {
+                    previewer = preview.status,
+                    preview_pager = false,
+                    winopts = { preview = { hidden = false } },
+                },
+                commits = {
+                    previewer = preview.commits,
+                    preview_pager = false,
+                    winopts = { preview = { hidden = false } },
+                },
+                bcommits = {
+                    previewer = preview.bcommits,
+                    preview_pager = false,
+                    winopts = { preview = { hidden = false } },
+                },
+                diff = {
+                    previewer = preview.diff,
+                    preview_pager = false,
+                    winopts = { preview = { hidden = false } },
+                },
+                stash = {
+                    previewer = preview.stash,
+                    preview_pager = false,
+                    winopts = { preview = { hidden = false } },
+                },
+                blame = {
+                    previewer = preview.blame,
+                    preview_pager = false,
+                    winopts = { preview = { hidden = false } },
                 },
                 worktrees = {
                     fzf_args = (
