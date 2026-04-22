@@ -82,9 +82,6 @@ return {
                             :gsub('%-%-bind=ctrl%-a:select%-all', '')
                             :gsub('--color=[^%s]+', '')
                     ),
-                    actions = {
-                        ['ctrl-x'] = require('config.forge').browse_selected_branch,
-                    },
                 },
             },
         }
