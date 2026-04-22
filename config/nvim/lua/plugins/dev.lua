@@ -82,9 +82,16 @@ return {
                 desc = 'forge issues',
             },
             {
-                '<leader>gc',
+                '<leader>gt',
                 [[<cmd>lua require('forge').open('ci')<cr>]],
                 desc = 'forge ci',
+            },
+            {
+                '<leader>gb',
+                function()
+                    require('config.forge').pick_branches()
+                end,
+                desc = 'forge branches',
             },
             {
                 '<leader>gB',

@@ -29,6 +29,7 @@ return {
             winopts = {
                 border = 'single',
                 fullscreen = true,
+                title = false,
                 preview = {
                     hidden = 'hidden',
                 },
