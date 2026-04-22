@@ -28,6 +28,7 @@ return {
             },
             winopts = {
                 border = 'single',
+                fullscreen = true,
                 preview = {
                     hidden = 'hidden',
                 },
@@ -81,20 +82,7 @@ return {
                             :gsub('--color=[^%s]+', '')
                     ),
                     actions = {
-                        ['ctrl-x'] = function(selected)
-                            if not selected[1] then
-                                return
-                            end
-                            local branch =
-                                selected[1]:gsub('^[%s*]+', ''):match('%S+')
-                            if not branch then
-                                return
-                            end
-                            local f = require('forge').detect()
-                            if f then
-                                f:browse_branch(branch)
-                            end
-                        end,
+                        ['ctrl-x'] = require('config.forge').browse_selected_branch,
                     },
                 },
             },
