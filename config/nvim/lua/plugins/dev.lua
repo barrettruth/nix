@@ -68,41 +68,78 @@ return {
         keys = {
             {
                 '<leader>gg',
-                [[<cmd>lua require('forge').open()<cr>]],
-                desc = 'forge',
+                function()
+                    require('config.forge').open()
+                end,
+                desc = 'forge wrapper',
             },
             {
                 '<leader>gp',
-                [[<cmd>lua require('forge').open('prs')<cr>]],
+                function()
+                    require('config.forge').load().open('prs.open')
+                end,
                 desc = 'forge prs',
             },
             {
                 '<leader>gi',
-                [[<cmd>lua require('forge').open('issues')<cr>]],
+                function()
+                    require('config.forge').load().open('issues.open')
+                end,
                 desc = 'forge issues',
             },
             {
                 '<leader>gt',
-                [[<cmd>lua require('forge').open('ci')<cr>]],
+                function()
+                    require('config.forge').load().open('ci.current_branch')
+                end,
                 desc = 'forge ci',
             },
             {
                 '<leader>gb',
                 function()
-                    require('config.forge').pick_branches()
+                    require('config.lz').load('ibhagwan/fzf-lua')
+                    require('fzf-lua').git_branches()
                 end,
                 desc = 'forge branches',
             },
             {
+                '<leader>gc',
+                function()
+                    require('config.lz').load('ibhagwan/fzf-lua')
+                    require('fzf-lua').git_commits()
+                end,
+                desc = 'forge commits',
+            },
+            {
+                '<leader>gC',
+                function()
+                    require('config.lz').load('ibhagwan/fzf-lua')
+                    require('fzf-lua').git_bcommits()
+                end,
+                desc = 'forge buffer commits',
+            },
+            {
                 '<leader>gB',
-                [[<cmd>lua require('forge').open('browse')<cr>]],
+                function()
+                    require('config.forge').load().open('browse.contextual')
+                end,
                 mode = { 'n', 'x' },
                 desc = 'forge browse',
             },
             {
                 '<leader>gr',
-                [[<cmd>lua require('forge').open('releases')<cr>]],
+                function()
+                    require('config.forge').load().open('releases.all')
+                end,
                 desc = 'forge releases',
+            },
+            {
+                '<leader>gw',
+                function()
+                    require('config.lz').load('ibhagwan/fzf-lua')
+                    require('fzf-lua').git_worktrees()
+                end,
+                desc = 'forge worktrees',
             },
         },
     },
