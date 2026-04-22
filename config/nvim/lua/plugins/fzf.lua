@@ -194,7 +194,7 @@ return {
 
         fzf.setup(opts)
 
-        local ok, fzf_reload = pcall(require, 'config.fzf_reload')
+        local ok, fzf_reload = pcall(require, 'config.fzf.reload')
         if ok then
             fzf_reload.setup(opts)
             fzf_reload.reload()
