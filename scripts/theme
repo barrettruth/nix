@@ -111,5 +111,5 @@ if command -v tmux >/dev/null 2>&1 && tmux list-sessions >/dev/null 2>&1; then
 fi
 
 for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
-  [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf_reload\").reload()')" 2>/dev/null || true
+  [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf.reload\").reload()')" 2>/dev/null || true
 done
