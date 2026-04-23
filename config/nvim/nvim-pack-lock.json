@@ -56,10 +56,6 @@
       "rev": "3a696418821fa8e4963a0a59dd1f8d40fedb6824",
       "src": "https://github.com/lumen-oss/lz.n"
     },
-    "midnight.nvim": {
-      "rev": "af0a44bec80ed1fb1ff0dbcd3f3336ef8750ec8a",
-      "src": "https://github.com/barrettruth/midnight.nvim"
-    },
     "mini.ai": {
       "rev": "4b0a6207341d895b6cfe9bcb1e4d3e8607bfe4f4",
       "src": "https://github.com/echasnovski/mini.ai"

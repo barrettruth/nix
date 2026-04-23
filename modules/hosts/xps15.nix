@@ -37,6 +37,7 @@ in
       inputs.direnv-instant.nixosModules.direnv-instant
       ../../hosts/xps15/configuration.nix
       ../nixos/common/nix.nix
+      ../nixos/common/nix-ld.nix
       ../nixos/common/ssh.nix
       ../nixos/desktop/packages.nix
       ../nixos/desktop/environment.nix
