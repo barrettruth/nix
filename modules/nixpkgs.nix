@@ -9,6 +9,7 @@ let
     "slack"
     "apple_cursor"
     "devin"
+    "agentcomputer"
   ];
 in
 {
