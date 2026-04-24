@@ -17,6 +17,10 @@
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     direnv-instant.url = "github:Mic92/direnv-instant";
     codex.url = "github:sadjow/codex-cli-nix";
+    tmux-mosaic = {
+      url = "github:barrettruth/tmux-mosaic";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

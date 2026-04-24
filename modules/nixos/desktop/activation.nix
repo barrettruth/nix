@@ -108,6 +108,7 @@ let
     set -g @continuum-save-interval '10'
     run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
     set -g status-right '#(${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/scripts/continuum_save.sh)#{E:@bar-content}'
+    run-shell ${pkgs.tmuxPlugins.mosaic}/share/tmux-plugins/mosaic/mosaic.tmux
     source ${repo}/config/tmux/tmux.conf
   '';
 
