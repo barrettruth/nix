@@ -483,11 +483,11 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1777071548,
-        "narHash": "sha256-EKC/bEkXMriGfmymND2G1/87jGTTm004qGvVyzzZjJE=",
+        "lastModified": 1777072567,
+        "narHash": "sha256-r/xiS9kXG/L7jgqXENvQOVHJksi0H/9Nqz1ZpaLcBLo=",
         "owner": "barrettruth",
         "repo": "tmux-mosaic",
-        "rev": "fa14f3883dfa1e6a7bf40ee668f59652d02cddbb",
+        "rev": "1c51a1e55170f39ccd23a3b509c3026e70759d3b",
         "type": "github"
       },
       "original": {
