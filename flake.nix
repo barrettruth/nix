@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-    devin = {
+    devin-cli-overlay = {
       url = "github:charliemeyer2000/devin-cli-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
