@@ -7,6 +7,7 @@ local dev_plugins = {
     'cp.nvim',
     'diffs.nvim',
     'forge.nvim',
+    'nonicons.nvim',
     'preview.nvim',
     'nvim-lspconfig',
 }
