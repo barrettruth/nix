@@ -3,9 +3,5 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if ! "${repo_root}/scripts/update-computer"; then
-  echo "rebuild: update-computer failed; continuing with pinned version" >&2
-fi
-
 cd "${repo_root}"
 exec doas nixos-rebuild "${1:-switch}" --flake ".#$(hostname)" "${@:2}"
