@@ -2,22 +2,30 @@
 {
   perSystem =
     { pkgs, ... }:
+    let
+      commonPackages = [
+        pkgs.just
+        pkgs.deadnix
+        pkgs.statix
+        pkgs.nixfmt
+        pkgs.shfmt
+        pkgs.stylua
+        pkgs.selene
+        pkgs.biome
+      ];
+    in
     {
       formatter = pkgs.nixfmt-tree;
 
       devShells = {
         default = pkgs.mkShell {
-          packages = [
+          packages = commonPackages ++ [
             pkgs.xxd
-            pkgs.deadnix
-            pkgs.statix
-            pkgs.nixfmt
             pkgs.pre-commit
-            pkgs.prettier
-            pkgs.shfmt
-            pkgs.stylua
-            pkgs.selene
           ];
+        };
+        ci = pkgs.mkShell {
+          packages = commonPackages;
         };
         neovim = pkgs.mkShell {
           packages = [
