@@ -32,10 +32,6 @@
       "rev": "1eba927866251bae1b61dffc5b673b8dbd0f3f48",
       "src": "https://github.com/ibhagwan/fzf-lua"
     },
-    "gruvbox.nvim": {
-      "rev": "334d5fd49fc8033f26408425366c66c6390c57bb",
-      "src": "https://github.com/ellisonleao/gruvbox.nvim"
-    },
     "guard-collection": {
       "rev": "edf6c86c06badc972964dadb7fd469022690cbf0",
       "src": "https://github.com/nvimdev/guard-collection"
@@ -83,10 +79,6 @@
     "nvim-treesitter-textobjects": {
       "rev": "a0e182ae21fda68c59d1f36c9ed45600aef50311",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"
-    },
-    "overseer.nvim": {
-      "rev": "2802c15182dae2de71f9c82e918d7ba850b90c22",
-      "src": "https://github.com/stevearc/overseer.nvim"
     },
     "treesj": {
       "rev": "186084dee5e9c8eec40f6e39481c723dd567cb05",
