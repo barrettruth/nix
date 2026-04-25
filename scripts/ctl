@@ -421,7 +421,7 @@ wallpaper)
   require nix-shell
   _wp=$(mktemp /tmp/ctl_wp_XXXXXX.py)
   trap 'rm -f "$_wp"' EXIT
-  cat > "$_wp" <<'PYTHON'
+  cat >"$_wp" <<'PYTHON'
 # /// script
 # dependencies = ["pillow"]
 # ///

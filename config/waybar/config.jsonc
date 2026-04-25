@@ -14,13 +14,13 @@
     "network",
     "battery",
     "clock",
-    "custom/power",
+    "custom/power"
   ],
   "hyprland/workspaces": {
     "format": "{id}",
     "disable-scroll": true,
     "all-outputs": true,
-    "tooltip": true,
+    "tooltip": true
   },
   "custom/keyboard": {
     "exec": "hyprctl devices -j | jq -r '.keyboards[] | select(.main) | .active_keymap' 2>/dev/null || echo 'unknown'",
@@ -28,19 +28,19 @@
     "format": "󰌌",
     "tooltip": true,
     "tooltip-format": "Layout: {}",
-    "on-click": "ctl keyboard pick",
+    "on-click": "ctl keyboard pick"
   },
   "tray": {
     "icon-size": 16,
     "spacing": 8,
     "tooltip": true,
-    "show-passive-items": true,
+    "show-passive-items": true
   },
   "hyprland/window": {
     "format": "{}",
     "max-length": 40,
     "separate-outputs": true,
-    "rewrite": {},
+    "rewrite": {}
   },
   "custom/sink": {
     "exec": "$HOME/.config/nix/config/waybar/sink.sh",
@@ -50,7 +50,7 @@
     "on-click-right": "ctl audio sink",
     "on-click-middle": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0",
-    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
   },
   "custom/source": {
     "exec": "$HOME/.config/nix/config/waybar/source.sh",
@@ -60,7 +60,7 @@
     "on-click-right": "ctl audio source",
     "on-click-middle": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
     "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ --limit 1.0",
-    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-"
   },
   "network": {
     "format-wifi": "󰖩",
@@ -72,7 +72,7 @@
     "tooltip-format-wifi": "SSID: {essid}\nSignal: {signalStrength}%\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}\nIP: {ipaddr}",
     "tooltip-format-ethernet": "Interface: {ifname}\nIP: {ipaddr}/{cidr}\nDownload: {bandwidthDownBits}\nUpload: {bandwidthUpBits}",
     "tooltip-format-disconnected": "Wireless LAN disconnected",
-    "on-click": "ctl wifi pick",
+    "on-click": "ctl wifi pick"
   },
   "battery": {
     "format": "{icon}",
@@ -83,31 +83,31 @@
       "hi": 30,
       "mid": 20,
       "lo": 10,
-      "ultralo": 5,
+      "ultralo": 5
     },
     "events": {
       "on-discharging-hi": "grep -q Discharging /sys/class/power_supply/BAT*/status && notify-send -u low 'battery: 30%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 9))\")\"",
       "on-discharging-mid": "grep -q Discharging /sys/class/power_supply/BAT*/status && notify-send -u normal 'battery: 20%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 6))\")\"",
       "on-discharging-lo": "grep -q Discharging /sys/class/power_supply/BAT*/status && notify-send -u critical 'battery: 10%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 3))\")\"",
       "on-discharging-ultralo": "grep -q Discharging /sys/class/power_supply/BAT*/status && notify-send -u critical 'battery: 5%' \"$(printf '[%-30s]' \"$(printf '%0.s=' $(seq 1 1))\")\"",
-      "on-charging-100": "notify-send -u low 'battery: 100%' '[==============================]'",
+      "on-charging-100": "notify-send -u low 'battery: 100%' '[==============================]'"
     },
     "interval": 30,
     "tooltip": true,
     "tooltip-format-discharging": "Discharging: {capacity}%\n{timeTo}",
     "tooltip-format-charging": "Charging: {capacity}%\n{timeTo}",
     "tooltip-format-full": "Full: {capacity}%",
-    "tooltip-format": "{capacity}%\n{timeTo}",
+    "tooltip-format": "{capacity}%\n{timeTo}"
   },
   "clock": {
     "format": " {:%d/%m/%Y  %H:%M:%S}",
     "interval": 1,
-    "tooltip": false,
+    "tooltip": false
   },
   "custom/power": {
     "format": "󰐥",
     "tooltip": true,
     "tooltip-format": "power menu",
-    "on-click": "ctl power",
-  },
+    "on-click": "ctl power"
+  }
 }
