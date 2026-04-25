@@ -76,7 +76,7 @@
         "url": "https://install.determinate.systems/determinate-nixd/tag/v3.18.1/x86_64-linux"
       }
     },
-    "devin": {
+    "devin-cli-overlay": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
@@ -435,7 +435,7 @@
       "inputs": {
         "codex": "codex",
         "determinate": "determinate",
-        "devin": "devin",
+        "devin-cli-overlay": "devin-cli-overlay",
         "direnv-instant": "direnv-instant",
         "disko": "disko",
         "flake-parts": "flake-parts_3",

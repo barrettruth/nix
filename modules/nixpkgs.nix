@@ -2,7 +2,7 @@
 let
   overlays = [
     inputs.codex.overlays.default
-    inputs.devin.overlays.default
+    inputs.devin-cli-overlay.overlays.default
     (final: prev: {
       tmuxPlugins = prev.tmuxPlugins // {
         mosaic = inputs.tmux-mosaic.packages.${final.system}.default;
