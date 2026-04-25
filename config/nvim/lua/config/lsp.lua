@@ -68,13 +68,13 @@ function M.on_attach(client, bufnr)
         },
         {
             Methods.workspace_diagnostic,
-            'gw',
+            '<leader>gW',
             fzf_or('lsp_workspace_diagnostics', vim.diagnostic.setqflist),
             'workspace diagnostics',
         },
         {
             Methods.workspace_symbol,
-            'gS',
+            '<leader>gS',
             fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
             'workspace symbols',
         },
