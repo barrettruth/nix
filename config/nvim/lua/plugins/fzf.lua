@@ -1,3 +1,7 @@
+vim.pack.add({
+    'https://github.com/ibhagwan/fzf-lua',
+}, { load = function() end })
+
 return {
     'ibhagwan/fzf-lua',
     after = function()
