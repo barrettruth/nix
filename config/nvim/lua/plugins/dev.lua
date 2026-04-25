@@ -1,6 +1,5 @@
 local dev_plugins = {
     'midnight.nvim',
-    'live-server.nvim',
     'canola.nvim',
     'canola-collection',
     'pending.nvim',
@@ -57,6 +56,26 @@ local function forward_search_zathura()
     })
 end
 
+local function load_forge()
+    require('config.lz').load('barrettruth/forge.nvim')
+    return require('forge')
+end
+
+local function edit_or_create_pr()
+    local forge = load_forge()
+    local detected = forge.detect()
+    if not detected then
+        require('forge.logger').warn('no forge detected')
+        return
+    end
+    local pr, err = forge.current_pr({ forge = detected })
+    if err then
+        require('forge.logger').warn(err.message or 'current PR lookup failed')
+        return
+    end
+    vim.cmd(pr and 'Forge pr edit' or 'Forge pr create')
+end
+
 return {
     {
         'barrettruth/forge.nvim',
@@ -67,85 +86,51 @@ return {
         cmd = 'Forge',
         keys = {
             {
-                '<leader>gp',
+                '<leader>gg',
                 function()
-                    require('config.lz').load('barrettruth/forge.nvim')
-                    require('forge').open('prs.open')
+                    load_forge().open()
                 end,
-                desc = 'forge prs',
+                desc = 'forge menu',
             },
             {
                 '<leader>gi',
                 function()
-                    require('config.lz').load('barrettruth/forge.nvim')
-                    require('forge').open('issues.open')
+                    load_forge().open('issues.open')
                 end,
                 desc = 'forge issues',
             },
             {
-                '<leader>gt',
-                function()
-                    require('config.lz').load('barrettruth/forge.nvim')
-                    require('forge').open('ci.current_branch')
-                end,
-                desc = 'forge ci',
-            },
-            {
-                '<leader>gb',
-                function()
-                    require('config.lz').load('ibhagwan/fzf-lua')
-                    require('fzf-lua').git_branches()
-                end,
-                desc = 'forge branches',
-            },
-            {
-                '<leader>gc',
-                function()
-                    require('config.lz').load('ibhagwan/fzf-lua')
-                    require('fzf-lua').git_commits()
-                end,
-                desc = 'forge commits',
-            },
-            {
-                '<leader>gC',
-                function()
-                    require('config.lz').load('ibhagwan/fzf-lua')
-                    require('fzf-lua').git_bcommits()
-                end,
-                desc = 'forge buffer commits',
-            },
-            {
-                '<leader>gB',
-                function()
-                    require('config.lz').load('barrettruth/forge.nvim')
-                    require('forge').open('browse.contextual')
-                end,
+                '<leader>gx',
+                ':Forge browse<cr>',
                 mode = { 'n', 'x' },
                 desc = 'forge browse',
             },
             {
-                '<leader>gs',
-                function()
-                    require('config.lz').load('ibhagwan/fzf-lua')
-                    require('fzf-lua').git_stash()
-                end,
-                desc = 'forge stash',
+                '<leader>gpa',
+                '<cmd>Forge pr create<cr>',
+                desc = 'forge create pr',
             },
             {
-                '<leader>gr',
-                function()
-                    require('config.lz').load('barrettruth/forge.nvim')
-                    require('forge').open('releases.all')
-                end,
-                desc = 'forge releases',
+                '<leader>gpe',
+                edit_or_create_pr,
+                desc = 'forge edit or create pr',
             },
             {
-                '<leader>gw',
+                '<leader>gpp',
                 function()
-                    require('config.lz').load('ibhagwan/fzf-lua')
-                    require('fzf-lua').git_worktrees()
+                    load_forge().open('prs.open')
                 end,
-                desc = 'forge worktrees',
+                desc = 'forge prs',
+            },
+            {
+                '<leader>gpt',
+                '<cmd>Forge pr ci<cr>',
+                desc = 'forge pr checks',
+            },
+            {
+                '<leader>gpx',
+                '<cmd>Forge review adapter=browse<cr>',
+                desc = 'forge browse pr',
             },
         },
     },
@@ -178,16 +163,6 @@ return {
         after = function()
             vim.cmd.colorscheme('midnight')
         end,
-    },
-    {
-        'barrettruth/live-server.nvim',
-        enabled = true,
-        before = function()
-            vim.g.live_server = {
-                debug = false,
-            }
-        end,
-        keys = { { '<leader>l', '<cmd>LiveServerToggle<cr>' } },
     },
     {
         'barrettruth/canola.nvim',

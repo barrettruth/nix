@@ -267,11 +267,16 @@ return {
             end,
         },
         {
-            '<leader>fg',
+            '<leader>fG',
             function()
                 require('fzf-lua').live_grep({ cwd = vim.fn.expand('%:h') })
             end,
         },
+        { '<leader>gb', '<cmd>FzfLua git_branches<cr>' },
+        { '<leader>gc', '<cmd>FzfLua git_commits<cr>' },
+        { '<leader>gC', '<cmd>FzfLua git_bcommits<cr>' },
+        { '<leader>gs', '<cmd>FzfLua git_stash<cr>' },
+        { '<leader>gw', '<cmd>FzfLua git_worktrees<cr>' },
         { '<leader>fH', '<cmd>FzfLua highlights<cr>' },
         { '<leader>fh', '<cmd>FzfLua help_tags<cr>' },
         { '<leader>fl', '<cmd>FzfLua loclist<cr>' },
