@@ -780,14 +780,15 @@ def render_bar() -> int:
 def apply_managed_binds() -> int:
     for command in managed_commands():
         key = tmux_key(command.key)
-        if maybe_output(["tmux", "list-keys", "-T", "prefix", key]):
-            _ = tmux(
-                "unbind-key",
-                key,
-                check=False,
-                stderr=subprocess.DEVNULL,
-            )
-        _ = tmux("bind-key", key, "run", f"mux {command.name}")
+        _ = tmux(
+            "unbind-key",
+            "-T",
+            "prefix",
+            key,
+            check=False,
+            stderr=subprocess.DEVNULL,
+        )
+        _ = tmux("bind-key", "-T", "prefix", key, "run", f"mux {command.name}")
     return 0
 
 
