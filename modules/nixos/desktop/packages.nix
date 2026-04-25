@@ -8,8 +8,6 @@
 let
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
 
-  agentcomputer = pkgs.callPackage ../../../pkgs/computer.nix { };
-
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 
   devin = pkgs.symlinkJoin {
@@ -50,7 +48,6 @@ in
       python3
       codex
       devin
-      agentcomputer
 
       bash-language-server
       basedpyright
