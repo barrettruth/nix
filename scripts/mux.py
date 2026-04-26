@@ -168,6 +168,40 @@ def project_name_contexts(paths: Sequence[str]) -> dict[str, str]:
     return {path: format_path_parts(parts) for path, parts in contexts.items()}
 
 
+def unique_suffix_contexts(
+    contexts: dict[str, tuple[str, ...]], min_depth: int = 1
+) -> dict[str, str]:
+    if not contexts:
+        return {}
+    max_depth = max(len(parts) for parts in contexts.values())
+    start = min(max(1, min_depth), max_depth)
+    for depth in range(start, max_depth + 1):
+        suffixes = {
+            name: parts[-depth:] if len(parts) >= depth else parts
+            for name, parts in contexts.items()
+        }
+        if len(set(suffixes.values())) == len(contexts):
+            return {name: "-".join(parts) or name for name, parts in suffixes.items()}
+    return {name: "-".join(parts) or name for name, parts in contexts.items()}
+
+
+def session_context_parts(name: str) -> tuple[str, ...]:
+    parts = tuple(part for part in name.split("-") if part)
+    if (
+        len(parts) >= 3
+        and parts[-2].isdigit()
+        and len(parts[-2]) == 8
+        and parts[-1].isdigit()
+        and len(parts[-1]) == 6
+    ):
+        parts = parts[:-2]
+    if parts[:1] == ("followup",) and len(parts) > 1:
+        parts = parts[1:]
+    if parts[:1] == ("biome",) and len(parts) > 1:
+        parts = parts[1:]
+    return parts or (name,)
+
+
 def quote_sh(value: str) -> str:
     return shlex.quote(value)
 
@@ -739,26 +773,65 @@ def session_key(index: int, total: int) -> str:
             return "$" if index == total - 1 else "?"
 
 
+def status_right_budget() -> int:
+    widths: list[int] = []
+    for width in maybe_output(["tmux", "list-clients", "-F", "#{client_width}"]).splitlines():
+        try:
+            widths.append(int(width))
+        except ValueError:
+            continue
+    if not widths:
+        return 80
+    return max(80, max(widths) - 60)
+
+
+def session_display_names(session_names: Sequence[str], width_budget: int) -> dict[str, str]:
+    if not session_names:
+        return {}
+    contexts = {name: session_context_parts(name) for name in session_names}
+    for min_depth in (2, 1):
+        labels = unique_suffix_contexts(contexts, min_depth=min_depth)
+        plain = " │ ".join(
+            f"{session_key(index, len(session_names))}:{labels[name]}"
+            for index, name in enumerate(session_names)
+        )
+        if len(plain) <= width_budget:
+            return labels
+    return unique_suffix_contexts(contexts, min_depth=1)
+
+
 def render_bar() -> int:
+    mouse_on = tmux_output("show-options", "-gv", "mouse") == "on"
     indicator = (
         "#{?pane_in_mode,[mouse#{@c}copy],[mouse]}"
-        if tmux_output("show-options", "-gv", "mouse") == "on"
+        if mouse_on
         else "#{?pane_in_mode,[copy],}"
     )
+    plain_indicator = "[mouse,copy]" if mouse_on else "[copy]"
     sessions = maybe_output(["tmux", "ls", "-F", "#{session_id}\t#{session_name}"])
     parts: list[str] = []
+    plain_parts: list[str] = []
     lines = [line for line in sessions.splitlines() if line]
+    session_names = [line.partition("\t")[2] for line in lines]
+    right_budget = status_right_budget()
+    display_names = session_display_names(session_names, right_budget)
     total = len(lines)
     for index, line in enumerate(lines):
         session_id, _, session_name = line.partition("\t")
         key = session_key(index, total)
+        display_name = display_names.get(session_name, session_name)
         star = f"#{{?#{{==:#S,{session_name}}},#[fg=#{{@accent}}]*#[default],}}"
         parts.append(
-            f"#[range=session|{session_id}]{star}{key}#[fg=#{{@accent}}]:#[default]{session_name}#[norange]"
+            f"#[range=session|{session_id}]{star}{key}#[fg=#{{@accent}}]:#[default]{display_name}#[norange]"
         )
+        plain_parts.append(f"{key}:{display_name}")
     bar_content = " │ ".join(parts)
+    plain_bar_content = " │ ".join(plain_parts)
+    status_right_length = min(
+        right_budget, max(80, len(f"{plain_indicator} {plain_bar_content} ") + 1)
+    )
     _ = tmux("set", "-g", "status-left-length", "80")
-    _ = tmux("set", "-g", "status-right-length", "80")
+    _ = tmux("set", "-g", "status-right-length", str(status_right_length))
     _ = tmux("set", "-g", "status-left", " ")
     _ = tmux(
         "set",
