@@ -62,13 +62,13 @@ function M.on_attach(client, bufnr)
         },
         {
             Methods.textDocument_documentSymbol,
-            'gs',
+            'gO',
             fzf_or('lsp_document_symbols', vim.lsp.buf.document_symbol),
             'document symbols',
         },
         {
             Methods.workspace_diagnostic,
-            '<leader>gW',
+            'gw',
             fzf_or('lsp_workspace_diagnostics', vim.diagnostic.setqflist),
             'workspace diagnostics',
         },
