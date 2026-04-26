@@ -62,9 +62,15 @@ function M.on_attach(client, bufnr)
         },
         {
             Methods.textDocument_documentSymbol,
-            'gO',
+            'go',
             fzf_or('lsp_document_symbols', vim.lsp.buf.document_symbol),
             'document symbols',
+        },
+        {
+            Methods.textDocument_workspaceSymbol,
+            'gO',
+            fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
+            'workspace symbols',
         },
         {
             Methods.workspace_diagnostic,
@@ -74,7 +80,7 @@ function M.on_attach(client, bufnr)
         },
         {
             Methods.workspace_symbol,
-            '<leader>gS',
+            'gs',
             fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
             'workspace symbols',
         },
