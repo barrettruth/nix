@@ -106,26 +106,26 @@ return {
                 desc = 'forge browse',
             },
             {
-                '<leader>gpe',
+                '<leader>ge',
                 edit_or_create_pr,
                 desc = 'forge edit or create pr',
             },
             {
-                '<leader>gpo',
+                '<leader>go',
                 function()
                     load_forge().open('prs.open')
                 end,
                 desc = 'forge prs',
             },
             {
-                '<leader>gpt',
+                '<leader>gt',
                 function()
                     load_forge().pr_ci()
                 end,
                 desc = 'forge pr checks',
             },
             {
-                '<leader>gpb',
+                '<leader>gr',
                 '<cmd>Forge review adapter=browse<cr>',
                 desc = 'forge browse pr',
             },
