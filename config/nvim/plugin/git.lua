@@ -3,15 +3,9 @@ vim.pack.add({
 })
 
 -- selene: allow(global_usage)
-function _G._fugitive_stl()
-    local s = vim.fn.FugitiveStatusline()
-    return s ~= '' and s .. ' ' or ''
-end
-
-vim.api.nvim_create_autocmd('VimEnter', {
-    once = true,
+vim.api.nvim_create_autocmd('User', {
+    pattern = 'ForgeStatusUpdate',
     callback = function()
-        vim.o.statusline = ' %{v:lua._fugitive_stl()}'
-            .. vim.o.statusline:sub(2)
+        vim.cmd.redrawstatus()
     end,
 })
