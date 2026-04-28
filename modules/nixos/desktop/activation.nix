@@ -167,6 +167,43 @@ let
     }
   '';
 
+  hypridleLockCmd = pkgs.writeShellScriptBin "hypridle-lock" ''
+    set -e
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.coreutils
+        pkgs.hyprland
+        pkgs.jq
+        pkgs.nix
+      ]
+    }
+    ${repo}/scripts/ctl wallpaper lock
+    exec ${pkgs.hyprlock}/bin/hyprlock
+  '';
+
+  hypridleConf = pkgs.writeText "hypridle-conf" ''
+    general {
+      lock_cmd = ${hypridleLockCmd}/bin/hypridle-lock
+      after_sleep_cmd = ${pkgs.hyprland}/bin/hyprctl dispatch dpms on
+    }
+
+    listener {
+      timeout = 300
+      on-timeout = ${pkgs.systemd}/bin/loginctl lock-session
+    }
+
+    listener {
+      timeout = 600
+      on-timeout = ${pkgs.hyprland}/bin/hyprctl dispatch dpms off
+      on-resume = ${pkgs.hyprland}/bin/hyprctl dispatch dpms on
+    }
+
+    listener {
+      timeout = 3600
+      on-timeout = ${pkgs.systemd}/bin/systemctl suspend
+    }
+  '';
+
   jjConf = pkgs.writeText "jj-config" ''
     [user]
     name = "${identity.fullName}"
@@ -296,7 +333,7 @@ in
       ${mkSymlink "${repo}/config/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
       ${mkSymlink "${fuzzelConf}" "${XDG_CONFIG_HOME}/fuzzel/fuzzel.ini"}
       ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
-      ${mkSymlink "${repo}/config/hypr/hypridle.conf" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
+      ${mkSymlink "${hypridleConf}" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
       ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
     ''}
 
