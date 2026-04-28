@@ -83,11 +83,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777032889,
-        "narHash": "sha256-ZFNpaB5/yGke80twg7ER1n0L8sQw6YOeM6nEdXJ0uHI=",
+        "lastModified": 1777335349,
+        "narHash": "sha256-P4aEa+wbRk3CJyDpRj5ZnWTrqeTgRiTQKldSB/EkvbU=",
         "owner": "charliemeyer2000",
         "repo": "devin-cli-overlay",
-        "rev": "80b8314f73292b940eb0c1ece34c36c21142c33c",
+        "rev": "aa6c514575bf1ac91153c30159b025971132e5cb",
         "type": "github"
       },
       "original": {
@@ -483,11 +483,11 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1777323986,
-        "narHash": "sha256-geh4ZnDd3FvH5BLwxlPgckNYld9JQ8q4sV++dfE2Kjc=",
+        "lastModified": 1777348395,
+        "narHash": "sha256-hYmikqbp2GTwpHUt5n62ciULRRJMborLqUPN4LzKc6Y=",
         "owner": "barrettruth",
         "repo": "tmux-mosaic",
-        "rev": "79acdb6ba66a9bccd3eff6523e9201159ece8b7a",
+        "rev": "1b8fcdc723b8931bdb1109960dddbc31d8b0649d",
         "type": "github"
       },
       "original": {
