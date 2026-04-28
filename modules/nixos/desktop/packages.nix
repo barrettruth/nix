@@ -130,7 +130,7 @@ in
     ]
     ++ lib.optionals hostConfig.enableDesktop [
       slack
-      mpv
+      (mpv.override { youtubeSupport = false; })
       vesktop
       signal-desktop
       telegram-desktop
