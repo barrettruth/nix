@@ -92,7 +92,6 @@ in
       socat
       glib.bin
 
-      fzf
       eza
       zoxide
       ripgrep
@@ -131,11 +130,7 @@ in
     ]
     ++ lib.optionals hostConfig.enableDesktop [
       slack
-      zathura
       mpv
-      (chromium.override {
-        commandLineArgs = "--silent-debugger-extension-api";
-      })
       vesktop
       signal-desktop
       telegram-desktop
@@ -149,18 +144,10 @@ in
       gsettings-desktop-schemas
     ]
     ++ lib.optionals hostConfig.enableWayland [
-      hyprlock
-      fuzzel
       wl-clipboard
       grim
       slurp
       wf-recorder
-      pkgs.hyprland
-      pkgs.xdg-desktop-portal-hyprland
-      waybar
-      dunst
-      hyprpaper
-      hypridle
       cliphist
     ];
 }
