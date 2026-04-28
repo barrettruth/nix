@@ -56,6 +56,7 @@ in
       ../nixos/desktop/environment.nix
       ../nixos/desktop/services.nix
       ../nixos/desktop/activation.nix
+      ../nixos/desktop/apps
       ../nixos/desktop/profiles/x11.nix
       {
         programs.direnv-instant.enable = true;

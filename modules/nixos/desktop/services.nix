@@ -56,27 +56,6 @@ lib.mkMerge [
   }
 
   (lib.mkIf hostConfig.enableWayland {
-    systemd.user.services.hyprpaper = waylandGate // {
-      description = "Hyprpaper wallpaper daemon";
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.hyprpaper}/bin/hyprpaper";
-      };
-    };
-
-    systemd.user.services.hypridle = waylandGate // {
-      description = "Hypridle idle daemon";
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.hypridle}/bin/hypridle";
-      };
-    };
-
-    systemd.user.services.dunst = waylandGate // {
-      description = "Dunst notification daemon";
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.dunst}/bin/dunst";
-      };
-    };
-
     systemd.user.services.cliphist = waylandGate // {
       description = "Clipboard history";
       serviceConfig = waylandGate.serviceConfig // {

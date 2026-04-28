@@ -21,10 +21,6 @@ in
     TERM = "xterm-ghostty";
     TERMINFO = "${XDG_DATA_HOME}/terminfo";
     BROWSER = "chromium";
-    FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
-    FZF_DEFAULT_COMMAND = "rg --files --hidden";
-    FZF_CTRL_T_COMMAND = "rg --files --hidden";
-    FZF_ALT_C_COMMAND = "fd --type d --hidden";
     LESSHISTFILE = "-";
     WGETRC = "${XDG_CONFIG_HOME}/wgetrc";
     LUAROCKS_CONFIG = "${XDG_CONFIG_HOME}/luarocks/config.lua";
