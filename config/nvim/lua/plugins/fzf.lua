@@ -18,9 +18,9 @@ return {
             end
         end
 
-        local function load_forge_ops()
+        local function load_forge()
             require('config.lz').load('barrettruth/forge.nvim')
-            return require('forge.ops')
+            return require('forge')
         end
 
         local function branch_name(selected)
@@ -50,7 +50,7 @@ return {
                 utils.warn('cannot browse detached HEAD')
                 return
             end
-            load_forge_ops().browse_branch(branch)
+            load_forge().open('browse.branch', { branch = branch })
         end
 
         local function copy_branch(selected)
@@ -84,7 +84,7 @@ return {
                 utils.warn('cannot browse detached worktree')
                 return
             end
-            load_forge_ops().browse_branch(branch)
+            load_forge().open('browse.branch', { branch = branch })
         end
 
         local function copy_worktree(selected)
