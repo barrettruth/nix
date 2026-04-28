@@ -54,7 +54,7 @@ Linux)
     cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
     waybar_themes="$cfg/waybar/themes"
-    [ -f "$waybar_themes/$theme.css" ] && waybarctl apply-theme
+    [ -f "$waybar_themes/$theme.css" ] && ln -sf "$waybar_themes/$theme.css" "$waybar_themes/theme.css"
 
     hypr_themes="$cfg/hypr/themes"
     [ -f "$hypr_themes/$theme.conf" ] && {

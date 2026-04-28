@@ -1,157 +1,17 @@
 #!/bin/sh
 
-cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
-state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
-state_file="$state_dir/waybar"
-theme_file="$state_dir/theme"
-theme_link="$cfg/waybar/themes/theme.css"
 waybar_pattern='(^|/| )waybar($| )|\.waybar-wrapped$'
 
-read_theme() {
-  theme="$(cat "$theme_file" 2>/dev/null)"
-  case "$theme" in
-  daylight | midnight) printf '%s\n' "$theme" ;;
-  *) printf '%s\n' midnight ;;
-  esac
-}
-
-write_state() {
-  mkdir -p "$state_dir"
-  printf '%s\n' "$1" >"$state_file"
-}
-
-hypr_state() {
-  command -v hyprctl >/dev/null 2>&1 || return 1
-  command -v jq >/dev/null 2>&1 || return 1
-  hyprctl layers -j >/dev/null 2>&1 || return 1
-  level="$(
-    hyprctl layers -j 2>/dev/null | jq -r '
-      first(
-        to_entries[]
-        | .value.levels
-        | to_entries[]
-        | select(any(.value[]?; .namespace == "waybar"))
-        | .key
-      ) // empty
-    '
-  )"
-  case "$level" in
-  1) printf '%s\n' shown ;;
-  2) printf '%s\n' hidden ;;
-  *) return 1 ;;
-  esac
-}
-
-read_state() {
-  if [ -f "$state_file" ]; then
-    state="$(cat "$state_file" 2>/dev/null)"
-    case "$state" in
-    shown | hidden)
-      printf '%s\n' "$state"
-      return 0
-      ;;
-    esac
-  fi
-  hypr_state
-}
-
-refresh_state() {
-  state="$(hypr_state 2>/dev/null || true)"
-  [ -n "$state" ] || return 1
-  write_state "$state"
-}
-
-is_running() {
-  pgrep -f "$waybar_pattern" >/dev/null 2>&1
-}
-
-signal_waybar() {
-  pkill "-$1" -f "$waybar_pattern"
-}
-
-sync_theme() {
-  target="$cfg/waybar/themes/$(read_theme).css"
-  [ -f "$target" ] || return 0
-  current_target="$(readlink -f "$theme_link" 2>/dev/null || true)"
-  desired_target="$(readlink -f "$target" 2>/dev/null || true)"
-  [ "$current_target" = "$desired_target" ] && return 0
-  ln -sf "$target" "$theme_link"
-}
-
-show_bar() {
-  sync_theme
-  if is_running; then
-    state="$(read_state 2>/dev/null || true)"
-    [ "$state" = hidden ] && signal_waybar USR1
+case "$1" in
+toggle)
+  if pgrep -f "$waybar_pattern" >/dev/null 2>&1; then
+    pkill -f "$waybar_pattern"
   else
     waybar >/dev/null 2>&1 &
   fi
-  sleep 0.1
-  refresh_state || write_state shown
-}
-
-hide_bar() {
-  is_running || {
-    write_state hidden
-    return 0
-  }
-  state="$(read_state 2>/dev/null || true)"
-  [ "$state" = shown ] && signal_waybar USR1
-  sleep 0.1
-  refresh_state || write_state hidden
-}
-
-toggle_bar() {
-  if ! is_running; then
-    show_bar
-    return 0
-  fi
-  state="$(read_state 2>/dev/null || true)"
-  case "$state" in
-  hidden) show_bar ;;
-  shown) hide_bar ;;
-  *)
-    signal_waybar USR1
-    sleep 0.1
-    refresh_state || true
-    ;;
-  esac
-}
-
-apply_theme() {
-  if ! is_running; then
-    sync_theme
-    return 0
-  fi
-  state="$(read_state 2>/dev/null || true)"
-  case "$state" in
-  hidden) return 0 ;;
-  shown)
-    sync_theme
-    signal_waybar USR2
-    refresh_state || write_state shown
-    ;;
-  *)
-    sync_theme
-    ;;
-  esac
-}
-
-case "$1" in
-toggle) toggle_bar ;;
-show) show_bar ;;
-hide) hide_bar ;;
-apply-theme) apply_theme ;;
-sync-theme) sync_theme ;;
-state)
-  if ! is_running; then
-    printf '%s\n' stopped
-    exit 0
-  fi
-  read_state 2>/dev/null || printf '%s\n' unknown
   ;;
 *)
-  printf '%s\n' "usage: waybarctl {toggle|show|hide|apply-theme|sync-theme|state}" >&2
+  printf '%s\n' "usage: waybarctl toggle" >&2
   exit 1
   ;;
 esac
