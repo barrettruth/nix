@@ -38,7 +38,11 @@ function M.render()
     local name = vim.fn.expand('%')
     local path = name ~= '' and ('%s '):format(vim.fn.expand('%:~')) or ''
     local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or vim.bo.buftype
-    return (' %s%s%%h%%m%%r%%=%%c:%%l/%%L %s '):format(forge_prefix(), path, filetype)
+    return (' %s%s%%h%%m%%r%%=%%c:%%l/%%L %s '):format(
+        forge_prefix(),
+        path,
+        filetype
+    )
 end
 
 return M
