@@ -168,11 +168,11 @@ return {
         before = function()
             vim.g.canola = {
                 columns = {},
-                highlights = { filename = {}, columns = true },
+                highlights = { columns = true },
                 confirm = true,
                 save = 'auto',
                 extglob = true,
-                delete = { wipe = true, recursive = true, trash = true },
+                delete = { wipe = true, recursive = true },
                 float = { border = 'single' },
                 keymaps = {
                     ['<c-h>'] = false,
