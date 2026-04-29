@@ -33,7 +33,7 @@
         ./modules/identity.nix
         ./modules/theme.nix
         ./modules/devshells.nix
-        ./modules/hosts/xps15.nix
+        ./modules/hosts/laptop.nix
         ./modules/hosts/vps.nix
       ];
     };
