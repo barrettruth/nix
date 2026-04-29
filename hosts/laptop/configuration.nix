@@ -55,7 +55,7 @@ in
     "net.core.rmem_max" = 2147483647;
   };
 
-  networking.hostName = "xps15";
+  networking.hostName = "laptop";
   networking.wireless.iwd = {
     enable = true;
     settings = {

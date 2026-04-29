@@ -28,7 +28,7 @@ let
     enableDesktop = true;
     enableTexlive = true;
   };
-  xps15Overlays = overlays ++ [
+  laptopOverlays = overlays ++ [
     (_final: prev: {
       devin = prev.symlinkJoin {
         name = "devin";
@@ -43,12 +43,12 @@ let
   ];
 in
 {
-  flake.nixosConfigurations.xps15 = inputs.nixpkgs.lib.nixosSystem {
+  flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
     modules = [
       inputs.determinate.nixosModules.default
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       inputs.direnv-instant.nixosModules.direnv-instant
-      ../../hosts/xps15/configuration.nix
+      ../../hosts/laptop/configuration.nix
       ../nixos/common/nix.nix
       ../nixos/common/nix-ld.nix
       ../nixos/common/ssh.nix
@@ -66,7 +66,7 @@ in
           log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
         };
         nixpkgs.hostPlatform = hostConfig.platform;
-        nixpkgs.overlays = xps15Overlays;
+        nixpkgs.overlays = laptopOverlays;
         nixpkgs.config.allowUnfreePredicate =
           pkg:
           builtins.elem (lib.getName pkg) (
