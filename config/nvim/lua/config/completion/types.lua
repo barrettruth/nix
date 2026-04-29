@@ -26,7 +26,6 @@
 ---@field source? string
 ---@field findstart? fun(ctx: config.completion.Context): integer?
 ---@field complete? fun(ctx: config.completion.Context): config.completion.Items
----@field convert_lsp_item? fun(item: table, ctx: config.completion.Context): table?
 ---@field on_complete_done? fun(item: config.completion.Item, ctx: config.completion.Context)
 
 ---@class config.completion.LoaderTask

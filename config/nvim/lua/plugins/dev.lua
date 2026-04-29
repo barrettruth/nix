@@ -73,7 +73,11 @@ local function edit_or_create_pr()
         require('forge.logger').warn(err.message or 'current PR lookup failed')
         return
     end
-    vim.cmd(pr and 'Forge pr edit' or 'Forge pr create')
+    if pr then
+        forge.pr(pr)
+    else
+        forge.create_pr()
+    end
 end
 
 return {
