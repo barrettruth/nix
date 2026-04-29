@@ -120,17 +120,4 @@ function M.complete(ctx)
     return words
 end
 
----@param _ table
----@param ctx config.completion.Context
----@return table?
-function M.convert_lsp_item(_, ctx)
-    if not state(ctx) then
-        return
-    end
-
-    return {
-        dup = 0,
-    }
-end
-
 return M

@@ -4,9 +4,7 @@ local M = {}
 local util = require('config.completion.util')
 
 local provider_modules = {
-    'config.completion.lazydev',
     'config.completion.env',
-    'config.completion.conventional_commits',
 }
 
 ---@type config.completion.Provider[]?
@@ -113,23 +111,6 @@ function M.complete(findstart, base)
         refresh = 'always',
         words = words,
     }
-end
-
----@param item table
----@return table
-function M.convert_lsp_item(item)
-    local converted = {}
-    local ctx = util.context('')
-
-    for _, provider in ipairs(providers()) do
-        local value = provider.convert_lsp_item
-            and provider.convert_lsp_item(item, ctx)
-        if type(value) == 'table' then
-            converted = vim.tbl_extend('force', converted, value)
-        end
-    end
-
-    return converted
 end
 
 function M.on_complete_done()

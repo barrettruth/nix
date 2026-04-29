@@ -107,4 +107,16 @@ function M.complete(ctx)
     return util.filter_items(items, ctx.base)
 end
 
+---@param findstart integer
+---@param base string
+---@return integer|config.completion.Items
+function M.omnifunc(findstart, base)
+    local ctx = util.context(base)
+    if findstart == 1 then
+        return M.findstart(ctx) or -2
+    end
+
+    return M.complete(ctx)
+end
+
 return M

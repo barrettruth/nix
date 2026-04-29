@@ -15,10 +15,8 @@ end
 
 function M.on_attach(client, bufnr)
     if client:supports_method(Methods.textDocument_completion) then
-        local completion = require('config.completion')
         vim.lsp.completion.enable(true, client.id, bufnr, {
             autotrigger = false,
-            convert = completion.convert_lsp_item,
         })
     end
 
