@@ -1,10 +1,33 @@
 {
   pkgs,
+  lib,
   modulesPath,
   identity,
   ...
 }:
-
+let
+  forgejoBrandingSvg = pkgs.writeText "forgejo-delta-symbol.svg" ''
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+      <style>
+        text { font-family: Georgia, 'Times New Roman', serif; }
+        @media (prefers-color-scheme: light) { text { fill: #121212; } }
+        @media (prefers-color-scheme: dark) { text { fill: #e0e0e0; } }
+      </style>
+      <text x="50%" y="78%" text-anchor="middle" font-size="28">Δ</text>
+    </svg>
+  '';
+  forgejoBrandingAssets =
+    pkgs.runCommand "forgejo-branding-assets" { nativeBuildInputs = [ pkgs.librsvg ]; }
+      ''
+        mkdir -p $out
+        cp ${forgejoBrandingSvg} $out/logo.svg
+        cp ${forgejoBrandingSvg} $out/favicon.svg
+        rsvg-convert -w 512 -h 512 ${forgejoBrandingSvg} > $out/logo.png
+        rsvg-convert -w 192 -h 192 ${forgejoBrandingSvg} > $out/favicon.png
+        rsvg-convert -w 180 -h 180 ${forgejoBrandingSvg} > $out/apple-touch-icon.png
+        cp $out/logo.png $out/avatar_default.png
+      '';
+in
 {
   imports = [
     ./disk-config.nix
@@ -115,6 +138,10 @@
     enable = true;
     user = "git";
     group = "git";
+    dump = {
+      enable = true;
+      backupDir = "/var/backup/forgejo";
+    };
     settings = {
       server = {
         DOMAIN = "git.${identity.domain}";
@@ -139,6 +166,18 @@
   };
 
   users.groups.git = { };
+
+  systemd.tmpfiles.rules = [
+    "d /var/lib/forgejo/custom/public 0750 git git -"
+    "d /var/lib/forgejo/custom/public/assets 0750 git git -"
+    "d /var/lib/forgejo/custom/public/assets/img 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/img/logo.svg - - - - ${forgejoBrandingAssets}/logo.svg"
+    "L+ /var/lib/forgejo/custom/public/assets/img/logo.png - - - - ${forgejoBrandingAssets}/logo.png"
+    "L+ /var/lib/forgejo/custom/public/assets/img/favicon.svg - - - - ${forgejoBrandingAssets}/favicon.svg"
+    "L+ /var/lib/forgejo/custom/public/assets/img/favicon.png - - - - ${forgejoBrandingAssets}/favicon.png"
+    "L+ /var/lib/forgejo/custom/public/assets/img/apple-touch-icon.png - - - - ${forgejoBrandingAssets}/apple-touch-icon.png"
+    "L+ /var/lib/forgejo/custom/public/assets/img/avatar_default.png - - - - ${forgejoBrandingAssets}/avatar_default.png"
+  ];
 
   environment.systemPackages = with pkgs; [
     vim
@@ -183,139 +222,6 @@
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
-      Persistent = true;
-    };
-  };
-
-  systemd.services.forgejo-mirror-sync = {
-    description = "Auto-discover and sync GitHub repos to Forgejo mirrors";
-    after = [ "forgejo.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      EnvironmentFile = "/etc/forgejo-mirror.env";
-    };
-    path = with pkgs; [
-      curl
-      jq
-    ];
-    script = ''
-      set -euo pipefail
-
-      log() { echo "[forgejo-mirror-sync] $1"; }
-      err() { echo "[forgejo-mirror-sync] ERROR: $1" >&2; }
-
-      api_call() {
-        local response http_code body
-        response=$(curl -s -w "\n%{http_code}" "$@")
-        http_code=$(echo "$response" | tail -n1)
-        body=$(echo "$response" | sed '$d')
-        if [ "$http_code" -ge 400 ]; then
-          err "HTTP $http_code from $2"
-          err "Response: $body"
-          return 1
-        fi
-        echo "$body"
-      }
-
-      log "validating GitHub token..."
-      gh_user=$(api_call -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/user" | jq -r '.login') \
-        || { err "GitHub token is invalid or expired"; exit 1; }
-      log "authenticated to GitHub as $gh_user"
-
-      log "validating Forgejo token..."
-      fg_user=$(api_call -H "Authorization: token $FORGEJO_TOKEN" \
-        "$FORGEJO_URL/api/v1/user" | jq -r '.login') \
-        || { err "Forgejo token is invalid or expired — regenerate at $FORGEJO_URL/user/settings/applications"; exit 1; }
-      log "authenticated to Forgejo as $fg_user"
-
-      log "fetching GitHub repos..."
-      gh_repos=""
-      gh_page=1
-      while true; do
-        page_data=$(api_call -H "Authorization: token $GITHUB_TOKEN" \
-          "https://api.github.com/user/repos?per_page=100&type=owner&page=$gh_page") \
-          || { err "failed to fetch GitHub repos (page $gh_page)"; exit 1; }
-        page_repos=$(echo "$page_data" | jq -r '.[].full_name')
-        [ -z "$page_repos" ] && break
-        gh_repos="''${gh_repos:+$gh_repos
-      }$page_repos"
-        gh_page=$((gh_page + 1))
-      done
-      gh_count=$(echo "$gh_repos" | grep -c . || true)
-      log "found $gh_count GitHub repos"
-
-      log "fetching Forgejo repos..."
-      fg_repos=""
-      fg_page=1
-      while true; do
-        page_data=$(api_call -H "Authorization: token $FORGEJO_TOKEN" \
-          "$FORGEJO_URL/api/v1/user/repos?limit=50&page=$fg_page") \
-          || { err "failed to fetch Forgejo repos (page $fg_page)"; exit 1; }
-        page_repos=$(echo "$page_data" | jq -r '.[].name')
-        [ -z "$page_repos" ] && break
-        fg_repos="''${fg_repos:+$fg_repos
-      }$page_repos"
-        fg_page=$((fg_page + 1))
-      done
-      fg_count=$(echo "$fg_repos" | grep -c . || true)
-      log "found $fg_count Forgejo repos"
-
-      synced=0
-      created=0
-      failed=0
-
-      for full_name in $gh_repos; do
-        repo_name=''${full_name#*/}
-
-        if echo "$fg_repos" | grep -qx "$repo_name"; then
-          log "syncing $repo_name..."
-          if api_call -X POST \
-            -H "Authorization: token $FORGEJO_TOKEN" \
-            "$FORGEJO_URL/api/v1/repos/$FORGEJO_OWNER/$repo_name/mirror-sync" \
-            > /dev/null; then
-            synced=$((synced + 1))
-          else
-            err "sync failed for $repo_name"
-            failed=$((failed + 1))
-          fi
-        else
-          log "creating mirror: $repo_name..."
-          if api_call -X POST \
-            -H "Authorization: token $FORGEJO_TOKEN" \
-            -H "Content-Type: application/json" \
-            "$FORGEJO_URL/api/v1/repos/migrate" \
-            -d "$(jq -n \
-              --arg addr "https://github.com/$full_name.git" \
-              --arg name "$repo_name" \
-              --arg owner "$FORGEJO_OWNER" \
-              --arg token "$GITHUB_TOKEN" \
-              '{
-                clone_addr: $addr,
-                repo_name: $name,
-                repo_owner: $owner,
-                mirror: true,
-                auth_token: $token,
-                service: "github"
-              }')" \
-            > /dev/null; then
-            created=$((created + 1))
-          else
-            err "migrate failed for $repo_name"
-            failed=$((failed + 1))
-          fi
-        fi
-      done
-
-      log "done: $synced synced, $created created, $failed failed"
-      [ "$failed" -eq 0 ]
-    '';
-  };
-
-  systemd.timers.forgejo-mirror-sync = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "hourly";
       Persistent = true;
     };
   };
