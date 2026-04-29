@@ -1,141 +1,66 @@
-local M = {}
+---@type config.completion.Provider
+local M = {
+    source = 'tmux',
+}
 
+local loader = require('config.completion.loader')
 local parse = require('config.completion.tmux.parse')
+local util = require('config.completion.util')
 
+---@type config.completion.Items?
 local cache
-local loading = false
+
+local MAN_COMMAND = {
+    'bash',
+    '-c',
+    'MANWIDTH=80 man -P cat tmux 2>/dev/null',
+}
+
+local NAMES_COMMAND = {
+    'tmux',
+    'list-commands',
+    '-F',
+    '#{command_list_name}',
+}
+
+local COMMANDS_COMMAND = { 'tmux', 'list-commands' }
 
 local function loaded()
     return cache ~= nil
 end
 
+---@param man_out string
+---@param names_out string
+---@param commands_out string
 local function parse_output(man_out, names_out, commands_out)
-    local ok_desc, descriptions =
-        pcall(parse.parse_descriptions, man_out, names_out)
-    if not ok_desc then
-        descriptions = {}
-    end
-
-    local ok_items, items = pcall(parse.parse, commands_out, descriptions)
-    cache = ok_items and items or {}
+    local descriptions =
+        util.safe_call(parse.parse_descriptions, {}, man_out, names_out)
+    cache = util.safe_call(parse.parse, {}, commands_out, descriptions)
 end
 
-local function read_man()
-    if vim.fn.executable('man') == 0 then
-        return ''
-    end
+local source_loader = loader.new({
+    loaded = loaded,
+    store = function(outputs)
+        parse_output(outputs[1], outputs[2], outputs[3])
+    end,
+    tasks = {
+        util.system_task('bash', MAN_COMMAND),
+        util.system_task('tmux', NAMES_COMMAND),
+        util.system_task('tmux', COMMANDS_COMMAND),
+    },
+})
 
-    local result = vim.system({
-        'bash',
-        '-c',
-        'MANWIDTH=80 man -P cat tmux 2>/dev/null',
-    }):wait()
+M.preload = source_loader.preload
 
-    return result.stdout or ''
-end
+---@class config.completion.tmux.Context
+---@field base string
+---@field start integer
 
-local function read_names()
-    if vim.fn.executable('tmux') == 0 then
-        return ''
-    end
-
-    local result = vim.system({
-        'tmux',
-        'list-commands',
-        '-F',
-        '#{command_list_name}',
-    }):wait()
-
-    return result.stdout or ''
-end
-
-local function read_commands()
-    if vim.fn.executable('tmux') == 0 then
-        return ''
-    end
-
-    local result = vim.system({ 'tmux', 'list-commands' }):wait()
-
-    return result.stdout or ''
-end
-
-local function load_sync()
-    parse_output(read_man(), read_names(), read_commands())
-end
-
-local function ensure_loaded()
-    if loaded() then
-        return
-    end
-
-    if loading then
-        vim.wait(2000, loaded, 20)
-    end
-
-    if not loaded() then
-        load_sync()
-    end
-end
-
-function M.preload()
-    if loaded() or loading then
-        return
-    end
-
-    loading = true
-
-    local man_out = ''
-    local names_out = ''
-    local commands_out = ''
-    local remaining = 3
-
-    local function done()
-        remaining = remaining - 1
-        if remaining > 0 then
-            return
-        end
-
-        loading = false
-        parse_output(man_out, names_out, commands_out)
-    end
-
-    if vim.fn.executable('man') == 1 then
-        vim.system(
-            { 'bash', '-c', 'MANWIDTH=80 man -P cat tmux 2>/dev/null' },
-            {},
-            function(result)
-                man_out = result.stdout or ''
-                done()
-            end
-        )
-    else
-        done()
-    end
-
-    if vim.fn.executable('tmux') == 1 then
-        vim.system({
-            'tmux',
-            'list-commands',
-            '-F',
-            '#{command_list_name}',
-        }, {}, function(result)
-            names_out = result.stdout or ''
-            done()
-        end)
-        vim.system({ 'tmux', 'list-commands' }, {}, function(result)
-            commands_out = result.stdout or ''
-            done()
-        end)
-    else
-        done()
-        done()
-    end
-end
-
+---@param base string
+---@return config.completion.tmux.Context?
 local function context(base)
-    local _, col = unpack(vim.api.nvim_win_get_cursor(0))
-    local line = vim.api.nvim_get_current_line()
-    local before = line:sub(1, col)
+    local line_ctx = util.context(base)
+    local before = line_ctx.before
 
     if before:match('^%s*#') then
         return
@@ -145,15 +70,20 @@ local function context(base)
         return
     end
 
-    local first = before:find('%S') or (col + 1)
+    local first = before:find('%S') or (line_ctx.col + 1)
+    local command_base = before:match('^%s*([a-z-]*)$') or base
+
     return {
-        base = base,
+        base = command_base,
         start = first - 1,
     }
 end
 
+---@param findstart integer
+---@param base string
+---@return integer|config.completion.Items
 function M.complete(findstart, base)
-    ensure_loaded()
+    source_loader.ensure_loaded()
 
     local ctx = context(base)
     if findstart == 1 then
@@ -164,15 +94,7 @@ function M.complete(findstart, base)
         return {}
     end
 
-    local query = base:lower()
-    local items = {}
-    for _, item in ipairs(cache or {}) do
-        if query == '' or item.word:sub(1, #query):lower() == query then
-            items[#items + 1] = item
-        end
-    end
-
-    return items
+    return util.filter_items(cache or {}, ctx.base)
 end
 
 return M

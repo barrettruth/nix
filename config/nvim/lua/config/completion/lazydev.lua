@@ -1,5 +1,19 @@
-local M = {}
+---@type config.completion.Provider
+local M = {
+    source = 'lazydev',
+}
 
+local util = require('config.completion.util')
+
+---@class config.completion.lazydev.State
+---@field Config table
+---@field Pkg table
+---@field forward_slash boolean
+---@field prefix string
+---@field req string
+
+---@param ctx config.completion.Context
+---@return config.completion.lazydev.State?
 local function state(ctx)
     if ctx.filetype ~= 'lua' then
         return
@@ -30,6 +44,8 @@ local function state(ctx)
     }
 end
 
+---@param ctx config.completion.Context
+---@return integer
 local function module_start(ctx)
     local start = ctx.col
     while start > 0 and ctx.before:sub(start, start):match('[%w%.%-_/]') do
@@ -38,9 +54,13 @@ local function module_start(ctx)
     return start
 end
 
+---@param items table<string, config.completion.Item>
+---@param st config.completion.lazydev.State
+---@param modname string
+---@param modpath string
 local function add(items, st, modname, modpath)
     local word = st.forward_slash and modname:gsub('%.', '/') or modname
-    if st.prefix ~= '' and word:sub(1, #st.prefix) ~= st.prefix then
+    if not util.starts_with(word, st.prefix) then
         return
     end
 
@@ -53,11 +73,13 @@ local function add(items, st, modname, modpath)
             kind = 'm',
             menu = '[lazydev]',
             user_data = {
-                source = 'lazydev',
+                source = M.source,
             },
         }
 end
 
+---@param ctx config.completion.Context
+---@return integer?
 function M.findstart(ctx)
     local st = state(ctx)
     if not st then
@@ -67,6 +89,8 @@ function M.findstart(ctx)
     return module_start(ctx)
 end
 
+---@param ctx config.completion.Context
+---@return config.completion.Items
 function M.complete(ctx)
     local st = state(ctx)
     if not st then
@@ -96,6 +120,9 @@ function M.complete(ctx)
     return words
 end
 
+---@param _ table
+---@param ctx config.completion.Context
+---@return table?
 function M.convert_lsp_item(_, ctx)
     if not state(ctx) then
         return

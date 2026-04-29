@@ -1,143 +1,81 @@
-local M = {}
+---@type config.completion.Provider
+local M = {
+    source = 'ssh',
+}
 
+local loader = require('config.completion.loader')
 local parse = require('config.completion.ssh.parse')
+local util = require('config.completion.util')
 
+---@type config.completion.Items?
 local keywords_cache
+
+---@type table<string, string[]>?
 local enums_cache
-local loading = false
+
+local MAN_COMMAND = {
+    'bash',
+    '-c',
+    'MANWIDTH=80 man -P cat ssh_config 2>/dev/null',
+}
+
+local ENUM_COMMAND = {
+    'bash',
+    '-c',
+    'for q in cipher cipher-auth mac kex key key-cert key-plain key-sig protocol-version compression sig; do echo "##$q"; ssh -Q "$q" 2>/dev/null; done',
+}
 
 local function loaded()
     return keywords_cache ~= nil and enums_cache ~= nil
 end
 
+---@param man_out string
+---@param enums_out string
 local function parse_outputs(man_out, enums_out)
-    local ok_keywords, keywords = pcall(parse.parse_keywords, man_out)
-    if not ok_keywords then
-        keywords = {}
-    end
-
-    local ok_man_enums, man_enums = pcall(parse.extract_enums_from_man, man_out)
-    if not ok_man_enums then
-        man_enums = {}
-    end
-
-    local ok_enums, enums = pcall(parse.parse_enums, enums_out, man_enums)
-    if not ok_enums then
-        enums = {}
-    end
+    local keywords = util.safe_call(parse.parse_keywords, {}, man_out)
+    local man_enums = util.safe_call(parse.extract_enums_from_man, {}, man_out)
+    local enums = util.safe_call(parse.parse_enums, {}, enums_out, man_enums)
 
     keywords_cache = keywords
     enums_cache = enums
 end
 
-local function read_man()
-    if vim.fn.executable('man') == 0 then
-        return ''
-    end
+local source_loader = loader.new({
+    loaded = loaded,
+    store = function(outputs)
+        parse_outputs(outputs[1], outputs[2])
+    end,
+    tasks = {
+        util.system_task('bash', MAN_COMMAND),
+        util.system_task('bash', ENUM_COMMAND),
+    },
+})
 
-    local result = vim.system({
-        'bash',
-        '-c',
-        'MANWIDTH=80 man -P cat ssh_config 2>/dev/null',
-    }):wait()
+M.preload = source_loader.preload
 
-    return result.stdout or ''
-end
+---@class config.completion.ssh.Context
+---@field base string
+---@field enums? string[]
+---@field kind 'keyword'|'value'
+---@field start integer
 
-local function read_enums()
-    if vim.fn.executable('ssh') == 0 then
-        return ''
-    end
-
-    local result = vim.system({
-        'bash',
-        '-c',
-        'for q in cipher cipher-auth mac kex key key-cert key-plain key-sig protocol-version compression sig; do echo "##$q"; ssh -Q "$q" 2>/dev/null; done',
-    }):wait()
-
-    return result.stdout or ''
-end
-
-local function load_sync()
-    parse_outputs(read_man(), read_enums())
-end
-
-local function ensure_loaded()
-    if loaded() then
-        return
-    end
-
-    if loading then
-        vim.wait(2000, loaded, 20)
-    end
-
-    if not loaded() then
-        load_sync()
-    end
-end
-
-function M.preload()
-    if loaded() or loading then
-        return
-    end
-
-    loading = true
-
-    local man_out = ''
-    local enums_out = ''
-    local remaining = 2
-
-    local function done()
-        remaining = remaining - 1
-        if remaining > 0 then
-            return
-        end
-
-        loading = false
-        parse_outputs(man_out, enums_out)
-    end
-
-    if vim.fn.executable('man') == 1 then
-        vim.system(
-            { 'bash', '-c', 'MANWIDTH=80 man -P cat ssh_config 2>/dev/null' },
-            {},
-            function(result)
-                man_out = result.stdout or ''
-                done()
-            end
-        )
-    else
-        done()
-    end
-
-    if vim.fn.executable('ssh') == 1 then
-        vim.system({
-            'bash',
-            '-c',
-            'for q in cipher cipher-auth mac kex key key-cert key-plain key-sig protocol-version compression sig; do echo "##$q"; ssh -Q "$q" 2>/dev/null; done',
-        }, {}, function(result)
-            enums_out = result.stdout or ''
-            done()
-        end)
-    else
-        done()
-    end
-end
-
-local function context()
-    local _, col = unpack(vim.api.nvim_win_get_cursor(0))
-    local line = vim.api.nvim_get_current_line()
-    local before = line:sub(1, col)
+---@param base string
+---@return config.completion.ssh.Context?
+local function context(base)
+    local line_ctx = util.context(base)
+    local before = line_ctx.before
 
     if before:match('^%s*#') then
         return
     end
 
     if before:match('^%s*%S*$') then
-        local first = before:find('%S') or (col + 1)
+        local first = before:find('%S') or (line_ctx.col + 1)
+        local keyword_base = before:match('^%s*(%S*)$') or base
+
         return {
+            base = keyword_base,
             kind = 'keyword',
-            keyword = before:match('^%s*(%S*)$') or '',
             start = first - 1,
         }
     end
@@ -152,34 +90,51 @@ local function context()
         return
     end
 
-    local base = rest:match('([^,%s]*)$') or ''
+    local value_base = rest:match('([^,%s]*)$') or base
+
     return {
-        base = base,
+        base = value_base,
         enums = enums,
-        keyword = keyword,
         kind = 'value',
-        start = col - #base,
+        start = line_ctx.col - #value_base,
     }
 end
 
-local function enum_items(values)
+---@param values string[]
+---@param base string
+---@return config.completion.Items
+local function enum_items(values, base)
     local items = {}
-    for _, value in ipairs(values) do
+
+    for _, value in ipairs(util.filter_strings(values, base, true)) do
         items[#items + 1] = {
             abbr = value,
             icase = 1,
             kind = 'v',
             menu = '[ssh]',
+            user_data = {
+                source = M.source,
+            },
             word = value,
         }
     end
+
     return items
 end
 
-function M.complete(findstart, _)
-    ensure_loaded()
+---@param base string
+---@return config.completion.Items
+local function keyword_items(base)
+    return util.filter_items(keywords_cache or {}, base)
+end
 
-    local ctx = context()
+---@param findstart integer
+---@param base string
+---@return integer|config.completion.Items
+function M.complete(findstart, base)
+    source_loader.ensure_loaded()
+
+    local ctx = context(base)
     if findstart == 1 then
         return ctx and ctx.start or -2
     end
@@ -189,10 +144,10 @@ function M.complete(findstart, _)
     end
 
     if ctx.kind == 'keyword' then
-        return keywords_cache or {}
+        return keyword_items(ctx.base)
     end
 
-    return enum_items(ctx.enums)
+    return enum_items(ctx.enums or {}, ctx.base)
 end
 
 return M
