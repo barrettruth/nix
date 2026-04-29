@@ -7,7 +7,7 @@ My personal nix configuration leveraging:
 - [Dendritic Nix](https://github.com/DeterminateSystems/detsys-ts/wiki/Dendritic-Nix)
 - [flakes](https://wiki.nixos.org/wiki/Flakes) & [flake-parts](https://github.com/hercules-ci/flake-parts)
 
-Hosts a Dell XPS 9500 Laptop and NetCup NixOS VPS.
+Hosts a Dell XPS 9500 Laptop and a NixOS VPS.
 
 ## Configuration Structure
 

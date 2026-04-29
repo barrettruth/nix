@@ -34,7 +34,7 @@
         ./modules/theme.nix
         ./modules/devshells.nix
         ./modules/hosts/xps15.nix
-        ./modules/hosts/netcup.nix
+        ./modules/hosts/vps.nix
       ];
     };
 }
