@@ -31,8 +31,38 @@ local function scroll_preview(direction)
     return true
 end
 
+local function preview_border()
+    local border = vim.o.pumborder
+    if border ~= '' then
+        return border
+    end
+    return vim.o.winborder
+end
+
+local function set_preview_border()
+    local border = preview_border()
+    if border == '' or border == 'none' then
+        return false
+    end
+
+    local winid = preview_winid()
+    if winid == 0 or not vim.api.nvim_win_is_valid(winid) then
+        return false
+    end
+
+    vim.api.nvim_win_set_config(winid, { border = border })
+    return true
+end
+
+local function queue_preview_border()
+    vim.defer_fn(set_preview_border, 0)
+    vim.defer_fn(set_preview_border, 100)
+    vim.defer_fn(set_preview_border, 300)
+end
+
 local function semantic_completion()
     local prefix = vim.fn.pumvisible() == 1 and '<C-e>' or ''
+    queue_preview_border()
     if vim.bo.omnifunc ~= '' then
         return prefix .. '<C-x><C-o>'
     end
@@ -40,12 +70,19 @@ local function semantic_completion()
 end
 
 local function completion_or_preview(keys, direction)
+    set_preview_border()
     if scroll_preview(direction) then
         return ''
     end
     if vim.fn.pumvisible() == 1 then
         return ''
     end
+    queue_preview_border()
+    return keys
+end
+
+local function generic_completion(keys)
+    queue_preview_border()
     return keys
 end
 
@@ -58,6 +95,12 @@ end, { expr = true, desc = 'env completion or cancel completion' })
 vim.keymap.set('i', '<c-f>', function()
     return completion_or_preview('<C-x><C-f>', 'down')
 end, { expr = true, desc = 'file completion or docs forward' })
+vim.keymap.set('i', '<c-n>', function()
+    return generic_completion('<C-n>')
+end, { expr = true, desc = 'next completion' })
+vim.keymap.set('i', '<c-p>', function()
+    return generic_completion('<C-p>')
+end, { expr = true, desc = 'previous completion' })
 vim.keymap.set('i', '<c-s>', semantic_completion, {
     expr = true,
     desc = 'semantic completion',

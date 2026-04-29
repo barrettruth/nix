@@ -1,3 +1,3 @@
-vim.opt_local.complete = { '.', 'w', 'b' }
-vim.bo.omnifunc =
+require('config.completion.filetype').setup(
     "v:lua.require'config.completion.conventional_commits'.omnifunc"
+)
