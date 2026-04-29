@@ -49,7 +49,7 @@ in
   fonts.fontconfig.enable = false;
 
   networking = {
-    hostName = "netcup";
+    hostName = "vps";
     useDHCP = false;
     interfaces.eth0 = {
       ipv4.addresses = [
