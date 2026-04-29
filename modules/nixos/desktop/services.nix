@@ -6,16 +6,12 @@
   ...
 }:
 let
-  waylandGate = {
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -S \"$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\" ] && exit 0; sleep 0.5; done; exit 1'";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-  };
+  wayland = import ./wayland.nix { inherit pkgs hostConfig; };
+  inherit (wayland)
+    mkWaylandGate
+    wrapWaylandExec
+    ;
+  waylandGate = mkWaylandGate "hyprland-session.target";
 in
 lib.mkMerge [
   {
@@ -59,7 +55,7 @@ lib.mkMerge [
     systemd.user.services.cliphist = waylandGate // {
       description = "Clipboard history";
       serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
+        ExecStart = wrapWaylandExec "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
       };
     };
 
