@@ -1,5 +1,7 @@
 local M = {}
 
+local util = require('config.completion.util')
+
 local query_to_keywords = {
     cipher = { 'Ciphers' },
     ['cipher-auth'] = { 'Ciphers' },
@@ -9,6 +11,8 @@ local query_to_keywords = {
     ['key-sig'] = { 'CASignatureAlgorithms' },
 }
 
+---@param line string
+---@return string?
 local function keyword(line)
     return line:match('^     (%u[%a%d]+)%s*$')
         or line:match('^     (%u[%a%d]+)   ')
@@ -18,11 +22,15 @@ local function keyword(line)
         or line:match('^       (%u[%a%d]+)  %u')
 end
 
+---@param line string
+---@return string?
 local function inline(line)
     return line:match('^     %u[%a%d]+%s%s+(.+)')
         or line:match('^       %u[%a%d]+%s%s+(.+)')
 end
 
+---@param fragment string
+---@return string[]?
 local function parse_value_list(fragment)
     fragment = fragment:gsub('%b()', '')
     fragment = fragment:gsub('"', '')
@@ -43,11 +51,10 @@ local function parse_value_list(fragment)
     return #vals >= 2 and vals or nil
 end
 
+---@param man_stdout string
+---@return table<string, string[]>
 function M.extract_enums_from_man(man_stdout)
-    local lines = {}
-    for line in (man_stdout .. '\n'):gmatch('(.-)\n') do
-        lines[#lines + 1] = line
-    end
+    local lines = util.lines(man_stdout)
 
     local defs = {}
     for i, line in ipairs(lines) do
@@ -146,11 +153,10 @@ function M.extract_enums_from_man(man_stdout)
     return enums
 end
 
+---@param stdout string
+---@return config.completion.Items
 function M.parse_keywords(stdout)
-    local lines = {}
-    for line in (stdout .. '\n'):gmatch('(.-)\n') do
-        lines[#lines + 1] = line
-    end
+    local lines = util.lines(stdout)
 
     local defs = {}
     for i, line in ipairs(lines) do
@@ -202,6 +208,9 @@ function M.parse_keywords(stdout)
             info = desc ~= '' and desc or nil,
             kind = 'k',
             menu = '[ssh]',
+            user_data = {
+                source = 'ssh',
+            },
             word = def.keyword,
         }
     end
@@ -213,6 +222,9 @@ function M.parse_keywords(stdout)
     return items
 end
 
+---@param stdout string
+---@param man_enums table<string, string[]>
+---@return table<string, string[]>
 function M.parse_enums(stdout, man_enums)
     local enums = {}
     for k, v in pairs(man_enums) do
@@ -220,7 +232,7 @@ function M.parse_enums(stdout, man_enums)
     end
 
     local current_query = nil
-    for line in (stdout .. '\n'):gmatch('(.-)\n') do
+    for _, line in ipairs(util.lines(stdout)) do
         local query = line:match('^##(.+)')
         if query then
             current_query = query

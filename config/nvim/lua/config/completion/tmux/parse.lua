@@ -1,10 +1,12 @@
 local M = {}
 
+local util = require('config.completion.util')
+
+---@param man_stdout string
+---@param names_stdout string
+---@return table<string, string>
 function M.parse_descriptions(man_stdout, names_stdout)
-    local lines = {}
-    for line in (man_stdout .. '\n'):gmatch('(.-)\n') do
-        lines[#lines + 1] = line
-    end
+    local lines = util.lines(man_stdout)
 
     local commands = {}
     for name in names_stdout:gmatch('[^\n]+') do
@@ -82,6 +84,9 @@ function M.parse_descriptions(man_stdout, names_stdout)
     return descriptions
 end
 
+---@param commands_stdout string
+---@param descriptions table<string, string>
+---@return config.completion.Items
 function M.parse(commands_stdout, descriptions)
     local items = {}
 
@@ -105,6 +110,9 @@ function M.parse(commands_stdout, descriptions)
                 info = info,
                 kind = 'c',
                 menu = '[tmux]',
+                user_data = {
+                    source = 'tmux',
+                },
                 word = name,
             }
         end

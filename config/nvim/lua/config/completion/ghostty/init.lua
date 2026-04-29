@@ -1,30 +1,37 @@
-local M = {}
+---@type config.completion.Provider
+local M = {
+    source = 'ghostty',
+}
 
+local loader = require('config.completion.loader')
 local parse = require('config.completion.ghostty.parse')
+local util = require('config.completion.util')
 
+---@type config.completion.Items?
 local keys_cache
+
+---@type table<string, string[]>?
 local enums_cache
-local loading = false
+
+local DOC_COMMAND = {
+    'ghostty',
+    '+show-config',
+    '--default',
+    '--docs',
+}
 
 local function loaded()
     return keys_cache ~= nil and enums_cache ~= nil
 end
 
+---@param config_out string
+---@param enums_content string
 local function parse_output(config_out, enums_content)
-    local ok_keys, keys = pcall(parse.parse_keys, config_out)
-    if not ok_keys then
-        keys = {}
-    end
-
-    local ok_enums, enums = pcall(parse.parse_enums, enums_content)
-    if not ok_enums then
-        enums = {}
-    end
-
-    keys_cache = keys
-    enums_cache = enums
+    keys_cache = util.safe_call(parse.parse_keys, {}, config_out)
+    enums_cache = util.safe_call(parse.parse_enums, {}, enums_content)
 end
 
+---@return string?
 function M.bash_completion_path()
     local bin = vim.fn.exepath('ghostty')
     if bin == '' then
@@ -44,153 +51,98 @@ function M.bash_completion_path()
     return prefix .. '/share/bash-completion/completions/ghostty.bash'
 end
 
-local function read_docs()
-    if vim.fn.executable('ghostty') == 0 then
-        return ''
-    end
+local source_loader = loader.new({
+    loaded = loaded,
+    store = function(outputs)
+        parse_output(outputs[1], outputs[2])
+    end,
+    tasks = {
+        util.system_task('ghostty', DOC_COMMAND),
+        util.file_task(M.bash_completion_path),
+    },
+})
 
-    local result = vim.system({ 'ghostty', '+show-config', '--docs' }):wait()
+M.preload = source_loader.preload
 
-    return result.stdout or ''
-end
+---@class config.completion.ghostty.Context
+---@field base string
+---@field kind 'key'|'value'
+---@field start integer
+---@field values? string[]
 
-local function read_enums()
-    local path = M.bash_completion_path()
-    if not path then
-        return ''
-    end
-
-    local file = io.open(path, 'r')
-    if not file then
-        return ''
-    end
-
-    local content = file:read('*a') or ''
-    file:close()
-    return content
-end
-
-local function load_sync()
-    parse_output(read_docs(), read_enums())
-end
-
-local function ensure_loaded()
-    if loaded() then
-        return
-    end
-
-    if loading then
-        vim.wait(2000, loaded, 20)
-    end
-
-    if not loaded() then
-        load_sync()
-    end
-end
-
-function M.preload()
-    if loaded() or loading then
-        return
-    end
-
-    loading = true
-
-    local config_out = ''
-    local enums_content = ''
-    local remaining = 2
-
-    local function done()
-        remaining = remaining - 1
-        if remaining > 0 then
-            return
-        end
-
-        loading = false
-        parse_output(config_out, enums_content)
-    end
-
-    if vim.fn.executable('ghostty') == 1 then
-        vim.system({ 'ghostty', '+show-config', '--docs' }, {}, function(result)
-            config_out = result.stdout or ''
-            done()
-        end)
-    else
-        done()
-    end
-
-    enums_content = read_enums()
-    done()
-end
-
+---@param base string
+---@return config.completion.ghostty.Context?
 local function context(base)
-    local _, col = unpack(vim.api.nvim_win_get_cursor(0))
-    local line = vim.api.nvim_get_current_line()
-    local before = line:sub(1, col)
+    local line_ctx = util.context(base)
+    local before = line_ctx.before
 
     if before:match('^%s*#') then
         return
     end
 
-    local eq = before:find('=')
-    if eq and col > eq then
+    local eq = before:match('.*()=')
+    if eq and line_ctx.col > eq then
         local key = vim.trim(before:sub(1, eq - 1))
         local values = enums_cache and enums_cache[key]
         if not values then
             return
         end
 
+        local value_base = before:sub(eq + 1):match('([^%s]*)$') or base
+
         return {
-            base = base,
+            base = value_base,
             kind = 'value',
-            start = col - #base,
+            start = line_ctx.col - #value_base,
             values = values,
         }
     end
 
     if before:match('^%s*[a-z0-9-]*$') then
-        local first = before:find('%S') or (col + 1)
+        local first = before:find('%S') or (line_ctx.col + 1)
+        local key_base = before:match('^%s*([a-z0-9-]*)$') or base
+
         return {
-            base = base,
+            base = key_base,
             kind = 'key',
             start = first - 1,
         }
     end
 end
 
-local function values(items, base)
-    local out = {}
-    local query = base:lower()
+---@param values string[]
+---@param base string
+---@return config.completion.Items
+local function value_items(values, base)
+    local items = {}
 
-    for _, value in ipairs(items) do
-        if query == '' or value:sub(1, #query):lower() == query then
-            out[#out + 1] = {
-                abbr = value,
-                icase = 1,
-                kind = 'v',
-                menu = '[ghostty]',
-                word = value,
-            }
-        end
+    for _, value in ipairs(util.filter_strings(values, base, true)) do
+        items[#items + 1] = {
+            abbr = value,
+            icase = 1,
+            kind = 'v',
+            menu = '[ghostty]',
+            user_data = {
+                source = M.source,
+            },
+            word = value,
+        }
     end
 
-    return out
+    return items
 end
 
-local function keys(base)
-    local out = {}
-    local query = base:lower()
-
-    for _, item in ipairs(keys_cache or {}) do
-        if query == '' or item.word:sub(1, #query):lower() == query then
-            out[#out + 1] = item
-        end
-    end
-
-    return out
+---@param base string
+---@return config.completion.Items
+local function key_items(base)
+    return util.filter_items(keys_cache or {}, base)
 end
 
+---@param findstart integer
+---@param base string
+---@return integer|config.completion.Items
 function M.complete(findstart, base)
-    ensure_loaded()
+    source_loader.ensure_loaded()
 
     local ctx = context(base)
     if findstart == 1 then
@@ -202,10 +154,10 @@ function M.complete(findstart, base)
     end
 
     if ctx.kind == 'value' then
-        return values(ctx.values, base)
+        return value_items(ctx.values or {}, ctx.base)
     end
 
-    return keys(base)
+    return key_items(ctx.base)
 end
 
 return M

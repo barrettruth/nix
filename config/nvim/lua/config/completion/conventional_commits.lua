@@ -1,73 +1,80 @@
-local M = {}
+---@type config.completion.Provider
+local M = {
+    source = 'conventional_commits',
+}
+
+local util = require('config.completion.util')
 
 local items = {
     {
         word = 'feat',
         info = 'A new feature (MINOR in semver)',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'fix',
         info = 'A bug fix (PATCH in semver)',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'docs',
         info = 'Documentation only',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'style',
         info = 'Formatting, whitespace — no behavioral change',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'refactor',
         info = 'Restructures code without changing behavior',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'perf',
         info = 'Performance improvement',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'test',
         info = 'Add or correct tests',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'build',
         info = 'Build system or external dependencies',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'ci',
         info = 'CI/CD configuration and scripts',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'chore',
         info = 'Routine tasks outside src and test',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
     {
         word = 'revert',
         info = 'Reverts a previous commit',
         menu = '[cc]',
-        user_data = { source = 'conventional_commits' },
+        user_data = { source = M.source },
     },
 }
+---@param ctx config.completion.Context
+---@return boolean
 
 local function active(ctx)
     return ctx.filetype == 'gitcommit'
@@ -76,6 +83,8 @@ local function active(ctx)
         and not ctx.before:find('[():]')
 end
 
+---@param ctx config.completion.Context
+---@return integer?
 function M.findstart(ctx)
     if not active(ctx) then
         return
@@ -88,18 +97,14 @@ function M.findstart(ctx)
     return start
 end
 
+---@param ctx config.completion.Context
+---@return config.completion.Items
 function M.complete(ctx)
     if not active(ctx) then
         return {}
     end
 
-    local words = {}
-    for _, item in ipairs(items) do
-        if ctx.base == '' or item.word:sub(1, #ctx.base) == ctx.base then
-            words[#words + 1] = item
-        end
-    end
-    return words
+    return util.filter_items(items, ctx.base)
 end
 
 return M

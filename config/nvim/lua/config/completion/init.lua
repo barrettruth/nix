@@ -1,4 +1,7 @@
+---@class config.completion
 local M = {}
+
+local util = require('config.completion.util')
 
 local provider_modules = {
     'config.completion.lazydev',
@@ -6,64 +9,76 @@ local provider_modules = {
     'config.completion.conventional_commits',
 }
 
+---@type config.completion.Provider[]?
+local provider_list
+
+---@type table<string, config.completion.Provider>?
+local providers_by_source
+
+---@return config.completion.Provider[]
 local function providers()
-    local loaded = {}
-    for _, module in ipairs(provider_modules) do
-        local ok, provider = pcall(require, module)
-        if ok then
-            loaded[#loaded + 1] = provider
+    if provider_list then
+        return provider_list
+    end
+
+    provider_list = {}
+    providers_by_source = {}
+
+    for _, module_name in ipairs(provider_modules) do
+        ---@type config.completion.Provider
+        local provider = require(module_name)
+        provider_list[#provider_list + 1] = provider
+        if provider.source then
+            providers_by_source[provider.source] = provider
         end
     end
-    return loaded
+
+    return provider_list
 end
 
+---@param item config.completion.Item
+---@return config.completion.Provider?
 local function provider_for(item)
     local source = vim.tbl_get(item, 'user_data', 'source')
     if type(source) ~= 'string' or source == '' then
         return
     end
 
-    for _, provider in ipairs(providers()) do
-        if provider.source == source then
-            return provider
-        end
-    end
+    providers()
+
+    return providers_by_source and providers_by_source[source] or nil
 end
 
+---@param item config.completion.Item|string
+---@return config.completion.Item
 local function normalize_item(item)
-    return type(item) == 'string' and { word = item } or item
+    if type(item) == 'string' then
+        return { word = item }
+    end
+
+    return item
 end
 
+---@param item config.completion.Item
+---@return string?
 local function item_key(item)
     local word = item.word
-    if not word or word == '' then
+    if word == '' then
         return
     end
+
     return item.icase and item.icase ~= 0 and word:lower() or word
 end
 
-local function context(base)
-    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-    local line = vim.api.nvim_get_current_line()
-    return {
-        base = base,
-        before = line:sub(1, col),
-        bufnr = vim.api.nvim_get_current_buf(),
-        col = col,
-        filetype = vim.bo.filetype,
-        line = line,
-        row = row,
-    }
-end
-
 function M.complete(findstart, base)
-    local ctx = context(base)
+    local ctx = util.context(base)
+    local active_providers = providers()
 
     if findstart == 1 then
         local fallback = -2
         local start
 
-        for _, provider in ipairs(providers()) do
+        for _, provider in ipairs(active_providers) do
             local value = provider.findstart and provider.findstart(ctx)
             if type(value) == 'number' then
                 if value >= 0 then
@@ -80,7 +95,7 @@ function M.complete(findstart, base)
     local words = {}
     local seen = {}
 
-    for _, provider in ipairs(providers()) do
+    for _, provider in ipairs(active_providers) do
         local items = provider.complete and provider.complete(ctx) or {}
         for _, raw in ipairs(items) do
             local item = normalize_item(raw)
@@ -100,9 +115,11 @@ function M.complete(findstart, base)
     }
 end
 
+---@param item table
+---@return table
 function M.convert_lsp_item(item)
     local converted = {}
-    local ctx = context('')
+    local ctx = util.context('')
 
     for _, provider in ipairs(providers()) do
         local value = provider.convert_lsp_item
@@ -126,7 +143,7 @@ function M.on_complete_done()
         return
     end
 
-    provider.on_complete_done(item, context(''))
+    provider.on_complete_done(item, util.context(''))
 end
 
 vim.api.nvim_create_autocmd('CompleteDone', {
