@@ -22,18 +22,21 @@ local function scroll_preview(direction)
 
     local height = vim.api.nvim_win_get_height(winid)
     local step = math.max(1, math.floor(height / 2))
-    local cursor = vim.api.nvim_win_get_cursor(winid)
     local bufnr = vim.api.nvim_win_get_buf(winid)
     local last_line = vim.api.nvim_buf_line_count(bufnr)
     local delta = direction == 'down' and step or -step
-    local line = math.min(last_line, math.max(1, cursor[1] + delta))
-    vim.api.nvim_win_set_cursor(winid, { line, cursor[2] })
+    local current_line = vim.api.nvim_win_get_cursor(winid)[1]
+    local line = math.min(last_line, math.max(1, current_line + delta))
+    vim.api.nvim_win_set_cursor(winid, { line, 0 })
     return true
 end
 
 local function semantic_completion()
     local prefix = vim.fn.pumvisible() == 1 and '<C-e>' or ''
-    return vim.bo.omnifunc ~= '' and (prefix .. '<C-x><C-o>') or (prefix .. '<C-n>')
+    if vim.bo.omnifunc ~= '' then
+        return prefix .. '<C-x><C-o>'
+    end
+    return prefix .. '<C-n>'
 end
 
 local function completion_or_preview(keys, direction)
@@ -55,7 +58,7 @@ end, { expr = true, desc = 'env completion or cancel completion' })
 vim.keymap.set('i', '<c-f>', function()
     return completion_or_preview('<C-x><C-f>', 'down')
 end, { expr = true, desc = 'file completion or docs forward' })
-vim.keymap.set('i', '<c-l>', semantic_completion, {
+vim.keymap.set('i', '<c-s>', semantic_completion, {
     expr = true,
     desc = 'semantic completion',
 })
