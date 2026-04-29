@@ -7,7 +7,13 @@
   ...
 }:
 let
+  wayland = import ../wayland.nix { inherit pkgs hostConfig; };
   helpers = import ../helpers.nix { inherit hostConfig; };
+  inherit (wayland)
+    hyprSessionEnv
+    mkWaylandGate
+    wrapWaylandExec
+    ;
   inherit (helpers)
     username
     homeDirectory
@@ -18,16 +24,7 @@ let
     readTheme
     ;
 
-  waylandGate = {
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -S \"$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\" ] && exit 0; sleep 0.5; done; exit 1'";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-  };
+  waylandGate = mkWaylandGate "hyprland-session.target";
 
   hyprThemes = pkgs.runCommand "hypr-theme-files" { } ''
     mkdir -p $out
@@ -46,6 +43,7 @@ let
     env = HYPRCURSOR_SIZE,24
     env = HYPRCURSOR_THEME,macOS
     env = GSK_RENDERER,ngl
+    exec-once = ${hyprSessionEnv}/bin/hypr-session-env import
     source = ${repo}/config/hypr/hyprland.conf
   '';
 
@@ -146,14 +144,14 @@ in
     systemd.user.services.hyprpaper = waylandGate // {
       description = "Hyprpaper wallpaper daemon";
       serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.hyprpaper}/bin/hyprpaper";
+        ExecStart = wrapWaylandExec "${pkgs.hyprpaper}/bin/hyprpaper";
       };
     };
 
     systemd.user.services.hypridle = waylandGate // {
       description = "Hypridle idle daemon";
       serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.hypridle}/bin/hypridle";
+        ExecStart = wrapWaylandExec "${pkgs.hypridle}/bin/hypridle";
       };
     };
 

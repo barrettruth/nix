@@ -61,6 +61,7 @@ in
     TEXMFCONFIG = "${XDG_CONFIG_HOME}/texlive/texmf-config";
     INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
     DEVIN_PERMISSION_MODE = "dangerous";
+    HYPRLAND_NO_SD_VARS = "1";
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
     XCURSOR_SIZE = "24";
     XCURSOR_THEME = "macOS";

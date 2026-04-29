@@ -7,7 +7,12 @@
   ...
 }:
 let
+  wayland = import ../wayland.nix { inherit pkgs hostConfig; };
   helpers = import ../helpers.nix { inherit hostConfig; };
+  inherit (wayland)
+    mkWaylandGate
+    wrapWaylandExec
+    ;
   inherit (helpers)
     username
     XDG_CONFIG_HOME
@@ -17,16 +22,7 @@ let
     readTheme
     ;
 
-  waylandGate = {
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -S \"$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\" ] && exit 0; sleep 0.5; done; exit 1'";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-  };
+  waylandGate = mkWaylandGate "hyprland-session.target";
 
   dunstThemes = pkgs.runCommand "dunst-theme-files" { } ''
     mkdir -p $out
@@ -47,7 +43,7 @@ in
     systemd.user.services.dunst = waylandGate // {
       description = "Dunst notification daemon";
       serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${pkgs.dunst}/bin/dunst";
+        ExecStart = wrapWaylandExec "${pkgs.dunst}/bin/dunst";
       };
     };
 
