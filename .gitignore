@@ -1,7 +1,9 @@
 result
 .direnv/
 .envrc
-fonts/
+fonts/*
+!fonts/signifier/
+!fonts/berkeley-mono/
 config/chromium/extension/theme.css
 config/chromium/extension/theme.js
 config/nvim/lazy-lock.json
