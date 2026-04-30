@@ -483,17 +483,17 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1777430684,
-        "narHash": "sha256-Xug7xAqFsM0vTZwV5ASeKdlBQYFolaB7QK1nVy6g4Uo=",
-        "owner": "barrettruth",
-        "repo": "tmux-mosaic",
-        "rev": "37daf347bd244105622463269b1602037b46e014",
-        "type": "github"
+        "lastModified": 1777515495,
+        "narHash": "sha256-VtGNZeUxmllDlW+7mykvjc9FJlZkhg40COEqG+098E0=",
+        "ref": "refs/heads/main",
+        "rev": "38ed7a32d144c726df49945e4e9f1d236d5ee592",
+        "revCount": 109,
+        "type": "git",
+        "url": "https://git.barrettruth.com/barrettruth/tmux-mosaic.git"
       },
       "original": {
-        "owner": "barrettruth",
-        "repo": "tmux-mosaic",
-        "type": "github"
+        "type": "git",
+        "url": "https://git.barrettruth.com/barrettruth/tmux-mosaic.git"
       }
     },
     "treefmt-nix": {

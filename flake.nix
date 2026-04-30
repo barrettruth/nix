@@ -18,7 +18,7 @@
     direnv-instant.url = "github:Mic92/direnv-instant";
     codex.url = "github:sadjow/codex-cli-nix";
     tmux-mosaic = {
-      url = "github:barrettruth/tmux-mosaic";
+      url = "git+https://git.barrettruth.com/barrettruth/tmux-mosaic.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
