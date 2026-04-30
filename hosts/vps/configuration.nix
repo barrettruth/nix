@@ -425,12 +425,11 @@ let
     @import "theme-midnight-dark.css" (prefers-color-scheme: dark);
   '';
 
-  # TODO: upstream a Forgejo PR adding @codemirror/legacy-modes to package.json
-  # and registering INI/Bash/Lua/Ruby/Dockerfile/Makefile/etc. in
-  # web_src/js/features/codemirror-lang.ts. Until then the editor only
-  # highlights the ~20 languages CM6 ships natively (the file VIEWER, which
-  # uses Chroma server-side, covers ~250 languages including these). This
-  # JS only RECOLORS what CM6 already highlights; it can't add new languages.
+  # CM6 language coverage extension lives in pkgs/forgejo-cm6-langs/ (custom
+  # forgejo build that adds @codemirror/legacy-modes for INI/TOML/Shell/Lua/
+  # Ruby/Dockerfile/Perl/Nginx/Diff). This JS only handles RECOLORING what
+  # CM6 highlights with whichever VSCode palette it picked at editor mount
+  # -- it does not add new languages.
   forgejoMidnightCm6Js = pkgs.writeText "midnight-cm6.js" ''
     (() => {
       // CodeMirror 6 (used in /repos/.../_edit/...) hardcodes VSCode-ish hex
@@ -658,6 +657,7 @@ in
 
   services.forgejo = {
     enable = true;
+    package = pkgs.callPackage ../../pkgs/forgejo-cm6-langs { };
     user = "git";
     group = "git";
     dump = {
