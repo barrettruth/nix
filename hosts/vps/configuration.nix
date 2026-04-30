@@ -40,10 +40,6 @@ let
       --passphrase-file "$CREDENTIALS_DIRECTORY/gpg-passphrase" \
       "$@"
   '';
-  forgejoGitConfig = pkgs.writeText "forgejo-gitconfig" ''
-    [gpg]
-      program = ${forgejoGpgProgram}
-  '';
   forgejoBrandingSvg = pkgs.writeText "forgejo-delta-symbol.svg" ''
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
       <style>
@@ -429,29 +425,44 @@ let
     @import "theme-midnight-dark.css" (prefers-color-scheme: dark);
   '';
 
+  # TODO: upstream a Forgejo PR adding @codemirror/legacy-modes to package.json
+  # and registering INI/Bash/Lua/Ruby/Dockerfile/Makefile/etc. in
+  # web_src/js/features/codemirror-lang.ts. Until then the editor only
+  # highlights the ~20 languages CM6 ships natively (the file VIEWER, which
+  # uses Chroma server-side, covers ~250 languages including these). This
+  # JS only RECOLORS what CM6 already highlights; it can't add new languages.
   forgejoMidnightCm6Js = pkgs.writeText "midnight-cm6.js" ''
     (() => {
+      // CodeMirror 6 (used in /repos/.../_edit/...) hardcodes VSCode-ish hex
+      // colors in HighlightStyle.define() and picks dark vs light at editor
+      // mount time via isDarkTheme() (web_src/js/utils.js). Both branches'
+      // hex values get mapped to the SAME midnight CSS variable here, so
+      // the resolved color always matches the current Forgejo theme
+      // regardless of which VSCode palette CM6 picked. The variables are
+      // declared on :root in theme-midnight-{light,dark}.css and resolve
+      // through the cascade at use time.
       const COLOR_MAP = {
-        "#569cd6": "#7aa2f7",
-        "#c586c0": "#7aa2f7",
-        "#9cdcfe": "#e0e0e0",
-        "#4ec9b0": "#e0e0e0",
-        "#dcdcaa": "#e0e0e0",
-        "#b5cea8": "#98c379",
-        "#d4d4d4": "#e0e0e0",
-        "#d16969": "#c678dd",
-        "#ce9178": "#98c379",
-        "#6a9955": "#666666",
-        "#ff0000": "#ff6b6b",
-        "#0064ff": "#3b5bdb",
-        "#af00db": "#ae3ec9",
-        "#383a42": "#1a1a1a",
-        "#267f99": "#1a1a1a",
-        "#795e26": "#1a1a1a",
-        "#098658": "#2d7f3e",
-        "#a31515": "#2d7f3e",
-        "#e51400": "#c7254e",
-        "#006ab1": "#3b5bdb"
+        "#569cd6": "var(--midnight-syntax-keyword)",
+        "#0064ff": "var(--midnight-syntax-keyword)",
+        "#c586c0": "var(--midnight-syntax-keyword)",
+        "#af00db": "var(--midnight-syntax-keyword)",
+        "#006ab1": "var(--midnight-syntax-keyword)",
+        "#9cdcfe": "var(--color-text)",
+        "#383a42": "var(--color-text)",
+        "#4ec9b0": "var(--color-text)",
+        "#267f99": "var(--color-text)",
+        "#dcdcaa": "var(--color-text)",
+        "#795e26": "var(--color-text)",
+        "#d4d4d4": "var(--color-text)",
+        "#ce9178": "var(--midnight-syntax-string)",
+        "#a31515": "var(--midnight-syntax-string)",
+        "#b5cea8": "var(--midnight-syntax-constant)",
+        "#098658": "var(--midnight-syntax-constant)",
+        "#6a9955": "var(--midnight-syntax-comment)",
+        "#6b6b6b": "var(--midnight-syntax-comment)",
+        "#ff0000": "var(--midnight-syntax-error)",
+        "#e51400": "var(--midnight-syntax-error)",
+        "#d16969": "var(--midnight-syntax-error)"
       };
       const rewrite = (el) => {
         if (!el || el.tagName !== "STYLE") return;
@@ -480,6 +491,35 @@ let
 
   forgejoMidnightHeaderTmpl = pkgs.writeText "header.tmpl" ''
     <script src="/assets/js/midnight-cm6.js" defer></script>
+  '';
+  forgejoOauthContainerTmpl = pkgs.writeText "oauth_container.tmpl" ''
+    {{if or .OAuth2Providers .EnableOpenIDSignIn}}
+    {{if or (and .PageIsSignUp (not .DisableRegistration)) (and .PageIsSignIn .EnableInternalSignIn)}}
+      <div class="divider divider-text">
+        {{ctx.Locale.Tr "sign_in_or"}}
+      </div>
+    {{end}}
+    {{$oauthLabels := dict "github" "GitHub" "gitlab" "GitLab" "google" "Google"}}
+    <div id="oauth2-login-navigator" class="tw-py-1">
+      <div class="tw-flex tw-flex-col tw-justify-center">
+        <div id="oauth2-login-navigator-inner" class="tw-flex tw-flex-col tw-flex-wrap tw-items-center tw-gap-2">
+          {{range $provider := .OAuth2Providers}}
+            {{$label := or (index $oauthLabels $provider.DisplayName) $provider.DisplayName}}
+            <a class="{{$provider.Name}} ui button tw-flex tw-items-center tw-justify-center tw-py-2 tw-w-full oauth-login-link" href="{{AppSubUrl}}/user/oauth2/{{$provider.DisplayName}}">
+              {{$provider.IconHTML 28}}
+              {{ctx.Locale.Tr "sign_in_with_provider" $label}}
+            </a>
+          {{end}}
+          {{if .EnableOpenIDSignIn}}
+            <a class="openid ui button tw-flex tw-items-center tw-justify-center tw-py-2 tw-w-full" href="{{AppSubUrl}}/user/login/openid">
+            {{svg "fontawesome-openid" 28 "tw-mr-2"}}
+            {{ctx.Locale.Tr "auth.sign_in_openid"}}
+            </a>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    {{end}}
   '';
 in
 {
@@ -663,6 +703,9 @@ in
         DEFAULT_INTERVAL = "1h";
         MIN_INTERVAL = "10m";
       };
+      "git.config" = {
+        "gpg.program" = "${forgejoGpgProgram}";
+      };
       "repository.signing" = {
         SIGNING_KEY = forgejoSigningKeyId;
         INITIAL_COMMIT = "always";
@@ -734,19 +777,19 @@ in
       let
         forgejo = "${config.services.forgejo.package}/bin/forgejo --config /var/lib/forgejo/custom/conf/app.ini --work-path /var/lib/forgejo";
         syncOne = name: cfg: ''
-          id=$(${forgejo} admin auth list | awk -F'\t' -v n="${cfg.displayName}" -v l="${name}" 'NR>1 && ($2==n || $2==l) {print $1; exit}')
+          id=$(${forgejo} admin auth list | awk -F'\t' -v d="${cfg.displayName}" -v n="${name}" 'NR>1 && ($2==d || $2==n) {print $1; exit}')
           key=$(cat "$CREDENTIALS_DIRECTORY/${name}-id")
           secret=$(cat "$CREDENTIALS_DIRECTORY/${name}-secret")
           if [ -z "$id" ]; then
             ${forgejo} admin auth add-oauth \
-              --name "${cfg.displayName}" \
+              --name "${name}" \
               --provider "${cfg.provider}" \
               --key "$key" \
               --secret "$secret"
           else
             ${forgejo} admin auth update-oauth \
               --id "$id" \
-              --name "${cfg.displayName}" \
+              --name "${name}" \
               --key "$key" \
               --secret "$secret"
           fi
@@ -769,7 +812,6 @@ in
 
   systemd.tmpfiles.rules = [
     "d /var/lib/forgejo/.gnupg 0700 git git -"
-    "L+ /var/lib/forgejo/.gitconfig - - - - ${forgejoGitConfig}"
     "L+ /var/lib/forgejo/.gnupg/gpg-agent.conf - - - - ${forgejoGpgAgentConf}"
     "d /var/lib/forgejo/custom/public 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets 0750 git git -"
@@ -790,6 +832,9 @@ in
     "d /var/lib/forgejo/custom/templates 0750 git git -"
     "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/custom/header.tmpl - - - - ${forgejoMidnightHeaderTmpl}"
+    "d /var/lib/forgejo/custom/templates/user 0750 git git -"
+    "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"
+    "L+ /var/lib/forgejo/custom/templates/user/auth/oauth_container.tmpl - - - - ${forgejoOauthContainerTmpl}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro.ttf"
