@@ -138,6 +138,10 @@ return {
     {
         'barrettruth/diffs.nvim',
         enabled = true,
+        keys = {
+            { 'gtd', '<Plug>(diffs-gdiff)', desc = 'diffs gdiff' },
+            { 'gtD', '<Plug>(diffs-gvdiff)', desc = 'diffs gvdiff' },
+        },
         before = function()
             vim.g.diffs = {
                 debug = false,
@@ -153,6 +157,16 @@ return {
                         enabled = true,
                         algorithm = 'vscode',
                         max_lines = 500,
+                    },
+                },
+                conflict = {
+                    keymaps = {
+                        ours = 'gto',
+                        theirs = 'gtt',
+                        both = 'gtb',
+                        none = 'gt0',
+                        next = 'gtn',
+                        prev = 'gtp',
                     },
                 },
             }
