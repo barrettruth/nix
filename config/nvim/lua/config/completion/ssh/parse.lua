@@ -206,8 +206,7 @@ function M.parse_keywords(stdout)
             abbr = def.keyword,
             icase = 1,
             info = desc ~= '' and desc or nil,
-            kind = 'k',
-            menu = '[ssh]',
+            kind = 'ssh',
             user_data = {
                 source = 'ssh',
             },
