@@ -1,0 +1,1 @@
+verify gpg signing works after switching from gitconfig symlink to [git.config] app.ini section
