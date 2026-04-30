@@ -6,6 +6,14 @@
   ...
 }:
 let
+  forgejoSigningKeyId = "A6C96C9349D2FC81";
+  forgejoSigningKeygrip = "247B0A9D19F81A74DA484DA1211275EB0F4F9A14";
+  forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
+    allow-preset-passphrase
+    allow-loopback-pinentry
+    default-cache-ttl 31536000
+    max-cache-ttl 31536000
+  '';
   forgejoBrandingSvg = pkgs.writeText "forgejo-delta-symbol.svg" ''
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
       <style>
@@ -155,7 +163,70 @@ in
         DEFAULT_INTERVAL = "1h";
         MIN_INTERVAL = "10m";
       };
+      "repository.signing" = {
+        SIGNING_KEY = forgejoSigningKeyId;
+        INITIAL_COMMIT = "always";
+        CRUD_ACTIONS = "always";
+        MERGES = "always";
+        WIKI = "never";
+      };
     };
+  };
+
+  systemd.services.forgejo.environment.GNUPGHOME = "/var/lib/forgejo/.gnupg";
+
+  systemd.services.forgejo-gpg-import = {
+    description = "Import Forgejo GPG signing key into git keyring (idempotent)";
+    before = [ "forgejo-gpg-preset.service" ];
+    wantedBy = [ "forgejo-gpg-preset.service" ];
+    path = [ pkgs.gnupg ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "git";
+      Group = "git";
+      LoadCredential = [
+        "passphrase:/etc/forgejo-gpg-passphrase"
+        "secret:/etc/forgejo-gpg-secret.asc"
+      ];
+      Environment = [ "GNUPGHOME=/var/lib/forgejo/.gnupg" ];
+    };
+    script = ''
+      set -eu
+      if gpg --list-secret-keys ${forgejoSigningKeyId} >/dev/null 2>&1; then
+        exit 0
+      fi
+      gpg --batch --pinentry-mode loopback \
+        --passphrase-file "$CREDENTIALS_DIRECTORY/passphrase" \
+        --import "$CREDENTIALS_DIRECTORY/secret"
+      printf '%s:6:\n' ${forgejoSigningKeyId} | gpg --import-ownertrust
+    '';
+  };
+
+  systemd.services.forgejo-gpg-preset = {
+    description = "Preset Forgejo GPG signing key passphrase";
+    after = [ "forgejo-gpg-import.service" ];
+    requires = [ "forgejo-gpg-import.service" ];
+    before = [ "forgejo.service" ];
+    wantedBy = [ "forgejo.service" ];
+    path = [ pkgs.gnupg ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      KillMode = "none";
+      User = "git";
+      Group = "git";
+      LoadCredential = "passphrase:/etc/forgejo-gpg-passphrase";
+      Environment = [ "GNUPGHOME=/var/lib/forgejo/.gnupg" ];
+      ExecStop = "${pkgs.gnupg}/bin/gpgconf --kill gpg-agent";
+    };
+    script = ''
+      set -eu
+      gpgconf --kill gpg-agent || true
+      gpg-agent --daemon
+      hex=$(tr -d '\n' < "$CREDENTIALS_DIRECTORY/passphrase" | od -An -tx1 -v | tr -d ' \n' | tr a-f A-F)
+      gpg-connect-agent "PRESET_PASSPHRASE ${forgejoSigningKeygrip} -1 $hex" /bye
+    '';
   };
 
   users.users.git = {
@@ -168,6 +239,8 @@ in
   users.groups.git = { };
 
   systemd.tmpfiles.rules = [
+    "d /var/lib/forgejo/.gnupg 0700 git git -"
+    "L+ /var/lib/forgejo/.gnupg/gpg-agent.conf - - - - ${forgejoGpgAgentConf}"
     "d /var/lib/forgejo/custom/public 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets/img 0750 git git -"
