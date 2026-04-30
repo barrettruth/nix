@@ -90,44 +90,16 @@ let
   '';
   forgejoMidnightFontsCss = pkgs.writeText "theme-midnight-fonts.css" ''
     @font-face {
-      font-family: "Signifier";
-      src: url("/assets/fonts/signifier/Signifier-Regular.ttf") format("truetype");
-      font-weight: 400;
+      font-family: "SF Pro";
+      src: url("/assets/fonts/san-francisco-pro/SF-Pro.ttf") format("truetype-variations");
+      font-weight: 100 900;
       font-style: normal;
       font-display: swap;
     }
     @font-face {
-      font-family: "Signifier";
-      src: url("/assets/fonts/signifier/Signifier-RegularItalic.ttf") format("truetype");
-      font-weight: 400;
-      font-style: italic;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Signifier";
-      src: url("/assets/fonts/signifier/Signifier-Medium.ttf") format("truetype");
-      font-weight: 500;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Signifier";
-      src: url("/assets/fonts/signifier/Signifier-MediumItalic.ttf") format("truetype");
-      font-weight: 500;
-      font-style: italic;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Signifier";
-      src: url("/assets/fonts/signifier/Signifier-Bold.ttf") format("truetype");
-      font-weight: 700;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Signifier";
-      src: url("/assets/fonts/signifier/Signifier-BoldItalic.ttf") format("truetype");
-      font-weight: 700;
+      font-family: "SF Pro";
+      src: url("/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf") format("truetype-variations");
+      font-weight: 100 900;
       font-style: italic;
       font-display: swap;
     }
@@ -167,7 +139,7 @@ let
       font-display: swap;
     }
     :root {
-      --fonts-override: "Signifier", "STIX Two Text";
+      --fonts-override: "SF Pro", "STIX Two Text";
       --fonts-monospace: "Berkeley Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace, var(--fonts-emoji);
     }
   '';
@@ -186,12 +158,30 @@ let
       --color-primary: #3b5bdb;
       --color-primary-contrast: #ffffff;
       --color-primary-hover: #2d49b8;
-      --color-primary-active: #243b94;
+      --color-primary-active: #1d3175;
       --color-primary-dark-1: #2d49b8;
       --color-primary-dark-2: #243b94;
+      --color-primary-dark-3: #1d3175;
+      --color-primary-dark-4: #16265b;
+      --color-primary-dark-5: #101c44;
+      --color-primary-dark-6: #0a1330;
+      --color-primary-dark-7: #050a1f;
       --color-primary-light-1: #4c6ef5;
       --color-primary-light-2: #748ffc;
       --color-primary-light-3: #91a7ff;
+      --color-primary-light-4: #bac8ff;
+      --color-primary-light-5: #dbe3fe;
+      --color-primary-light-6: #edf1fe;
+      --color-primary-light-7: #f5f8ff;
+      --color-primary-alpha-10: #3b5bdb19;
+      --color-primary-alpha-20: #3b5bdb33;
+      --color-primary-alpha-30: #3b5bdb4b;
+      --color-primary-alpha-40: #3b5bdb66;
+      --color-primary-alpha-50: #3b5bdb80;
+      --color-primary-alpha-60: #3b5bdb99;
+      --color-primary-alpha-70: #3b5bdbb3;
+      --color-primary-alpha-80: #3b5bdbcc;
+      --color-primary-alpha-90: #3b5bdbe1;
       --color-red: #c7254e;
       --color-orange: #d9730d;
       --color-yellow: #996800;
@@ -203,6 +193,7 @@ let
       --color-teal: #1098ad;
       --color-secondary: #d0d0d0;
       --color-secondary-bg: #e8e8e8;
+      --color-secondary-alpha-60: #d0d0d099;
       --color-card: #ebebeb;
       --color-menu: #ebebeb;
       --color-nav-bg: #ebebeb;
@@ -240,12 +231,30 @@ let
       --color-primary: #7aa2f7;
       --color-primary-contrast: #121212;
       --color-primary-hover: #9db8f7;
-      --color-primary-active: #bcd0fa;
-      --color-primary-dark-1: #5b87e8;
-      --color-primary-dark-2: #466dc4;
-      --color-primary-light-1: #9db8f7;
-      --color-primary-light-2: #bcd0fa;
-      --color-primary-light-3: #d6e1fc;
+      --color-primary-active: #b5c8f7;
+      --color-primary-dark-1: #9db8f7;
+      --color-primary-dark-2: #b5c8f7;
+      --color-primary-dark-3: #c8d6f8;
+      --color-primary-dark-4: #d6e1fc;
+      --color-primary-dark-5: #e2eafd;
+      --color-primary-dark-6: #ecf1fd;
+      --color-primary-dark-7: #f5f8fe;
+      --color-primary-light-1: #5b87e8;
+      --color-primary-light-2: #466dc4;
+      --color-primary-light-3: #34528f;
+      --color-primary-light-4: #233b66;
+      --color-primary-light-5: #1a2b48;
+      --color-primary-light-6: #131f33;
+      --color-primary-light-7: #0d1622;
+      --color-primary-alpha-10: #7aa2f719;
+      --color-primary-alpha-20: #7aa2f733;
+      --color-primary-alpha-30: #7aa2f74b;
+      --color-primary-alpha-40: #7aa2f766;
+      --color-primary-alpha-50: #7aa2f780;
+      --color-primary-alpha-60: #7aa2f799;
+      --color-primary-alpha-70: #7aa2f7b3;
+      --color-primary-alpha-80: #7aa2f7cc;
+      --color-primary-alpha-90: #7aa2f7e1;
       --color-red: #ff6b6b;
       --color-orange: #e5a56b;
       --color-yellow: #e5c07b;
@@ -257,6 +266,7 @@ let
       --color-teal: #56b6c2;
       --color-secondary: #3d3d3d;
       --color-secondary-bg: #2d2d2d;
+      --color-secondary-alpha-60: #3d3d3d99;
       --color-card: #222222;
       --color-menu: #222222;
       --color-nav-bg: #1a1a1a;
@@ -588,13 +598,9 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-dark.css - - - - ${forgejoMidnightDarkCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoMidnightFontsCss}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
-    "d /var/lib/forgejo/custom/public/assets/fonts/signifier 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-Regular.ttf - - - - ${../../fonts/signifier}/Signifier-Regular.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-RegularItalic.ttf - - - - ${../../fonts/signifier}/Signifier-RegularItalic.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-Medium.ttf - - - - ${../../fonts/signifier}/Signifier-Medium.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-MediumItalic.ttf - - - - ${../../fonts/signifier}/Signifier-MediumItalic.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-Bold.ttf - - - - ${../../fonts/signifier}/Signifier-Bold.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-BoldItalic.ttf - - - - ${../../fonts/signifier}/Signifier-BoldItalic.ttf"
+    "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro-Italic.ttf"
     "d /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Regular.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Italic.ttf"
