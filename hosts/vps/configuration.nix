@@ -11,9 +11,18 @@ let
   forgejoSigningKeyId = "AEB0C5593951F51260C1388DF09FD58E4737029E";
   forgejoSigningTrustFingerprint = "F2CC7F7FD33F423B7A31B4E3A6C96C9349D2FC81";
   forgejoOauthSources = {
-    github.provider = "github";
-    google.provider = "gplus";
-    gitlab.provider = "gitlab";
+    github = {
+      provider = "github";
+      displayName = "GitHub";
+    };
+    google = {
+      provider = "gplus";
+      displayName = "Google";
+    };
+    gitlab = {
+      provider = "gitlab";
+      displayName = "GitLab";
+    };
   };
   forgejoOauthSecretNames = lib.flatten (
     lib.mapAttrsToList (name: _: [
@@ -725,18 +734,19 @@ in
       let
         forgejo = "${config.services.forgejo.package}/bin/forgejo --config /var/lib/forgejo/custom/conf/app.ini --work-path /var/lib/forgejo";
         syncOne = name: cfg: ''
-          id=$(${forgejo} admin auth list | awk -F'\t' -v n="${name}" 'NR>1 && $2==n {print $1; exit}')
+          id=$(${forgejo} admin auth list | awk -F'\t' -v n="${cfg.displayName}" -v l="${name}" 'NR>1 && ($2==n || $2==l) {print $1; exit}')
           key=$(cat "$CREDENTIALS_DIRECTORY/${name}-id")
           secret=$(cat "$CREDENTIALS_DIRECTORY/${name}-secret")
           if [ -z "$id" ]; then
             ${forgejo} admin auth add-oauth \
-              --name "${name}" \
+              --name "${cfg.displayName}" \
               --provider "${cfg.provider}" \
               --key "$key" \
               --secret "$secret"
           else
             ${forgejo} admin auth update-oauth \
               --id "$id" \
+              --name "${cfg.displayName}" \
               --key "$key" \
               --secret "$secret"
           fi
