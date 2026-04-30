@@ -133,6 +133,7 @@ let
     @import "theme-forgejo-light.css";
     @import "theme-midnight-fonts.css";
     :root {
+      --is-dark-theme: false;
       --midnight-syntax-keyword: #3b5bdb;
       --midnight-syntax-string: #2d7f3e;
       --midnight-syntax-constant: #2d7f3e;
@@ -212,6 +213,7 @@ let
     @import "theme-forgejo-dark.css";
     @import "theme-midnight-fonts.css";
     :root {
+      --is-dark-theme: true;
       --midnight-syntax-keyword: #7aa2f7;
       --midnight-syntax-string: #98c379;
       --midnight-syntax-constant: #98c379;
@@ -389,6 +391,28 @@ let
     }
     /* ===== Markup (rendered markdown content) ===== */
     .markup .absent { color: var(--midnight-syntax-error); }
+    /* ===== CodeMirror 6 (file editor at /repos/.../_edit/...) =====
+       CM6 ships its own theme via EditorView.theme()/HighlightStyle.define()
+       in web_src/js/features/codemirror.ts with hardcoded VSCode-ish hex
+       colors. Those styles get injected into <style> tags AT EDITOR MOUNT
+       TIME and use obfuscated auto-generated class names, so
+       per-token recoloring from outside CSS is brittle. Blanket-override
+       text color with !important on .cm-editor descendants; this loses
+       per-token highlighting but guarantees readability against the
+       midnight bg. */
+    .cm-editor {
+      color: var(--color-text) !important;
+      background-color: var(--color-code-bg) !important;
+    }
+    .cm-editor .cm-content,
+    .cm-editor .cm-line,
+    .cm-editor .cm-line span,
+    .cm-editor .cm-gutters {
+      color: var(--color-text) !important;
+    }
+    .cm-editor .cm-gutters {
+      background-color: var(--color-code-bg) !important;
+    }
   '';
 
   forgejoMidnightAutoCss = pkgs.writeText "theme-midnight-auto.css" ''
