@@ -13,6 +13,7 @@ return {
             telemetry = { enable = false },
             workspace = {
                 checkThirdParty = false,
+                library = { vim.env.VIMRUNTIME },
             },
         },
     },

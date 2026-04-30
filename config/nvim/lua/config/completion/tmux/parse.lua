@@ -108,8 +108,7 @@ function M.parse(commands_stdout, descriptions)
             items[#items + 1] = {
                 abbr = name,
                 info = info,
-                kind = 'c',
-                menu = '[tmux]',
+                kind = 'tmux',
                 user_data = {
                     source = 'tmux',
                 },

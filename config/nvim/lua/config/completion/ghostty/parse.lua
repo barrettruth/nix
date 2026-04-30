@@ -21,8 +21,7 @@ function M.parse_keys(stdout)
                     icase = 1,
                     info = #doc_lines > 0 and table.concat(doc_lines, '\n')
                         or nil,
-                    kind = 'k',
-                    menu = '[ghostty]',
+                    kind = 'ghostty',
                     user_data = {
                         source = 'ghostty',
                     },

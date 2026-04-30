@@ -120,8 +120,7 @@ local function value_items(values, base)
         items[#items + 1] = {
             abbr = value,
             icase = 1,
-            kind = 'v',
-            menu = '[ghostty]',
+            kind = 'ghostty',
             user_data = {
                 source = M.source,
             },

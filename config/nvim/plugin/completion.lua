@@ -8,14 +8,13 @@ vim.o.pumheight = 15
 vim.o.pumwidth = 24
 vim.o.pummaxwidth = 80
 
-local function preview_winid()
+local function current_preview_winid()
     local info = vim.fn.complete_info({ 'preview_winid' })
-    local winid = info.preview_winid or 0
-    return type(winid) == 'number' and winid or 0
+    return info.preview_winid or 0
 end
 
 local function scroll_preview(direction)
-    local winid = preview_winid()
+    local winid = current_preview_winid()
     if winid == 0 or not vim.api.nvim_win_is_valid(winid) then
         return false
     end
@@ -39,39 +38,52 @@ local function preview_border()
     return vim.o.winborder
 end
 
-local function set_preview_border()
-    local border = preview_border()
-    if border == '' or border == 'none' then
-        return false
-    end
+local function preview_winhighlight()
+    return 'Normal:Pmenu,FloatBorder:PmenuBorder,EndOfBuffer:Pmenu'
+end
 
-    local winid = preview_winid()
+local function set_preview_border(winid)
+    if type(winid) ~= 'number' then
+        winid = nil
+    end
+    winid = winid or vim.fn.complete_info({ 'preview_winid' }).preview_winid or 0
     if winid == 0 or not vim.api.nvim_win_is_valid(winid) then
         return false
     end
 
-    vim.api.nvim_win_set_config(winid, { border = border })
+    local border = preview_border()
+    if border ~= '' and border ~= 'none' then
+        vim.api.nvim_win_set_config(winid, { border = border })
+    end
+    vim.api.nvim_set_option_value('winhl', preview_winhighlight(), { win = winid })
     return true
 end
 
-if not vim.g.completion_preview_border_wrapped then
-    local native_complete_set = vim.api.nvim__complete_set
-    vim.api.nvim__complete_set = function(index, opts)
-        local windata = native_complete_set(index, opts)
-        local border = preview_border()
-        local winid = type(windata) == 'table' and windata.winid or 0
-        if
-            border ~= ''
-            and border ~= 'none'
-            and type(winid) == 'number'
-            and winid ~= 0
-            and vim.api.nvim_win_is_valid(winid)
-        then
-            vim.api.nvim_win_set_config(winid, { border = border })
+vim.api.nvim_create_autocmd('CompleteChanged', {
+    group = vim.api.nvim_create_augroup('ACompletionPreviewBorder', { clear = true }),
+    callback = function()
+        local item = vim.v.event.completed_item or {}
+        local selected = vim.fn.complete_info({ 'selected' }).selected
+        local info = type(item.info) == 'string' and item.info or ''
+        if selected < 0 then
+            return
         end
+        if info ~= '' and vim.api.nvim__complete_set then
+            local windata = vim.api.nvim__complete_set(selected, { info = info })
+            set_preview_border(windata and windata.winid or nil)
+            return
+        end
+        set_preview_border()
+    end,
+})
+
+if vim.api.nvim__complete_set then
+    local complete_set = vim.api.nvim__complete_set
+    vim.api.nvim__complete_set = function(index, opts)
+        local windata = complete_set(index, opts)
+        set_preview_border(windata and windata.winid or nil)
         return windata
     end
-    vim.g.completion_preview_border_wrapped = true
 end
 
 local function semantic_completion()

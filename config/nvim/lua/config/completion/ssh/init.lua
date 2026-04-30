@@ -110,8 +110,7 @@ local function enum_items(values, base)
         items[#items + 1] = {
             abbr = value,
             icase = 1,
-            kind = 'v',
-            menu = '[ssh]',
+            kind = 'ssh',
             user_data = {
                 source = M.source,
             },

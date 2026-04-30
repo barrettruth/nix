@@ -70,8 +70,7 @@ local function add(items, st, modname, modpath)
             word = word,
             abbr = word,
             info = plugin and ('Plugin: ' .. plugin) or nil,
-            kind = 'm',
-            menu = '[lazydev]',
+            kind = 'lazydev',
             user_data = {
                 source = M.source,
             },

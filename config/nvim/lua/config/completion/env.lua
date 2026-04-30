@@ -3,8 +3,6 @@ local M = {
     source = 'env',
 }
 
-local util = require('config.completion.util')
-
 ---@class config.completion.env.State
 ---@field base string
 ---@field marker '$'|'${'
@@ -13,10 +11,11 @@ local util = require('config.completion.util')
 ---@param ctx config.completion.Context
 ---@return config.completion.env.State?
 local function state(ctx)
+    local query = type(ctx.base) == 'string' and ctx.base or ''
     local base = ctx.before:match('%$([%w_]*)$')
     if base ~= nil then
         return {
-            base = base,
+            base = query ~= '' and query or base,
             marker = '$',
             start = ctx.col - #base,
         }
@@ -25,22 +24,32 @@ local function state(ctx)
     base = ctx.before:match('%${([%w_]*)$')
     if base ~= nil then
         return {
-            base = base,
+            base = query ~= '' and query or base,
             marker = '${',
             start = ctx.col - #base,
         }
     end
 end
 
----@param name string
 ---@param value string
 ---@return string
-local function info(name, value)
+local function info(value)
     local text = tostring(value):gsub('%s+', ' ')
     if #text > 120 then
         text = text:sub(1, 117) .. '...'
     end
-    return ('$%s=%s'):format(name, text)
+    return text
+end
+
+---@param marker '$'|'${'
+---@param name string
+---@return string
+local function abbr(marker, name)
+    if marker == '${' then
+        return marker .. name .. '}'
+    end
+
+    return marker .. name
 end
 
 ---@param ctx config.completion.Context
@@ -59,28 +68,29 @@ function M.complete(ctx)
     end
 
     local env = vim.fn.environ()
-    local query = st.base:lower()
+    local query = st.base
     local names = {}
 
     for name in pairs(env) do
-        if util.starts_with_icase(name, query) then
-            names[#names + 1] = name
-        end
+        names[#names + 1] = name
     end
 
-    table.sort(names, function(a, b)
-        return a:lower() < b:lower()
-    end)
+    if query == '' then
+        table.sort(names, function(a, b)
+            return a:lower() < b:lower()
+        end)
+    else
+        names = vim.fn.matchfuzzy(names, st.base, { matchseq = 1 })
+    end
 
     local words = {}
     for _, name in ipairs(names) do
         words[#words + 1] = {
             word = name,
-            abbr = st.marker .. name,
+            abbr = abbr(st.marker, name),
             icase = 1,
-            info = info(name, env[name]),
-            kind = 'e',
-            menu = '[env]',
+            info = info(env[name]),
+            kind = 'env',
             user_data = {
                 env = {
                     close_brace = st.marker == '${',
