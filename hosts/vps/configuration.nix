@@ -84,6 +84,206 @@ let
         rsvg-convert -w 1024 -h 1024 ${forgejoBrandingSvg} > $out/avatar.png
         cp $out/avatar.png $out/avatar_default.png
       '';
+
+  forgejoStixTwoFontFile = pkgs.runCommand "stix-two-text.ttf" { } ''
+    cp '${pkgs.stix-two}/share/fonts/truetype/STIXTwoText[wght].ttf' $out
+  '';
+  forgejoMidnightFontsCss = pkgs.writeText "theme-midnight-fonts.css" ''
+    @font-face {
+      font-family: "Signifier";
+      src: url("/assets/fonts/signifier/Signifier-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Signifier";
+      src: url("/assets/fonts/signifier/Signifier-RegularItalic.ttf") format("truetype");
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Signifier";
+      src: url("/assets/fonts/signifier/Signifier-Medium.ttf") format("truetype");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Signifier";
+      src: url("/assets/fonts/signifier/Signifier-MediumItalic.ttf") format("truetype");
+      font-weight: 500;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Signifier";
+      src: url("/assets/fonts/signifier/Signifier-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Signifier";
+      src: url("/assets/fonts/signifier/Signifier-BoldItalic.ttf") format("truetype");
+      font-weight: 700;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Berkeley Mono";
+      src: url("/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Berkeley Mono";
+      src: url("/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf") format("truetype");
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Berkeley Mono";
+      src: url("/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Berkeley Mono";
+      src: url("/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf") format("truetype");
+      font-weight: 700;
+      font-style: italic;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "STIX Two Text";
+      src: url("/assets/fonts/stix-two/STIXTwoText.ttf") format("truetype-variations");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    :root {
+      --fonts-override: "Signifier", "STIX Two Text";
+      --fonts-monospace: "Berkeley Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace, var(--fonts-emoji);
+    }
+  '';
+
+  forgejoMidnightLightCss = pkgs.writeText "theme-midnight-light.css" ''
+    @import "theme-forgejo-light.css";
+    @import "theme-midnight-fonts.css";
+    :root {
+      --color-body: #f5f5f5;
+      --color-text: #1a1a1a;
+      --color-text-dark: #000000;
+      --color-text-light: #4b5563;
+      --color-text-light-1: #666666;
+      --color-text-light-2: #888888;
+      --color-text-light-3: #999999;
+      --color-primary: #3b5bdb;
+      --color-primary-contrast: #ffffff;
+      --color-primary-hover: #2d49b8;
+      --color-primary-active: #243b94;
+      --color-primary-dark-1: #2d49b8;
+      --color-primary-dark-2: #243b94;
+      --color-primary-light-1: #4c6ef5;
+      --color-primary-light-2: #748ffc;
+      --color-primary-light-3: #91a7ff;
+      --color-red: #c7254e;
+      --color-orange: #d9730d;
+      --color-yellow: #996800;
+      --color-green: #2d7f3e;
+      --color-blue: #3b5bdb;
+      --color-violet: #ae3ec9;
+      --color-purple: #ae3ec9;
+      --color-cyan: #1098ad;
+      --color-teal: #1098ad;
+      --color-secondary: #d0d0d0;
+      --color-secondary-bg: #e8e8e8;
+      --color-card: #ebebeb;
+      --color-menu: #ebebeb;
+      --color-nav-bg: #ebebeb;
+      --color-nav-hover-bg: #d0d0d0;
+      --color-input-background: #ffffff;
+      --color-input-text: #1a1a1a;
+      --color-input-border: #d0d0d0;
+      --color-input-border-hover: #999999;
+      --color-button: #d0d0d0;
+      --color-code-bg: #e8e8e8;
+      --color-markup-code-block: #e8e8e8;
+      --color-markup-code-inline: #ebebeb;
+      --color-diff-added-row-bg: #a5c5ab;
+      --color-diff-removed-row-bg: #e2a1b2;
+      --color-diff-moved-row-bg: #a9b7e5;
+      --color-diff-added-row-border: #2d7f3e;
+      --color-diff-removed-row-border: #c7254e;
+      --color-link: #3b5bdb;
+      --color-link-hover: #2d49b8;
+      color-scheme: light;
+    }
+  '';
+
+  forgejoMidnightDarkCss = pkgs.writeText "theme-midnight-dark.css" ''
+    @import "theme-forgejo-dark.css";
+    @import "theme-midnight-fonts.css";
+    :root {
+      --color-body: #121212;
+      --color-text: #e0e0e0;
+      --color-text-dark: #ffffff;
+      --color-text-light: #999999;
+      --color-text-light-1: #888888;
+      --color-text-light-2: #666666;
+      --color-text-light-3: #5a5a5a;
+      --color-primary: #7aa2f7;
+      --color-primary-contrast: #121212;
+      --color-primary-hover: #9db8f7;
+      --color-primary-active: #bcd0fa;
+      --color-primary-dark-1: #5b87e8;
+      --color-primary-dark-2: #466dc4;
+      --color-primary-light-1: #9db8f7;
+      --color-primary-light-2: #bcd0fa;
+      --color-primary-light-3: #d6e1fc;
+      --color-red: #ff6b6b;
+      --color-orange: #e5a56b;
+      --color-yellow: #e5c07b;
+      --color-green: #98c379;
+      --color-blue: #7aa2f7;
+      --color-violet: #c678dd;
+      --color-purple: #c678dd;
+      --color-cyan: #56b6c2;
+      --color-teal: #56b6c2;
+      --color-secondary: #3d3d3d;
+      --color-secondary-bg: #2d2d2d;
+      --color-card: #222222;
+      --color-menu: #222222;
+      --color-nav-bg: #1a1a1a;
+      --color-nav-hover-bg: #2d2d2d;
+      --color-input-background: #1a1a1a;
+      --color-input-text: #e0e0e0;
+      --color-input-border: #3d3d3d;
+      --color-input-border-hover: #5a5a5a;
+      --color-button: #3d3d3d;
+      --color-code-bg: #1a1a1a;
+      --color-markup-code-block: #2d2d2d;
+      --color-markup-code-inline: #2d2d2d;
+      --color-diff-added-row-bg: #0c2f1e;
+      --color-diff-removed-row-bg: #291f27;
+      --color-diff-moved-row-bg: #3a4a6d;
+      --color-diff-added-row-border: #98c379;
+      --color-diff-removed-row-border: #ff6b6b;
+      --color-link: #7aa2f7;
+      --color-link-hover: #9db8f7;
+      color-scheme: dark;
+    }
+  '';
+
+  forgejoMidnightAutoCss = pkgs.writeText "theme-midnight-auto.css" ''
+    @import "theme-midnight-light.css";
+    @import "theme-midnight-dark.css" (prefers-color-scheme: dark);
+  '';
 in
 {
   imports = [
@@ -273,6 +473,10 @@ in
         MERGES = "always";
         WIKI = "never";
       };
+      ui = {
+        DEFAULT_THEME = "midnight-auto";
+        THEMES = "midnight-auto,midnight-light,midnight-dark";
+      };
     };
   };
 
@@ -378,6 +582,26 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/img/favicon.png - - - - ${forgejoBrandingAssets}/favicon.png"
     "L+ /var/lib/forgejo/custom/public/assets/img/apple-touch-icon.png - - - - ${forgejoBrandingAssets}/apple-touch-icon.png"
     "L+ /var/lib/forgejo/custom/public/assets/img/avatar_default.png - - - - ${forgejoBrandingAssets}/avatar_default.png"
+    "d /var/lib/forgejo/custom/public/assets/css 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-auto.css - - - - ${forgejoMidnightAutoCss}"
+    "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-light.css - - - - ${forgejoMidnightLightCss}"
+    "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-dark.css - - - - ${forgejoMidnightDarkCss}"
+    "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoMidnightFontsCss}"
+    "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
+    "d /var/lib/forgejo/custom/public/assets/fonts/signifier 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-Regular.ttf - - - - ${../../fonts/signifier}/Signifier-Regular.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-RegularItalic.ttf - - - - ${../../fonts/signifier}/Signifier-RegularItalic.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-Medium.ttf - - - - ${../../fonts/signifier}/Signifier-Medium.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-MediumItalic.ttf - - - - ${../../fonts/signifier}/Signifier-MediumItalic.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-Bold.ttf - - - - ${../../fonts/signifier}/Signifier-Bold.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/signifier/Signifier-BoldItalic.ttf - - - - ${../../fonts/signifier}/Signifier-BoldItalic.ttf"
+    "d /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Regular.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Italic.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Bold.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-BoldItalic.ttf"
+    "d /var/lib/forgejo/custom/public/assets/fonts/stix-two 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/stix-two/STIXTwoText.ttf - - - - ${forgejoStixTwoFontFile}"
   ];
 
   environment.systemPackages = with pkgs; [
