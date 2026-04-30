@@ -1,5 +1,7 @@
 local M = {}
 
+local util = require('config.completion.util')
+
 local TIMEOUT_LOG = 1500
 local TIMEOUT_SHOW = 1500
 local TIMEOUT_RESOLVE = 1000
@@ -21,18 +23,7 @@ end
 ---@param dir string
 ---@return string
 function M.git_root(dir)
-    if dir == '' then
-        dir = vim.uv.cwd() or '.'
-    end
-    local out = vim.system(
-        { 'git', '-C', dir, 'rev-parse', '--show-toplevel' },
-        { text = true, timeout = TIMEOUT_RESOLVE }
-    ):wait()
-    local root = vim.trim(out.stdout or '')
-    if root == '' and dir:match('/%.git$') then
-        root = vim.fn.fnamemodify(dir, ':h')
-    end
-    return root
+    return util.git_root(dir, TIMEOUT_RESOLVE)
 end
 
 ---@param root string

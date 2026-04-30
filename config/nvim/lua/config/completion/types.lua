@@ -13,7 +13,11 @@
 ---@field git_log? config.completion.GitLogItemData
 
 ---@class config.completion.ForgeItemData
----@field repo_key string
+---@field backend config.completion.forge.BackendName
+---@field host string
+---@field owner string
+---@field repo string
+---@field key string
 ---@field kind 'issue'|'pr'|'mr'|'mention'
 ---@field number? integer
 ---@field login? string
@@ -87,6 +91,7 @@
 ---generic over the bucket count and shape per backend.
 ---@class config.completion.forge.Backend
 ---@field name config.completion.forge.BackendName
+---@field cli? string
 ---@field hosts string[]
 ---@field matches_host? fun(host: string): boolean
 ---@field triggers config.completion.forge.Trigger[]

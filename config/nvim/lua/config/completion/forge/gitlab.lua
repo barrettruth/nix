@@ -1,5 +1,6 @@
 local M = {
     name = 'gitlab',
+    cli = 'glab',
     hosts = { 'gitlab.com' },
     triggers = { '#', '!', '@' },
     bucket_for_trigger = {

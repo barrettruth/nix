@@ -1,5 +1,6 @@
 local M = {
     name = 'github',
+    cli = 'gh',
     hosts = { 'github.com' },
     triggers = { '#', '@' },
     bucket_for_trigger = {

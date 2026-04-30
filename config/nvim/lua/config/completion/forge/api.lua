@@ -78,12 +78,7 @@ function M.is_bot_login(login)
     if l:find('%[bot%]') or l:find('_bot$') or l:find('%-bot$') then
         return true
     end
-    if
-        l == 'renovate'
-        or l == 'dependabot'
-        or l == 'release-manager'
-        or l == 'gitlab-bot'
-    then
+    if l == 'renovate' or l == 'dependabot' or l == 'release-manager' then
         return true
     end
     return false
