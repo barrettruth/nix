@@ -6,8 +6,9 @@
       ../../hosts/vps/configuration.nix
       ../nixos/common/nix.nix
       ../nixos/common/ssh.nix
+      ../nixos/common/sops.nix
       { nixpkgs.hostPlatform = "x86_64-linux"; }
     ];
-    specialArgs = { inherit identity; };
+    specialArgs = { inherit identity inputs; };
   };
 }

@@ -4,34 +4,36 @@
   lib,
   modulesPath,
   identity,
+  mkVpsSecret,
   ...
 }:
 let
   forgejoSigningKeyId = "AEB0C5593951F51260C1388DF09FD58E4737029E";
   forgejoSigningTrustFingerprint = "F2CC7F7FD33F423B7A31B4E3A6C96C9349D2FC81";
-  forgejoSigningKeygrip = "744F7B2E0B84631494BDFDD2EB4A53B0FAD93403";
   forgejoOauthSources = {
-    github = {
-      provider = "github";
-      idFile = "/etc/forgejo-oauth-github-id";
-      secretFile = "/etc/forgejo-oauth-github-secret";
-    };
-    google = {
-      provider = "gplus";
-      idFile = "/etc/forgejo-oauth-google-id";
-      secretFile = "/etc/forgejo-oauth-google-secret";
-    };
-    gitlab = {
-      provider = "gitlab";
-      idFile = "/etc/forgejo-oauth-gitlab-id";
-      secretFile = "/etc/forgejo-oauth-gitlab-secret";
-    };
+    github.provider = "github";
+    google.provider = "gplus";
+    gitlab.provider = "gitlab";
   };
+  forgejoOauthSecretNames = lib.flatten (
+    lib.mapAttrsToList (name: _: [
+      "forgejo-oauth-${name}-id"
+      "forgejo-oauth-${name}-secret"
+    ]) forgejoOauthSources
+  );
   forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
-    allow-preset-passphrase
     allow-loopback-pinentry
-    default-cache-ttl 31536000
-    max-cache-ttl 31536000
+  '';
+  forgejoGpgProgram = pkgs.writeShellScript "forgejo-gpg" ''
+    exec ${pkgs.gnupg}/bin/gpg \
+      --batch \
+      --pinentry-mode loopback \
+      --passphrase-file "$CREDENTIALS_DIRECTORY/gpg-passphrase" \
+      "$@"
+  '';
+  forgejoGitConfig = pkgs.writeText "forgejo-gitconfig" ''
+    [gpg]
+      program = ${forgejoGpgProgram}
   '';
   forgejoBrandingSvg = pkgs.writeText "forgejo-delta-symbol.svg" ''
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
@@ -161,6 +163,31 @@ in
     };
   };
 
+  sops.secrets =
+    let
+      mkForgejoSecret =
+        restartUnits: name:
+        mkVpsSecret name {
+          owner = "git";
+          group = "git";
+          mode = "0400";
+          inherit restartUnits;
+        };
+    in
+    lib.genAttrs [
+      "forgejo-resend-api-key"
+      "forgejo-hcaptcha-sitekey"
+      "forgejo-hcaptcha-secret"
+    ] (mkForgejoSecret [ "forgejo.service" ])
+    // lib.genAttrs forgejoOauthSecretNames (mkForgejoSecret [ "forgejo-oauth-sync.service" ])
+    // lib.genAttrs [
+      "forgejo-gpg-passphrase"
+      "forgejo-gpg-secret.asc"
+    ] (mkForgejoSecret [
+      "forgejo.service"
+      "forgejo-gpg-import.service"
+    ]);
+
   services.forgejo = {
     enable = true;
     user = "git";
@@ -170,9 +197,9 @@ in
       backupDir = "/var/backup/forgejo";
     };
     secrets = {
-      mailer.PASSWD = "/etc/forgejo-resend-api-key";
-      service.HCAPTCHA_SITEKEY = "/etc/forgejo-hcaptcha-sitekey";
-      service.HCAPTCHA_SECRET = "/etc/forgejo-hcaptcha-secret";
+      mailer.PASSWD = config.sops.secrets."forgejo-resend-api-key".path;
+      service.HCAPTCHA_SITEKEY = config.sops.secrets."forgejo-hcaptcha-sitekey".path;
+      service.HCAPTCHA_SECRET = config.sops.secrets."forgejo-hcaptcha-secret".path;
     };
     settings = {
       server = {
@@ -218,21 +245,25 @@ in
     };
   };
 
-  systemd.services.forgejo.environment.GNUPGHOME = "/var/lib/forgejo/.gnupg";
+  systemd.services.forgejo = {
+    environment.GNUPGHOME = "/var/lib/forgejo/.gnupg";
+    serviceConfig.LoadCredential = lib.mkAfter [
+      "gpg-passphrase:${config.sops.secrets."forgejo-gpg-passphrase".path}"
+    ];
+  };
 
   systemd.services.forgejo-gpg-import = {
     description = "Import Forgejo GPG signing key into git keyring (idempotent)";
-    before = [ "forgejo-gpg-preset.service" ];
-    wantedBy = [ "forgejo-gpg-preset.service" ];
+    before = [ "forgejo.service" ];
+    wantedBy = [ "forgejo.service" ];
     path = [ pkgs.gnupg ];
     serviceConfig = {
       Type = "oneshot";
-      RemainAfterExit = true;
       User = "git";
       Group = "git";
       LoadCredential = [
-        "passphrase:/etc/forgejo-gpg-passphrase"
-        "secret:/etc/forgejo-gpg-secret.asc"
+        "passphrase:${config.sops.secrets."forgejo-gpg-passphrase".path}"
+        "secret:${config.sops.secrets."forgejo-gpg-secret.asc".path}"
       ];
       Environment = [ "GNUPGHOME=/var/lib/forgejo/.gnupg" ];
     };
@@ -245,32 +276,6 @@ in
         --passphrase-file "$CREDENTIALS_DIRECTORY/passphrase" \
         --import "$CREDENTIALS_DIRECTORY/secret"
       printf '%s:6:\n' ${forgejoSigningTrustFingerprint} | gpg --import-ownertrust
-    '';
-  };
-
-  systemd.services.forgejo-gpg-preset = {
-    description = "Preset Forgejo GPG signing key passphrase";
-    after = [ "forgejo-gpg-import.service" ];
-    requires = [ "forgejo-gpg-import.service" ];
-    before = [ "forgejo.service" ];
-    wantedBy = [ "forgejo.service" ];
-    path = [ pkgs.gnupg ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      KillMode = "none";
-      User = "git";
-      Group = "git";
-      LoadCredential = "passphrase:/etc/forgejo-gpg-passphrase";
-      Environment = [ "GNUPGHOME=/var/lib/forgejo/.gnupg" ];
-      ExecStop = "${pkgs.gnupg}/bin/gpgconf --kill gpg-agent";
-    };
-    script = ''
-      set -eu
-      gpgconf --kill gpg-agent || true
-      gpg-agent --daemon
-      hex=$(tr -d '\n' < "$CREDENTIALS_DIRECTORY/passphrase" | od -An -tx1 -v | tr -d ' \n' | tr a-f A-F)
-      gpg-connect-agent "PRESET_PASSPHRASE ${forgejoSigningKeygrip} -1 $hex" /bye
     '';
   };
 
@@ -287,9 +292,9 @@ in
       Group = "git";
       WorkingDirectory = "/var/lib/forgejo";
       LoadCredential = lib.flatten (
-        lib.mapAttrsToList (name: cfg: [
-          "${name}-id:${cfg.idFile}"
-          "${name}-secret:${cfg.secretFile}"
+        lib.mapAttrsToList (name: _: [
+          "${name}-id:${config.sops.secrets."forgejo-oauth-${name}-id".path}"
+          "${name}-secret:${config.sops.secrets."forgejo-oauth-${name}-secret".path}"
         ]) forgejoOauthSources
       );
     };
@@ -331,6 +336,7 @@ in
 
   systemd.tmpfiles.rules = [
     "d /var/lib/forgejo/.gnupg 0700 git git -"
+    "L+ /var/lib/forgejo/.gitconfig - - - - ${forgejoGitConfig}"
     "L+ /var/lib/forgejo/.gnupg/gpg-agent.conf - - - - ${forgejoGpgAgentConf}"
     "d /var/lib/forgejo/custom/public 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets 0750 git git -"
