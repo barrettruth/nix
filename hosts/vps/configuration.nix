@@ -46,6 +46,14 @@ let
       </g>
     </svg>
   '';
+  forgejoAvatarSvg = pkgs.writeText "forgejo-delta-avatar.svg" ''
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+      <rect width="1000" height="1000" fill="#ffffff"/>
+      <g transform="translate(171.5, 831) scale(1, -1)">
+        <path fill="#121212" d="M629 0H28V28L317 662H355L629 28ZM310 539 108 80H495L314 539Z"/>
+      </g>
+    </svg>
+  '';
   forgejoBrandingAssets =
     pkgs.runCommand "forgejo-branding-assets"
       {
@@ -58,7 +66,7 @@ let
         rsvg-convert -w 512 -h 512 ${forgejoBrandingSvg} > $out/logo.png
         rsvg-convert -w 192 -h 192 ${forgejoBrandingSvg} > $out/favicon.png
         rsvg-convert -w 180 -h 180 ${forgejoBrandingSvg} > $out/apple-touch-icon.png
-        rsvg-convert -w 1024 -h 1024 ${forgejoBrandingSvg} > $out/avatar.png
+        rsvg-convert -w 1024 -h 1024 ${forgejoAvatarSvg} > $out/avatar.png
         cp $out/avatar.png $out/avatar_default.png
       '';
 
