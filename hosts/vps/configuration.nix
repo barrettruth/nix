@@ -124,7 +124,6 @@ let
   forgejoMidnightLightCss = pkgs.writeText "theme-midnight-light.css" ''
     @import "theme-forgejo-light.css";
     @import "theme-midnight-fonts.css";
-    @import "theme-midnight-syntax.css";
     :root {
       --midnight-syntax-keyword: #3b5bdb;
       --midnight-syntax-string: #2d7f3e;
@@ -198,12 +197,12 @@ let
       --color-link-hover: #2d49b8;
       color-scheme: light;
     }
+    ${forgejoMidnightSyntaxRules}
   '';
 
   forgejoMidnightDarkCss = pkgs.writeText "theme-midnight-dark.css" ''
     @import "theme-forgejo-dark.css";
     @import "theme-midnight-fonts.css";
-    @import "theme-midnight-syntax.css";
     :root {
       --midnight-syntax-keyword: #7aa2f7;
       --midnight-syntax-string: #98c379;
@@ -277,46 +276,38 @@ let
       --color-link-hover: #9db8f7;
       color-scheme: dark;
     }
+    ${forgejoMidnightSyntaxRules}
   '';
 
-  forgejoMidnightSyntaxCss = pkgs.writeText "theme-midnight-syntax.css" ''
+  forgejoMidnightSyntaxRules = ''
     /* ===== Chroma (file viewer, README, markdown code fences) ===== */
-    /* keywords */
     .chroma .k, .chroma .kd, .chroma .kn, .chroma .kp, .chroma .kr, .chroma .kt,
     .chroma .cp, .chroma .cpf {
       color: var(--midnight-syntax-keyword);
     }
-    /* strings + escapes + delimiters */
     .chroma .s, .chroma .s1, .chroma .s2, .chroma .sa, .chroma .sb, .chroma .sc,
     .chroma .sd, .chroma .sh, .chroma .si, .chroma .sr, .chroma .ss, .chroma .sx,
     .chroma .se, .chroma .dl {
       color: var(--midnight-syntax-string);
     }
-    /* numbers, keyword-constants, name-constants */
     .chroma .m, .chroma .mb, .chroma .mf, .chroma .mh, .chroma .mi, .chroma .mo, .chroma .il,
     .chroma .kc, .chroma .no {
       color: var(--midnight-syntax-constant);
     }
-    /* comments -- italic */
     .chroma .c, .chroma .c1, .chroma .ch, .chroma .cm, .chroma .cs {
       color: var(--midnight-syntax-comment);
       font-style: italic;
     }
-    /* errors and tracebacks */
     .chroma .err, .chroma .gr, .chroma .gt {
       color: var(--midnight-syntax-error);
     }
-    /* generic prompt + output (shell-like) -- dim */
     .chroma .gp, .chroma .go {
       color: var(--midnight-syntax-comment);
     }
-    /* generic emphasis/strong */
     .chroma .ge { font-style: italic; }
     .chroma .gs { font-weight: bold; }
-    /* diff highlighting inside code blocks */
     .chroma .gd { color: var(--midnight-syntax-error); background-color: var(--color-diff-removed-row-bg); }
     .chroma .gi { color: var(--midnight-syntax-string); background-color: var(--color-diff-added-row-bg); }
-    /* strip color from everything else -- default text */
     .chroma .nf, .chroma .nc, .chroma .nd, .chroma .ne, .chroma .nb, .chroma .nv,
     .chroma .nl, .chroma .nn, .chroma .nt, .chroma .nx, .chroma .ni, .chroma .na,
     .chroma .o, .chroma .ow, .chroma .p, .chroma .pi, .chroma .bp,
@@ -324,7 +315,6 @@ let
     .chroma .gh, .chroma .gu, .chroma .gl, .chroma .g {
       color: inherit;
     }
-
     /* ===== CodeMirror (web file editor) ===== */
     .CodeMirror.cm-s-default .cm-keyword,
     .CodeMirror.cm-s-paper .cm-keyword,
@@ -369,7 +359,6 @@ let
     .CodeMirror.cm-s-paper .cm-hr {
       color: var(--midnight-syntax-comment);
     }
-    /* strip color from CodeMirror tokens not explicitly mapped */
     .CodeMirror.cm-s-default .cm-property,
     .CodeMirror.cm-s-paper .cm-property,
     .CodeMirror.cm-s-default .cm-variable,
@@ -390,7 +379,6 @@ let
     .CodeMirror.cm-s-paper .cm-qualifier {
       color: inherit;
     }
-
     /* ===== Markup (rendered markdown content) ===== */
     .markup .absent { color: var(--midnight-syntax-error); }
   '';
@@ -702,7 +690,6 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-light.css - - - - ${forgejoMidnightLightCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-dark.css - - - - ${forgejoMidnightDarkCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoMidnightFontsCss}"
-    "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-syntax.css - - - - ${forgejoMidnightSyntaxCss}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro.ttf"
