@@ -7,7 +7,7 @@ My personal nix configuration leveraging:
 - [Dendritic Nix](https://github.com/DeterminateSystems/detsys-ts/wiki/Dendritic-Nix)
 - [flakes](https://wiki.nixos.org/wiki/Flakes) & [flake-parts](https://github.com/hercules-ci/flake-parts)
 
-Hosts a Dell XPS 9500 Laptop and a NixOS VPS.
+Hosts a Dell XPS 9500 laptop and a NixOS VPS. The VPS runs the canonical Forgejo instance at `git.barrettruth.com`; GitHub serves as a mirror.
 
 ## Configuration Structure
 
@@ -24,3 +24,8 @@ scripts/                         runtime scripts
 fonts/
 pkgs/                            custom derivations
 ```
+
+## Hosts
+
+- **vps** — NixOS VPS. Public Forgejo at `git.barrettruth.com`, Vaultwarden at `vault.barrettruth.com`, `delta` at `delta.barrettruth.com`. Deploy with `just rebuild-vps`.
+- **laptop** — Dell XPS 9500 workstation. Hosts the `tmux-mosaic` Forgejo runner. Deploy locally with `nixos-rebuild switch --flake .#laptop`.
