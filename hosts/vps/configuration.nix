@@ -48,7 +48,7 @@ in
     enable = true;
     efiSupport = true;
     efiInstallAsRemovable = true;
-    device = "nodev";
+    devices = lib.mkForce [ "nodev" ];
     configurationLimit = 3;
   };
 
