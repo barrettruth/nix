@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   modulesPath,
@@ -6,8 +7,26 @@
   ...
 }:
 let
-  forgejoSigningKeyId = "A6C96C9349D2FC81";
-  forgejoSigningKeygrip = "247B0A9D19F81A74DA484DA1211275EB0F4F9A14";
+  forgejoSigningKeyId = "AEB0C5593951F51260C1388DF09FD58E4737029E";
+  forgejoSigningTrustFingerprint = "F2CC7F7FD33F423B7A31B4E3A6C96C9349D2FC81";
+  forgejoSigningKeygrip = "744F7B2E0B84631494BDFDD2EB4A53B0FAD93403";
+  forgejoOauthSources = {
+    github = {
+      provider = "github";
+      idFile = "/etc/forgejo-oauth-github-id";
+      secretFile = "/etc/forgejo-oauth-github-secret";
+    };
+    google = {
+      provider = "gplus";
+      idFile = "/etc/forgejo-oauth-google-id";
+      secretFile = "/etc/forgejo-oauth-google-secret";
+    };
+    gitlab = {
+      provider = "gitlab";
+      idFile = "/etc/forgejo-oauth-gitlab-id";
+      secretFile = "/etc/forgejo-oauth-gitlab-secret";
+    };
+  };
   forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
     allow-preset-passphrase
     allow-loopback-pinentry
@@ -150,6 +169,11 @@ in
       enable = true;
       backupDir = "/var/backup/forgejo";
     };
+    secrets = {
+      mailer.PASSWD = "/etc/forgejo-resend-api-key";
+      service.HCAPTCHA_SITEKEY = "/etc/forgejo-hcaptcha-sitekey";
+      service.HCAPTCHA_SECRET = "/etc/forgejo-hcaptcha-secret";
+    };
     settings = {
       server = {
         DOMAIN = "git.${identity.domain}";
@@ -157,8 +181,29 @@ in
         HTTP_PORT = 3000;
         SSH_DOMAIN = "git.${identity.domain}";
       };
-      service.DISABLE_REGISTRATION = true;
+      service = {
+        DISABLE_REGISTRATION = false;
+        REGISTER_EMAIL_CONFIRM = true;
+        ENABLE_NOTIFY_MAIL = true;
+        ENABLE_CAPTCHA = true;
+        REQUIRE_CAPTCHA_FOR_LOGIN = false;
+        CAPTCHA_TYPE = "hcaptcha";
+      };
+      oauth2_client = {
+        ENABLE_AUTO_REGISTRATION = true;
+        ACCOUNT_LINKING = "auto";
+        UPDATE_AVATAR = true;
+        USERNAME = "nickname";
+      };
       session.COOKIE_SECURE = true;
+      mailer = {
+        ENABLED = true;
+        PROTOCOL = "smtps";
+        SMTP_ADDR = "smtp.resend.com";
+        SMTP_PORT = 2465;
+        USER = "resend";
+        FROM = "Forgejo <noreply@${identity.domain}>";
+      };
       mirror = {
         DEFAULT_INTERVAL = "1h";
         MIN_INTERVAL = "10m";
@@ -199,7 +244,7 @@ in
       gpg --batch --pinentry-mode loopback \
         --passphrase-file "$CREDENTIALS_DIRECTORY/passphrase" \
         --import "$CREDENTIALS_DIRECTORY/secret"
-      printf '%s:6:\n' ${forgejoSigningKeyId} | gpg --import-ownertrust
+      printf '%s:6:\n' ${forgejoSigningTrustFingerprint} | gpg --import-ownertrust
     '';
   };
 
@@ -227,6 +272,52 @@ in
       hex=$(tr -d '\n' < "$CREDENTIALS_DIRECTORY/passphrase" | od -An -tx1 -v | tr -d ' \n' | tr a-f A-F)
       gpg-connect-agent "PRESET_PASSPHRASE ${forgejoSigningKeygrip} -1 $hex" /bye
     '';
+  };
+
+  systemd.services.forgejo-oauth-sync = {
+    description = "Sync Forgejo OAuth2 authentication sources from on-disk credentials";
+    after = [ "forgejo.service" ];
+    requires = [ "forgejo.service" ];
+    wantedBy = [ "forgejo.service" ];
+    path = [ pkgs.gawk ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "git";
+      Group = "git";
+      WorkingDirectory = "/var/lib/forgejo";
+      LoadCredential = lib.flatten (
+        lib.mapAttrsToList (name: cfg: [
+          "${name}-id:${cfg.idFile}"
+          "${name}-secret:${cfg.secretFile}"
+        ]) forgejoOauthSources
+      );
+    };
+    script =
+      let
+        forgejo = "${config.services.forgejo.package}/bin/forgejo --config /var/lib/forgejo/custom/conf/app.ini --work-path /var/lib/forgejo";
+        syncOne = name: cfg: ''
+          id=$(${forgejo} admin auth list | awk -F'\t' -v n="${name}" 'NR>1 && $2==n {print $1; exit}')
+          key=$(cat "$CREDENTIALS_DIRECTORY/${name}-id")
+          secret=$(cat "$CREDENTIALS_DIRECTORY/${name}-secret")
+          if [ -z "$id" ]; then
+            ${forgejo} admin auth add-oauth \
+              --name "${name}" \
+              --provider "${cfg.provider}" \
+              --key "$key" \
+              --secret "$secret"
+          else
+            ${forgejo} admin auth update-oauth \
+              --id "$id" \
+              --key "$key" \
+              --secret "$secret"
+          fi
+        '';
+      in
+      ''
+        set -eu
+        ${lib.concatStringsSep "\n" (lib.mapAttrsToList syncOne forgejoOauthSources)}
+      '';
   };
 
   users.users.git = {
