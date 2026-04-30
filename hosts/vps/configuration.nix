@@ -395,18 +395,18 @@ let
        CM6 ships its own theme via EditorView.theme()/HighlightStyle.define()
        in web_src/js/features/codemirror.ts with hardcoded VSCode-ish hex
        colors. Those styles get injected into <style> tags AT EDITOR MOUNT
-       TIME and use obfuscated auto-generated class names, so
-       per-token recoloring from outside CSS is brittle. Blanket-override
-       text color with !important on .cm-editor descendants; this loses
-       per-token highlighting but guarantees readability against the
-       midnight bg. */
+       TIME and use obfuscated auto-generated class names, so per-token
+       recoloring is done via custom/public/assets/js/midnight-cm6.js
+       (a MutationObserver that rewrites the hex colors to midnight
+       palette equivalents). Here we just set the wrapper text + bg via
+       !important so the base text uses the midnight palette before the
+       JS runs (and for tokens the JS doesn't recolor). */
     .cm-editor {
       color: var(--color-text) !important;
       background-color: var(--color-code-bg) !important;
     }
     .cm-editor .cm-content,
     .cm-editor .cm-line,
-    .cm-editor .cm-line span,
     .cm-editor .cm-gutters {
       color: var(--color-text) !important;
     }
@@ -418,6 +418,59 @@ let
   forgejoMidnightAutoCss = pkgs.writeText "theme-midnight-auto.css" ''
     @import "theme-midnight-light.css";
     @import "theme-midnight-dark.css" (prefers-color-scheme: dark);
+  '';
+
+  forgejoMidnightCm6Js = pkgs.writeText "midnight-cm6.js" ''
+    (() => {
+      const COLOR_MAP = {
+        "#569cd6": "#7aa2f7",
+        "#c586c0": "#7aa2f7",
+        "#9cdcfe": "#e0e0e0",
+        "#4ec9b0": "#e0e0e0",
+        "#dcdcaa": "#e0e0e0",
+        "#b5cea8": "#98c379",
+        "#d4d4d4": "#e0e0e0",
+        "#d16969": "#c678dd",
+        "#ce9178": "#98c379",
+        "#6a9955": "#666666",
+        "#ff0000": "#ff6b6b",
+        "#0064ff": "#3b5bdb",
+        "#af00db": "#ae3ec9",
+        "#383a42": "#1a1a1a",
+        "#267f99": "#1a1a1a",
+        "#795e26": "#1a1a1a",
+        "#098658": "#2d7f3e",
+        "#a31515": "#2d7f3e",
+        "#e51400": "#c7254e",
+        "#006ab1": "#3b5bdb"
+      };
+      const rewrite = (el) => {
+        if (!el || el.tagName !== "STYLE") return;
+        let txt = el.textContent;
+        if (!txt) return;
+        let modified = false;
+        for (const [from, to] of Object.entries(COLOR_MAP)) {
+          if (txt.toLowerCase().includes(from)) {
+            txt = txt.split(from).join(to);
+            txt = txt.split(from.toUpperCase()).join(to);
+            modified = true;
+          }
+        }
+        if (modified) el.textContent = txt;
+      };
+      document.querySelectorAll("style").forEach(rewrite);
+      new MutationObserver((muts) => {
+        for (const m of muts) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1 && node.tagName === "STYLE") rewrite(node);
+          }
+        }
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+  '';
+
+  forgejoMidnightHeaderTmpl = pkgs.writeText "header.tmpl" ''
+    <script src="/assets/js/midnight-cm6.js" defer></script>
   '';
 in
 {
@@ -722,6 +775,11 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-light.css - - - - ${forgejoMidnightLightCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-dark.css - - - - ${forgejoMidnightDarkCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoMidnightFontsCss}"
+    "d /var/lib/forgejo/custom/public/assets/js 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/js/midnight-cm6.js - - - - ${forgejoMidnightCm6Js}"
+    "d /var/lib/forgejo/custom/templates 0750 git git -"
+    "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
+    "L+ /var/lib/forgejo/custom/templates/custom/header.tmpl - - - - ${forgejoMidnightHeaderTmpl}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro.ttf"
