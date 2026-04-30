@@ -96,18 +96,39 @@ local function from_remotes(bufnr)
     return nil
 end
 
+---@type table<integer, config.completion.forge.Repo|false>
+local cache_by_bufnr = {}
+
 ---@param bufnr integer
 ---@return config.completion.forge.Repo?
 function M.derive(bufnr)
     bufnr = bufnr ~= 0 and bufnr or vim.api.nvim_get_current_buf()
 
-    local repo = from_forge_buf(bufnr)
-    if repo then
-        return repo
+    local cached = cache_by_bufnr[bufnr]
+    if cached ~= nil then
+        return cached or nil
     end
 
-    return from_remotes(bufnr)
+    local repo = from_forge_buf(bufnr) or from_remotes(bufnr)
+    cache_by_bufnr[bufnr] = repo or false
+    return repo
 end
+
+---@param bufnr? integer
+function M.invalidate(bufnr)
+    if bufnr then
+        cache_by_bufnr[bufnr] = nil
+        return
+    end
+    cache_by_bufnr = {}
+end
+
+vim.api.nvim_create_autocmd({ 'BufFilePost', 'BufWipeout' }, {
+    group = vim.api.nvim_create_augroup('AForgeContext', { clear = true }),
+    callback = function(args)
+        cache_by_bufnr[args.buf] = nil
+    end,
+})
 
 ---@param bufnr integer
 ---@param owner string

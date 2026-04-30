@@ -3,6 +3,7 @@ local M = {
     source = 'forge_refs',
 }
 
+local async = require('config.completion.async')
 local cache = require('config.completion.forge.cache')
 local context = require('config.completion.forge.context')
 local notify = require('config.completion.forge.notify')
@@ -11,13 +12,7 @@ local registry = require('config.completion.forge.registry')
 ---@type table<string, true>
 local TRIGGER_CHARS = { ['#'] = true, ['@'] = true, ['!'] = true }
 
----@type integer
-local generation = 0
-
----@type {gen: integer, bufnr: integer, row: integer, start_col: integer, end_col: integer, trigger: string, repo_key: string, bucket: string}?
-local pending_inject
-
-local try_inject_pending
+local lifecycle = async.new_lifecycle()
 local kick_exact
 
 ---@param tc {cross_repo?: {owner: string, repo: string}, bufnr: integer}
@@ -124,9 +119,9 @@ end
 
 ---@param item config.completion.forge.RefItem
 ---@param trigger string
----@param repo_key string
+---@param repo config.completion.forge.Repo
 ---@return config.completion.Item
-local function ref_to_item(item, trigger, repo_key)
+local function ref_to_item(item, trigger, repo)
     local marker
     if item.kind == 'mr' then
         marker = item.draft and '◑' or '◆'
@@ -154,7 +149,11 @@ local function ref_to_item(item, trigger, repo_key)
         user_data = {
             source = M.source,
             forge = {
-                repo_key = repo_key,
+                backend = repo.backend,
+                host = repo.host,
+                owner = repo.owner,
+                repo = repo.repo,
+                key = repo.key,
                 kind = item.kind,
                 number = item.number,
             },
@@ -163,9 +162,9 @@ local function ref_to_item(item, trigger, repo_key)
 end
 
 ---@param item config.completion.forge.MentionItem
----@param repo_key string
+---@param repo config.completion.forge.Repo
 ---@return config.completion.Item
-local function mention_to_item(item, repo_key)
+local function mention_to_item(item, repo)
     return {
         word = '@' .. item.login,
         abbr = '@' .. item.login,
@@ -174,7 +173,11 @@ local function mention_to_item(item, repo_key)
         user_data = {
             source = M.source,
             forge = {
-                repo_key = repo_key,
+                backend = repo.backend,
+                host = repo.host,
+                owner = repo.owner,
+                repo = repo.repo,
+                key = repo.key,
                 kind = 'mention',
                 login = item.login,
             },
@@ -184,15 +187,15 @@ end
 
 ---@param items config.completion.forge.RefItem[]
 ---@param tc config.completion.forge.TokenContext
----@param repo_key string
+---@param repo config.completion.forge.Repo
 ---@return config.completion.Items
-local function filter_refs(items, tc, repo_key)
+local function filter_refs(items, tc, repo)
     local base = tc.base
     local trigger = tc.trigger
     local out = {}
     if base == '' then
         for _, it in ipairs(items) do
-            out[#out + 1] = ref_to_item(it, trigger, repo_key)
+            out[#out + 1] = ref_to_item(it, trigger, repo)
         end
         return out
     end
@@ -201,7 +204,7 @@ local function filter_refs(items, tc, repo_key)
     if n then
         for _, it in ipairs(items) do
             if tostring(it.number):find('^' .. base) then
-                out[#out + 1] = ref_to_item(it, trigger, repo_key)
+                out[#out + 1] = ref_to_item(it, trigger, repo)
             end
         end
         return out
@@ -210,7 +213,7 @@ local function filter_refs(items, tc, repo_key)
     local lower = base:lower()
     for _, it in ipairs(items) do
         if it.title:lower():find(lower, 1, true) then
-            out[#out + 1] = ref_to_item(it, trigger, repo_key)
+            out[#out + 1] = ref_to_item(it, trigger, repo)
         end
     end
     return out
@@ -218,14 +221,14 @@ end
 
 ---@param items config.completion.forge.MentionItem[]
 ---@param tc config.completion.forge.TokenContext
----@param repo_key string
+---@param repo config.completion.forge.Repo
 ---@return config.completion.Items
-local function filter_mentions(items, tc, repo_key)
+local function filter_mentions(items, tc, repo)
     local base = tc.base:lower()
     local out = {}
     for _, it in ipairs(items) do
         if base == '' or it.login:lower():find('^' .. base) then
-            out[#out + 1] = mention_to_item(it, repo_key)
+            out[#out + 1] = mention_to_item(it, repo)
         end
     end
     return out
@@ -241,9 +244,9 @@ local function build_items(tc, repo, bucket)
         return {}
     end
     if bucket == 'mentions' then
-        return filter_mentions(b.items, tc, repo.key)
+        return filter_mentions(b.items, tc, repo)
     end
-    return filter_refs(b.items, tc, repo.key)
+    return filter_refs(b.items, tc, repo)
 end
 
 ---@param backend config.completion.forge.Backend
@@ -264,73 +267,51 @@ local function kick_fetch(backend, repo, bucket)
         else
             cache.set_ready(repo.key, bucket, items or {})
         end
-        try_inject_pending()
+        M._try_inject_pending()
     end)
 end
 
-try_inject_pending = function()
-    if not pending_inject then
-        return
+---Re-derive context from current cursor and return items if the pending
+---request still applies to what the user is doing.
+---@param p table
+---@return config.completion.Items?
+local function inject_check(p)
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local line = vim.api.nvim_get_current_line()
+    local before = line:sub(1, cursor[2])
+    local trigger_at = before:sub(p.start_col + 1, p.start_col + 1)
+    if trigger_at ~= p.trigger then
+        return nil
     end
-    local p = pending_inject
+    local typed = before:sub(p.start_col + 2)
+    if typed:find('[^%w%-./_]') then
+        return nil
+    end
+    local ctx = {
+        base = typed,
+        before = before,
+        bufnr = p.bufnr,
+        col = cursor[2],
+        filetype = vim.bo[p.bufnr].filetype,
+        line = line,
+        row = cursor[1],
+    }
+    local tc = token_at_cursor(ctx)
+    if not tc or tc.trigger ~= p.trigger then
+        return nil
+    end
+    local repo = resolve_repo(tc)
+    if not repo or repo.key ~= p.repo_key then
+        return nil
+    end
+    if not cache.is_ready(repo.key, p.bucket) then
+        return nil
+    end
+    return build_items(tc, repo, p.bucket)
+end
 
-    vim.schedule(function()
-        if not pending_inject or pending_inject.gen ~= p.gen then
-            return
-        end
-
-        if vim.api.nvim_get_current_buf() ~= p.bufnr then
-            return
-        end
-        local mode = vim.fn.mode()
-        if not mode:find('i') then
-            return
-        end
-        local cursor = vim.api.nvim_win_get_cursor(0)
-        if cursor[1] ~= p.row then
-            return
-        end
-        local line = vim.api.nvim_get_current_line()
-        local before = line:sub(1, cursor[2])
-        local trigger_at = before:sub(p.start_col + 1, p.start_col + 1)
-        if trigger_at ~= p.trigger then
-            return
-        end
-        local typed = before:sub(p.start_col + 2)
-        if typed:find('[^%w%-./_]') then
-            return
-        end
-
-        local ctx = {
-            base = typed,
-            before = before,
-            bufnr = p.bufnr,
-            col = cursor[2],
-            filetype = vim.bo[p.bufnr].filetype,
-            line = line,
-            row = cursor[1],
-        }
-        local tc = token_at_cursor(ctx)
-        if not tc or tc.trigger ~= p.trigger then
-            return
-        end
-
-        local repo = resolve_repo(tc)
-        if not repo or repo.key ~= p.repo_key then
-            return
-        end
-        if not cache.is_ready(repo.key, p.bucket) then
-            return
-        end
-
-        local items = build_items(tc, repo, p.bucket)
-        if #items == 0 then
-            return
-        end
-
-        pending_inject = nil
-        vim.fn.complete(p.start_col + 1, items)
-    end)
+function M._try_inject_pending()
+    lifecycle.try_inject(inject_check)
 end
 
 ---@param ctx config.completion.Context
@@ -379,31 +360,26 @@ function M.complete(ctx)
 
     notify.note_explicit_attempt(repo.key)
 
-    generation = generation + 1
-    pending_inject = {
-        gen = generation,
+    lifecycle.set({
         bufnr = tc.bufnr,
         row = tc.row,
         start_col = tc.start_col,
-        end_col = tc.end_col,
         trigger = tc.trigger,
         repo_key = repo.key,
         bucket = bucket,
-    }
+    })
 
     if not cache.is_loading(repo.key, bucket) then
         kick_fetch(backend, repo, bucket)
     else
         cache.add_waiter(repo.key, bucket, function()
-            try_inject_pending()
+            M._try_inject_pending()
         end)
     end
 
     return {}
 end
 
----Insert a resolved ref into the named bucket if it's missing.
----Returns true if the bucket was ready, false if caller must defer.
 ---@param repo_key string
 ---@param bucket string
 ---@param item config.completion.forge.RefItem
@@ -422,9 +398,6 @@ local function merge_into_bucket(repo_key, bucket, item)
     return true
 end
 
----Resolve a numeric ref not present in the open-list cache, then merge
----it into the relevant bucket so subsequent filters see it. If the
----bucket hasn't loaded yet, the merge is deferred via a bucket waiter.
 ---@param backend config.completion.forge.Backend
 ---@param repo config.completion.forge.Repo
 ---@param bucket string
@@ -442,12 +415,12 @@ kick_exact = function(backend, repo, bucket, n)
         end
         cache.set_ready(repo.key, key, true)
         if merge_into_bucket(repo.key, bucket, item) then
-            try_inject_pending()
+            M._try_inject_pending()
             return
         end
         cache.add_waiter(repo.key, bucket, function()
             merge_into_bucket(repo.key, bucket, item)
-            try_inject_pending()
+            M._try_inject_pending()
         end)
     end)
 end
@@ -475,25 +448,16 @@ function M.warmup(bufnr)
     end
 end
 
----@param item config.completion.Item
-function M.on_complete_done(item)
-    local _ = item
-end
-
----@param repo_key string
----@return string?, string?, string?, string?
-local function parse_repo_key(repo_key)
-    local backend_name = repo_key:match('^([^:]+):')
-    local host = repo_key:match('^[^:]+:([^:]+):')
-    local owner_repo = repo_key:match(':[^:]+:(.+)$')
-    if not (backend_name and host and owner_repo) then
-        return nil
-    end
-    local owner, repo = owner_repo:match('^([^/]+)/(.+)$')
-    if not owner or not repo then
-        return nil
-    end
-    return backend_name, host, owner, repo
+---@param data config.completion.ForgeItemData
+---@return config.completion.forge.Repo
+local function repo_from_item_data(data)
+    return {
+        backend = data.backend,
+        host = data.host,
+        owner = data.owner,
+        repo = data.repo,
+        key = data.key,
+    }
 end
 
 ---@param kind 'issue'|'pr'|'mr'
@@ -505,6 +469,8 @@ local function doc_bucket_for_kind(kind)
     return 'refs'
 end
 
+---@param selected integer
+---@param item config.completion.Item
 local function fill_doc(selected, item)
     local data = vim.tbl_get(item, 'user_data', 'forge')
     if type(data) ~= 'table' then
@@ -516,9 +482,8 @@ local function fill_doc(selected, item)
 
     local bucket = doc_bucket_for_kind(data.kind)
     local doc_key = bucket .. '_doc:' .. tostring(data.number)
-    local repo_key = data.repo_key
 
-    local b = cache.get(repo_key, doc_key)
+    local b = cache.get(data.key, doc_key)
     if b and b.state == 'ready' then
         local body = b.items
         if
@@ -534,30 +499,19 @@ local function fill_doc(selected, item)
         return
     end
 
-    local backend_name, host, owner, repo_name = parse_repo_key(repo_key)
-    if not backend_name then
-        return
-    end
-    local backend = registry.get(backend_name)
+    local backend = registry.get(data.backend)
     if not backend then
         return
     end
+    local repo = repo_from_item_data(data)
 
-    local repo = {
-        backend = backend_name,
-        host = host or '',
-        owner = owner,
-        repo = repo_name,
-        key = repo_key,
-    }
-
-    cache.mark_loading(repo_key, doc_key)
+    cache.mark_loading(data.key, doc_key)
     backend.fetch_doc(bucket, repo, data.number, function(body, err)
         if err or not body then
-            cache.set_error(repo_key, doc_key, err or 'missing')
+            cache.set_error(data.key, doc_key, err or 'missing')
             return
         end
-        cache.set_ready(repo_key, doc_key, body)
+        cache.set_ready(data.key, doc_key, body)
         local info = vim.fn.complete_info({ 'selected', 'items' })
         local current_selected = info.selected
         if current_selected ~= selected then
@@ -568,7 +522,7 @@ local function fill_doc(selected, item)
         local cur_data = cur and vim.tbl_get(cur, 'user_data', 'forge')
         if
             not cur_data
-            or cur_data.repo_key ~= repo_key
+            or cur_data.key ~= data.key
             or cur_data.number ~= data.number
         then
             return
@@ -579,21 +533,7 @@ local function fill_doc(selected, item)
     end)
 end
 
-vim.api.nvim_create_autocmd('CompleteChanged', {
-    group = vim.api.nvim_create_augroup('AForgeRefsDocs', { clear = true }),
-    callback = function()
-        local item = vim.v.event.completed_item or {}
-        local source = vim.tbl_get(item, 'user_data', 'source')
-        if source ~= M.source then
-            return
-        end
-        local selected = vim.fn.complete_info({ 'selected' }).selected
-        if selected < 0 then
-            return
-        end
-        fill_doc(selected, item)
-    end,
-})
+async.register_doc_handler(M.source, fill_doc)
 
 ---@param findstart integer
 ---@param base string

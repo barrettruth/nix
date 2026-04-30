@@ -117,6 +117,33 @@ function M.system_text(command)
     return result.stdout or ''
 end
 
+---Resolve the git toplevel for a directory. Falls back to stripping a
+---trailing `.git` segment, then to `cwd`. Empty string if no git context.
+---@param dir? string
+---@param timeout_ms? integer
+---@return string
+function M.git_root(dir, timeout_ms)
+    timeout_ms = timeout_ms or 1000
+    if not dir or dir == '' then
+        dir = vim.uv.cwd() or '.'
+    end
+    local function run(d)
+        local r = vim.system(
+            { 'git', '-C', d, 'rev-parse', '--show-toplevel' },
+            { text = true, timeout = timeout_ms }
+        ):wait()
+        return vim.trim(r.stdout or '')
+    end
+    local out = run(dir)
+    if out == '' and dir:match('/%.git$') then
+        out = vim.fn.fnamemodify(dir, ':h')
+    end
+    if out == '' then
+        out = run(vim.uv.cwd() or '.')
+    end
+    return out
+end
+
 ---@param command string[]
 ---@param callback fun(stdout: string)
 function M.system_text_async(command, callback)

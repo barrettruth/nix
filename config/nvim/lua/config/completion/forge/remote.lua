@@ -35,30 +35,6 @@ local function parse_url(url)
 end
 
 ---@param dir string
----@return string
-local function git_root(dir)
-    if dir == '' then
-        dir = vim.uv.cwd() or '.'
-    end
-    local out = vim.trim(
-        util.system_text({ 'git', '-C', dir, 'rev-parse', '--show-toplevel' })
-    )
-    if out == '' and dir:match('/%.git$') then
-        out = vim.fn.fnamemodify(dir, ':h')
-    end
-    if out == '' then
-        out = vim.trim(util.system_text({
-            'git',
-            '-C',
-            vim.uv.cwd() or '.',
-            'rev-parse',
-            '--show-toplevel',
-        }))
-    end
-    return out
-end
-
----@param dir string
 ---@return table<string, string>
 local function list_remotes(dir)
     local remotes = {}
@@ -80,7 +56,7 @@ end
 ---@return string root
 ---@return table<string, string> remotes
 function M.collect(dir)
-    local root = git_root(dir)
+    local root = util.git_root(dir)
     if root == '' then
         return '', {}
     end

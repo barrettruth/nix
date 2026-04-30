@@ -3,6 +3,7 @@ local M = {
     source = 'git_log',
 }
 
+local async = require('config.completion.async')
 local cache = require('config.completion.forge.cache')
 local git = require('config.completion.forge.git')
 
@@ -19,13 +20,7 @@ local STRONG_PREFIXES = {
     '%(cherry picked from commit%s+$',
 }
 
----@type integer
-local generation = 0
-
----@type {gen: integer, bufnr: integer, row: integer, start_col: integer, end_col: integer, root: string}?
-local pending_inject
-
-local try_inject_pending
+local lifecycle = async.new_lifecycle()
 local kick_resolve
 
 ---@param bufnr integer
@@ -178,64 +173,45 @@ local function kick_log(root)
         else
             cache.set_ready(root, BUCKET_LOG, items or {})
         end
-        try_inject_pending()
+        M._try_inject_pending()
     end)
 end
 
-try_inject_pending = function()
-    if not pending_inject then
-        return
+---@param p table
+---@return config.completion.Items?
+local function inject_check(p)
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local line = vim.api.nvim_get_current_line()
+    local before = line:sub(1, cursor[2])
+    local typed = before:sub(p.start_col + 1)
+    if typed:find('[^0-9a-fA-F]') then
+        return nil
     end
-    local p = pending_inject
-    vim.schedule(function()
-        if not pending_inject or pending_inject.gen ~= p.gen then
-            return
-        end
-        if vim.api.nvim_get_current_buf() ~= p.bufnr then
-            return
-        end
-        local mode = vim.fn.mode()
-        if not mode:find('i') then
-            return
-        end
-        local cursor = vim.api.nvim_win_get_cursor(0)
-        if cursor[1] ~= p.row then
-            return
-        end
-        local line = vim.api.nvim_get_current_line()
-        local before = line:sub(1, cursor[2])
-        local typed = before:sub(p.start_col + 1)
-        if typed:find('[^0-9a-fA-F]') then
-            return
-        end
+    local ctx = {
+        base = typed,
+        before = before,
+        bufnr = p.bufnr,
+        col = cursor[2],
+        filetype = vim.bo[p.bufnr].filetype,
+        line = line,
+        row = cursor[1],
+    }
+    local tc = token_at_cursor(ctx)
+    if not tc or tc.start_col ~= p.start_col then
+        return nil
+    end
+    if not cache.is_ready(p.root, BUCKET_LOG) then
+        return nil
+    end
+    local b = cache.get(p.root, BUCKET_LOG)
+    if not b or not b.items then
+        return nil
+    end
+    return build_items(b.items, tc, p.root)
+end
 
-        local ctx = {
-            base = typed,
-            before = before,
-            bufnr = p.bufnr,
-            col = cursor[2],
-            filetype = vim.bo[p.bufnr].filetype,
-            line = line,
-            row = cursor[1],
-        }
-        local tc = token_at_cursor(ctx)
-        if not tc or tc.start_col ~= p.start_col then
-            return
-        end
-        if not cache.is_ready(p.root, BUCKET_LOG) then
-            return
-        end
-        local b = cache.get(p.root, BUCKET_LOG)
-        if not b or not b.items then
-            return
-        end
-        local items = build_items(b.items, tc, p.root)
-        if #items == 0 then
-            return
-        end
-        pending_inject = nil
-        vim.fn.complete(p.start_col + 1, items)
-    end)
+function M._try_inject_pending()
+    lifecycle.try_inject(inject_check)
 end
 
 ---@param ctx config.completion.Context
@@ -272,20 +248,17 @@ function M.complete(ctx)
         end
     end
 
-    generation = generation + 1
-    pending_inject = {
-        gen = generation,
+    lifecycle.set({
         bufnr = tc.bufnr,
         row = tc.row,
         start_col = tc.start_col,
-        end_col = tc.end_col,
         root = root,
-    }
+    })
     if not cache.is_loading(root, BUCKET_LOG) then
         kick_log(root)
     else
         cache.add_waiter(root, BUCKET_LOG, function()
-            try_inject_pending()
+            M._try_inject_pending()
         end)
     end
     return {}
@@ -315,7 +288,7 @@ kick_resolve = function(root, sha)
             table.insert(b.items, 1, commit)
         end
         cache.set_ready(root, key, true)
-        try_inject_pending()
+        M._try_inject_pending()
     end)
 end
 
@@ -334,6 +307,8 @@ function M.warmup(bufnr)
     end
 end
 
+---@param selected integer
+---@param item config.completion.Item
 local function fill_doc(selected, item)
     local data = vim.tbl_get(item, 'user_data', 'git_log')
     if type(data) ~= 'table' then
@@ -383,21 +358,7 @@ local function fill_doc(selected, item)
     end)
 end
 
-vim.api.nvim_create_autocmd('CompleteChanged', {
-    group = vim.api.nvim_create_augroup('AGitLogDocs', { clear = true }),
-    callback = function()
-        local item = vim.v.event.completed_item or {}
-        local source = vim.tbl_get(item, 'user_data', 'source')
-        if source ~= M.source then
-            return
-        end
-        local selected = vim.fn.complete_info({ 'selected' }).selected
-        if selected < 0 then
-            return
-        end
-        fill_doc(selected, item)
-    end,
-})
+async.register_doc_handler(M.source, fill_doc)
 
 ---@param findstart integer
 ---@param base string

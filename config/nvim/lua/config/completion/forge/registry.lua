@@ -11,6 +11,9 @@ function M.register(backend)
     if backends[backend.name] then
         return
     end
+    if backend.cli and vim.fn.executable(backend.cli) ~= 1 then
+        return
+    end
     backends[backend.name] = backend
     order[#order + 1] = backend
 end

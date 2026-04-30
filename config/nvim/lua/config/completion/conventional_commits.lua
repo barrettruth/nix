@@ -168,22 +168,7 @@ local function git_dir(ctx)
         return root_cache[path]
     end
 
-    local root =
-        vim.trim(util.system_text({ 'git', '-C', path, 'rev-parse', '--show-toplevel' }))
-    if root == '' and path:match('/%.git$') then
-        root = vim.fn.fnamemodify(path, ':h')
-    end
-    if root == '' then
-        root = vim.trim(
-            util.system_text({
-                'git',
-                '-C',
-                vim.uv.cwd(),
-                'rev-parse',
-                '--show-toplevel',
-            })
-        )
-    end
+    local root = util.git_root(path)
     if root == '' then
         root = path
     end
@@ -310,19 +295,16 @@ function M.preload()
             done(1, output)
         end
     )
-    util.system_text_async(
-        {
-            'git',
-            '-C',
-            dir,
-            'status',
-            '--porcelain',
-            '--untracked-files=all',
-        },
-        function(output)
-            done(2, output)
-        end
-    )
+    util.system_text_async({
+        'git',
+        '-C',
+        dir,
+        'status',
+        '--porcelain',
+        '--untracked-files=all',
+    }, function(output)
+        done(2, output)
+    end)
 end
 
 ---@param ctx config.completion.Context
@@ -461,10 +443,8 @@ local function complete_suffixes(prefix, suffixes)
     local words = {}
 
     for _, suffix in ipairs(suffixes) do
-        local info = suffix == '('
-                and 'Add an optional scope'
-            or suffix == '!: '
-                and 'Mark the change as breaking and start the subject'
+        local info = suffix == '(' and 'Add an optional scope'
+            or suffix == '!: ' and 'Mark the change as breaking and start the subject'
             or 'Start the subject'
 
         words[#words + 1] = {

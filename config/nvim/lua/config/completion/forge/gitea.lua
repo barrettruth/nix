@@ -1,5 +1,6 @@
 local M = {
     name = 'gitea',
+    cli = 'tea',
     hosts = {},
     triggers = { '#', '@' },
     bucket_for_trigger = {
