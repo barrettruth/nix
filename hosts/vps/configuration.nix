@@ -45,16 +45,44 @@ let
       <text x="50%" y="78%" text-anchor="middle" font-size="28">Δ</text>
     </svg>
   '';
+  forgejoBrandingFontconfig = pkgs.writeText "forgejo-branding-fonts.conf" ''
+    <?xml version="1.0"?>
+    <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+    <fontconfig>
+      <dir>${pkgs.stix-two}/share/fonts</dir>
+      <alias binding="strong">
+        <family>Georgia</family>
+        <prefer><family>STIX Two Text</family></prefer>
+      </alias>
+      <alias binding="strong">
+        <family>Times New Roman</family>
+        <prefer><family>STIX Two Text</family></prefer>
+      </alias>
+      <alias binding="strong">
+        <family>serif</family>
+        <prefer><family>STIX Two Text</family></prefer>
+      </alias>
+    </fontconfig>
+  '';
   forgejoBrandingAssets =
-    pkgs.runCommand "forgejo-branding-assets" { nativeBuildInputs = [ pkgs.librsvg ]; }
+    pkgs.runCommand "forgejo-branding-assets"
+      {
+        nativeBuildInputs = [
+          pkgs.librsvg
+          pkgs.fontconfig
+        ];
+        FONTCONFIG_FILE = forgejoBrandingFontconfig;
+      }
       ''
+        export XDG_CACHE_HOME=$(mktemp -d)
         mkdir -p $out
         cp ${forgejoBrandingSvg} $out/logo.svg
         cp ${forgejoBrandingSvg} $out/favicon.svg
         rsvg-convert -w 512 -h 512 ${forgejoBrandingSvg} > $out/logo.png
         rsvg-convert -w 192 -h 192 ${forgejoBrandingSvg} > $out/favicon.png
         rsvg-convert -w 180 -h 180 ${forgejoBrandingSvg} > $out/apple-touch-icon.png
-        cp $out/logo.png $out/avatar_default.png
+        rsvg-convert -w 1024 -h 1024 ${forgejoBrandingSvg} > $out/avatar.png
+        cp $out/avatar.png $out/avatar_default.png
       '';
 in
 {
@@ -180,13 +208,16 @@ in
       "forgejo-hcaptcha-secret"
     ] (mkForgejoSecret [ "forgejo.service" ])
     // lib.genAttrs forgejoOauthSecretNames (mkForgejoSecret [ "forgejo-oauth-sync.service" ])
-    // lib.genAttrs [
-      "forgejo-gpg-passphrase"
-      "forgejo-gpg-secret.asc"
-    ] (mkForgejoSecret [
-      "forgejo.service"
-      "forgejo-gpg-import.service"
-    ]);
+    //
+      lib.genAttrs
+        [
+          "forgejo-gpg-passphrase"
+          "forgejo-gpg-secret.asc"
+        ]
+        (mkForgejoSecret [
+          "forgejo.service"
+          "forgejo-gpg-import.service"
+        ]);
 
   services.forgejo = {
     enable = true;
