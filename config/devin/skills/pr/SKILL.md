@@ -81,9 +81,13 @@ Check for `.github/pull_request_template.md`.
 **Body:** if a PR template exists, fill it in exactly. Otherwise use exactly:
 
 ```
-Why: <1 sentence>
+## Problem
 
-How: <1-2 sentences>
+<1 sentence>
+
+## Solution
+
+<1-2 sentences>
 ```
 
 Concise prose. Backticks for code identifiers and file paths. No bullet walls.
