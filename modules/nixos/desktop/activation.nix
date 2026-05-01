@@ -113,6 +113,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/github"}
     ${mkDir "${XDG_CONFIG_HOME}/direnv"}
     ${mkDir "${XDG_CONFIG_HOME}/devin"}
+    ${mkDir "${homeDirectory}/.codex"}
     ${mkDir "${XDG_CONFIG_HOME}/vim"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
     ${mkDir "${XDG_CONFIG_HOME}/tmux/themes"}
@@ -157,6 +158,8 @@ in
     ${mkMutableConfig "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
     ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
     ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/devin/skills"}
+    ${mkSymlink "${repo}/config/codex/config.toml" "${homeDirectory}/.codex/config.toml"}
+    ${mkSymlink "${repo}/config/codex/AGENTS.md" "${homeDirectory}/.codex/AGENTS.md"}
     ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
     ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${XDG_CONFIG_HOME}/tmux/themes/midnight.conf"}
     ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${XDG_CONFIG_HOME}/tmux/themes/daylight.conf"}
