@@ -1,51 +1,79 @@
 ---
 name: deprecate-to-forgejo
-description: Deprecate ONE github mirror — README banner, metadata redirect, archive — pointing all traffic at the canonical forgejo repo. ALL writes go to GitHub only (the opposite of github-to-forgejo).
+description: Make the GitHub mirror of ONE repo passively reflect Forgejo via push-mirror with an SSH deploy key. Forgejo becomes canonical; GitHub auto-syncs. No archive, no manual github writes after setup.
 user-invocable: true
-version: 1.0.0
+version: 2.0.0
 ---
 
 # /deprecate-to-forgejo
 
-Take ONE `barrettruth/<name>` whose canonical home is now `git.barrettruth.com/barrettruth/<name>` and freeze the GitHub mirror with a permanent redirect to Forgejo. After this skill runs, GitHub is read-only, every search-engine and IDE-tool surface points at Forgejo, and the `luarocks` / flake-input pipelines (which already run from Forgejo CI) are unaffected.
+Take ONE `barrettruth/<name>` whose canonical home is now `git.barrettruth.com/barrettruth/<name>` and reconfigure the GitHub mirror so it passively reflects Forgejo. After this skill runs, every push to forgejo `main` propagates to github `main` within seconds via Forgejo's `sync_on_commit` push-mirror over SSH; humans never push to github directly. The local clone keeps only `origin = forgejo`.
 
-This is the inverse of `/github-to-forgejo`: that skill migrates content TO Forgejo and never touches GitHub. This skill freezes GitHub and never touches Forgejo (except read-only verification).
+This is the inverse of `/github-to-forgejo`: that skill migrates content TO Forgejo and never touches GitHub. This skill configures GitHub as a forgejo-driven mirror and never touches Forgejo content (Forgejo metadata is read-only here too).
+
+## Architecture
+
+```
+[user] → git push → forgejo (canonical, /repos/.../main)
+                       ↓ sync_on_commit=true via SSH deploy key
+                    github (passive mirror, /repos/.../main)
+```
+
+- Forgejo generates an ed25519 keypair when the push-mirror is created with `use_ssh=true`. The private half stays inside Forgejo's database, encrypted at rest. The public half is registered on GitHub as a per-repo deploy key with `read_only=false` so it can push.
+- Forgejo pushes on every commit to `main` (or whichever branch is filtered) plus a 1-hour fallback interval (`MIN_INTERVAL = 10m` per app.ini, `DEFAULT_INTERVAL = 1h`).
+- The deploy key is scoped to ONE repo on GitHub. It cannot reach any other repo. If compromised, blast radius is one repo.
+- GitHub stays **unarchived**, otherwise the mirror push gets rejected. Branch protection on github main is irrelevant for the mirror because deploy keys with write access bypass branch protection by default; if you want extra safety, leave branch protection off on github (already true for most public-corpus repos).
 
 ## Inputs
 
 - Single argument: repo name (e.g. `http-codes.nvim`, `vimdoc-language-server`).
 - The repo MUST exist as both `barrettruth/<name>` on github.com AND `barrettruth/<name>` on git.barrettruth.com.
 - The Forgejo repo MUST already be canonical-shaped per the `/github-to-forgejo` baseline (CI, topics, branch protection, GPL license, etc.).
-- A local clone at `~/dev/<name>` is REQUIRED for the README-banner step. Per the post-2026-05-01 remote convention: `origin = forgejo`, `github = github`.
+- A local clone is REQUIRED for the sync step. Per the post-2026-05-01 inversion convention: `origin = forgejo`, `github = github` (which we will remove at the end).
 
 ## Hard rules (non-negotiable)
 
-- **GitHub-only writes.** This skill never edits the Forgejo repo. The Forgejo `main` branch must remain untouched. Reading Forgejo via `tea api` is allowed for verification.
-- The README banner commit goes to `github/main` ONLY. It is never merged into local `main` and never pushed to Forgejo.
-- All API mutations use `gh api -X PATCH`. The order matters: archive (`archived=true`) is ALWAYS last, because archived repos reject writes.
-- Stale branch deletion happens BEFORE archive on both sides, since archived repos block branch deletion on GitHub.
-- No AI attribution in any commit (no `Co-Authored-By`, no `Signed-off-by`, no tool mentions).
-- No new code comments unless explicitly requested.
-- This skill is **only for low-popularity repos** (rough cutoff: <50 stars, <5 forks, <5 open issues, no active PRs). Higher-popularity repos (`canola.nvim`, `tmux-mosaic`, `delta`) likely warrant a live-mirror pattern — DO NOT run this skill on them without an explicit per-repo decision.
+- **Forgejo content is read-only here.** This skill never edits forgejo branches, never pushes to forgejo, never modifies forgejo's README, description, topics, or branch protection. Reading forgejo via `tea api` (push_mirrors and similar) is allowed.
+- **GitHub stays unarchived.** Earlier versions of this skill ended in `archived=true`; that's no longer the recipe. If GitHub is currently archived (legacy v1 deprecation), unarchive it first via `gh api -X PATCH ... -F archived=false`.
+- All API mutations on GitHub use `gh api -X PATCH` or `gh api -X POST`. No git pushes to github from a human; only forgejo pushes via the mirror.
+- All push-mirror configuration goes through Forgejo's API, not the UI, so the operation is reproducible.
+- No AI attribution in any commit or any github metadata field.
+- This skill is for low-popularity repos and personal-config repos. Higher-popularity repos (`canola.nvim`, `tmux-mosaic`, `delta`) likely warrant a different pattern (e.g. dual-canonical hosts, or live two-way sync). DO NOT run this skill on those without explicit per-repo decision.
+
+## Sync before mirror (lossless local↔forgejo↔github reconciliation)
+
+Before configuring the mirror, the local clone, forgejo, and github mains must be reconciled. Otherwise the first mirror sync overwrites github with forgejo content and any github-only commits are lost forever.
+
+1. `git remote -v` — confirm what remotes exist. If a `forgejo` remote is missing, add it: `git remote add forgejo ssh://git@git.barrettruth.com/barrettruth/<name>.git`.
+2. `git fetch --all --prune`.
+3. Compare the three SHAs: local `main`, `github/main` (or `origin/main` depending on remote layout), `forgejo/main`. If they diverge:
+   - **forgejo has commits local doesn't** (e.g. private-repo subtree merges): rebase local main onto forgejo (`git rebase forgejo/main`). Different file paths between the two histories usually means a clean rebase with no conflicts.
+   - **local has commits no remote has**: those will be replayed on top during the rebase.
+   - **github has commits forgejo doesn't** (e.g. an old v1 deprecation banner committed only to github): cherry-pick those onto forgejo OR drop them, depending on whether the content is worth keeping. The github-only banner from v1 is intentionally dropped (the new banner / metadata pattern replaces it).
+4. After rebase, push the new tip to forgejo (FF if forgejo/main is in main's ancestry; force-push needed otherwise — check protection rules, may need to temporarily DELETE/POST the forgejo branch protection on `main`).
+5. Verify `local main = forgejo/main`. The mirror sync in Step 5 below will then update github to match.
+
+Skip this step only if the three SHAs already match (or if local + forgejo match and github will be brought in line by the first mirror sync).
 
 ## Pre-flight (read-only audit)
 
 Abort with a clear message if any check fails. Do not proceed.
 
-1. `gh api /repos/barrettruth/<name>` — confirm the repo exists, capture `archived`, `description`, `homepage`, `has_wiki`, `has_projects`, `stargazers_count`, `forks_count`, `open_issues_count`, `default_branch`. Abort if `archived=true` (already deprecated).
+1. `gh api /repos/barrettruth/<name>` — confirm the repo exists, capture `archived`, `description`, `homepage`, `has_wiki`, `has_projects`, `stargazers_count`, `forks_count`, `open_issues_count`, `default_branch`, `private`. If `archived=true`, plan to unarchive before mirror config.
 2. `tea api -l vps /repos/barrettruth/<name>` — confirm the Forgejo repo exists. Abort if missing.
-3. Popularity gate: abort with a warning if `stargazers_count >= 50` OR `forks_count >= 5` OR `open_issues_count >= 5`. The user must explicitly override.
-4. `gh pr list --repo barrettruth/<name> --state open` — abort if there are open PRs (they'd be stranded by the archive).
-5. Local clone audit at `~/dev/<name>`:
-   - Confirm `origin = ssh://git@git.barrettruth.com/barrettruth/<name>.git` and `github = git@github.com:barrettruth/<name>.git`. Abort if remotes are inverted or missing.
-   - `git status --short` — capture uncommitted changes. If any file under `.github/workflows/*` is modified with `runs-on: nix` (a known-bad collateral edit from the corpus-wide spark→nix sweep), `git restore` it before proceeding. Other uncommitted changes block the run.
-   - `git worktree list` — abort if any worktree is in a state that would block branch deletion later. Remove with `git worktree remove <path>` first.
-6. Branch audit: `git branch -r --merged github/main` and `git branch -r --no-merged github/main`. For unmerged branches, query `gh pr list --state all --head <branch> --limit 1` per branch — every branch should map to a MERGED PR (squash-merged, hence "unmerged" by SHA but actually landed). Abort if any branch is genuinely orphaned with unmerged work.
+3. `tea api -l vps /repos/barrettruth/<name>/push_mirrors` — capture existing mirrors. If a mirror to github is already configured (`remote_address` matches), skip Steps 5-7 and just verify it's still healthy.
+4. Popularity gate (public repos only): abort with a warning if `stargazers_count >= 50` OR `forks_count >= 5` OR `open_issues_count >= 5`. The user must explicitly override.
+5. `gh pr list --repo barrettruth/<name> --state open` — abort if there are open PRs (they'd be stranded once humans stop pushing to github).
+6. Local clone audit:
+   - Confirm origin = forgejo (or rename github → github / forgejo → origin if pre-inversion).
+   - `git status --short` — capture uncommitted. Resolve before proceeding.
+   - `git worktree list` — abort if any worktree has uncommitted state. Remove with `git worktree remove <path>`.
+7. Stale branch audit: `git branch -r` and `git ls-remote --heads github` and `git ls-remote --heads origin`. Compare. Plan deletion of all stale feature branches on both sides BEFORE configuring the mirror — otherwise the first sync force-pushes forgejo's branches over github's, which can include unintended deletions.
 
 ## Step 0: pre-flight cleanup (no remote writes yet)
 
-1. `git restore` any bad `.github/workflows/*` collateral edits.
-2. Delete every stale feature branch on `github` AND on `origin` (forgejo). The branch delete on github MUST happen before step 5 (archive) — archived repos block branch deletion. The forgejo-side delete is a hygiene mirror; forgejo never gets archived so it's flexible.
+1. `git restore` any bad uncommitted edits (e.g. accidental `runs-on: nix` on `.github/workflows/*`).
+2. Delete every stale feature branch on both `github` AND `origin` (forgejo). After this skill runs, the mirror handles branch creation/deletion automatically; doing it once-by-hand now keeps the initial state clean.
    ```
    for b in <every-stale-branch>; do
      git push github --delete "$b"
@@ -54,187 +82,204 @@ Abort with a clear message if any check fails. Do not proceed.
    ```
 3. `git fetch --all --prune` to drop the now-deleted remote-tracking refs.
 
-## Step 1: README banner on `github/main` only
-
-Make a one-shot commit on a temp branch checked out from `github/main` and push it directly to `github/main`. NEVER push to `origin` (forgejo). The forgejo README stays clean — Forgejo IS the destination, so a "moved here" banner there would be confusing.
+## Step 1: unarchive github (if archived from v1 deprecation)
 
 ```
-git checkout -b deprecate/github-banner github/main
-$EDITOR README.md   # prepend the admonition (template below)
-git add README.md
-git commit -m "docs: deprecate github mirror — moved to forgejo"
-git push github HEAD:main
-git checkout main
-git branch -D deprecate/github-banner
+gh api -X PATCH /repos/barrettruth/<name> -F archived=false
 ```
 
-Banner template (GFM admonition; renders on github with the colored note):
+If the repo wasn't archived, skip. If it WAS archived under v1, this is a one-time cleanup.
+
+## Step 2: align github main with forgejo main (drop v1 banner if present)
+
+V1 deprecation pushed a "moved to forgejo" banner commit directly to github main. Under v2, the mirror will overwrite github main with forgejo content on first sync, so the banner gets dropped automatically. No manual action needed UNLESS you want different content; in that case, commit it to forgejo first, then let the mirror propagate.
+
+If you want a "this is mirrored from forgejo" note in the README, add it to forgejo's README on a normal commit. The mirror will push it to github. Recommended wording (works on both forges, useful on github, tautological-but-not-misleading on forgejo):
 
 ```markdown
-> [!IMPORTANT]
-> **This project has moved to <https://git.barrettruth.com/barrettruth/<name>>.**
-> Issues, pull requests, and active development happen on Forgejo. This GitHub mirror is archived.
+> [!NOTE]
+> Issues and PRs at <https://git.barrettruth.com/barrettruth/<name>>.
 ```
 
-Two lines, no install-channel sentence. Earlier drafts included a third line such as `` `luarocks install <name>` continues to publish from Forgejo CI on tag push. `` — that was rejected on 2026-05-01 as unnecessary clutter. The forgejo URL at the top of the banner is the only redirect signal a reader needs; package-manager continuity is implicit and documented in the project README itself.
+This is **optional**. The github description prefix and homepage in Steps 6-7 are usually enough signal on their own.
 
-If the GitHub repo has branch protection requiring a status check (e.g. "Quality"), the push will print a warning but will succeed because the user is admin and can bypass. Do NOT silence the warning; record it in the verification log.
+## Step 3: configure forgejo→github push-mirror via SSH
 
-## Step 2: github `homepage` → forgejo URL
+```
+tea api -l vps -X POST /repos/barrettruth/<name>/push_mirrors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "remote_address": "ssh://git@github.com/barrettruth/<name>.git",
+    "use_ssh": true,
+    "sync_on_commit": true,
+    "interval": "1h0m0s"
+  }'
+```
+
+The response includes `public_key` (an `ssh-ed25519 ...` line). **Save it for Step 4.**
+
+Why these settings:
+- `use_ssh=true` — Forgejo generates a per-mirror keypair; private key never leaves the server. No PAT to rotate.
+- `sync_on_commit=true` — every push to forgejo immediately pushes to github (typical lag: <2s for small commits).
+- `interval=1h0m0s` — periodic safety-net sync if `sync_on_commit` ever misses a push (network blip, etc.). `MIN_INTERVAL=10m` per app.ini, `DEFAULT_INTERVAL=1h`.
+- No `branch_filter` — all branches mirror. Empty string means "all". Use `"main"` to limit if needed.
+
+## Step 4: register forgejo's public key as a github deploy key
+
+Take the `public_key` from Step 3's response:
+
+```
+PUBKEY="<ssh-ed25519 ... line from Step 3>"
+gh api -X POST /repos/barrettruth/<name>/keys \
+  -F title="forgejo push-mirror (vps)" \
+  -F key="$PUBKEY" \
+  -F read_only=false
+```
+
+`read_only=false` is critical — forgejo needs write access to push. The key is scoped to this single GitHub repo; it cannot reach any other repo on Barrett's account.
+
+## Step 5: trigger immediate sync to verify
+
+```
+tea api -l vps -X POST /repos/barrettruth/<name>/push_mirrors-sync
+sleep 3
+tea api -l vps /repos/barrettruth/<name>/push_mirrors | jq '.[0] | {last_update, last_error}'
+```
+
+Expected: `last_error=""` and `last_update` within the last few seconds. If `last_error` is non-empty, debug:
+- "Permission denied" — the deploy key wasn't accepted; verify the key was added with `read_only=false`.
+- "Updates were rejected because the tip of your current branch is behind" — github main has commits forgejo doesn't (you skipped the sync step above); fix the divergence and retry.
+- "remote: error: GH013: Repository was archived" — github is still archived; run Step 1.
+
+Then confirm the SHAs:
+```
+forgejo: $(tea api -l vps /repos/barrettruth/<name>/branches/main | jq -r '.commit.id')
+github:  $(gh api /repos/barrettruth/<name>/git/refs/heads/main --jq '.object.sha')
+```
+Must match.
+
+## Step 6: github description → mirror prefix
+
+Replace whatever's currently there (including any `[moved to ...]` prefix from v1) with:
 
 ```
 gh api -X PATCH /repos/barrettruth/<name> \
-  -F homepage='https://git.barrettruth.com/barrettruth/<name>'
+  -F description='[mirror of git.barrettruth.com/barrettruth/<name>] <original-description>'
 ```
 
-This populates the "About" sidebar's link, which most search-result snippets surface. Some IDE plugin browsers (Lazy.nvim's spec lookup, etc.) read this field too.
+This is the primary github-side signal that the github view is a passive copy.
 
-## Step 3: github `description` → prefix the move marker
-
-Read the current description, prefix `[moved to git.barrettruth.com/barrettruth/<name>] `, leave the rest unchanged.
-
-```
-current=$(gh api /repos/barrettruth/<name> --jq '.description')
-gh api -X PATCH /repos/barrettruth/<name> \
-  -F description="[moved to git.barrettruth.com/barrettruth/<name>] $current"
-```
-
-The prefix is intentional: it shows up in github search snippets, in `gh repo view`, in third-party catalogues, and in IDE plugin pickers that surface the description. Keep the bracket form; do not use parentheses (the bracketed form is the verified pattern from 2026-05-01).
-
-## Step 4: github metadata → align with forgejo baseline
-
-```
-gh api -X PATCH /repos/barrettruth/<name> -F has_wiki=false -F has_projects=false
-```
-
-This matches the Forgejo baseline (`has_wiki=false`, `has_projects=false`). It also tidies the github mirror — wiki and projects tabs disappear before the archive freeze.
-
-Steps 2-4 can be done in a single `gh api -X PATCH` call to reduce API round-trips:
+## Step 7: github homepage + metadata baseline + disable issue-filing
 
 ```
 gh api -X PATCH /repos/barrettruth/<name> \
   -F homepage='https://git.barrettruth.com/barrettruth/<name>' \
-  -F description="[moved to git.barrettruth.com/barrettruth/<name>] $current" \
-  -F has_wiki=false -F has_projects=false
+  -F has_wiki=false -F has_projects=false -F has_issues=false
 ```
 
-## Step 5: archive github
+`has_issues=false` is the durable fix that prevents new issues from being filed on github (where they'd be orphaned from forgejo, since the mirror is git-only). Existing issues stay readable in the historical record but the "New Issue" button disappears and the issues tab hides. Forgejo has all the issues from the original `/github-to-forgejo` migration plus any filed on forgejo since; new filings from anyone hitting the github URL get redirected via the README banner + description prefix.
+
+Steps 6-7 can be batched into a single PATCH call.
+
+### Why issues don't auto-sync (and why has_issues=false is the right fix)
+
+Two distinct Forgejo features get conflated here. The original `/github-to-forgejo` skill used Forgejo's **"Migrate from URL"** feature, which does a one-shot bulk import via the github issues API: it pulls issues, PRs, releases, labels, comments, milestones into forgejo's database at repo-creation time. That's how every forgejo repo got its existing issue history.
+
+This skill (push-mirror) is implemented as `git push --all` over SSH. **Issues live in forgejo's database, not in git refs**, so `git push` cannot move them. There is no equivalent of "Migrate from URL" going the other direction — github has no inbound issue-import API that takes a forgejo URL, and Forgejo has no outbound "create-github-issues-from-my-issues" feature.
+
+Practical consequence: existing pre-mirror issues already exist on both forges (they were copied at the original migration). Newly-filed issues on github after this skill runs would be orphaned. `has_issues=false` blocks that scenario at the source.
+
+## Step 8: remove `github` remote from the local clone
+
+After the mirror is verified, remove the `github` remote from the local clone so accidental `git push github main` from muscle memory is impossible:
 
 ```
-gh api -X PATCH /repos/barrettruth/<name> -F archived=true
+cd ~/dev/<name>   # or appropriate path
+git remote remove github
+git remote -v   # should show only origin = forgejo
 ```
 
-After this, the repo is read-only on github. The "This repository has been archived" banner appears full-width at the top, all interactions are disabled, every tool that respects archive state (search engines, dependabot, etc.) treats it as deprecated.
+This is the "old github remote" that we explicitly retire under v2. Forgejo is the only place humans push to. Github auto-syncs.
 
-This must be the LAST step. Anything after this would fail.
-
-## Step 6: verification
+## Verification (post-setup)
 
 ```
 gh api /repos/barrettruth/<name> \
-  --jq '{archived, homepage, description, has_wiki, has_projects, has_discussions}'
+  --jq '{archived, homepage, description, has_wiki, has_projects}'
 ```
 
-Expected (copy-paste-comparable):
-
+Expected:
 ```
 {
-  "archived": true,
+  "archived": false,
   "homepage": "https://git.barrettruth.com/barrettruth/<name>",
-  "description": "[moved to git.barrettruth.com/barrettruth/<name>] <original-description>",
+  "description": "[mirror of git.barrettruth.com/barrettruth/<name>] <original-description>",
   "has_wiki": false,
-  "has_projects": false,
-  "has_discussions": false
+  "has_projects": false
 }
 ```
 
-Also confirm the README banner is live:
-
+Plus the SHA check from Step 5 plus:
 ```
-gh api /repos/barrettruth/<name>/contents/README.md --jq '.content' | base64 -d | head -10
+gh api /repos/barrettruth/<name>/keys --jq '.[] | {title, read_only, verified}'
 ```
+Should include the `forgejo push-mirror (vps)` deploy key with `read_only=false, verified=true`.
 
-The first 6 lines should be `# <name>` followed by the admonition block.
+End-to-end smoke test: make a trivial commit on forgejo (e.g. via `tea api` or via local clone push to origin), wait <5s, check github main updated.
 
-Forgejo verification (read-only):
+## Private repo shortcut
 
-```
-tea api -l vps /repos/barrettruth/<name>/contents/README.md | jq -r '.content' | base64 -d | head -10
-```
+If `gh api /repos/barrettruth/<name> --jq .private` returns `true`, the metadata steps are mostly moot but the mirror plumbing still applies:
 
-Forgejo's README must NOT have the banner. If it does, something went wrong — the banner commit ended up on the wrong remote.
+1. Pre-flight + sync.
+2. Skip Step 2 (no banner — nobody's reading).
+3. Run Step 3 (push-mirror).
+4. Run Step 4 (deploy key).
+5. Run Step 5 (verify sync).
+6. Skip Step 6 (description prefix optional, useful only as a self-reminder).
+7. **Run Step 7 anyway** — set `has_issues=false has_wiki=false has_projects=false` even on private repos. The defenses are still useful: nobody (including future-you on a different machine) can accidentally file a github issue. Skip homepage if you don't care.
+8. Run Step 8 (remove `github` remote).
 
-## Step 7: local clone hygiene
-
-After the deprecation, the local main may be behind `origin` (forgejo) due to forgejo-only CI commits. FF-pull from forgejo:
-
-```
-git pull origin main --ff-only
-```
-
-This will rename `.github/workflows/*` → `.forgejo/workflows/*` locally (or delete `.github/` if the forgejo CI port is older than the deprecation). That's fine — github is archived and frozen with whatever `.github/workflows/` it had at the time of archive.
-
-## Late-stage banner edits (post-archive)
-
-If the banner needs editing after step 5 (archive), GitHub rejects all writes — including content commits. The recipe is unarchive → edit → re-archive:
-
-```
-gh api -X PATCH /repos/barrettruth/<name> -F archived=false
-git checkout -b deprecate/banner-trim github/main
-$EDITOR README.md   # apply the change
-git add README.md
-git commit -m "docs: <description-of-the-edit>"
-git push github HEAD:main
-git checkout main
-git branch -D deprecate/banner-trim
-gh api -X PATCH /repos/barrettruth/<name> -F archived=true
-```
-
-The unarchive window should be as short as possible — anyone watching the repo will see the archive banner disappear briefly and reappear. For low-popularity repos the visibility risk is negligible.
+The simplest private flow: pre-flight, sync, mirror, deploy key, sync, disable github features, remove remote. Done.
 
 ## Reversal (if anything goes wrong)
 
-Order matters: undo step 5 first, then everything else.
-
+To restore the v1 "archived" pattern:
 ```
-gh api -X PATCH /repos/barrettruth/<name> -F archived=false
-gh api -X PATCH /repos/barrettruth/<name> \
-  -F homepage='' \
-  -F description='<original-description-without-prefix>' \
-  -F has_wiki=true -F has_projects=true
-git checkout -b revert/banner github/main
-git revert <banner-commit-sha>
-git push github HEAD:main
-git checkout main
-git branch -D revert/banner
+gh api /repos/barrettruth/<name>/keys --jq '.[] | select(.title | startswith("forgejo push-mirror")) | .id' \
+  | xargs -I{} gh api -X DELETE /repos/barrettruth/<name>/keys/{}
+tea api -l vps /repos/barrettruth/<name>/push_mirrors --jq '.[].remote_name' \
+  | xargs -I{} tea api -l vps -X DELETE /repos/barrettruth/<name>/push_mirrors/{}
+gh api -X PATCH /repos/barrettruth/<name> -F archived=true
 ```
 
-Stale branches that were deleted are NOT recoverable from `gh api` alone — recover by force-pushing from a local clone if they still exist in `git reflog` or any backup.
+To restore content (e.g. broken sync wiped a commit you cared about): `git reflog` on forgejo's database (only forgejo admin can read these), or push from a local clone that still has the commit.
 
 ## AGENTS.md update
 
-After a successful run, append to `~/.config/nix/AGENTS.md` under `## What actually remains (post-2026-05-01)` (or the appropriate evolving section), recording:
-
-- repo name + deprecation date
-- pre-stats (stars/forks/issues at archive time)
-- banner commit SHA (`f9c9e5d` for `http-codes.nvim` was the prototype)
-- list of stale branches deleted (with the github+forgejo confirmation)
+After a successful run, append to `~/.config/nix/AGENTS.md` recording:
+- repo name + mirror config date
+- push-mirror `remote_name` (forgejo's internal handle, e.g. `remote_mirror_DwJDEvtH49W`)
+- deploy key `id` on github
 - any deviations from the standard recipe
 
-## Verified prototype: `http-codes.nvim` (2026-05-01)
+## Verified prototype: `http-codes.nvim` (2026-05-01, v2.0.0)
 
-The first run of this skill was on `barrettruth/http-codes.nvim` (12 stars, 2 forks, 0 open issues) on 2026-05-01.
+The first run of this skill on the new mirror pattern was on `barrettruth/http-codes.nvim` on 2026-05-01.
 
-- Banner commit: `f9c9e5d` on `github/main` (`bd02a1b..f9c9e5d`); follow-up trim commit `4fedf88` (`f9c9e5d..4fedf88`) dropped the install-channel third line on 2026-05-01 (required a temporary unarchive → push → re-archive cycle)
-- Forgejo `origin/main` unchanged: `5764d7f` (forgejo CI port commits) — banner did NOT propagate
-- 12 stale branches deleted from each side: `chore/{add-project-configs,luarocks,replace-prettier-with-biome}`, `ci/{format-vimdoc,justfile-workflow,self-hosted-runners}`, `docs/{help-file-naming,modernize-readme}`, `feat/plug-mappings`, `feature/snacks`, `refactor/vim-g-config`, `revert/github-hosted-runners` — all squash-merged via PRs #4-#16
-- Final github state: archived=true, homepage=forgejo URL, description prefixed `[moved to git.barrettruth.com/barrettruth/http-codes.nvim]`, has_wiki=false, has_projects=false
-- Local clone state post-run: `~/dev/http-codes.nvim` on main = forgejo HEAD (`5764d7f`), all stale local branches and worktrees pruned
-- Push warning encountered (expected): `Required status check "Quality" is expected.` — push succeeded anyway because Barrett bypasses branch protection. Recorded but not blocking.
+- Pre-state: github `archived=true` (from v1 deprecation), local `origin = forgejo`, banner commit `4fedf88` on github main only.
+- v1 → v2 upgrade: unarchive github, mirror config replaces archive.
+- Push-mirror created: `remote_name=remote_mirror_DwJDEvtH49W`, `sync_on_commit=true`, `interval=1h`.
+- Deploy key on github: `id=150229527`, title=`forgejo push-mirror (vps)`, `read_only=false`, `verified=true`.
+- First sync: `last_error=""`, github main went from `4fedf88` (banner commit) to `5764d7f` (forgejo HEAD). Banner dropped.
+- github description: `[mirror of git.barrettruth.com/barrettruth/http-codes.nvim] HTTP status code viewer for neovim`.
+- github homepage: `https://git.barrettruth.com/barrettruth/http-codes.nvim`.
+- Local clone `~/dev/http-codes.nvim`: `github` remote removed, only `origin = forgejo` remains.
+- Final github metadata: `archived=false, has_wiki=false, has_projects=false, homepage=<forgejo>, description=[mirror of ...]`.
 
 ## Out of scope
 
-- Push-mirror from forgejo→github intentionally NOT configured. Forgejo's mirror feature only works for non-archived targets, and the github snapshot frozen at deprecation time is fine for low-popularity repos.
-- Issue-template `contact_links` redirect intentionally NOT used. Once the repo is archived, github disables the issue button entirely; the redirect is moot.
-- Deleting the github repo entirely: NEVER. Archiving preserves URLs, badges, search-engine indexing, and the "yes this software exists / existed" historical record. Deletion would 404 every external link to the repo.
-- Higher-popularity repos: out of scope. Use a separate runbook that keeps github as a live mirror.
+- Issue-template `contact_links` redirect — moot when github is unarchived but read-only-by-convention. Description prefix + homepage do the job.
+- Two-way sync (forgejo↔github both writable) — explicitly NOT this skill. Forgejo is canonical; github is passive.
+- Deleting the github repo — NEVER. The mirror keeps it useful for inbound links, search-engine cache, and people who already have it bookmarked.
+- Higher-popularity repos — out of scope. Use a separate runbook that handles a more involved mirror+sync pattern.
