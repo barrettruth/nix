@@ -671,6 +671,7 @@ in
     virtualHosts."git.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
+      locations."= /".return = "302 /barrettruth";
       locations."/".proxyPass = "http://127.0.0.1:3000";
     };
     virtualHosts."delta.${identity.domain}" = {
@@ -735,6 +736,9 @@ in
       service.HCAPTCHA_SECRET = config.sops.secrets."forgejo-hcaptcha-secret".path;
     };
     settings = {
+      DEFAULT = {
+        APP_NAME = identity.fullName;
+      };
       server = {
         DOMAIN = "git.${identity.domain}";
         ROOT_URL = "https://git.${identity.domain}/";
@@ -781,6 +785,11 @@ in
       ui = {
         DEFAULT_THEME = "midnight-auto";
         THEMES = "midnight-auto,midnight-light,midnight-dark";
+      };
+      "ui.meta" = {
+        AUTHOR = identity.fullName;
+        DESCRIPTION = "Personal code, experiments, and project history.";
+        KEYWORDS = "git,code,barrett,ruth";
       };
     };
   };
