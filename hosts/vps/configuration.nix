@@ -461,6 +461,15 @@ let
     }
     /* ===== Markup (rendered markdown content) ===== */
     .markup .absent { color: var(--midnight-syntax-error); }
+    .markup img,
+    .markup video {
+      max-width: 100%;
+      height: auto;
+    }
+    .markup video {
+      display: block;
+      object-fit: contain;
+    }
     /* ===== CodeMirror 6 (file editor at /repos/.../_edit/...) =====
        CM6 ships its own theme via EditorView.theme()/HighlightStyle.define()
        in web_src/js/features/codemirror.ts with hardcoded VSCode-ish hex
@@ -781,6 +790,18 @@ in
         CRUD_ACTIONS = "always";
         MERGES = "always";
         WIKI = "never";
+      };
+      "markup.sanitizer.video-muted" = {
+        ELEMENT = "video";
+        ALLOW_ATTR = "muted";
+      };
+      "markup.sanitizer.video-loop" = {
+        ELEMENT = "video";
+        ALLOW_ATTR = "loop";
+      };
+      "markup.sanitizer.video-playsinline" = {
+        ELEMENT = "video";
+        ALLOW_ATTR = "playsinline";
       };
       ui = {
         DEFAULT_THEME = "midnight-auto";
