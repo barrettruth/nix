@@ -30,6 +30,51 @@ let
       "forgejo-oauth-${name}-secret"
     ]) forgejoOauthSources
   );
+  webDeployUser = "web-deploy";
+  webDeployGroup = "web-deploy";
+  webDeployPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF4QXLB3ZH77HJwTbcYB/52jg7kAT+E6BwACf1ianOXS forgejo-actions-web-deploy-2026-05-01";
+  staticWebRoots = {
+    "barrettruth.com" = "/srv/www/barrettruth.com/current";
+    "philipmruth.com" = "/srv/www/philipmruth.com/current";
+    "vimdoc-language-server.com" = "/srv/www/vimdoc-language-server.com/current";
+  };
+  mkStaticSiteHost = root: {
+    enableACME = true;
+    forceSSL = true;
+    inherit root;
+    extraConfig = ''
+      limit_req zone=static_site_per_ip burst=120 nodelay;
+      limit_conn static_site_conn_per_ip 40;
+      error_page 404 /404.html;
+    '';
+    locations."/" = {
+      tryFiles = "$uri $uri/ =404";
+      extraConfig = ''
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      '';
+    };
+    locations."~* \\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|pdf|ttf|otf|woff|woff2)$".extraConfig =
+      ''
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+      '';
+  };
+  mkBarrettruthHost =
+    root:
+    lib.recursiveUpdate (mkStaticSiteHost root) {
+      locations."~* ^/fonts/.*\\.(?:ttf|otf|woff|woff2)$".extraConfig = ''
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header Access-Control-Allow-Origin "https://www.vimdoc-language-server.com" always;
+        add_header Vary "Origin" always;
+      '';
+    };
+  mkRedirectHost = target: {
+    enableACME = true;
+    forceSSL = true;
+    locations."/".return = "301 https://${target}$request_uri";
+  };
   forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
     allow-loopback-pinentry
   '';
@@ -662,6 +707,17 @@ in
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
   ];
 
+  users.groups.${webDeployGroup} = { };
+
+  users.users.${webDeployUser} = {
+    isSystemUser = true;
+    group = webDeployGroup;
+    home = "/var/lib/${webDeployUser}";
+    createHome = true;
+    shell = pkgs.bash;
+    openssh.authorizedKeys.keys = [ webDeployPublicKey ];
+  };
+
   security.acme = {
     acceptTerms = true;
     defaults.email = identity.email;
@@ -669,9 +725,27 @@ in
 
   services.nginx = {
     enable = true;
+    appendHttpConfig = ''
+      limit_req_zone $binary_remote_addr zone=static_site_per_ip:10m rate=20r/s;
+      limit_conn_zone $binary_remote_addr zone=static_site_conn_per_ip:10m;
+    '';
+    recommendedGzipSettings = true;
+    recommendedOptimisation = true;
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
     clientMaxBodySize = "512m";
+    virtualHosts."www.${identity.domain}" = mkBarrettruthHost staticWebRoots."barrettruth.com";
+    virtualHosts.${identity.domain} = mkRedirectHost "www.${identity.domain}";
+    virtualHosts."www.barrettruth.sh" = mkBarrettruthHost staticWebRoots."barrettruth.com";
+    virtualHosts."barrettruth.sh" = mkRedirectHost "www.barrettruth.sh";
+    virtualHosts."www.philipmruth.com" = mkStaticSiteHost staticWebRoots."philipmruth.com";
+    virtualHosts."philipmruth.com" = mkRedirectHost "www.philipmruth.com";
+    virtualHosts."www.vimdoc-language-server.com" =
+      mkStaticSiteHost
+        staticWebRoots."vimdoc-language-server.com";
+    virtualHosts."vimdoc-language-server.com" = mkRedirectHost "www.vimdoc-language-server.com";
+    virtualHosts."vimdoc-language-server.${identity.domain}" =
+      mkRedirectHost "www.vimdoc-language-server.com";
     virtualHosts."vault.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
@@ -941,6 +1015,13 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-BoldItalic.ttf"
     "d /var/lib/forgejo/custom/public/assets/fonts/stix-two 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/stix-two/STIXTwoText.ttf - - - - ${forgejoStixTwoFontFile}"
+    "d /srv/www 0755 root root -"
+    "d /srv/www/barrettruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/philipmruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/philipmruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/vimdoc-language-server.com 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/vimdoc-language-server.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
   ];
 
   environment.systemPackages = with pkgs; [
@@ -948,6 +1029,7 @@ in
     git
     nodejs_22
     pnpm
+    rsync
   ];
 
   systemd.services.vaultwarden-r2-backup = {
