@@ -151,13 +151,13 @@ buildGoModule {
       }
   '';
 
-  overrideModAttrs = (
-    _: {
-      postPatch = null;
-    }
-  );
+  overrideModAttrs = _: {
+    postPatch = null;
+  };
 
   meta = forgejo.meta // {
-    description = forgejo.meta.description + " (with @codemirror/legacy-modes registered for INI/TOML/Shell/Lua/Ruby/Dockerfile/Perl/Nginx/Vim script/Diff)";
+    description =
+      forgejo.meta.description
+      + " (with @codemirror/legacy-modes registered for INI/TOML/Shell/Lua/Ruby/Dockerfile/Perl/Nginx/Vim script/Diff)";
   };
 }
