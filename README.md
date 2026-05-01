@@ -1,8 +1,5 @@
 # nix
 
-> [!NOTE]
-> Issues and PRs at <https://git.barrettruth.com/barrettruth/nix>.
-
 My personal nix configuration leveraging:
 
 - [NixOS](https://nixos.org/)
