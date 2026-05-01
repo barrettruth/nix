@@ -165,8 +165,8 @@ return {
                         theirs = 'gtt',
                         both = 'gtb',
                         none = 'gt0',
-                        next = 'gtn',
-                        prev = 'gtp',
+                        next = ']x',
+                        prev = '[x',
                     },
                 },
             }
