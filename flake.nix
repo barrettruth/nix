@@ -16,6 +16,7 @@
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     direnv-instant.url = "github:Mic92/direnv-instant";
+    claude-code.url = "github:sadjow/claude-code-nix";
     codex.url = "github:sadjow/codex-cli-nix";
     tmux-mosaic = {
       url = "git+https://git.barrettruth.com/barrettruth/tmux-mosaic.git";
