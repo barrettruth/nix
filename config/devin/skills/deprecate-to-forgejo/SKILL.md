@@ -174,6 +174,24 @@ git pull origin main --ff-only
 
 This will rename `.github/workflows/*` → `.forgejo/workflows/*` locally (or delete `.github/` if the forgejo CI port is older than the deprecation). That's fine — github is archived and frozen with whatever `.github/workflows/` it had at the time of archive.
 
+## Late-stage banner edits (post-archive)
+
+If the banner needs editing after step 5 (archive), GitHub rejects all writes — including content commits. The recipe is unarchive → edit → re-archive:
+
+```
+gh api -X PATCH /repos/barrettruth/<name> -F archived=false
+git checkout -b deprecate/banner-trim github/main
+$EDITOR README.md   # apply the change
+git add README.md
+git commit -m "docs: <description-of-the-edit>"
+git push github HEAD:main
+git checkout main
+git branch -D deprecate/banner-trim
+gh api -X PATCH /repos/barrettruth/<name> -F archived=true
+```
+
+The unarchive window should be as short as possible — anyone watching the repo will see the archive banner disappear briefly and reappear. For low-popularity repos the visibility risk is negligible.
+
 ## Reversal (if anything goes wrong)
 
 Order matters: undo step 5 first, then everything else.

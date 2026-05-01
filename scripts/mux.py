@@ -455,7 +455,7 @@ def spawn_or_focus_managed(name: str, path: str, command: str = "") -> None:
 def role_command_for(name: str) -> str | None:
     match canonical_name(name):
         case "ai":
-            return "devin"
+            return "codex"
         case "edit":
             return "nvim ."
         case "prompt":
@@ -467,7 +467,7 @@ def role_command_for(name: str) -> str | None:
 def ensure_role_dependencies(name: str) -> None:
     match canonical_name(name):
         case "ai":
-            ensure_command("devin")
+            ensure_command("codex")
         case "edit":
             ensure_command("nvim")
         case _:

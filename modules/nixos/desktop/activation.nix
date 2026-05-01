@@ -113,6 +113,7 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/github"}
     ${mkDir "${XDG_CONFIG_HOME}/direnv"}
     ${mkDir "${XDG_CONFIG_HOME}/devin"}
+    ${mkDir "${XDG_CONFIG_HOME}/claude"}
     ${mkDir "${XDG_CONFIG_HOME}/codex"}
     ${mkDir "${XDG_CONFIG_HOME}/vim"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
@@ -158,6 +159,11 @@ in
     ${mkMutableConfig "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
     ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
     ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/devin/skills"}
+    ${mkSymlink "${repo}/config/claude/settings.json" "${XDG_CONFIG_HOME}/claude/settings.json"}
+    ${mkSymlink "${repo}/config/claude/CLAUDE.md" "${XDG_CONFIG_HOME}/claude/CLAUDE.md"}
+    ${mkSymlink "${repo}/config/claude/rules" "${XDG_CONFIG_HOME}/claude/rules"}
+    ${mkSymlink "${repo}/config/claude/hooks" "${XDG_CONFIG_HOME}/claude/hooks"}
+    ${mkSymlink "${repo}/config/devin/skills" "${XDG_CONFIG_HOME}/claude/skills"}
     ${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}
     ${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
     ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
