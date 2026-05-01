@@ -1058,7 +1058,12 @@ in
       DB="/var/lib/forgejo/data/forgejo.db"
       REPOS_ROOT="/var/lib/forgejo/repositories"
       OWNER_NAME="barrettruth"
-      OP_TYPE=5
+      OP_COMMIT=5
+      OP_CREATE_ISSUE=6
+      OP_CREATE_PR=7
+      OP_COMMENT_ISSUE=10
+      OP_COMMENT_PR=23
+      OP_PUBLISH_RELEASE=24
 
       sql() {
         sqlite3 -bail -batch "$DB" ".timeout 5000" "$1"
@@ -1084,8 +1089,8 @@ in
         bare="$REPOS_ROOT/$OWNER_NAME/$repo_name.git"
         [ -d "$bare" ] || continue
 
-        ref="refs/heads/$default_branch"
-        if ! git -C "$bare" rev-parse --verify --quiet "$ref" >/dev/null; then
+        default_ref="refs/heads/$default_branch"
+        if ! git -C "$bare" rev-parse --verify --quiet "$default_ref" >/dev/null; then
           continue
         fi
 
@@ -1095,20 +1100,66 @@ in
           if ! grep -Fxq "$ae" "$emails_file"; then
             continue
           fi
-          exists=$(sql "SELECT COUNT(*) FROM action WHERE user_id = $user_id AND repo_id = $repo_id AND op_type = $OP_TYPE AND created_unix = $ct;")
+          exists=$(sql "SELECT COUNT(*) FROM action WHERE user_id = $user_id AND repo_id = $repo_id AND op_type = $OP_COMMIT AND created_unix = $ct;")
           if [ "$exists" -gt 0 ]; then
             continue
           fi
           content=$(printf '%s\n%s' "$default_branch" "$sha")
-          sql "INSERT INTO action (user_id, op_type, act_user_id, repo_id, ref_name, is_private, content, created_unix) VALUES ($user_id, $OP_TYPE, $user_id, $repo_id, '$ref', 0, '$content', $ct);"
+          sql "INSERT INTO action (user_id, op_type, act_user_id, repo_id, ref_name, is_private, content, created_unix) VALUES ($user_id, $OP_COMMIT, $user_id, $repo_id, '$default_ref', 0, '$content', $ct);"
           repo_added=$((repo_added + 1))
           inserted=$((inserted + 1))
-        done < <(git -C "$bare" log --first-parent --format='%H|%ct|%ae' "$ref")
+        done < <(git -C "$bare" log --branches --format='%H|%ct|%ae')
 
         if [ "$repo_added" -gt 0 ]; then
           echo "  $OWNER_NAME/$repo_name: +$repo_added"
         fi
       done < <(sql "SELECT id, name, default_branch FROM repository WHERE owner_id = $user_id AND is_private = 0;")
+
+      echo "Backfilling issues / PRs / comments / releases authored by $OWNER_NAME ..."
+
+      issue_match="(poster_id = $user_id OR (poster_id = -1 AND original_author = '$OWNER_NAME'))"
+      comment_match="(c.poster_id = $user_id OR (c.poster_id = -1 AND c.original_author = '$OWNER_NAME'))"
+
+      added_issues=0
+      while IFS='|' read -r issue_id repo_id is_pull ct; do
+        [ -z "$issue_id" ] && continue
+        op_type=$([ "$is_pull" = "1" ] && echo "$OP_CREATE_PR" || echo "$OP_CREATE_ISSUE")
+        exists=$(sql "SELECT COUNT(*) FROM action WHERE user_id = $user_id AND repo_id = $repo_id AND op_type = $op_type AND created_unix = $ct;")
+        if [ "$exists" -gt 0 ]; then
+          continue
+        fi
+        sql "INSERT INTO action (user_id, op_type, act_user_id, repo_id, ref_name, is_private, content, created_unix) VALUES ($user_id, $op_type, $user_id, $repo_id, ''', 0, ''', $ct);"
+        added_issues=$((added_issues + 1))
+        inserted=$((inserted + 1))
+      done < <(sql "SELECT id, repo_id, is_pull, created_unix FROM issue WHERE $issue_match;")
+      [ "$added_issues" -gt 0 ] && echo "  +$added_issues issue/PR creates"
+
+      added_comments=0
+      while IFS='|' read -r comment_id repo_id is_pull ct; do
+        [ -z "$comment_id" ] && continue
+        op_type=$([ "$is_pull" = "1" ] && echo "$OP_COMMENT_PR" || echo "$OP_COMMENT_ISSUE")
+        exists=$(sql "SELECT COUNT(*) FROM action WHERE user_id = $user_id AND repo_id = $repo_id AND op_type = $op_type AND created_unix = $ct;")
+        if [ "$exists" -gt 0 ]; then
+          continue
+        fi
+        sql "INSERT INTO action (user_id, op_type, act_user_id, repo_id, ref_name, is_private, content, created_unix) VALUES ($user_id, $op_type, $user_id, $repo_id, ''', 0, ''', $ct);"
+        added_comments=$((added_comments + 1))
+        inserted=$((inserted + 1))
+      done < <(sql "SELECT c.id, i.repo_id, i.is_pull, c.created_unix FROM comment c JOIN issue i ON c.issue_id = i.id WHERE $comment_match AND c.type = 0;")
+      [ "$added_comments" -gt 0 ] && echo "  +$added_comments issue/PR comments"
+
+      added_releases=0
+      while IFS='|' read -r release_id repo_id ct; do
+        [ -z "$release_id" ] && continue
+        exists=$(sql "SELECT COUNT(*) FROM action WHERE user_id = $user_id AND repo_id = $repo_id AND op_type = $OP_PUBLISH_RELEASE AND created_unix = $ct;")
+        if [ "$exists" -gt 0 ]; then
+          continue
+        fi
+        sql "INSERT INTO action (user_id, op_type, act_user_id, repo_id, ref_name, is_private, content, created_unix) VALUES ($user_id, $OP_PUBLISH_RELEASE, $user_id, $repo_id, ''', 0, ''', $ct);"
+        added_releases=$((added_releases + 1))
+        inserted=$((inserted + 1))
+      done < <(sql "SELECT id, repo_id, created_unix FROM release WHERE publisher_id = $user_id;")
+      [ "$added_releases" -gt 0 ] && echo "  +$added_releases releases"
 
       echo "Reconciliation complete: $inserted new action records."
     '';
