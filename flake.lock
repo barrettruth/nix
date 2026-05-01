@@ -83,11 +83,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777358913,
-        "narHash": "sha256-aZgTNsqh7X3Rsdb7RB+2BhN8188uSaGVrKrEdYY/rHg=",
+        "lastModified": 1777637653,
+        "narHash": "sha256-zVnyyyflOPaJ4B3DALD3tpcU9cmPAyhXDR9aV1NqtWM=",
         "owner": "charliemeyer2000",
         "repo": "devin-cli-overlay",
-        "rev": "87ab9a8b62b7a9cf35f6b67f948ab1b1e96aafa9",
+        "rev": "26ba0af3c523d0320453b15a8586a8e01bd5e789",
         "type": "github"
       },
       "original": {
@@ -417,11 +417,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1777270315,
-        "narHash": "sha256-yKB4G6cKsQsWN7M6rZGk6gkJPDNPIzT05y4qzRyCDlI=",
+        "lastModified": 1777425547,
+        "narHash": "sha256-d57AbflkNfZNoFaZDzssEq1RfPoM9dLtOGI2O+N/68Q=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "6368eda62c9775c38ef7f714b2555a741c20c72d",
+        "rev": "ebc08544afa77957cc348ba72dc490ec73b87f68",
         "type": "github"
       },
       "original": {
@@ -504,11 +504,11 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1777515495,
-        "narHash": "sha256-VtGNZeUxmllDlW+7mykvjc9FJlZkhg40COEqG+098E0=",
+        "lastModified": 1777638991,
+        "narHash": "sha256-SfIfBHeN+5Xt+jv8UmMbqKqZ/j5bIPWfdohM88b8yto=",
         "ref": "refs/heads/main",
-        "rev": "38ed7a32d144c726df49945e4e9f1d236d5ee592",
-        "revCount": 109,
+        "rev": "9c780c9902a9d4f3e35dd9916f1a02ad2c650904",
+        "revCount": 114,
         "type": "git",
         "url": "https://git.barrettruth.com/barrettruth/tmux-mosaic.git"
       },

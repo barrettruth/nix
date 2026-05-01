@@ -28,4 +28,4 @@ pkgs/                            custom derivations
 ## Hosts
 
 - **vps** — NixOS VPS. Public Forgejo at `git.barrettruth.com`, Vaultwarden at `vault.barrettruth.com`, `delta` at `delta.barrettruth.com`. Deploy with `just rebuild-vps`.
-- **laptop** — Dell XPS 9500 workstation. Hosts the `tmux-mosaic` Forgejo runner. Deploy locally with `nixos-rebuild switch --flake .#laptop`.
+- **laptop** — Dell XPS 9500 workstation. Deploy locally with `nixos-rebuild switch --flake .#laptop`.
