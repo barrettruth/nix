@@ -90,18 +90,46 @@ gh api -X PATCH /repos/barrettruth/<name> -F archived=false
 
 If the repo wasn't archived, skip. If it WAS archived under v1, this is a one-time cleanup.
 
-## Step 2: align github main with forgejo main (drop v1 banner if present)
+## Step 2: github-only mirror banner via `.github/README.md`
 
-V1 deprecation pushed a "moved to forgejo" banner commit directly to github main. Under v2, the mirror will overwrite github main with forgejo content on first sync, so the banner gets dropped automatically. No manual action needed UNLESS you want different content; in that case, commit it to forgejo first, then let the mirror propagate.
+GitHub renders `.github/README.md` in preference to root `README.md` when both exist. Forgejo always renders root `README.md`. **This is the asymmetric-README mechanism.** The same git tree contains both files; each forge picks the one it prefers.
 
-If you want a "this is mirrored from forgejo" note in the README, add it to forgejo's README on a normal commit. The mirror will push it to github. Recommended wording (works on both forges, useful on github, tautological-but-not-misleading on forgejo):
+Build `.github/README.md` as `<title-line>` + banner + full body of root README. Github visitors see banner at top + full project content below (the v1 experience). Forgejo visitors see only root README, no banner — they're already at the canonical URL, the banner would be self-referential.
 
-```markdown
-> [!NOTE]
-> Issues and PRs at <https://git.barrettruth.com/barrettruth/<name>>.
+```
+header=$(head -1 README.md)
+rest=$(tail -n +2 README.md)
+mkdir -p .github
+cat > .github/README.md <<EOF
+$header
+
+> [!IMPORTANT]
+> This is a read-only mirror of <https://git.barrettruth.com/barrettruth/<name>>. Use Forgejo for issues, PRs, and active development.
+$rest
+EOF
+git add .github/README.md
+git commit -m "docs(.github): prepend mirror banner + include full readme content"
 ```
 
-This is **optional**. The github description prefix and homepage in Steps 6-7 are usually enough signal on their own.
+Push to forgejo. Mirror propagates `.github/README.md` to github automatically. Github immediately starts rendering it as the repo README.
+
+### Maintenance contract
+
+`.github/README.md` is **a copy of root `README.md` with a banner prepended**. When root README updates, `.github/README.md` must be regenerated using the same recipe above. Otherwise github's view drifts from the canonical content.
+
+Options for keeping them in sync:
+
+- **Manual** (current default): regenerate by hand whenever root README changes.
+- **CI step on forgejo** (recommended for repos with frequent README churn): a job in `.forgejo/workflows/quality.yaml` or a dedicated `sync-mirror-readme.yaml` that on push to main rebuilds `.github/README.md` from root + banner template, commits via the forgejo signing key, pushes to main. Mirror then propagates the regen.
+- **Symlink-with-prepend script** in the repo (e.g. `just sync-readme`): captured in justfile so a contributor runs it before commit.
+
+For low-churn repos (`nix`, `http-codes.nvim`, dotfile-style configs), manual is fine. For active projects (`vimdoc-language-server`), CI sync is worth setting up.
+
+### v1 history (for context)
+
+V1 deprecation pushed a "moved to forgejo" banner commit directly to github main. Under v2, the mirror would overwrite github main with forgejo content on first sync, so the v1 banner got dropped automatically.
+
+A 2026-05-01 attempt to add `> [!NOTE] Issues and PRs at <forgejo URL>` banners to forgejo `main` of http-codes.nvim, nix, and vimdoc-language-server was reverted same-day after the user pointed out the banners read as self-referential on forgejo. Subsequent attempt with banner-only `.github/README.md` (no project content) was also rejected — github lost the full project README. Final working pattern (this Step 2): `.github/README.md` = title + banner + full root README content, regenerated as needed. Verified commits: `839d4ed` (http-codes.nvim), `63fd62b` (nix), `3e26b1b` (vimdoc-language-server).
 
 ## Step 3: configure forgejo→github push-mirror via SSH
 
@@ -177,7 +205,72 @@ gh api -X PATCH /repos/barrettruth/<name> \
   -F has_wiki=false -F has_projects=false -F has_issues=false
 ```
 
-`has_issues=false` is the durable fix that prevents new issues from being filed on github (where they'd be orphaned from forgejo, since the mirror is git-only). Existing issues stay readable in the historical record but the "New Issue" button disappears and the issues tab hides. Forgejo has all the issues from the original `/github-to-forgejo` migration plus any filed on forgejo since; new filings from anyone hitting the github URL get redirected via the README banner + description prefix.
+## Step 7a: auto-close incoming PRs via GitHub Actions
+
+GitHub does NOT have a `has_pull_requests=false` repo setting — PRs are fundamental to github's data model and there's no toggle. For user-owned (non-org) public repos, you also can't disable forking (`allow_forking` only affects private forks; public repos always allow public forks). So PR creation is structurally unblockable on github.
+
+The standard mirror-repo defense is a workflow that auto-closes any incoming PR with a redirect comment. Commit it to forgejo's `.github/workflows/redirect-pr-to-forgejo.yaml`; the mirror propagates it to github; github actions fires it on every new PR.
+
+```yaml
+name: redirect-pr-to-forgejo
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  redirect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const forgejoUrl = `https://git.barrettruth.com/${context.repo.owner}/${context.repo.repo}`;
+            const body = [
+              'Thank you for the contribution.',
+              '',
+              `This GitHub repo is a read-only mirror. Please reopen this PR on [Forgejo](${forgejoUrl}).`,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body,
+            });
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              state: 'closed',
+            });
+```
+
+Why these settings:
+- `pull_request_target` (not `pull_request`) — runs against the BASE repo's workflow (not the fork's), so it has access to the `GITHUB_TOKEN` needed to comment + close. `pull_request` from a fork cannot mutate the base.
+- `runs-on: ubuntu-latest` — github-hosted runner. Not `nix` (forgejo runner label, doesn't exist on github).
+- `permissions: pull-requests: write, issues: write` — minimum needed to comment + close.
+- `actions/github-script@v7` — pinned major version, no need for a custom action.
+
+Forgejo runners don't read `.github/workflows/*` so this workflow is github-only by construction. The `.forgejo/workflows/*` workflows continue to handle CI on forgejo.
+
+## Step 7b: add `mirror` topic on github
+
+GitHub doesn't expose a native "Mirror of X" badge for our setup (the `mirror_url` field is read-only via PATCH; it's only set by github's own Import flow which is destructive to use on existing repos). The `mirror` topic is the closest non-destructive replacement — a chip that shows on the repo card and makes the repo findable via topic search.
+
+```
+existing=$(gh api /repos/barrettruth/<name>/topics --jq '.names | map(.) + ["mirror"] | unique')
+gh api -X PUT /repos/barrettruth/<name>/topics --input - <<JSON
+{"names": $existing}
+JSON
+```
+
+Do NOT add the `mirror` topic to forgejo's topics — forgejo topics describe what the project IS (e.g. `neovim-plugin`, `lsp-server`). The github side is the only place where the github↔forgejo mirror relationship is meaningful enough to topic-tag.
+
+`has_issues=false` is the durable fix that prevents new issues from being filed on github (where they'd be orphaned from forgejo, since the mirror is git-only). Existing issues stay readable in the historical record but the "New Issue" button disappears and the issues tab hides. Forgejo has all the issues from the original `/github-to-forgejo` migration plus any filed on forgejo since; new filings from anyone hitting the github URL get redirected by the description prefix and homepage link.
 
 Steps 6-7 can be batched into a single PATCH call.
 
