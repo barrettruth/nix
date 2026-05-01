@@ -1036,6 +1036,94 @@ in
     options = "--delete-older-than 3d";
   };
 
+  systemd.services.forgejo-heatmap-reconcile = {
+    description = "Replay barrettruth commit history into Forgejo's action table to backfill heatmap";
+    after = [ "forgejo.service" ];
+    requires = [ "forgejo.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "git";
+      Group = "git";
+    };
+    path = [
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.git
+      pkgs.gnused
+      pkgs.sqlite
+    ];
+    script = ''
+      set -euo pipefail
+
+      DB="/var/lib/forgejo/data/forgejo.db"
+      REPOS_ROOT="/var/lib/forgejo/repositories"
+      OWNER_NAME="barrettruth"
+      OP_TYPE=5
+
+      sql() {
+        sqlite3 -bail -batch "$DB" ".timeout 5000" "$1"
+      }
+
+      user_id=$(sql "SELECT id FROM \"user\" WHERE lower_name = '$OWNER_NAME';")
+      if [ -z "$user_id" ]; then
+        echo "no forgejo user named $OWNER_NAME found" >&2
+        exit 1
+      fi
+      echo "Reconciling heatmap for $OWNER_NAME (id=$user_id)"
+
+      emails_file=$(mktemp)
+      trap 'rm -f "$emails_file"' EXIT
+      sql "SELECT email FROM email_address WHERE uid = $user_id;" > "$emails_file"
+      sql "SELECT email FROM \"user\" WHERE id = $user_id;" >> "$emails_file"
+      sort -u -o "$emails_file" "$emails_file"
+
+      inserted=0
+
+      while IFS='|' read -r repo_id repo_name default_branch; do
+        [ -z "$repo_id" ] && continue
+        bare="$REPOS_ROOT/$OWNER_NAME/$repo_name.git"
+        [ -d "$bare" ] || continue
+
+        ref="refs/heads/$default_branch"
+        if ! git -C "$bare" rev-parse --verify --quiet "$ref" >/dev/null; then
+          continue
+        fi
+
+        repo_added=0
+        while IFS='|' read -r sha ct ae; do
+          [ -z "$sha" ] && continue
+          if ! grep -Fxq "$ae" "$emails_file"; then
+            continue
+          fi
+          exists=$(sql "SELECT COUNT(*) FROM action WHERE user_id = $user_id AND repo_id = $repo_id AND op_type = $OP_TYPE AND created_unix = $ct;")
+          if [ "$exists" -gt 0 ]; then
+            continue
+          fi
+          content=$(printf '%s\n%s' "$default_branch" "$sha")
+          sql "INSERT INTO action (user_id, op_type, act_user_id, repo_id, ref_name, is_private, content, created_unix) VALUES ($user_id, $OP_TYPE, $user_id, $repo_id, '$ref', 0, '$content', $ct);"
+          repo_added=$((repo_added + 1))
+          inserted=$((inserted + 1))
+        done < <(git -C "$bare" log --first-parent --format='%H|%ct|%ae' "$ref")
+
+        if [ "$repo_added" -gt 0 ]; then
+          echo "  $OWNER_NAME/$repo_name: +$repo_added"
+        fi
+      done < <(sql "SELECT id, name, default_branch FROM repository WHERE owner_id = $user_id AND is_private = 0;")
+
+      echo "Reconciliation complete: $inserted new action records."
+    '';
+  };
+
+  systemd.timers.forgejo-heatmap-reconcile = {
+    description = "Daily replay of barrettruth commit history into Forgejo's action table";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "10m";
+    };
+  };
+
   nix.extraOptions = ''
     min-free = ${toString (100 * 1024 * 1024)}
     max-free = ${toString (1024 * 1024 * 1024)}
