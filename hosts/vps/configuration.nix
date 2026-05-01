@@ -842,6 +842,7 @@ in
         UPDATE_AVATAR = true;
         USERNAME = "nickname";
       };
+      security.GLOBAL_TWO_FACTOR_REQUIREMENT = "all";
       session.COOKIE_SECURE = true;
       mailer = {
         ENABLED = true;
