@@ -51,6 +51,7 @@ in
     JUPYTER_PLATFORM_DIRS = "1";
     OPAMROOT = "${XDG_DATA_HOME}/opam";
     DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
+    CODEX_HOME = "${XDG_CONFIG_HOME}/codex";
     AWS_SHARED_CREDENTIALS_FILE = "${XDG_CONFIG_HOME}/aws/credentials";
     AWS_CONFIG_FILE = "${XDG_CONFIG_HOME}/aws/config";
     BOTO_CONFIG = "${XDG_CONFIG_HOME}/boto/config";
