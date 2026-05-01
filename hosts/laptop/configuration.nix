@@ -6,19 +6,6 @@
 
 let
   inherit (hostConfig) username homeDirectory;
-  forgejoRunnerTmuxMosaic = pkgs.writeShellScript "forgejo-runner-tmux-mosaic" ''
-    set -eu
-    mkdir -p "$HOME"
-    umask 077
-    printf '%s' "$FORGEJO_RUNNER_TOKEN" > "$HOME/runner-token"
-    exec ${pkgs.forgejo-runner}/bin/forgejo-runner daemon \
-      --url https://git.barrettruth.com/ \
-      --uuid "$FORGEJO_RUNNER_UUID" \
-      --token-url "file://$HOME/runner-token" \
-      --label ubuntu-latest:host \
-      --label tmux-mosaic:host \
-      --label docker-helper:docker://node:20-bookworm
-  '';
 in
 {
   imports = [
@@ -198,42 +185,6 @@ in
   };
 
   services.tailscale.enable = true;
-  systemd.services.forgejo-runner-tmux-mosaic = {
-    description = "Forgejo runner for tmux-mosaic";
-    wants = [ "network-online.target" ];
-    after = [
-      "network-online.target"
-      "docker.service"
-    ];
-    wantedBy = [ "multi-user.target" ];
-    path = with pkgs; [
-      bash
-      coreutils
-      curl
-      docker
-      gawk
-      gitMinimal
-      gnused
-      nodejs
-      wget
-      nix
-    ];
-    environment = {
-      HOME = "/var/lib/forgejo-runner/tmux-mosaic";
-    };
-    serviceConfig = {
-      Type = "simple";
-      DynamicUser = true;
-      User = "forgejo-runner";
-      StateDirectory = "forgejo-runner";
-      WorkingDirectory = "-/var/lib/forgejo-runner/tmux-mosaic";
-      EnvironmentFile = "/etc/forgejo-runner-tmux-mosaic.env";
-      Restart = "on-failure";
-      RestartSec = 2;
-      SupplementaryGroups = [ "docker" ];
-      ExecStart = "${forgejoRunnerTmuxMosaic}";
-    };
-  };
 
   virtualisation.docker.enable = true;
   virtualisation.libvirtd.enable = true;

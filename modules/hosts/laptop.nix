@@ -74,6 +74,7 @@ in
             ++ [
               "nvidia-x11"
               "nvidia-settings"
+              "nvidia-kernel-modules"
               "tailscale"
               "libfprint-2-tod1-goodix"
               "brgenml1lpr"
