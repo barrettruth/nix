@@ -19,11 +19,8 @@ lib.mkMerge [
       enable = true;
       pinentryPackage = pkgs.pinentry-curses;
       settings = {
-        # Largest safe positive signed 32-bit TTL, effectively infinite for a login session.
         default-cache-ttl = 2147483647;
         default-cache-ttl-ssh = 2147483647;
-
-        # Disable the creation-time maximum lifetime cap.
         max-cache-ttl = 0;
         max-cache-ttl-ssh = 0;
       };
