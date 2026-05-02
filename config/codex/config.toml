@@ -65,3 +65,15 @@ hide_rate_limit_model_nudge = true
 
 [tui]
 status_line = ["model-name", "git-branch", "context-remaining"]
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+
+[projects."/home/barrett/.config/nix"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/uva"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/diffs.nvim"]
+trust_level = "trusted"
