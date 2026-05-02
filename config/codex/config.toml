@@ -1,5 +1,5 @@
 model = "gpt-5.5"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 personality = "pragmatic"
 suppress_unstable_features_warning = true
 web_search = "live"
@@ -79,4 +79,7 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/barrett/dev/forge.nvim"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/vimdoc-language-server"]
 trust_level = "trusted"
