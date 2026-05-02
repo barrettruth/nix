@@ -6,6 +6,16 @@
   ...
 }:
 let
+  agentPackages = with pkgs; [
+    claude-code
+    codex
+    devin
+  ];
+
+  codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [
+    pkgs.mgrep
+  ];
+
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
 
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
@@ -36,10 +46,10 @@ in
       rustup
       uv
       python3
-      claude-code
-      codex
-      devin
-
+    ]
+    ++ agentPackages
+    ++ codexRuntimePackages
+    ++ [
       bash-language-server
       basedpyright
       clang-tools
