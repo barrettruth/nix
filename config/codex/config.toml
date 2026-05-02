@@ -1,16 +1,11 @@
 model = "gpt-5.5"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+suppress_unstable_features_warning = true
+web_search = "live"
+plan_mode_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
-default_permissions = ":danger-no-sandbox"
-
-
-model_reasoning_effort = "xhigh"
-plan_mode_reasoning_effort = "xhigh"
-model_verbosity = "high"
-personality = "pragmatic"
-allow_login_shell = true
-web_search = "live"
-suppress_unstable_features_warning = true
 commit_attribution = ""
 
 [features]
@@ -28,7 +23,8 @@ child_agents_md = true
 enable_request_compression = true
 skill_mcp_dependency_install = true
 skill_env_var_dependency_prompt = true
-apps = true
+responses_websockets_v2 = true
+apps = false
 codex_git_commit = false
 prevent_idle_sleep = true
 exec_permission_approvals = true
@@ -36,13 +32,6 @@ request_permissions_tool = true
 enable_fanout = true
 codex_hooks = true
 guardian_approval = true
-
-[permissions]
-
-[apps._default]
-enabled = true
-destructive_enabled = true
-open_world_enabled = true
 
 [agents]
 max_threads = 8
@@ -61,22 +50,18 @@ max_rollout_age_days = 30
 max_rollouts_per_startup = 8
 min_rollout_idle_hours = 24
 
+[mcp_servers.mgrep]
+command = "mgrep"
+args = ["mcp"]
+
 [sandbox_workspace_write]
 network_access = true
 
-[shell_environment_policy]
-inherit = "all"
-ignore_default_excludes = true
-
 [notice]
-hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.2" = "gpt-5.2-codex"
 
 [tui]
 status_line = ["model-name", "git-branch", "context-remaining"]
-
-[tui.model_availability_nux]
-"gpt-5.5" = 4
-
-[projects."/home/barrett/.config/nix"]
-trust_level = "trusted"
