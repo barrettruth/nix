@@ -8,6 +8,7 @@ zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-za-z}'
 
 export GPG_TTY=$(tty)
 export THEME="${THEME:-midnight}"
+export CODEX_HOME="${CODEX_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/codex}"
 export HISTFILE="${XDG_STATE_HOME}/zsh/history"
 
 setopt auto_cd
