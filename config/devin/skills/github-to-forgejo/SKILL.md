@@ -897,9 +897,10 @@ This is the LAST mutating phase. Pre-flight (and Phase 0 if it ran) already DELE
   "status_check_contexts": ["quality / Format (pull_request)", "quality / Lint (pull_request)", "quality / Test (pull_request)"],
   "required_approvals": 1,
   "block_on_rejected_reviews": true,
-  "block_on_outdated_branch": false,
+  "block_on_official_review_requests": true,
+  "block_on_outdated_branch": true,
   "dismiss_stale_approvals": true,
-  "ignore_stale_approvals": false,
+  "ignore_stale_approvals": true,
   "require_signed_commits": true,
   "apply_to_admins": false
 }
@@ -1054,10 +1055,10 @@ enable_status_check:        true
 status_check_contexts:      ["quality / Format (pull_request)", "quality / Lint (pull_request)", "quality / Test (pull_request)"]   (filtered to detected recipes; see Phase 6 for derivation rule)
 required_approvals:         1
 block_on_rejected_reviews:  true
-block_on_official_review_requests: false
-block_on_outdated_branch:   false
+block_on_official_review_requests: true
+block_on_outdated_branch:   true
 dismiss_stale_approvals:    true
-ignore_stale_approvals:     false
+ignore_stale_approvals:     true
 require_signed_commits:     true
 apply_to_admins:            false
 ```
