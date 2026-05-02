@@ -115,9 +115,8 @@ in
     ${mkDir "${XDG_CONFIG_HOME}/devin"}
     ${mkDir "${XDG_CONFIG_HOME}/claude"}
     ${mkDir "${XDG_CONFIG_HOME}/codex"}
-    if [ -L "${homeDirectory}/.codex" ] || [ ! -e "${homeDirectory}/.codex" ]; then
-      ln -sfn "${XDG_CONFIG_HOME}/codex" "${homeDirectory}/.codex"
-      chown -h ${username}:users "${homeDirectory}/.codex"
+    if [ -L "${homeDirectory}/.codex" ]; then
+      rm -f "${homeDirectory}/.codex"
     fi
     ${mkDir "${XDG_CONFIG_HOME}/vim"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
