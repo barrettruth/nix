@@ -12,6 +12,7 @@ let
     wrapWaylandExec
     ;
   waylandGate = mkWaylandGate "hyprland-session.target";
+  gpgCacheTtlSeconds = 2147483647;
 in
 lib.mkMerge [
   {
@@ -19,10 +20,10 @@ lib.mkMerge [
       enable = true;
       pinentryPackage = pkgs.pinentry-curses;
       settings = {
-        default-cache-ttl = 2147483647;
-        default-cache-ttl-ssh = 2147483647;
-        max-cache-ttl = 0;
-        max-cache-ttl-ssh = 0;
+        default-cache-ttl = gpgCacheTtlSeconds;
+        default-cache-ttl-ssh = gpgCacheTtlSeconds;
+        max-cache-ttl = gpgCacheTtlSeconds;
+        max-cache-ttl-ssh = gpgCacheTtlSeconds;
       };
     };
 

@@ -126,6 +126,7 @@ in
     ${mkDir "${XDG_STATE_HOME}/vim"}
     ${mkDir "${XDG_CACHE_HOME}/vim"}
     ${mkDir "${homeDirectory}/.ssh"}
+    ${mkDir "${homeDirectory}/.gnupg"}
 
     ${lib.optionalString hostConfig.enableDesktop ''
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
@@ -146,6 +147,7 @@ in
     ${mkSymlink "${gitConf}" "${XDG_CONFIG_HOME}/git/config"}
     ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
     ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
+    ${mkSymlink "/etc/gnupg/gpg-agent.conf" "${homeDirectory}/.gnupg/gpg-agent.conf"}
     ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
     cp -f "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"
     chown ${username}:users "${XDG_CONFIG_HOME}/gh/config.yml"
