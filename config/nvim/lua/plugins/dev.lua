@@ -231,43 +231,53 @@ return {
                         desc = 'toggle columns',
                     })
 
-                    vim.keymap.set('n', 'gX', function()
-                        local canola = require('canola')
-                        local entry = canola.get_cursor_entry()
-                        local dir = canola.get_current_dir()
-                        if not entry or not dir then
-                            return
-                        end
-                        local path = dir .. entry.name
-                        vim.ui.input(
-                            { prompt = 'chmod: ', default = '755' },
-                            function(mode)
-                                if not mode then
-                                    return
-                                end
-                                vim.uv.fs_chmod(
-                                    path,
-                                    tonumber(mode, 8),
-                                    function(err)
-                                        if err then
-                                            vim.schedule(function()
-                                                vim.notify(
-                                                    err,
-                                                    vim.log.levels.ERROR
-                                                )
-                                            end)
-                                            return
-                                        end
-                                        vim.schedule(function()
-                                            require('canola.actions').refresh.callback()
-                                        end)
-                                    end
-                                )
+                    vim.api.nvim_buf_create_user_command(
+                        bufnr,
+                        'CanolaChmod',
+                        function(cmd_args)
+                            local canola = require('canola')
+                            local dir = canola.get_current_dir()
+                            if not dir then
+                                return
                             end
-                        )
-                    end, {
+
+                            local mode = cmd_args.args ~= '' and cmd_args.args
+                                or '+x'
+                            local cmd = { 'chmod', mode, '--' }
+                            for lnum = cmd_args.line1, cmd_args.line2 do
+                                local entry = canola.get_entry_on_line(0, lnum)
+                                if entry then
+                                    cmd[#cmd + 1] = dir .. entry.name
+                                end
+                            end
+                            if #cmd == 3 then
+                                return
+                            end
+
+                            vim.system(cmd, { text = true }, function(result)
+                                vim.schedule(function()
+                                    if result.code ~= 0 then
+                                        local stderr =
+                                            vim.trim(result.stderr or '')
+                                        vim.notify(
+                                            stderr ~= '' and stderr
+                                                or 'chmod failed',
+                                            vim.log.levels.ERROR
+                                        )
+                                        return
+                                    end
+                                    require('canola.actions').refresh.callback({
+                                        force = true,
+                                    })
+                                end)
+                            end)
+                        end,
+                        { range = true, nargs = '?', force = true }
+                    )
+
+                    vim.keymap.set({ 'n', 'x' }, 'gX', ':CanolaChmod +x<cr>', {
                         buffer = bufnr,
-                        desc = 'chmod entry',
+                        desc = 'chmod +x entry',
                     })
                 end,
             })
