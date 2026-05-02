@@ -84,6 +84,15 @@ return {
     {
         'barrettruth/forge.nvim',
         enabled = true,
+        before = function()
+            vim.g.forge = vim.tbl_deep_extend('force', vim.g.forge or {}, {
+                sources = {
+                    codeberg = {
+                        hosts = { 'git.barrettruth.com' },
+                    },
+                },
+            })
+        end,
         after = function()
             require('config.lz').load('ibhagwan/fzf-lua')
         end,
