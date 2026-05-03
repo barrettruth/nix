@@ -1,1 +1,110 @@
+#!/bin/sh
 
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
+state_file="$state_dir/waybar"
+theme_link="$cfg/waybar/themes/theme.css"
+
+current_theme() {
+	theme="$(cat "$state_dir/theme" 2>/dev/null || true)"
+	case "$theme" in
+	daylight | midnight) printf '%s\n' "$theme" ;;
+	*) printf '%s\n' midnight ;;
+	esac
+}
+
+write_state() {
+	mkdir -p "$state_dir"
+	printf '%s\n' "$1" >"$state_file"
+}
+
+read_state() {
+	state="$(cat "$state_file" 2>/dev/null || true)"
+	case "$state" in
+	shown | hidden) printf '%s\n' "$state" ;;
+	*) return 1 ;;
+	esac
+}
+
+is_running() {
+	pgrep -x waybar >/dev/null 2>&1 || pgrep -x '[.]waybar-wrapped' >/dev/null 2>&1
+}
+
+signal_waybar() {
+	pkill "-$1" -x waybar 2>/dev/null || true
+	pkill "-$1" -x '[.]waybar-wrapped' 2>/dev/null || true
+}
+
+sync_theme() {
+	theme="$(current_theme)"
+	target="$cfg/waybar/themes/$theme.css"
+
+	[ -f "$target" ] || return 0
+	current_target="$(readlink -f "$theme_link" 2>/dev/null || true)"
+	desired_target="$(readlink -f "$target" 2>/dev/null || true)"
+	[ "$current_target" = "$desired_target" ] && return 0
+
+	ln -sf "$target" "$theme_link"
+}
+
+show_bar() {
+	sync_theme
+	if is_running; then
+		state="$(read_state 2>/dev/null || true)"
+		[ "$state" = hidden ] && signal_waybar USR1
+	else
+		nohup waybar >/dev/null 2>&1 &
+	fi
+	write_state shown
+}
+
+hide_bar() {
+	is_running || {
+		write_state hidden
+		return 0
+	}
+	state="$(read_state 2>/dev/null || true)"
+	[ "$state" = shown ] && signal_waybar USR1
+	write_state hidden
+}
+
+toggle_bar() {
+	if ! is_running; then
+		show_bar
+		return 0
+	fi
+	state="$(read_state 2>/dev/null || true)"
+	case "$state" in
+	hidden) show_bar ;;
+	shown) hide_bar ;;
+	*)
+		signal_waybar USR1
+		write_state hidden
+		;;
+	esac
+}
+
+apply_theme() {
+	sync_theme
+	[ "$(read_state 2>/dev/null || true)" = hidden ] && return 0
+	is_running && signal_waybar USR2
+}
+
+case "$1" in
+toggle) toggle_bar ;;
+show) show_bar ;;
+hide) hide_bar ;;
+apply-theme) apply_theme ;;
+sync-theme) sync_theme ;;
+state)
+	if ! is_running; then
+		printf '%s\n' stopped
+		exit 0
+	fi
+	read_state 2>/dev/null || printf '%s\n' unknown
+	;;
+*)
+	printf '%s\n' "usage: waybarctl {toggle|show|hide|apply-theme|sync-theme|state}" >&2
+	exit 1
+	;;
+esac
