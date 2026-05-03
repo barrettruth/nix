@@ -32,7 +32,7 @@ let
         ];
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-9029+wny2rmbnaEdgG/E+nqoHSD5vNP0h+8iJAhOJio=";
+        outputHash = "sha256-FrYYStdYTPztIPpez07ThP15+Jmo56nNdPsbPb76YQ4=";
       }
       ''
         set -euo pipefail
@@ -45,7 +45,7 @@ let
         node -e "
           const fs = require('fs');
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          pkg.dependencies['@codemirror/legacy-modes'] = '^${legacyModesVersion}';
+          pkg.dependencies['@codemirror/legacy-modes'] = '${legacyModesVersion}';
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
         "
 
@@ -110,6 +110,7 @@ buildGoModule {
 
   patches = [
     "${pkgs.path}/pkgs/by-name/fo/forgejo/static-root-path.patch"
+    ./oauth-avatar-on-registration.patch
   ];
   postPatch = ''
     substituteInPlace modules/setting/server.go --subst-var data
