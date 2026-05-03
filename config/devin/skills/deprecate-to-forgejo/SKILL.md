@@ -9,7 +9,7 @@ version: 2.0.0
 
 Take ONE `barrettruth/<name>` whose canonical home is now `git.barrettruth.com/barrettruth/<name>` and reconfigure the GitHub mirror so it passively reflects Forgejo. After this skill runs, every push to forgejo `main` propagates to github `main` within seconds via Forgejo's `sync_on_commit` push-mirror over SSH; humans never push to github directly. The local clone keeps only `origin = forgejo`.
 
-This is the inverse of `/github-to-forgejo`: that skill migrates content TO Forgejo and never touches GitHub. This skill configures GitHub as a forgejo-driven mirror and never touches Forgejo content (Forgejo metadata is read-only here too).
+This is the inverse of `/github-to-forgejo`: that skill migrates content TO Forgejo and never touches GitHub. This skill configures GitHub as a forgejo-driven mirror. Any git content needed on GitHub (for example `.github/README.md` or `.github/workflows/redirect-pr-to-forgejo.yaml`) must be committed to Forgejo first and then mirrored to GitHub; do not open GitHub PRs or push human-authored branches directly to GitHub.
 
 ## Architecture
 
@@ -33,12 +33,13 @@ This is the inverse of `/github-to-forgejo`: that skill migrates content TO Forg
 
 ## Hard rules (non-negotiable)
 
-- **Forgejo content is read-only here.** This skill never edits forgejo branches, never pushes to forgejo, never modifies forgejo's README, description, topics, or branch protection. Reading forgejo via `tea api` (push_mirrors and similar) is allowed.
+- **No direct GitHub git writes.** GitHub is the passive mirror. Git content changes for GitHub-only UX live under `.github/` on Forgejo and propagate through the push mirror. Do not open GitHub PRs or push human-authored GitHub branches.
+- **Keep Forgejo writes narrow.** This skill may commit mirror scaffolding such as `.github/README.md` and, for allowed low/no-popularity mirror repos, `.github/workflows/redirect-pr-to-forgejo.yaml`. Do not otherwise modify Forgejo README content, metadata, topics, branch protection, or unrelated files.
 - **GitHub stays unarchived.** Earlier versions of this skill ended in `archived=true`; that's no longer the recipe. If GitHub is currently archived (legacy v1 deprecation), unarchive it first via `gh api -X PATCH ... -F archived=false`.
 - All API mutations on GitHub use `gh api -X PATCH` or `gh api -X POST`. No git pushes to github from a human; only forgejo pushes via the mirror.
 - All push-mirror configuration goes through Forgejo's API, not the UI, so the operation is reproducible.
 - No AI attribution in any commit or any github metadata field.
-- This skill is for low-popularity repos and personal-config repos. Higher-popularity repos (`canola.nvim`, `tmux-mosaic`, `delta`) likely warrant a different pattern (e.g. dual-canonical hosts, or live two-way sync). DO NOT run this skill on those without explicit per-repo decision.
+- This skill is for low/no-popularity repos and personal-config repos. Higher-popularity or policy-deferred repos (`canola.nvim`, `tmux-mosaic`, `delta`, `diffs.nvim`, `cp.nvim`, `forge.nvim`, `preview.nvim`, `import-cost.nvim`, `live-server.nvim`, `canola-collection`, `cp`, and similar) likely warrant a different pattern (e.g. dual-canonical hosts, GitHub remaining canonical, or live two-way sync). DO NOT run this skill or add the PR auto-close workflow on those without an explicit per-repo decision.
 
 ## Sync before mirror (lossless local↔forgejo↔github reconciliation)
 
@@ -209,7 +210,7 @@ gh api -X PATCH /repos/barrettruth/<name> \
 
 GitHub does NOT have a `has_pull_requests=false` repo setting — PRs are fundamental to github's data model and there's no toggle. For user-owned (non-org) public repos, you also can't disable forking (`allow_forking` only affects private forks; public repos always allow public forks). So PR creation is structurally unblockable on github.
 
-The standard mirror-repo defense is a workflow that auto-closes any incoming PR with a redirect comment. Commit it to forgejo's `.github/workflows/redirect-pr-to-forgejo.yaml`; the mirror propagates it to github; github actions fires it on every new PR.
+For allowed low/no-popularity mirror repos, the standard defense is a workflow that auto-closes any incoming PR with a redirect comment. Commit it to Forgejo's `.github/workflows/redirect-pr-to-forgejo.yaml` via a Forgejo PR; the mirror propagates it to GitHub; GitHub Actions fires it on every new PR. Do not create a GitHub PR for this file, and do not add it to popular/deferred repos without an explicit per-repo plan.
 
 ```yaml
 name: redirect-pr-to-forgejo

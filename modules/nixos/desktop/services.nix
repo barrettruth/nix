@@ -45,6 +45,45 @@ lib.mkMerge [
       };
     };
 
+    systemd.user.services.direnv-cache-prune = {
+      description = "Prune stale direnv and nix-direnv caches";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "direnv-cache-prune" ''
+          set -euo pipefail
+
+          ${pkgs.direnv}/bin/direnv prune || true
+
+          for root in "$HOME/dev" "$HOME/.config/nix"; do
+            [ -d "$root" ] || continue
+
+            ${pkgs.findutils}/bin/find "$root" -type d -name .direnv -prune -print0 \
+              | while IFS= read -r -d "" cache; do
+                  recent_cache=$(${pkgs.findutils}/bin/find "$cache" -mindepth 1 -maxdepth 2 \
+                    \( -name 'flake-profile*' -o -name 'nix-profile*' -o -path "$cache/flake-inputs/*" \) \
+                    -mtime -7 -print -quit)
+                  if [ -n "$recent_cache" ]; then
+                    continue
+                  fi
+
+                  ${pkgs.coreutils}/bin/rm -f -- "$cache"/flake-profile* "$cache"/nix-profile* "$cache"/*.rc
+                  ${pkgs.coreutils}/bin/rm -rf -- "$cache/flake-inputs"
+                  ${pkgs.findutils}/bin/find "$cache" -type d -empty -delete
+                done
+          done
+        '';
+      };
+    };
+
+    systemd.user.timers.direnv-cache-prune = {
+      description = "Auto-prune stale direnv caches";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        Persistent = true;
+      };
+    };
+
     systemd.user.services.whisper-dictation =
       let
         whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };

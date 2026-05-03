@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   hostConfig,
   ...
@@ -243,9 +244,18 @@ in
 
   nix.gc = {
     automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 7d";
+    dates = "daily";
+    options = "";
   };
+
+  system.activationScripts.pruneLaptopSystemGenerations.text = ''
+    if [ -e /nix/var/nix/profiles/system ]; then
+      ${config.nix.package}/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +5
+    fi
+  '';
+
+  systemd.services.nix-gc.serviceConfig.ExecStartPre =
+    "${config.nix.package}/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +5";
 
   systemd.services.nix-gc.serviceConfig.ExecStartPost =
     "/nix/var/nix/profiles/system/bin/switch-to-configuration boot";
