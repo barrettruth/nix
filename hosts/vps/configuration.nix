@@ -278,7 +278,7 @@ let
       --color-input-border-hover: #999999;
       --color-button: #d0d0d0;
       --color-code-bg: #e8e8e8;
-      --color-markup-code-block: #e8e8e8;
+      --color-markup-code-block: var(--color-body);
       --color-markup-code-inline: #ebebeb;
       --color-diff-added-row-bg: #a5c5ab;
       --color-diff-removed-row-bg: #e2a1b2;
@@ -390,7 +390,7 @@ let
       --color-input-border-hover: #5a5a5a;
       --color-button: #3d3d3d;
       --color-code-bg: #1a1a1a;
-      --color-markup-code-block: #2d2d2d;
+      --color-markup-code-block: var(--color-body);
       --color-markup-code-inline: #2d2d2d;
       --color-diff-added-row-bg: #0c2f1e;
       --color-diff-removed-row-bg: #291f27;
@@ -653,7 +653,7 @@ in
     efiSupport = true;
     efiInstallAsRemovable = true;
     devices = lib.mkForce [ "nodev" ];
-    configurationLimit = 3;
+    configurationLimit = 2;
   };
 
   documentation.enable = false;
@@ -761,6 +761,22 @@ in
       enableACME = true;
       forceSSL = true;
       locations."/".proxyPass = "http://127.0.0.1:3001";
+    };
+  };
+
+  services.journald.extraConfig = ''
+    SystemMaxUse=1G
+    SystemKeepFree=2G
+    RuntimeMaxUse=256M
+    MaxRetentionSec=14day
+  '';
+
+  services.logrotate = {
+    enable = true;
+    settings.nginx = {
+      frequency = "daily";
+      rotate = 14;
+      maxsize = "100M";
     };
   };
 
@@ -1145,9 +1161,17 @@ in
 
   nix.gc = {
     automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 3d";
+    dates = "daily";
+    options = "";
   };
+
+  # Keep only the current VPS system generation and one rollback generation.
+  system.activationScripts.pruneVpsSystemGenerations.text = ''
+    if [ -e /nix/var/nix/profiles/system ]; then
+      ${config.nix.package}/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +2
+      ${config.nix.package}/bin/nix-store --gc
+    fi
+  '';
 
   systemd.services.forgejo-heatmap-reconcile = {
     description = "Replay barrettruth commit history into Forgejo's action table to backfill heatmap";

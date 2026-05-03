@@ -68,7 +68,7 @@ let
     pname = "forgejo-frontend-with-cm6-langs";
     inherit version;
     src = patchedSrc;
-    npmDepsHash = "sha256-GSldXLyKwjX+9QRZoJh2G/bcHNImwIZu6OBQFxitRzY=";
+    npmDepsHash = "sha256-xxYJXYvqCBI85Snte4i4F2/S+/lxsxNpIS53N6POKf8=";
 
     buildPhase = ''
       runHook preBuild
