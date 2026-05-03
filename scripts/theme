@@ -42,19 +42,18 @@ Linux)
   if command -v hyprctl >/dev/null 2>&1 && hyprctl monitors >/dev/null 2>&1; then
     case "$theme" in
     midnight)
-      hyprctl keyword general:col.active_border "rgb(e0e0e0)"
-      hyprctl keyword general:col.inactive_border "rgb(121212)"
+      hyprctl keyword general:col.active_border "rgb(e0e0e0)" >/dev/null
+      hyprctl keyword general:col.inactive_border "rgb(121212)" >/dev/null
       ;;
     daylight)
-      hyprctl keyword general:col.active_border "rgb(1a1a1a)"
-      hyprctl keyword general:col.inactive_border "rgb(f5f5f5)"
+      hyprctl keyword general:col.active_border "rgb(1a1a1a)" >/dev/null
+      hyprctl keyword general:col.inactive_border "rgb(f5f5f5)" >/dev/null
       ;;
     esac
 
     cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-    waybar_themes="$cfg/waybar/themes"
-    [ -f "$waybar_themes/$theme.css" ] && ln -sf "$waybar_themes/$theme.css" "$waybar_themes/theme.css"
+    waybarctl apply-theme
 
     hypr_themes="$cfg/hypr/themes"
     [ -f "$hypr_themes/$theme.conf" ] && {
@@ -75,23 +74,40 @@ Linux)
     [ -f "$dunst_themes/$theme.conf" ] && {
       mkdir -p "$cfg/dunst/dunstrc.d"
       ln -sf "$dunst_themes/$theme.conf" "$cfg/dunst/dunstrc.d/theme.conf"
-      dunstctl reload
+      dunstctl reload >/dev/null 2>&1 &
     }
 
     zathura_themes="$cfg/zathura/themes"
     [ -f "$zathura_themes/$theme" ] && {
       ln -sf "$zathura_themes/$theme" "$cfg/zathura/theme"
-      busctl --user list --acquired 2>/dev/null | awk '/org\.pwmt\.zathura\.PID-/{print $1}' | while read -r dest; do
-        dbus-send --session --dest="$dest" --type=method_call \
-          /org/pwmt/zathura org.pwmt.zathura.SourceConfig 2>/dev/null || true
-      done
+      (
+        busctl --user list --acquired 2>/dev/null | awk '/org\.pwmt\.zathura\.PID-/{print $1}' | while read -r dest; do
+          dbus-send --session --dest="$dest" --type=method_call \
+            /org/pwmt/zathura org.pwmt.zathura.SourceConfig 2>/dev/null || true
+        done
+      ) &
     }
 
     pics="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screensavers"
     themed_wp="$pics/wallpaper-$theme.jpg"
     [ -f "$themed_wp" ] && {
-      ln -sf "$themed_wp" "$pics/wallpaper.jpg"
-      systemctl --user restart hyprpaper
+      wp_link="$pics/wallpaper.jpg"
+      current_wp="$(readlink -f "$wp_link" 2>/dev/null || true)"
+      desired_wp="$(readlink -f "$themed_wp" 2>/dev/null || true)"
+      if [ "$current_wp" != "$desired_wp" ]; then
+        ln -sf "$themed_wp" "$wp_link"
+        if systemctl --user is-active --quiet hyprpaper 2>/dev/null; then
+          reload_lock="${XDG_RUNTIME_DIR:-/tmp}/theme-hyprpaper-reload"
+          if mkdir "$reload_lock" 2>/dev/null; then
+            (
+              sleep 0.2
+              systemctl --user is-active --quiet hyprpaper 2>/dev/null &&
+                systemctl --user restart hyprpaper >/dev/null 2>&1
+              rmdir "$reload_lock" 2>/dev/null || true
+            ) &
+          fi
+        fi
+      fi
     }
 
   fi
@@ -108,8 +124,11 @@ if command -v tmux >/dev/null 2>&1 && tmux list-sessions >/dev/null 2>&1; then
   tmux_themes="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/themes"
   [ -f "$tmux_themes/$theme.conf" ] && tmux source "$tmux_themes/$theme.conf"
   tmux setenv -g THEME "$theme"
+  tmux refresh-client -S >/dev/null 2>&1 || true
 fi
 
-for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
-  [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf.reload\").reload()')" 2>/dev/null || true
-done
+(
+  for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
+    [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf.reload\").reload()')" >/dev/null 2>&1 || true
+  done
+) &
