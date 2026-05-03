@@ -57,7 +57,7 @@ lib.mkMerge [
           for root in "$HOME/dev" "$HOME/.config/nix"; do
             [ -d "$root" ] || continue
 
-            ${pkgs.findutils}/bin/find "$root" -type d -name .direnv -prune -print0 \
+            ${pkgs.findutils}/bin/find "$root" -maxdepth 3 -type d -name .direnv -prune -print0 \
               | while IFS= read -r -d "" cache; do
                   recent_cache=$(${pkgs.findutils}/bin/find "$cache" -mindepth 1 -maxdepth 2 \
                     \( -name 'flake-profile*' -o -name 'nix-profile*' -o -path "$cache/flake-inputs/*" \) \
