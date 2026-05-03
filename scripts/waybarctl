@@ -2,6 +2,32 @@
 
 waybar_pattern='(^|/| )waybar($| )|\.waybar-wrapped$'
 
+current_theme() {
+  theme="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)"
+  case "$theme" in
+  daylight | midnight) printf '%s\n' "$theme" ;;
+  *) printf '%s\n' midnight ;;
+  esac
+}
+
+apply_theme() {
+  cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+  theme="$(current_theme)"
+  target="$cfg/waybar/themes/$theme.css"
+  link="$cfg/waybar/themes/theme.css"
+
+  [ -f "$target" ] || return 0
+  current_target="$(readlink -f "$link" 2>/dev/null || true)"
+  desired_target="$(readlink -f "$target" 2>/dev/null || true)"
+  [ "$current_target" = "$desired_target" ] && return 0
+
+  ln -sf "$target" "$link"
+
+  if pgrep -f "$waybar_pattern" >/dev/null 2>&1; then
+    pkill -USR2 -f "$waybar_pattern" 2>/dev/null || true
+  fi
+}
+
 case "$1" in
 toggle)
   if pgrep -f "$waybar_pattern" >/dev/null 2>&1; then
@@ -10,8 +36,9 @@ toggle)
     waybar >/dev/null 2>&1 &
   fi
   ;;
+apply-theme) apply_theme ;;
 *)
-  printf '%s\n' "usage: waybarctl toggle" >&2
+  printf '%s\n' "usage: waybarctl {toggle|apply-theme}" >&2
   exit 1
   ;;
 esac
