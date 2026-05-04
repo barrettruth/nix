@@ -1,0 +1,42 @@
+diff --git a/routers/web/auth/auth.go b/routers/web/auth/auth.go
+index 56df4d6dbb..11e98d2325 100644
+--- a/routers/web/auth/auth.go
++++ b/routers/web/auth/auth.go
+@@ -113,11 +113,12 @@ func RedirectAfterLogin(ctx *context.Context) {
+ 		redirectTo = ctx.GetSiteCookie("redirect_to")
+ 	}
+ 	middleware.DeleteRedirectToCookie(ctx.Resp)
+-	nextRedirectTo := setting.AppSubURL + string(setting.LandingPageURL)
+-	if setting.LandingPageURL == setting.LandingPageLogin {
+-		nextRedirectTo = setting.AppSubURL + "/" // do not cycle-redirect to the login page
++	landingURL := setting.AppSubURL + string(setting.LandingPageURL)
++	if redirectTo == string(setting.LandingPageURL) || redirectTo == landingURL {
++		redirectTo = ""
+ 	}
+-	ctx.RedirectToFirst(redirectTo, nextRedirectTo)
++
++	ctx.RedirectToFirst(redirectTo, setting.AppSubURL+"/")
+ }
+ 
+ func CheckAutoLogin(ctx *context.Context) bool {
+diff --git a/routers/web/home.go b/routers/web/home.go
+index 3c87aaaf24..1238807a4e 100644
+--- a/routers/web/home.go
++++ b/routers/web/home.go
+@@ -20,7 +20,6 @@ import (
+ 	"forgejo.org/modules/structs"
+ 	"forgejo.org/modules/web/middleware"
+ 	"forgejo.org/routers/web/auth"
+-	"forgejo.org/routers/web/user"
+ 	"forgejo.org/services/context"
+ )
+ 
+@@ -66,7 +65,7 @@ func Home(ctx *context.Context) {
+ 			}
+ 		}
+ 
+-		user.Dashboard(ctx)
++		ctx.Redirect(ctx.Doer.HomeLink())
+ 		return
+ 		// Check non-logged users landing page.
+ 	} else if setting.LandingPageURL != setting.LandingPageHome {

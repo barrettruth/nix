@@ -754,7 +754,6 @@ in
     virtualHosts."git.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
-      locations."= /".return = "302 /barrettruth";
       locations."/".proxyPass = "http://127.0.0.1:3000";
     };
     virtualHosts."delta.${identity.domain}" = {
@@ -843,6 +842,7 @@ in
         ROOT_URL = "https://git.${identity.domain}/";
         HTTP_PORT = 3000;
         SSH_DOMAIN = "git.${identity.domain}";
+        LANDING_PAGE = "/barrettruth";
       };
       service = {
         DISABLE_REGISTRATION = false;

@@ -111,6 +111,7 @@ buildGoModule {
   patches = [
     "${pkgs.path}/pkgs/by-name/fo/forgejo/static-root-path.patch"
     ./oauth-avatar-on-registration.patch
+    ./profile-root-landing.patch
   ];
   postPatch = ''
     substituteInPlace modules/setting/server.go --subst-var data
