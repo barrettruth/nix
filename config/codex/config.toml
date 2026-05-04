@@ -65,6 +65,7 @@ hide_rate_limit_model_nudge = true
 
 [tui]
 status_line = ["model-name", "git-branch", "context-remaining"]
+theme = "github"
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4

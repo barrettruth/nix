@@ -825,8 +825,8 @@ def render_bar() -> int:
             f"#[range=session|{session_id}]{star}{key}#[fg=#{{@accent}}]:#[default]{display_name}#[norange]"
         )
         plain_parts.append(f"{key}:{display_name}")
-    bar_content = " │ ".join(parts)
-    plain_bar_content = " │ ".join(plain_parts)
+    bar_content = " ".join(parts)
+    plain_bar_content = " ".join(plain_parts)
     status_right_length = min(
         right_budget, max(80, len(f"{plain_indicator} {plain_bar_content} ") + 1)
     )
@@ -845,7 +845,7 @@ def render_bar() -> int:
         "window-status-current-format",
         "#[range=window|#{window_index}]#[fg=#{@accent}]*#[default]#{window_index}#[fg=#{@accent}]:#[default]#{window_name}#[norange]",
     )
-    _ = tmux("set", "-g", "window-status-separator", " │ ")
+    _ = tmux("set", "-g", "window-status-separator", " ")
     _ = tmux("set", "-g", "@bar-content", f"{indicator} {bar_content} ")
     return 0
 
