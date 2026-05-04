@@ -2,7 +2,7 @@
 name: forgejo-install-docs
 description: Update install/source documentation for Forgejo-canonical repos without mixing in GitHub mirror UX, runtime deprecations, or unrelated package-manager changes.
 user-invocable: true
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /forgejo-install-docs
@@ -36,6 +36,29 @@ This is a docs/metadata skill, not a GitHub mirror setup skill.
 - **Keep the PR diff narrow.** A normal install-doc PR should touch only files
   that actually carry install/source metadata: README, vimdoc, rockspec,
   package metadata, or equivalent.
+- **Do not trust a local clone until its remote is verified.** A stale local
+  clone can still have `origin = github`. If auditing current Forgejo docs, first
+  confirm `origin` is `git.barrettruth.com` and fetch `origin/main`, or query
+  Forgejo directly with `tea api`.
+
+## Scope And Source Of Truth
+
+This skill is for repos that are already approved for Forgejo-canonical install
+docs. Do not use it as a mechanical sweep over the deferred/popular plugin set
+unless the user explicitly names those repos. When a repo is deferred, GitHub
+short forms in its public install docs may be intentional until the policy
+decision is made.
+
+Before editing:
+
+1. Verify the repo being inspected is the Forgejo repo:
+   `git remote get-url origin` should point at
+   `git.barrettruth.com/barrettruth/<repo>.git`.
+2. Fetch before scanning: `git fetch origin main`.
+3. Scan `origin/main`, not an unpulled local branch, when deciding what remains:
+   `git grep -n -E 'github\\.com/barrettruth|barrettruth/[A-Za-z0-9._-]+' origin/main -- README.md 'doc/*' '*.rockspec' package.json Cargo.toml flake.nix 2>/dev/null`.
+4. Review matches manually. Issue-template examples, upstream tracker docs, and
+   deferred repos are not automatically install-doc bugs.
 
 ## Package Manager Patterns
 
@@ -97,17 +120,41 @@ description = {
 }
 ```
 
+## Vimdoc And Static Site Links
+
+For vimdoc install sections:
+
+- Keep the documented package manager unless the user asked for a replacement.
+- Use full Forgejo URLs in install snippets.
+- Do not add "migration" help tags or self-referential "canonical Forgejo"
+  language to Forgejo-facing vimdoc.
+- Run the repo's vimdoc checker when `doc/*.txt` changes.
+
+For generated static sites, do not assume extensionless paths work. The
+vimdoc-language-server site is deployed as static files and needed direct
+`.html` links for internal docs pages:
+
+```html
+<a href="/installation.html">Installation</a>
+<a href="/diagnostics.html">Diagnostics</a>
+```
+
+Use direct generated filenames when the deployed server does not rewrite
+extensionless routes.
+
 ## Pre-PR Checklist
 
 Run these checks before pushing:
 
 1. Show the exact install snippets from README and vimdoc.
-2. `rg -n 'cp.nvim-migration|Migration|migration|GitHub shorthand|canonical source|Forgejo source|\\.github' README.md doc/ <metadata files> 2>/dev/null || true`
-3. `git diff --name-status origin/main...HEAD`
-4. `git ls-tree -r --name-only HEAD | rg '^\\.github/' || true`
-5. Repo format/lint/test commands as appropriate.
-6. vimdoc checker if `doc/*.txt` changed.
-7. rockspec lint if a rockspec changed.
+2. Verify remotes and fetched refs if using a local clone:
+   `git remote -v && git fetch origin main`.
+3. `rg -n 'cp.nvim-migration|Migration|migration|GitHub shorthand|canonical source|Forgejo source|\\.github' README.md doc/ <metadata files> 2>/dev/null || true`
+4. `git diff --name-status origin/main...HEAD`
+5. `git ls-tree -r --name-only HEAD | rg '^\\.github/' || true`
+6. Repo format/lint/test commands as appropriate.
+7. vimdoc checker if `doc/*.txt` changed.
+8. rockspec lint if a rockspec changed.
 
 The grep checks are not universal truth; review matches manually. The point is
 to catch self-referential migration language, accidental GitHub mirror files,

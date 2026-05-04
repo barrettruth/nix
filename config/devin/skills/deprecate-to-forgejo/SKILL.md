@@ -2,7 +2,7 @@
 name: deprecate-to-forgejo
 description: Make the GitHub mirror of ONE repo passively reflect Forgejo via push-mirror with an SSH deploy key. Forgejo becomes canonical; GitHub auto-syncs. No archive, no manual github writes after setup.
 user-invocable: true
-version: 2.0.0
+version: 2.1.0
 ---
 
 # /deprecate-to-forgejo
@@ -39,7 +39,36 @@ This is the inverse of `/github-to-forgejo`: that skill migrates content TO Forg
 - All API mutations on GitHub use `gh api -X PATCH` or `gh api -X POST`. No git pushes to github from a human; only forgejo pushes via the mirror.
 - All push-mirror configuration goes through Forgejo's API, not the UI, so the operation is reproducible.
 - No AI attribution in any commit or any github metadata field.
-- This skill is for low/no-popularity repos and personal-config repos. Higher-popularity or policy-deferred repos (`canola.nvim`, `tmux-mosaic`, `delta`, `diffs.nvim`, `cp.nvim`, `forge.nvim`, `preview.nvim`, `import-cost.nvim`, `live-server.nvim`, `canola-collection`, `cp`, and similar) likely warrant a different pattern (e.g. dual-canonical hosts, GitHub remaining canonical, or live two-way sync). DO NOT run this skill or add the PR auto-close workflow on those without an explicit per-repo decision.
+- This skill is for low/no-popularity repos and explicitly approved overrides. Higher-popularity or policy-deferred repos (`canola.nvim`, `diffs.nvim`, `preview.nvim`, `import-cost.nvim`, `live-server.nvim`, `canola-collection`, and similar) likely warrant a different pattern (e.g. dual-canonical hosts, GitHub remaining canonical, or live two-way sync). DO NOT run this skill or add the PR auto-close workflow on those without an explicit per-repo decision. `cp.nvim` and `forge.nvim` are not deferred as of 2026-05-03; `delta` and `tmux-mosaic` had explicit user overrides.
+
+## Learned mirror conventions (2026-05-04)
+
+- **`.github` content must be committed to Forgejo first.** The push mirror is
+  git-only and Forgejo is canonical, so GitHub-only UX files live in the Forgejo
+  tree and propagate outward. Never open a GitHub PR or push a human branch to
+  GitHub for these files.
+- **Allowed `.github` files are narrow.** The standard mirror UX is
+  `.github/README.md` plus, for approved low/no-popularity mirrors,
+  `.github/workflows/redirect-pr-to-forgejo.yaml`. Do not reintroduce GitHub CI,
+  issue templates, dependabot, release config, or other GitHub scaffolding as
+  part of mirror setup.
+- **Use `.yaml`, not `.yml`, for new workflow files.** The PR redirect workflow
+  file is `.github/workflows/redirect-pr-to-forgejo.yaml`.
+- **The PR redirect workflow is GitHub-only by placement.** Forgejo runners read
+  `.forgejo/workflows/*`; GitHub Actions reads `.github/workflows/*`. The
+  workflow uses `pull_request_target` because `pull_request` from forks cannot
+  comment on and close the base repository PR.
+- **GitHub stays unarchived.** Archived GitHub repos reject Forgejo mirror
+  pushes. The read-only signal is metadata plus the banner/redirect workflow,
+  not GitHub archive mode.
+- **Issues and PRs do not sync after the original import.** Push mirrors move
+  git refs only. Keep `has_issues=false` on GitHub to prevent orphaned new
+  issues, and use the PR redirect workflow where appropriate because GitHub has
+  no `has_pull_requests=false` setting.
+- **Homepage is a user-facing landing-page decision.** Code repos normally point
+  GitHub `homepage` at Forgejo. Site repos point at the live deployed site.
+  Package repos can point at the true package registry page when that is where
+  users consume the package, e.g. `sioyek-dev` points at AUR.
 
 ## Sync before mirror (lossless local↔forgejo↔github reconciliation)
 
@@ -205,6 +234,19 @@ gh api -X PATCH /repos/barrettruth/<name> \
   -F homepage='https://git.barrettruth.com/barrettruth/<name>' \
   -F has_wiki=false -F has_projects=false -F has_issues=false
 ```
+
+Homepage exceptions:
+
+- Site repos use the live deployed URL, not Forgejo:
+  - `barrettruth.com` -> `https://www.barrettruth.sh`
+  - `philipmruth.com` -> `https://www.philipmruth.com`
+  - `vimdoc-language-server` -> `https://www.vimdoc-language-server.com`
+- Package repos can use the registry landing page when that is the useful
+  consumer URL. `sioyek-dev` uses
+  `https://aur.archlinux.org/packages/sioyek-dev`.
+- LuaRocks plugin repos currently keep the Forgejo URL as homepage. The
+  LuaRocks page mostly redirects to source, so it is less useful as the GitHub
+  sidebar landing page.
 
 ## Step 7a: auto-close incoming PRs via GitHub Actions
 

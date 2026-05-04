@@ -2,7 +2,7 @@
 name: github-to-forgejo
 description: Prep ONE forgejo repo to a tmux-mosaic-shaped baseline — migration completeness check, metadata, topics, license verify, heatmap backfill, .forgejo workflow, branch protection. ALL writes go to Forgejo only.
 user-invocable: true
-version: 5.1.0
+version: 5.2.0
 ---
 
 # /github-to-forgejo
@@ -26,6 +26,61 @@ The previous "github-to-forgejo" framing implied bidirectional sync. The migrati
 - No new code comments unless explicitly requested by the user.
 - Private Forgejo repos are out of scope (per `~/.config/nix/AGENTS.md`'s "Forgejo private repo policy"). Skill aborts if asked to run on one.
 - Forgejo's LICENSE is canonical. The skill VERIFIES Forgejo has GPLv3 and aborts otherwise; it does NOT compare against GitHub.
+
+## Learned porting conventions (2026-05-04)
+
+These are the cross-repo lessons that must be preserved before another public
+repo is moved to `git.barrettruth.com`:
+
+- **Do not trust local remotes until verified.** A local clone can still have
+  `origin = github` even when the Forgejo repo is already correct. Before any
+  local audit, run `git remote -v`, confirm Forgejo is the remote being read, and
+  fetch explicitly. If the task is to inspect Forgejo state, prefer `tea api` or
+  a confirmed Forgejo `origin/main`; do not report GitHub-only stale files as
+  Forgejo findings.
+- **Use `.yaml` for new Forgejo and GitHub workflow files.** Existing `.yml`
+  files can be ported as part of a deliberate cleanup, but new files should use
+  `.yaml`.
+- **Workflow top-level `name:` is part of the public check contract.** Forgejo
+  renders status contexts as `<workflow-name> / <job-display-name> (<event>)`.
+  Removing top-level `name:` produces contexts like `/ Format`, which is worse.
+  Branch protection contexts must be exact literal strings with the event suffix.
+- **Mixed check prefixes require split workflow files.** `needs:` only orders
+  jobs inside one workflow, and one workflow has one prefix. To get
+  `quality / Format` and `deploy / LuaRocks` on the same commit, use separate
+  workflow files with top-level names `quality` and `deploy`.
+- **Do not hide statuses with job-level `if`.** Forgejo creates job statuses
+  before job-level conditions are evaluated. A skipped stable deploy job can
+  still show as a waiting/skipped status on a main-push nightly run. Split the
+  trigger files instead.
+- **Do not add visible gate jobs for deploy waits.** If a deploy/nightly workflow
+  must wait for quality while keeping the `deploy / ...` prefix, poll Forgejo
+  commit statuses inside the publish job before the publish step. A visible
+  `Quality Gate` job is not wanted.
+- **Production deploys are manual-only unless explicitly requested.** Main-push
+  nightly releases are fine when the repo expects them, but production website
+  deploys should not run on every merge unless the user asks for that behavior.
+- **`.github` is not Forgejo scaffolding.** Port reusable GitHub templates to
+  `.forgejo` and generate `.forgejo/workflows/quality.yaml`; then remove GitHub
+  CI/template leftovers from the Forgejo-facing scaffold. The only deliberate
+  `.github` files in a Forgejo-canonical repo are GitHub-only mirror UX files
+  created by `/deprecate-to-forgejo`: `.github/README.md` and, for approved
+  low/no-popularity mirrors, `.github/workflows/redirect-pr-to-forgejo.yaml`.
+- **Ported templates must not point users back to GitHub.** When creating
+  `.forgejo/issue_template/*` or `.forgejo/pull_request_template.md`, rewrite
+  Barrett-owned owner/repo links like
+  `https://github.com/barrettruth/<repo>/issues`,
+  `https://github.com/barrettruth/<repo>/discussions`, and quoted
+  `barrettruth/<repo>` examples to the corresponding Forgejo URLs. Do not
+  rewrite unrelated upstream GitHub links.
+- **Release fixes happen before version tags.** Open PRs for workflow/release
+  repairs first, merge them, pull `main`, verify local CI plus live Forgejo push
+  CI, then tag. Keep the repo's existing tag style; if previous release tags are
+  lightweight, create the next tag as lightweight too.
+- **URL/vimdoc work is separate.** Do not mix install-source URL rewrites into
+  this migration baseline unless the user asked for that repo. Use the
+  `/forgejo-install-docs` skill for README, vimdoc, rockspec, package metadata,
+  and generated-site link cleanup.
 
 ## Pre-flight
 
@@ -492,6 +547,14 @@ Walk the local clone's `.github/` tree (or, if no clone, GitHub via `gh api repo
 | `.github/workflows/*.yaml` (luarocks, automation_*, release_*, etc.) | (drop, FLAG in report) | Non-canonical CI requires per-workflow research before forgejo equivalent exists. Until then, github keeps these workflows; forgejo has none. Tracked separately from this skill — see AGENTS "Non-quality workflow port backlog". |
 | anything else (e.g. `pre-commit`, `pre-push`, `scripts/`, `RELEASE_PROCESS.md`, `*.png` assets) | (drop, FLAG in report) | Unknown class; per-repo human review required. The skill does not auto-decide where these belong (root `hooks/`? `.git/hooks/`? `scripts/`?). |
 
+When porting text templates, normalize Barrett-owned repository links for the
+new host. A GitHub issue-template copied byte-for-byte often contains
+`https://github.com/barrettruth/<repo>/issues`,
+`https://github.com/barrettruth/<repo>/discussions`, or lazy.nvim examples like
+`'barrettruth/<repo>'`. Those are wrong in Forgejo-facing templates. Rewrite
+Barrett-owned links to `https://git.barrettruth.com/barrettruth/<repo>/...` or
+full Forgejo plugin URLs. Preserve third-party upstream GitHub links.
+
 ### Concrete batch builder (5a + 5c combined)
 
 The skill's reference implementation for Phase 5a (port) + Phase 5c (delete `.github/`) is a single Python script that:
@@ -509,7 +572,7 @@ Run it from the local clone's root (or with `--no-clone` to read sources from Gi
 # usage: build_phase5_batch.py <repo-name> > batch-payload.json
 # stderr emits report fields: ports=N drops_no_eq=N drops_review=N flagged_unknowns=[...]
 
-import base64, json, os, subprocess, sys
+import base64, json, os, re, subprocess, sys
 
 repo = sys.argv[1]
 fj_owner = "barrettruth"
@@ -560,6 +623,30 @@ def classify(path):
         return ("drop_flag_workflow", None)
     return ("drop_flag_review", None)
 
+def normalize_forgejo_text(path, raw):
+    try:
+        text = raw.decode()
+    except UnicodeDecodeError:
+        return raw
+    if not (path.endswith((".md", ".yaml", ".yml", ".txt"))):
+        return raw
+    text = re.sub(
+        rf"https://github\.com/{fj_owner}/([A-Za-z0-9._-]+)",
+        rf"https://git.barrettruth.com/{fj_owner}/\1",
+        text,
+    )
+    text = re.sub(
+        rf"git@github\.com:{fj_owner}/([A-Za-z0-9._-]+)\.git",
+        rf"ssh://git@git.barrettruth.com/{fj_owner}/\1.git",
+        text,
+    )
+    text = re.sub(
+        rf"(['\"`]){fj_owner}/([A-Za-z0-9._-]+)\1",
+        rf"\1https://git.barrettruth.com/{fj_owner}/\2\1",
+        text,
+    )
+    return text.encode()
+
 # 1. enumerate local .github/ (preferred) or fall back to github
 if os.path.isdir(".github"):
     local_files = []
@@ -589,7 +676,7 @@ for src in local_files:
     cls, dst = classify(src)
     if cls == "port":
         with open(src, "rb") as f:
-            content_b64 = base64.b64encode(f.read()).decode()
+            content_b64 = base64.b64encode(normalize_forgejo_text(src, f.read())).decode()
         # check if dst already exists on forgejo (use "update" + sha)
         try:
             existing = json.loads(subprocess.check_output(
