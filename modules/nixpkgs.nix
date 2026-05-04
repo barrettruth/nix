@@ -5,6 +5,12 @@ let
     inputs.codex.overlays.default
     inputs.devin-cli-overlay.overlays.default
     (final: prev: {
+      tmux = prev.tmux.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [
+          ../pkgs/tmux-copy-mode-line-numbers.patch
+        ];
+      });
+
       tmuxPlugins = prev.tmuxPlugins // {
         mosaic = inputs.tmux-mosaic.packages.${final.system}.default;
       };

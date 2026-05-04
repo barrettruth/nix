@@ -3,6 +3,7 @@
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
 state_file="$state_dir/waybar"
+theme_pending_file="$state_dir/waybar-theme-pending"
 theme_link="$cfg/waybar/themes/theme.css"
 
 current_theme() {
@@ -36,6 +37,7 @@ signal_waybar() {
 }
 
 sync_theme() {
+	theme_changed=0
 	theme="$(current_theme)"
 	target="$cfg/waybar/themes/$theme.css"
 
@@ -45,14 +47,23 @@ sync_theme() {
 	[ "$current_target" = "$desired_target" ] && return 0
 
 	ln -sf "$target" "$theme_link"
+	theme_changed=1
 }
 
 show_bar() {
 	sync_theme
 	if is_running; then
 		state="$(read_state 2>/dev/null || true)"
-		[ "$state" = hidden ] && signal_waybar USR1
+		if [ "$state" = hidden ]; then
+			if [ "$theme_changed" = 1 ] || [ -f "$theme_pending_file" ]; then
+				signal_waybar USR2
+				rm -f "$theme_pending_file"
+			else
+				signal_waybar USR1
+			fi
+		fi
 	else
+		rm -f "$theme_pending_file"
 		nohup waybar >/dev/null 2>&1 &
 	fi
 	write_state shown
@@ -86,7 +97,14 @@ toggle_bar() {
 
 apply_theme() {
 	sync_theme
-	[ "$(read_state 2>/dev/null || true)" = hidden ] && return 0
+	if [ "$(read_state 2>/dev/null || true)" = hidden ]; then
+		[ "$theme_changed" = 1 ] && {
+			mkdir -p "$state_dir"
+			: >"$theme_pending_file"
+		}
+		return 0
+	fi
+	rm -f "$theme_pending_file"
 	is_running && signal_waybar USR2
 }
 
