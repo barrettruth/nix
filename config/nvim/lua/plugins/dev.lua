@@ -11,8 +11,6 @@ local dev_plugins = {
     'nvim-lspconfig',
 }
 
-vim.api.nvim_buf_del_mark
-
 local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
 vim.fn.mkdir(opt_dir, 'p')
 for _, name in ipairs(dev_plugins) do
