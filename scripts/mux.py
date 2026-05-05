@@ -27,6 +27,7 @@ class ManagedCommandSpec:
     kind: ManagedKind
     key: str
     always_visible: bool = False
+    ephemeral: bool = False
 
 
 def fail(message: str, code: int = 1) -> None:
@@ -185,11 +186,11 @@ def canonical_name(name: str) -> str:
 @lru_cache(maxsize=1)
 def managed_commands() -> tuple[ManagedCommandSpec, ...]:
     commands = (
-        ManagedCommandSpec("ai", "role", "a", always_visible=True),
-        ManagedCommandSpec("edit", "role", "e", always_visible=True),
+        ManagedCommandSpec("ai", "role", "a", always_visible=True, ephemeral=True),
+        ManagedCommandSpec("edit", "role", "e", always_visible=True, ephemeral=True),
         ManagedCommandSpec("prompt", "role", "p", always_visible=True),
-        ManagedCommandSpec("git", "action", "g", always_visible=True),
-        ManagedCommandSpec("run", "action", "r"),
+        ManagedCommandSpec("git", "action", "g", always_visible=True, ephemeral=True),
+        ManagedCommandSpec("run", "action", "r", ephemeral=True),
         ManagedCommandSpec("build", "action", "b"),
         ManagedCommandSpec("test", "action", "t"),
     )
@@ -384,14 +385,16 @@ def is_pane_idle(target: str | None = None) -> bool:
     return pane_command(target) == base_name(shell_path())
 
 
-def spawn_or_focus_managed(name: str, path: str, command: str = "") -> None:
+def spawn_or_focus_managed(
+    name: str, path: str, command: str = "", *, ephemeral: bool = False
+) -> None:
     scope = scope_from_path(path)
     window_name = window_name_for(name, scope)
     index = window_index_for_name(window_name)
     current_index = current_window_index()
 
     if index and index == current_index:
-        if command and is_pane_idle():
+        if command and not ephemeral and is_pane_idle():
             send_cmd(None, path, command)
         return
 
@@ -400,16 +403,19 @@ def spawn_or_focus_managed(name: str, path: str, command: str = "") -> None:
             _ = tmux("kill-window", "-t", f":{index}")
         _ = tmux("rename-window", window_name)
         if command:
-            send_cmd(None, path, command)
+            send_cmd(None, path, f"exec {command}" if ephemeral else command)
         return
 
     if index:
         _ = tmux("select-window", "-t", f":{index}")
-        if command and is_pane_idle(f":{index}"):
+        if command and not ephemeral and is_pane_idle(f":{index}"):
             send_cmd(f":{index}", path, command)
         return
 
     if command:
+        if ephemeral:
+            _ = new_window_info(window_name, path, command)
+            return
         channel = new_ready_channel()
         _, pane_id = new_window_info(window_name, path, initial_shell_command(channel))
         schedule_initial_cmd(pane_id, command, channel)
@@ -484,7 +490,7 @@ def open_role_in_dir(name: str, path: str) -> None:
     ensure_role_dependencies(name)
     if (command := role_command_for(name)) is None:
         raise MuxError(f"mux: unknown role '{name}'")
-    spawn_or_focus_managed(name, path, command)
+    spawn_or_focus_managed(name, path, command, ephemeral=role.ephemeral)
 
 
 def open_action(name: str) -> int:
@@ -505,7 +511,7 @@ def open_action_in_dir(name: str, path: str) -> None:
         raise MuxError("Not a git repository")
     if (command := action_command_for_root(name, path)) is None:
         raise MuxError(f"mux: no action '{name}' for '{scope}'")
-    spawn_or_focus_managed(name, path, command)
+    spawn_or_focus_managed(name, path, command, ephemeral=action.ephemeral)
 
 
 def color_escape(hex_code: str) -> str:
