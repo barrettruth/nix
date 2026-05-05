@@ -2,6 +2,10 @@
 
 My personal nix configuration leveraging:
 
+> [!NOTE]
+> Due to GitHub's historic unreliability, development, issues, and pull requests
+> have moved to [Forgejo](https://git.barrettruth.com/barrettruth/nix).
+
 - [NixOS](https://nixos.org/)
 - [Determinate Nix](https://github.com/DeterminateSystems/determinate)
 - [Dendritic Nix](https://github.com/DeterminateSystems/detsys-ts/wiki/Dendritic-Nix)
