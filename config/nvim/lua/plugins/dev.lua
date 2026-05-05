@@ -119,6 +119,12 @@ return {
                 desc = 'forge browse',
             },
             {
+                '<leader>gy',
+                ':Forge yank<cr>',
+                mode = { 'n', 'x' },
+                desc = 'forge yank source url',
+            },
+            {
                 '<leader>ge',
                 edit_or_create_pr,
                 desc = 'forge edit or create pr',
@@ -147,15 +153,13 @@ return {
     {
         'barrettruth/diffs.nvim',
         enabled = true,
-        keys = {
-            { 'gtd', '<Plug>(diffs-gdiff)', desc = 'diffs gdiff' },
-            { 'gtD', '<Plug>(diffs-gvdiff)', desc = 'diffs gvdiff' },
-        },
         before = function()
+            require('config.lz').load('barrettruth/midnight.nvim')
+
             vim.g.diffs = {
                 debug = false,
                 integrations = { fugitive = true },
-                extra_filetypes = { 'diff', 'git', 'gitcommit' },
+                extra_filetypes = { 'diff' },
                 hide_prefix = true,
                 highlights = {
                     gutter = true,
