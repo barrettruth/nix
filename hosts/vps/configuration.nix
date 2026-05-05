@@ -279,7 +279,7 @@ let
       --color-button: #d0d0d0;
       --color-code-bg: #e8e8e8;
       --color-markup-code-block: var(--color-body);
-      --color-markup-code-inline: #ebebeb;
+      --color-markup-code-inline: var(--color-markup-code-block);
       --color-diff-added-row-bg: #a5c5ab;
       --color-diff-removed-row-bg: #e2a1b2;
       --color-diff-moved-row-bg: #a9b7e5;
@@ -391,7 +391,7 @@ let
       --color-button: #3d3d3d;
       --color-code-bg: #1a1a1a;
       --color-markup-code-block: var(--color-body);
-      --color-markup-code-inline: #2d2d2d;
+      --color-markup-code-inline: var(--color-markup-code-block);
       --color-diff-added-row-bg: #0c2f1e;
       --color-diff-removed-row-bg: #291f27;
       --color-diff-moved-row-bg: #3a4a6d;
