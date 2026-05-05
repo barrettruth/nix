@@ -7,8 +7,6 @@ EXTENSION_ID = "demmbkpegigoeiappcbliinlijmeoaop"
 BINDINGS = {
     "toggle-overlay": "Ctrl+Period",
     "toggle-overlay-new-tab": "Ctrl+Shift+Period",
-    "move-tab-left": "Ctrl+Shift+Left",
-    "move-tab-right": "Ctrl+Shift+Right",
     "switch-workspace-1": "Ctrl+Shift+1",
     "switch-workspace-2": "Ctrl+Shift+2",
     "switch-workspace-3": "Ctrl+Shift+3",
