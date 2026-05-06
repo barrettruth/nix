@@ -229,10 +229,18 @@ in
     wget
     git
     dash
+    cloudflared
     ntfs3g
     efibootmgr
     dmidecode
   ];
+
+  programs.ssh.extraConfig = ''
+    Host spark spark.harivan.sh
+        HostName spark.harivan.sh
+        User barrett
+        ProxyCommand ${pkgs.cloudflared}/bin/cloudflared access ssh --hostname %h
+  '';
 
   nix.settings = {
     use-xdg-base-directories = true;

@@ -15,6 +15,11 @@ Host vps
     HostName 152.53.168.144
     User root
 
+Host spark spark.harivan.sh
+    HostName spark.harivan.sh
+    User barrett
+    ProxyCommand cloudflared access ssh --hostname %h
+
 Host uva-portal uva-nvidia
     User jxa9ev
     IdentityFile ~/.ssh/uva_key
