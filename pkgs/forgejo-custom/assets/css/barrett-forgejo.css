@@ -7,7 +7,7 @@
 }
 
 :root {
-  --barrett-pierre-code-bg: var(--color-code-bg);
+  --barrett-pierre-code-bg: var(--color-body);
   --barrett-diff-added-line-bg: color-mix(
     in srgb,
     var(--color-diff-added-row-bg) 60%,
@@ -31,10 +31,10 @@
   --diffs-dark-bg: var(--barrett-pierre-code-bg);
   --diffs-light: var(--color-text);
   --diffs-dark: var(--color-text);
-  --diffs-bg-buffer-override: var(--color-box-body);
+  --diffs-bg-buffer-override: var(--color-body);
   --diffs-bg-hover-override: var(--color-hover);
   --diffs-bg-context-override: var(--barrett-pierre-code-bg);
-  --diffs-bg-context-gutter-override: var(--color-box-body);
+  --diffs-bg-context-gutter-override: var(--color-body);
   --diffs-bg-separator-override: var(--color-box-header);
   --diffs-fg-number-override: var(--color-text-light-2);
   --diffs-fg-number-addition-override: var(--color-green);
@@ -75,6 +75,11 @@
   color: var(--color-primary);
 }
 
+.navbar-left > a.item[href="https://forgejo.org/docs/latest/"],
+.navbar-right li:has(> a[href="https://forgejo.org/docs/latest/"]) {
+  display: none;
+}
+
 .markup code,
 .markup pre,
 .markup tt,
@@ -95,20 +100,13 @@ samp,
   font-family: var(--fonts-monospace);
 }
 
-.barrett-pierre-file,
+.barrett-pierre-file {
+  background: var(--barrett-pierre-code-bg);
+  overflow-x: auto;
+}
+
 .barrett-pierre-diff {
   background: var(--barrett-pierre-code-bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  .barrett-pierre-file,
-  .barrett-pierre-diff {
-    --barrett-pierre-code-bg: #141414;
-  }
-}
-
-.barrett-pierre-file {
-  overflow-x: auto;
 }
 
 .barrett-pierre-file diffs-container,

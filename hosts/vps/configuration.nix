@@ -609,11 +609,82 @@ let
   '';
 
   forgejoMidnightHeaderTmpl = pkgs.writeText "header.tmpl" ''
-    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css">
+    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight-diffs">
     <script src="{{AssetUrlPrefix}}/js/midnight-cm6.js" defer></script>
   '';
   forgejoFooterTmpl = pkgs.writeText "footer.tmpl" ''
-    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js"></script>
+    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight-diffs"></script>
+  '';
+  forgejoFooterContentTmpl = pkgs.writeText "footer_content.tmpl" "";
+  forgejoMailFooterSimpleTmpl = pkgs.writeText "footer_simple.tmpl" "";
+  forgejoMailActivateTmpl = pkgs.writeText "activate.tmpl" ''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+    </head>
+
+    {{$activate_url := printf "%suser/activate?code=%s" AppUrl (QueryEscape .Code)}}
+    <body>
+      <p>{{.locale.Tr "mail.activate_account.text_1" (.DisplayName|DotEscape) AppName}}</p><br>
+      <p>{{.locale.Tr "mail.activate_account.text_2" .ActiveCodeLives}}</p>
+      <p><a href="{{$activate_url}}">{{$activate_url}}</a></p><br>
+      <p>{{.locale.Tr "mail.link_not_working_do_paste"}}</p>
+    </body>
+    </html>
+  '';
+  forgejoMailActivateEmailTmpl = pkgs.writeText "activate_email.tmpl" ''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+    </head>
+
+    {{$activate_url := printf "%suser/activate_email?code=%s&email=%s" AppUrl (QueryEscape .Code) (QueryEscape .Email)}}
+    <body>
+      <p>{{.locale.Tr "mail.hi_user_x" (.DisplayName|DotEscape)}}</p><br>
+      <p>{{.locale.Tr "mail.activate_email.text" .ActiveCodeLives}}</p>
+      <p><a href="{{$activate_url}}">{{$activate_url}}</a></p><br>
+      <p>{{.locale.Tr "mail.link_not_working_do_paste"}}</p>
+    </body>
+    </html>
+  '';
+  forgejoMailResetPasswdTmpl = pkgs.writeText "reset_passwd.tmpl" ''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+    </head>
+
+    {{$recover_url := printf "%suser/recover_account?code=%s" AppUrl (QueryEscape .Code)}}
+    <body>
+      <p>{{.locale.Tr "mail.hi_user_x" (.DisplayName|DotEscape)}}</p><br>
+      <p>{{.locale.Tr "mail.reset_password.text" .ResetPwdCodeLives}}</p>
+      <p><a href="{{$recover_url}}">{{$recover_url}}</a></p><br>
+      <p>{{.locale.Tr "mail.link_not_working_do_paste"}}</p>
+    </body>
+    </html>
+  '';
+  forgejoMailRegisterNotifyTmpl = pkgs.writeText "register_notify.tmpl" ''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+    </head>
+
+    {{$set_pwd_url := printf "%suser/forgot_password" AppUrl}}
+    <body>
+      <p>{{.locale.Tr "mail.hi_user_x" (.DisplayName|DotEscape)}}</p><br>
+      <p>{{.locale.Tr "mail.register_notify.text_1" AppName}}</p><br>
+      <p>{{.locale.Tr "mail.register_notify.text_2" .Username}}</p>
+      <p><a href="{{AppUrl}}user/login">{{AppUrl}}user/login</a></p><br>
+      <p>{{.locale.Tr "mail.register_notify.text_3" $set_pwd_url}}</p>
+    </body>
+    </html>
   '';
   forgejoOauthContainerTmpl = pkgs.writeText "oauth_container.tmpl" ''
     {{if or .OAuth2Providers .EnableOpenIDSignIn}}
@@ -857,6 +928,10 @@ in
         REQUIRE_CAPTCHA_FOR_LOGIN = false;
         CAPTCHA_TYPE = "hcaptcha";
       };
+      repository = {
+        DEFAULT_PRIVATE = "private";
+        DEFAULT_PUSH_CREATE_PRIVATE = true;
+      };
       oauth2_client = {
         ENABLE_AUTO_REGISTRATION = true;
         ACCOUNT_LINKING = "auto";
@@ -871,11 +946,11 @@ in
         SMTP_ADDR = "smtp.resend.com";
         SMTP_PORT = 2465;
         USER = "resend";
-        FROM = "Forgejo <noreply@${identity.domain}>";
+        FROM = "noreply@${identity.domain}";
       };
       mirror = {
-        DEFAULT_INTERVAL = "1h";
-        MIN_INTERVAL = "10m";
+        DEFAULT_INTERVAL = "15m";
+        MIN_INTERVAL = "5m";
       };
       "git.config" = {
         "gpg.program" = "${forgejoGpgProgram}";
@@ -907,6 +982,12 @@ in
         AUTHOR = identity.fullName;
         DESCRIPTION = "Personal code, experiments, and project history.";
         KEYWORDS = "git,code,barrett,ruth";
+      };
+      other = {
+        SHOW_FOOTER_VERSION = false;
+        SHOW_FOOTER_TEMPLATE_LOAD_TIME = false;
+        SHOW_FOOTER_LICENSES_API = false;
+        SHOW_FOOTER_POWERED_BY = false;
       };
     };
   };
@@ -1026,6 +1107,16 @@ in
     "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/custom/header.tmpl - - - - ${forgejoMidnightHeaderTmpl}"
     "L+ /var/lib/forgejo/custom/templates/custom/footer.tmpl - - - - ${forgejoFooterTmpl}"
+    "d /var/lib/forgejo/custom/templates/base 0750 git git -"
+    "L+ /var/lib/forgejo/custom/templates/base/footer_content.tmpl - - - - ${forgejoFooterContentTmpl}"
+    "d /var/lib/forgejo/custom/templates/mail 0750 git git -"
+    "d /var/lib/forgejo/custom/templates/mail/auth 0750 git git -"
+    "d /var/lib/forgejo/custom/templates/mail/common 0750 git git -"
+    "L+ /var/lib/forgejo/custom/templates/mail/auth/activate.tmpl - - - - ${forgejoMailActivateTmpl}"
+    "L+ /var/lib/forgejo/custom/templates/mail/auth/activate_email.tmpl - - - - ${forgejoMailActivateEmailTmpl}"
+    "L+ /var/lib/forgejo/custom/templates/mail/auth/register_notify.tmpl - - - - ${forgejoMailRegisterNotifyTmpl}"
+    "L+ /var/lib/forgejo/custom/templates/mail/auth/reset_passwd.tmpl - - - - ${forgejoMailResetPasswdTmpl}"
+    "L+ /var/lib/forgejo/custom/templates/mail/common/footer_simple.tmpl - - - - ${forgejoMailFooterSimpleTmpl}"
     "d /var/lib/forgejo/custom/templates/repo 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - - ${forgejoCustom.templates}/repo/view_file.tmpl"
     "d /var/lib/forgejo/custom/templates/user 0750 git git -"

@@ -9,12 +9,12 @@ const midnightDark = {
   name: "midnight-dark",
   type: "dark",
   colors: {
-    "editor.background": "#1a1a1a",
+    "editor.background": "#121212",
     "editor.foreground": "#e0e0e0",
     foreground: "#e0e0e0",
     focusBorder: "#7aa2f7",
-    "selection.background": "#2d2d2d",
-    "editor.selectionBackground": "#2d2d2d",
+    "selection.background": "#222222",
+    "editor.selectionBackground": "#222222",
     "editor.lineHighlightBackground": "#222222",
     "editorCursor.foreground": "#e0e0e0",
     "editorLineNumber.foreground": "#666666",
@@ -35,15 +35,16 @@ const midnightDark = {
       settings: { foreground: "#666666", fontStyle: "italic" },
     },
     {
-      scope: ["string", "constant.other.symbol"],
+      scope: ["string", "constant.character", "constant.other.symbol"],
       settings: { foreground: "#98c379" },
     },
     {
-      scope: ["constant.numeric", "constant.language.boolean"],
-      settings: { foreground: "#98c379" },
-    },
-    {
-      scope: ["constant", "variable.language"],
+      scope: [
+        "constant",
+        "constant.numeric",
+        "constant.language.boolean",
+        "variable.language",
+      ],
       settings: { foreground: "#98c379" },
     },
     {
@@ -51,54 +52,52 @@ const midnightDark = {
       settings: { foreground: "#7aa2f7" },
     },
     {
-      scope: ["variable", "identifier", "meta.definition.variable"],
-      settings: { foreground: "#e0e0e0" },
-    },
-    {
-      scope: ["variable.parameter", "variable.parameter.function"],
-      settings: { foreground: "#e0e0e0" },
-    },
-    {
-      scope: [
-        "support.function",
-        "entity.name.function",
-        "meta.function-call",
-        "variable.function",
-      ],
-      settings: { foreground: "#e0e0e0" },
-    },
-    {
-      scope: [
-        "support.type",
-        "entity.name.type",
-        "entity.name.class",
-        "support.class",
-      ],
-      settings: { foreground: "#e0e0e0" },
-    },
-    {
-      scope: ["keyword.operator", "punctuation", "meta.brace"],
-      settings: { foreground: "#e0e0e0" },
-    },
-    {
-      scope: [
-        "keyword.operator.logical",
-        "keyword.operator.arithmetic",
-        "keyword.operator.comparison",
-      ],
+      scope: ["meta.preprocessor", "keyword.control.directive"],
       settings: { foreground: "#7aa2f7" },
     },
     {
       scope: [
-        "entity.name.tag",
-        "support.type.property-name",
-        "meta.object-literal.key",
+        "variable",
+        "identifier",
+        "meta.definition.variable",
+        "variable.parameter",
+        "entity.name.function",
+        "support.function",
+        "variable.function",
+        "support.type",
+        "entity.name.type",
+        "entity.name.class",
       ],
-      settings: { foreground: "#98c379" },
+      settings: { foreground: "#e0e0e0" },
+    },
+    {
+      scope: [
+        "keyword.operator",
+        "punctuation",
+        "punctuation.definition",
+        "meta.brace",
+      ],
+      settings: { foreground: "#e0e0e0" },
+    },
+    {
+      scope: ["entity.name.tag", "support.type.property-name"],
+      settings: { foreground: "#e0e0e0" },
     },
     {
       scope: ["invalid", "invalid.illegal"],
       settings: { foreground: "#ff6b6b", fontStyle: "bold" },
+    },
+    {
+      scope: ["markup.inserted", "markup.inserted.diff"],
+      settings: { foreground: "#98c379" },
+    },
+    {
+      scope: ["markup.deleted", "markup.deleted.diff"],
+      settings: { foreground: "#ff6b6b" },
+    },
+    {
+      scope: ["markup.changed", "markup.changed.diff"],
+      settings: { foreground: "#7aa2f7" },
     },
   ],
 };
@@ -107,16 +106,16 @@ const midnightLight = {
   name: "midnight-light",
   type: "light",
   colors: {
-    "editor.background": "#e8e8e8",
+    "editor.background": "#f5f5f5",
     "editor.foreground": "#1a1a1a",
     foreground: "#1a1a1a",
     focusBorder: "#3b5bdb",
-    "selection.background": "#d0d0d0",
-    "editor.selectionBackground": "#d0d0d0",
+    "selection.background": "#ebebeb",
+    "editor.selectionBackground": "#ebebeb",
     "editor.lineHighlightBackground": "#ebebeb",
     "editorCursor.foreground": "#1a1a1a",
-    "editorLineNumber.foreground": "#888888",
-    "editorLineNumber.activeForeground": "#555555",
+    "editorLineNumber.foreground": "#6b6b6b",
+    "editorLineNumber.activeForeground": "#666666",
     "gitDecoration.addedResourceForeground": "#2d7f3e",
     "gitDecoration.modifiedResourceForeground": "#3b5bdb",
     "gitDecoration.deletedResourceForeground": "#c7254e",
@@ -133,15 +132,16 @@ const midnightLight = {
       settings: { foreground: "#6b6b6b", fontStyle: "italic" },
     },
     {
-      scope: ["string", "constant.other.symbol"],
+      scope: ["string", "constant.character", "constant.other.symbol"],
       settings: { foreground: "#2d7f3e" },
     },
     {
-      scope: ["constant.numeric", "constant.language.boolean"],
-      settings: { foreground: "#2d7f3e" },
-    },
-    {
-      scope: ["constant", "variable.language"],
+      scope: [
+        "constant",
+        "constant.numeric",
+        "constant.language.boolean",
+        "variable.language",
+      ],
       settings: { foreground: "#2d7f3e" },
     },
     {
@@ -149,54 +149,52 @@ const midnightLight = {
       settings: { foreground: "#3b5bdb" },
     },
     {
-      scope: ["variable", "identifier", "meta.definition.variable"],
-      settings: { foreground: "#1a1a1a" },
-    },
-    {
-      scope: ["variable.parameter", "variable.parameter.function"],
-      settings: { foreground: "#1a1a1a" },
-    },
-    {
-      scope: [
-        "support.function",
-        "entity.name.function",
-        "meta.function-call",
-        "variable.function",
-      ],
-      settings: { foreground: "#1a1a1a" },
-    },
-    {
-      scope: [
-        "support.type",
-        "entity.name.type",
-        "entity.name.class",
-        "support.class",
-      ],
-      settings: { foreground: "#1a1a1a" },
-    },
-    {
-      scope: ["keyword.operator", "punctuation", "meta.brace"],
-      settings: { foreground: "#1a1a1a" },
-    },
-    {
-      scope: [
-        "keyword.operator.logical",
-        "keyword.operator.arithmetic",
-        "keyword.operator.comparison",
-      ],
+      scope: ["meta.preprocessor", "keyword.control.directive"],
       settings: { foreground: "#3b5bdb" },
     },
     {
       scope: [
-        "entity.name.tag",
-        "support.type.property-name",
-        "meta.object-literal.key",
+        "variable",
+        "identifier",
+        "meta.definition.variable",
+        "variable.parameter",
+        "entity.name.function",
+        "support.function",
+        "variable.function",
+        "support.type",
+        "entity.name.type",
+        "entity.name.class",
       ],
-      settings: { foreground: "#2d7f3e" },
+      settings: { foreground: "#1a1a1a" },
+    },
+    {
+      scope: [
+        "keyword.operator",
+        "punctuation",
+        "punctuation.definition",
+        "meta.brace",
+      ],
+      settings: { foreground: "#1a1a1a" },
+    },
+    {
+      scope: ["entity.name.tag", "support.type.property-name"],
+      settings: { foreground: "#1a1a1a" },
     },
     {
       scope: ["invalid", "invalid.illegal"],
       settings: { foreground: "#c7254e", fontStyle: "bold" },
+    },
+    {
+      scope: ["markup.inserted", "markup.inserted.diff"],
+      settings: { foreground: "#2d7f3e" },
+    },
+    {
+      scope: ["markup.deleted", "markup.deleted.diff"],
+      settings: { foreground: "#c7254e" },
+    },
+    {
+      scope: ["markup.changed", "markup.changed.diff"],
+      settings: { foreground: "#3b5bdb" },
     },
   ],
 };
