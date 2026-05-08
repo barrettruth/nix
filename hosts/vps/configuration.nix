@@ -609,12 +609,34 @@ let
   '';
 
   forgejoMidnightHeaderTmpl = pkgs.writeText "header.tmpl" ''
-    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight-diffs">
+    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight-diffs-perf">
     <script src="{{AssetUrlPrefix}}/js/midnight-cm6.js" defer></script>
+    <script>
+      (() => {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        if (parts.length < 2) return;
+        const prefix = "/" + parts[0] + "/" + parts[1];
+        const commitIndex = parts.indexOf("commit");
+        const pullsIndex = parts.indexOf("pulls");
+        let url = null;
+        if (commitIndex >= 0 && parts[commitIndex + 1]) {
+          url = prefix + "/commit/" + parts[commitIndex + 1] + ".diff";
+        } else if (pullsIndex >= 0 && parts[pullsIndex + 1]) {
+          url = prefix + "/pulls/" + parts[pullsIndex + 1] + ".diff";
+        }
+        if (!url) return;
+        window.__barrettForgejoDiffPreload = {
+          url,
+          textPromise: fetch(url, { credentials: "same-origin" }).then((response) => {
+            if (!response.ok) throw new Error(response.statusText);
+            return response.text();
+          }),
+        };
+      })();
+    </script>
+    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight-diffs-perf"></script>
   '';
-  forgejoFooterTmpl = pkgs.writeText "footer.tmpl" ''
-    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight-diffs"></script>
-  '';
+  forgejoFooterTmpl = pkgs.writeText "footer.tmpl" "";
   forgejoFooterContentTmpl = pkgs.writeText "footer_content.tmpl" "";
   forgejoMailFooterSimpleTmpl = pkgs.writeText "footer_simple.tmpl" "";
   forgejoMailActivateTmpl = pkgs.writeText "activate.tmpl" ''
@@ -1103,6 +1125,7 @@ in
     "d /var/lib/forgejo/custom/public/assets/js 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/js/midnight-cm6.js - - - - ${forgejoMidnightCm6Js}"
     "L+ /var/lib/forgejo/custom/public/assets/js/barrett-forgejo.js - - - - ${forgejoCustom.frontend}/js/barrett-forgejo.js"
+    "L+ /var/lib/forgejo/custom/public/assets/js/chunks - - - - ${forgejoCustom.frontend}/js/chunks"
     "d /var/lib/forgejo/custom/templates 0750 git git -"
     "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/custom/header.tmpl - - - - ${forgejoMidnightHeaderTmpl}"

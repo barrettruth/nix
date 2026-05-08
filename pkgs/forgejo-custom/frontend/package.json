@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/pierre-renderer.js --bundle --format=esm --target=es2022 --outfile=dist/barrett-forgejo.js --minify"
+    "build": "esbuild src/pierre-renderer.js --bundle --format=esm --target=es2022 --outdir=dist --entry-names=barrett-forgejo --chunk-names=chunks/[name]-[hash] --splitting --minify"
   },
   "dependencies": {
     "@pierre/diffs": "1.1.21"

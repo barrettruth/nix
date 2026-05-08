@@ -1,10 +1,3 @@
-import {
-  File,
-  FileDiff,
-  parsePatchFiles,
-  registerCustomTheme,
-} from "@pierre/diffs";
-
 const midnightDark = {
   name: "midnight-dark",
   type: "dark",
@@ -199,10 +192,34 @@ const midnightLight = {
   ],
 };
 
-registerCustomTheme("midnight-dark", () => Promise.resolve(midnightDark));
-registerCustomTheme("midnight-light", () => Promise.resolve(midnightLight));
-
 const pierreTheme = { dark: "midnight-dark", light: "midnight-light" };
+const diffTextCache = new Map();
+const diffParseCache = new Map();
+let pierreModulePromise;
+let pierreThemesRegistered = false;
+let diffVirtualizer;
+
+async function loadPierre() {
+  if (!pierreModulePromise) {
+    pierreModulePromise = import("@pierre/diffs")
+      .then((module) => {
+        registerPierreThemes(module);
+        return module;
+      })
+      .catch((error) => {
+        pierreModulePromise = undefined;
+        throw error;
+      });
+  }
+  return pierreModulePromise;
+}
+
+function registerPierreThemes({ registerCustomTheme }) {
+  if (pierreThemesRegistered) return;
+  registerCustomTheme("midnight-dark", () => Promise.resolve(midnightDark));
+  registerCustomTheme("midnight-light", () => Promise.resolve(midnightLight));
+  pierreThemesRegistered = true;
+}
 
 const noniconGlyphs = {
   biome: 62078,
@@ -541,9 +558,17 @@ async function renderFileView() {
   target.replaceChildren(mount);
 
   try {
-    const response = await fetch(rawUrl, { credentials: "same-origin" });
-    if (!response.ok) throw new Error(response.statusText);
-    const contents = await response.text();
+    const pierrePromise = loadPierre();
+    const contentsPromise = fetch(rawUrl, { credentials: "same-origin" }).then(
+      (response) => {
+        if (!response.ok) throw new Error(response.statusText);
+        return response.text();
+      },
+    );
+    const [{ File }, contents] = await Promise.all([
+      pierrePromise,
+      contentsPromise,
+    ]);
     const file = new File({
       disableFileHeader: true,
       enableLineSelection: true,
@@ -585,6 +610,45 @@ function diffUrlFromLocation() {
   return null;
 }
 
+function preloadedDiffPromise(url) {
+  const preload = window.__barrettForgejoDiffPreload;
+  if (!preload || preload.url !== url) return null;
+  return preload.textPromise || null;
+}
+
+function getDiffText(url) {
+  const cached = diffTextCache.get(url);
+  if (cached) return cached;
+
+  const promise =
+    preloadedDiffPromise(url) ||
+    fetch(url, { credentials: "same-origin" }).then((response) => {
+      if (!response.ok) throw new Error(response.statusText);
+      return response.text();
+    });
+
+  const tracked = promise.catch((error) => {
+    diffTextCache.delete(url);
+    throw error;
+  });
+  diffTextCache.set(url, tracked);
+  return tracked;
+}
+
+function getParsedDiff(url, parsePatchFiles, patchPromise = getDiffText(url)) {
+  const cached = diffParseCache.get(url);
+  if (cached) return cached;
+
+  const parsed = patchPromise
+    .then((patch) => parsePatchFiles(patch, `barrett:${url}`))
+    .catch((error) => {
+      diffParseCache.delete(url);
+      throw error;
+    });
+  diffParseCache.set(url, parsed);
+  return parsed;
+}
+
 function fileNameForBox(box) {
   return (
     box.dataset.newFilename ||
@@ -604,48 +668,176 @@ function indexPatchFiles(parsed) {
   return byName;
 }
 
-function renderDiffFile(box, fileDiff, cacheKey) {
+function diffStyleFromLocation() {
+  return new URLSearchParams(window.location.search).get("style") === "split"
+    ? "split"
+    : "unified";
+}
+
+function diffLineCount(fileDiff) {
+  return (fileDiff.hunks || []).reduce(
+    (count, hunk) =>
+      count + Math.max(hunk.unifiedLineCount || 0, hunk.splitLineCount || 0),
+    0,
+  );
+}
+
+function diffRenderOptions(fileDiff, totalFiles) {
+  const lineCount = diffLineCount(fileDiff);
+  const options = {
+    diffStyle: diffStyleFromLocation(),
+    disableFileHeader: true,
+    enableLineSelection: true,
+    maxLineDiffLength: totalFiles > 12 || lineCount > 800 ? 240 : 500,
+    theme: pierreTheme,
+  };
+  if (totalFiles > 24 || lineCount > 1600) options.lineDiffType = "none";
+  return options;
+}
+
+function getDiffVirtualizer({ Virtualizer }) {
+  if (!diffVirtualizer) {
+    diffVirtualizer = new Virtualizer({
+      intersectionObserverMargin: 2400,
+      overscrollSize: 1200,
+    });
+    diffVirtualizer.setup(document);
+  }
+  return diffVirtualizer;
+}
+
+function isNearViewport(element, margin = 1200) {
+  const rect = element.getBoundingClientRect();
+  return rect.bottom >= -margin && rect.top <= window.innerHeight + margin;
+}
+
+function sortedDiffBoxes(boxes) {
+  return boxes
+    .map((box, index) => ({
+      box,
+      index,
+      top: box.getBoundingClientRect().top,
+      visible: isNearViewport(box),
+    }))
+    .sort((a, b) => {
+      if (a.visible !== b.visible) return a.visible ? -1 : 1;
+      return a.top - b.top || a.index - b.index;
+    })
+    .map(({ box }) => box);
+}
+
+function renderDiffFile(box, fileDiff, cacheKey, pierre, totalFiles) {
+  if (box.dataset.barrettPierreState === "rendered") return false;
+  if (box.dataset.barrettPierreState === "rendering") return false;
+
   const body = box.querySelector(".diff-file-body");
   const source = box.querySelector(".code-diff");
-  if (!body || !source || source.dataset.barrettPierre === "1") return;
+  if (!body || !source || source.dataset.barrettPierre === "1") return false;
+  box.dataset.barrettPierreState = "rendering";
   source.dataset.barrettPierre = "1";
-  source.hidden = true;
 
   const mount = document.createElement("div");
   mount.className = "barrett-pierre-diff";
-  body.append(mount);
+  source.after(mount);
 
-  const instance = new FileDiff({
-    diffStyle:
-      new URLSearchParams(window.location.search).get("style") === "split"
-        ? "split"
-        : "unified",
-    disableFileHeader: true,
-    enableLineSelection: true,
-    theme: pierreTheme,
-    onLineSelectionEnd: (range) => {
-      if (!range) return;
-      const prefix = range.side === "additions" ? "R" : "L";
-      window.history.replaceState(
-        null,
-        "",
-        `#${box.id || "diff"}${prefix}${range.start}`,
-      );
-    },
-  });
+  const fileContainer = document.createElement("diffs-container");
+  mount.append(fileContainer);
+
+  const options = diffRenderOptions(fileDiff, totalFiles);
+  let swapped = false;
+  const swapToPierre = () => {
+    if (swapped) return;
+    swapped = true;
+    requestAnimationFrame(() => {
+      source.remove();
+      box.dataset.barrettPierreState = "rendered";
+      delete box.dataset.barrettPierreQueued;
+    });
+  };
+  options.onLineSelectionEnd = (range) => {
+    if (!range) return;
+    const prefix = range.side === "additions" ? "R" : "L";
+    window.history.replaceState(
+      null,
+      "",
+      `#${box.id || "diff"}${prefix}${range.start}`,
+    );
+  };
+  options.onPostRender = swapToPierre;
 
   try {
-    instance.render({
+    const virtualizer = pierre.VirtualizedFileDiff
+      ? getDiffVirtualizer(pierre)
+      : null;
+    const instance = virtualizer
+      ? new pierre.VirtualizedFileDiff(options, virtualizer)
+      : new pierre.FileDiff(options);
+    const rendered = instance.render({
       fileDiff: {
         ...fileDiff,
         cacheKey: `${cacheKey}:${fileDiff.name || fileDiff.prevName || "file"}`,
       },
-      containerWrapper: mount,
+      fileContainer,
     });
+    if (rendered) swapToPierre();
+    return true;
   } catch (error) {
     console.warn("Pierre diff rendering failed", error);
     mount.remove();
-    source.hidden = false;
+    delete source.dataset.barrettPierre;
+    delete box.dataset.barrettPierreState;
+    delete box.dataset.barrettPierreQueued;
+    return false;
+  }
+}
+
+function scheduleDiffRendering(boxes, byName, url, pierre) {
+  const ordered = sortedDiffBoxes(boxes);
+  const renderOne = (box) => {
+    const fileName = fileNameForBox(box);
+    const fileDiff = byName.get(fileName);
+    if (!fileDiff) return false;
+    return renderDiffFile(box, fileDiff, url, pierre, byName.size);
+  };
+
+  const pending = [];
+  let renderedInitial = 0;
+  for (const box of ordered) {
+    if (box.dataset.barrettPierreState || box.dataset.barrettPierreQueued) {
+      continue;
+    }
+    if (isNearViewport(box) || renderedInitial === 0) {
+      if (renderOne(box)) renderedInitial += 1;
+    } else {
+      pending.push(box);
+      box.dataset.barrettPierreQueued = "1";
+    }
+  }
+
+  if (pending.length === 0) return;
+
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const box = entry.target;
+          observer.unobserve(box);
+          renderOne(box);
+        }
+      },
+      { rootMargin: "1600px 0px" },
+    );
+    for (const box of pending) observer.observe(box);
+    return;
+  }
+
+  const runIdle =
+    window.requestIdleCallback ||
+    ((callback) =>
+      window.setTimeout(() => callback({ timeRemaining: () => 0 }), 1));
+  for (const box of pending) {
+    runIdle(() => renderOne(box));
   }
 }
 
@@ -658,16 +850,16 @@ async function renderDiffView() {
   if (!url) return;
 
   try {
-    const response = await fetch(url, { credentials: "same-origin" });
-    if (!response.ok) throw new Error(response.statusText);
-    const patch = await response.text();
-    const parsed = parsePatchFiles(patch, `barrett:${url}`);
+    const pierrePromise = loadPierre();
+    const patchPromise = getDiffText(url);
+    const pierre = await pierrePromise;
+    const parsed = await getParsedDiff(
+      url,
+      pierre.parsePatchFiles,
+      patchPromise,
+    );
     const byName = indexPatchFiles(parsed);
-    for (const box of boxes) {
-      const fileName = fileNameForBox(box);
-      const fileDiff = byName.get(fileName);
-      if (fileDiff) renderDiffFile(box, fileDiff, url);
-    }
+    scheduleDiffRendering(boxes, byName, url, pierre);
   } catch (error) {
     console.warn("Pierre diff rendering failed", error);
   }
@@ -713,8 +905,9 @@ function replaceRepositoryFileIcons() {
   }
 }
 
-async function init() {
-  await Promise.allSettled([renderFileView(), renderDiffView()]);
+function init() {
+  renderFileView();
+  renderDiffView();
   replaceRepositoryFileIcons();
 }
 
