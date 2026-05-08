@@ -119,6 +119,7 @@ let
         rsvg-convert -w 1024 -h 1024 ${forgejoAvatarSvg} > $out/avatar.png
         cp $out/avatar.png $out/avatar_default.png
       '';
+  forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom { };
 
   forgejoStixTwoFontFile = pkgs.runCommand "stix-two-text.ttf" { } ''
     cp '${pkgs.stix-two}/share/fonts/truetype/STIXTwoText[wght].ttf' $out
@@ -608,7 +609,11 @@ let
   '';
 
   forgejoMidnightHeaderTmpl = pkgs.writeText "header.tmpl" ''
-    <script src="/assets/js/midnight-cm6.js" defer></script>
+    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css">
+    <script src="{{AssetUrlPrefix}}/js/midnight-cm6.js" defer></script>
+  '';
+  forgejoFooterTmpl = pkgs.writeText "footer.tmpl" ''
+    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js"></script>
   '';
   forgejoOauthContainerTmpl = pkgs.writeText "oauth_container.tmpl" ''
     {{if or .OAuth2Providers .EnableOpenIDSignIn}}
@@ -1013,15 +1018,21 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-light.css - - - - ${forgejoMidnightLightCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-dark.css - - - - ${forgejoMidnightDarkCss}"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoMidnightFontsCss}"
+    "L+ /var/lib/forgejo/custom/public/assets/css/barrett-forgejo.css - - - - ${forgejoCustom.assets}/css/barrett-forgejo.css"
     "d /var/lib/forgejo/custom/public/assets/js 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/js/midnight-cm6.js - - - - ${forgejoMidnightCm6Js}"
+    "L+ /var/lib/forgejo/custom/public/assets/js/barrett-forgejo.js - - - - ${forgejoCustom.frontend}/js/barrett-forgejo.js"
     "d /var/lib/forgejo/custom/templates 0750 git git -"
     "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/custom/header.tmpl - - - - ${forgejoMidnightHeaderTmpl}"
+    "L+ /var/lib/forgejo/custom/templates/custom/footer.tmpl - - - - ${forgejoFooterTmpl}"
+    "d /var/lib/forgejo/custom/templates/repo 0750 git git -"
+    "L+ /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - - ${forgejoCustom.templates}/repo/view_file.tmpl"
     "d /var/lib/forgejo/custom/templates/user 0750 git git -"
     "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/user/auth/oauth_container.tmpl - - - - ${forgejoOauthContainerTmpl}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons.woff - - - - ${forgejoCustom.assets}/fonts/nonicons.woff"
     "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro-Italic.ttf"
