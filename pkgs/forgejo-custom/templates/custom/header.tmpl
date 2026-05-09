@@ -1,5 +1,6 @@
-<link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight">
-<script src="{{AssetUrlPrefix}}/js/midnight-cm6.js" defer></script>
+<link rel="preload" href="{{AssetUrlPrefix}}/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=__BARRETT_FORGEJO_CSS_VERSION__">
+<script src="{{AssetUrlPrefix}}/js/midnight-cm6.js?v=__BARRETT_FORGEJO_CM6_VERSION__" defer></script>
 <script>
   (() => {
     const parts = window.location.pathname.split("/").filter(Boolean);
@@ -13,7 +14,7 @@
     const isCompareDiff = compareIndex >= 0 && parts[compareIndex + 1];
     const shouldPreloadPierre = isCommitDiff || isCompareDiff || srcIndex >= 0 || blameIndex >= 0;
     if (shouldPreloadPierre) {
-      import("{{AssetUrlPrefix}}/js/pierre-preload.js?v=midnight").catch(() => {});
+      import("{{AssetUrlPrefix}}/js/pierre-preload.js?v=__BARRETT_FORGEJO_PIERRE_PRELOAD_VERSION__").catch(() => {});
     }
     if (!isCommitDiff && !isCompareDiff) return;
     const url = isCommitDiff
@@ -28,4 +29,4 @@
     };
   })();
 </script>
-<script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight"></script>
+<script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=__BARRETT_FORGEJO_JS_VERSION__"></script>

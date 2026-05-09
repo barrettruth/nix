@@ -79,7 +79,14 @@ let
     proxyPass = "http://127.0.0.1:3000";
     extraConfig = ''
       proxy_hide_header Cache-Control;
-      add_header Cache-Control "no-cache" always;
+      add_header Cache-Control $forgejo_asset_cache_control always;
+    '';
+  };
+  forgejoImmutableAssetProxy = {
+    proxyPass = "http://127.0.0.1:3000";
+    extraConfig = ''
+      proxy_hide_header Cache-Control;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
     '';
   };
   forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
@@ -114,7 +121,10 @@ let
   forgejoBrandingAssets =
     pkgs.runCommand "forgejo-branding-assets"
       {
-        nativeBuildInputs = [ pkgs.librsvg ];
+        nativeBuildInputs = [
+          pkgs.librsvg
+          pkgs.oxipng
+        ];
       }
       ''
         mkdir -p $out
@@ -123,8 +133,9 @@ let
         rsvg-convert -w 512 -h 512 ${forgejoBrandingSvg} > $out/logo.png
         rsvg-convert -w 192 -h 192 ${forgejoBrandingSvg} > $out/favicon.png
         rsvg-convert -w 180 -h 180 ${forgejoBrandingSvg} > $out/apple-touch-icon.png
-        rsvg-convert -w 1024 -h 1024 ${forgejoAvatarSvg} > $out/avatar.png
+        rsvg-convert -w 256 -h 256 ${forgejoAvatarSvg} > $out/avatar.png
         cp $out/avatar.png $out/avatar_default.png
+        oxipng -o 4 --strip safe $out/*.png
       '';
   forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom { };
 
@@ -322,8 +333,13 @@ in
     appendHttpConfig = ''
       limit_req_zone $binary_remote_addr zone=static_site_per_ip:10m rate=20r/s;
       limit_conn_zone $binary_remote_addr zone=static_site_conn_per_ip:10m;
+      map $arg_v $forgejo_asset_cache_control {
+        default "public, max-age=21600";
+        "~.+" "public, max-age=31536000, immutable";
+      }
     '';
     recommendedGzipSettings = true;
+    recommendedBrotliSettings = true;
     recommendedOptimisation = true;
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
@@ -353,6 +369,10 @@ in
         "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;
         "= /assets/js/barrett-forgejo.js" = forgejoMutableAssetProxy;
         "= /assets/js/pierre-preload.js" = forgejoMutableAssetProxy;
+        "= /manifest.json" = forgejoMutableAssetProxy;
+        "~* ^/assets/fonts/.*\\.(?:ttf|otf|woff|woff2)$" = forgejoImmutableAssetProxy;
+        "~* ^/assets/.*\\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico)$" = forgejoMutableAssetProxy;
+        "~* ^/avatars/[0-9a-f]+$" = forgejoImmutableAssetProxy;
       };
     };
     virtualHosts."delta.${identity.domain}" = {
@@ -652,16 +672,26 @@ in
     "L+ /var/lib/forgejo/custom/templates/user/auth/oauth_container.tmpl - - - - ${forgejoOauthContainerTmpl}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons.woff - - - - ${forgejoCustom.assets}/fonts/nonicons.woff"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/nonicons-v1.woff2"
     "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf - - - - ${../../fonts/san-francisco-pro}/SF-Pro-Italic.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-v1.woff2"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2"
     "d /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Regular.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Italic.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-Bold.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf - - - - ${../../fonts/berkeley-mono}/BerkeleyMono-BoldItalic.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-BoldItalic-v1.woff2"
     "d /var/lib/forgejo/custom/public/assets/fonts/stix-two 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/stix-two/STIXTwoText.ttf - - - - ${forgejoStixTwoFontFile}"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/stix-two/STIXTwoText-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/stix-two/STIXTwoText-v1.woff2"
     "d /srv/www 0755 root root -"
     "d /srv/www/barrettruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"

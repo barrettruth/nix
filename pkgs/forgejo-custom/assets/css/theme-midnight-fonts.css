@@ -1,22 +1,58 @@
 @font-face {
   font-family: "SF Pro";
-  src: url("/assets/fonts/san-francisco-pro/SF-Pro.ttf")
-    format("truetype-variations");
+  src: url("/assets/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2")
+    format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2212,
+    U+FB00-FB06;
 }
 @font-face {
   font-family: "SF Pro";
-  src: url("/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf")
+  src:
+    url("/assets/fonts/san-francisco-pro/SF-Pro-v1.woff2") format("woff2"),
+    url("/assets/fonts/san-francisco-pro/SF-Pro.ttf")
+    format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-1FFF, U+2070-209F, U+20D0-20FF, U+2150-218F, U+2200-2211,
+    U+2213-10FFFF;
+}
+@font-face {
+  font-family: "SF Pro";
+  src: url("/assets/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2")
+    format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2212,
+    U+FB00-FB06;
+}
+@font-face {
+  font-family: "SF Pro";
+  src:
+    url("/assets/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2")
+    format("woff2"),
+    url("/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf")
     format("truetype-variations");
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
+  unicode-range:
+    U+0100-1FFF, U+2070-209F, U+20D0-20FF, U+2150-218F, U+2200-2211,
+    U+2213-10FFFF;
 }
 @font-face {
   font-family: "Berkeley Mono";
-  src: url("/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf")
+  src:
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2")
+    format("woff2"),
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf")
     format("truetype");
   font-weight: 400;
   font-style: normal;
@@ -24,7 +60,10 @@
 }
 @font-face {
   font-family: "Berkeley Mono";
-  src: url("/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf")
+  src:
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2")
+    format("woff2"),
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf")
     format("truetype");
   font-weight: 400;
   font-style: italic;
@@ -32,15 +71,20 @@
 }
 @font-face {
   font-family: "Berkeley Mono";
-  src: url("/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf")
-    format("truetype");
+  src:
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2")
+    format("woff2"),
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Berkeley Mono";
-  src: url("/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf")
+  src:
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic-v1.woff2")
+    format("woff2"),
+    url("/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf")
     format("truetype");
   font-weight: 700;
   font-style: italic;
@@ -48,8 +92,9 @@
 }
 @font-face {
   font-family: "STIX Two Text";
-  src: url("/assets/fonts/stix-two/STIXTwoText.ttf")
-    format("truetype-variations");
+  src:
+    url("/assets/fonts/stix-two/STIXTwoText-v1.woff2") format("woff2"),
+    url("/assets/fonts/stix-two/STIXTwoText.ttf") format("truetype-variations");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
