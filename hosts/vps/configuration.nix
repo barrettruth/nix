@@ -622,6 +622,7 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-light.css - - - - ${forgejoCustom.assets}/css/theme-midnight-light.css"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-dark.css - - - - ${forgejoCustom.assets}/css/theme-midnight-dark.css"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoCustom.assets}/css/theme-midnight-fonts.css"
+    "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-syntax.css - - - - ${forgejoCustom.assets}/css/theme-midnight-syntax.css"
     "L+ /var/lib/forgejo/custom/public/assets/css/barrett-forgejo.css - - - - ${forgejoCustom.assets}/css/barrett-forgejo.css"
     "d /var/lib/forgejo/custom/public/assets/js 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/js/midnight-cm6.js - - - - ${forgejoCustom.assets}/js/midnight-cm6.js"
