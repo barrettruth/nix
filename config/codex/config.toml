@@ -102,3 +102,9 @@ trust_level = "trusted"
 
 [projects."/home/barrett/dev/couch-vision"]
 trust_level = "trusted"
+
+[projects."/home/barrett/dev"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/cp.nvim"]
+trust_level = "trusted"
