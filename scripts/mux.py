@@ -780,6 +780,46 @@ def render_bar() -> int:
     return 0
 
 
+def current_session_windows() -> list[str]:
+    session_id = maybe_output(["tmux", "display-message", "-p", "#{session_id}"])
+    args = ["tmux", "list-windows", "-F", "#{window_id}"]
+    if session_id:
+        args.extend(["-t", session_id])
+    return [line for line in maybe_output(args).splitlines() if line]
+
+
+def set_bar_border(pane_border_status: str) -> None:
+    for window_id in current_session_windows():
+        _ = tmux(
+            "set-window-option",
+            "-t",
+            window_id,
+            "pane-border-status",
+            pane_border_status,
+        )
+
+
+def sync_bar_border() -> int:
+    status = maybe_output(["tmux", "display-message", "-p", "#{status}"])
+    set_bar_border("off" if status == "off" else "bottom")
+    return 0
+
+
+def toggle_bar() -> int:
+    status = maybe_output(["tmux", "display-message", "-p", "#{status}"])
+    if status == "off":
+        _ = tmux("set", "status", "on")
+        set_bar_border("bottom")
+        _ = render_bar()
+    else:
+        set_bar_border("off")
+        _ = tmux("refresh-client", "-S", check=False)
+        _ = tmux("set", "status", "off")
+        _ = render_bar()
+    _ = tmux("refresh-client", "-S", check=False)
+    return 0
+
+
 def apply_managed_binds() -> int:
     for command in managed_commands():
         key = tmux_key(command.key)
@@ -826,6 +866,10 @@ def main(argv: list[str]) -> int:
             return attach_or_new_session()
         case ["bar"]:
             return render_bar()
+        case ["toggle-bar"]:
+            return toggle_bar()
+        case ["sync-bar-border"]:
+            return sync_bar_border()
         case ["_apply_binds"]:
             return apply_managed_binds()
         case ["switch", slot]:
