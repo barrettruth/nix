@@ -14,6 +14,14 @@ let
     version = "0.0.0";
     src = ./frontend;
     npmDepsHash = "sha256-g5GB86S7laJ92nE61HlbiQ5wJm0XgikcPMw+VY9vOXI=";
+    postBuild = ''
+      pierreChunk="$(sed -n 's|.*import("\(\./chunks/dist-[^"]*\.js\)").*|\1|p' dist/barrett-forgejo.js | head -n1)"
+      if [ -z "$pierreChunk" ]; then
+        echo "could not find Pierre diff chunk in dist/barrett-forgejo.js" >&2
+        exit 1
+      fi
+      printf 'import "%s";\n' "$pierreChunk" > dist/pierre-preload.js
+    '';
     installPhase = ''
       runHook preInstall
       mkdir -p $out/js

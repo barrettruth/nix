@@ -195,9 +195,22 @@ const midnightLight = {
 const pierreTheme = { dark: "midnight-dark", light: "midnight-light" };
 const diffTextCache = new Map();
 const diffParseCache = new Map();
+const diffSelectors = {
+  boxes: '#diff-file-boxes .diff-file-box[id^="diff-"]',
+  nativeSource: ".code-diff",
+  placeholder:
+    '.barrett-pierre-diff-target[data-barrett-pierre-placeholder="1"]',
+};
+const diffState = {
+  pending: "pending",
+  rendering: "rendering",
+  rendered: "rendered",
+};
 let pierreModulePromise;
 let pierreThemesRegistered = false;
-let diffVirtualizer;
+let diffBoxObserver;
+let diffBoxObserverContainer;
+let diffRenderQueued = false;
 
 async function loadPierre() {
   if (!pierreModulePromise) {
@@ -649,23 +662,43 @@ function getParsedDiff(url, parsePatchFiles, patchPromise = getDiffText(url)) {
   return parsed;
 }
 
-function fileNameForBox(box) {
-  return (
-    box.dataset.newFilename ||
-    box.dataset.oldFilename ||
-    box.querySelector(".file")?.textContent?.trim() ||
-    ""
-  );
+function diffPathCandidates(box) {
+  const placeholder = pierreDiffPlaceholder(box);
+  const values = [
+    placeholder?.dataset.newFilename,
+    placeholder?.dataset.oldFilename,
+    placeholder?.dataset.filename,
+    box.dataset.newFilename,
+    box.dataset.oldFilename,
+    box.querySelector(".file")?.textContent?.trim(),
+  ];
+  return values
+    .filter(Boolean)
+    .flatMap((value) => {
+      const path = value.trim();
+      return [path, path.replace(/^([ab])\//, "")];
+    })
+    .filter((value, index, all) => value && all.indexOf(value) === index);
 }
 
 function indexPatchFiles(parsed) {
   const files = parsed.flatMap((patch) => patch.files || []);
   const byName = new Map();
+  let totalLineCount = 0;
   for (const file of files) {
     if (file.name) byName.set(file.name, file);
     if (file.prevName) byName.set(file.prevName, file);
+    totalLineCount += diffLineCount(file);
   }
-  return byName;
+  return { byName, totalLineCount };
+}
+
+function diffFileForBox(box, byName) {
+  for (const path of diffPathCandidates(box)) {
+    const file = byName.get(path);
+    if (file) return file;
+  }
+  return null;
 }
 
 function diffStyleFromLocation() {
@@ -682,28 +715,16 @@ function diffLineCount(fileDiff) {
   );
 }
 
-function diffRenderOptions(fileDiff, totalFiles) {
-  const lineCount = diffLineCount(fileDiff);
+function diffRenderOptions(totalLineCount) {
   const options = {
     diffStyle: diffStyleFromLocation(),
     disableFileHeader: true,
     enableLineSelection: true,
-    maxLineDiffLength: totalFiles > 12 || lineCount > 800 ? 240 : 500,
+    maxLineDiffLength: totalLineCount > 800 ? 240 : 500,
     theme: pierreTheme,
   };
-  if (totalFiles > 24 || lineCount > 1600) options.lineDiffType = "none";
+  if (totalLineCount > 1600) options.lineDiffType = "none";
   return options;
-}
-
-function getDiffVirtualizer({ Virtualizer }) {
-  if (!diffVirtualizer) {
-    diffVirtualizer = new Virtualizer({
-      intersectionObserverMargin: 2400,
-      overscrollSize: 1200,
-    });
-    diffVirtualizer.setup(document);
-  }
-  return diffVirtualizer;
 }
 
 function isNearViewport(element, margin = 1200) {
@@ -726,34 +747,92 @@ function sortedDiffBoxes(boxes) {
     .map(({ box }) => box);
 }
 
-function renderDiffFile(box, fileDiff, cacheKey, pierre, totalFiles) {
-  if (box.dataset.barrettPierreState === "rendered") return false;
-  if (box.dataset.barrettPierreState === "rendering") return false;
+function pierreDiffPlaceholder(box) {
+  return box.querySelector(diffSelectors.placeholder);
+}
 
-  const body = box.querySelector(".diff-file-body");
-  const source = box.querySelector(".code-diff");
-  if (!body || !source || source.dataset.barrettPierre === "1") return false;
-  box.dataset.barrettPierreState = "rendering";
-  source.dataset.barrettPierre = "1";
+function nativeDiffSource(box) {
+  return box.querySelector(diffSelectors.nativeSource);
+}
 
-  const mount = document.createElement("div");
-  mount.className = "barrett-pierre-diff";
-  source.after(mount);
+function shouldRenderDiffBox(box) {
+  return box.dataset.barrettPierreMode !== "native";
+}
+
+function diffBoxes() {
+  return Array.from(document.querySelectorAll(diffSelectors.boxes));
+}
+
+function renderableDiffBoxes() {
+  return diffBoxes().filter(shouldRenderDiffBox);
+}
+
+function showDiffRenderFallback(box, url) {
+  const target = pierreDiffPlaceholder(box);
+  if (!target) return;
+  target.classList.add("barrett-pierre-diff-fallback");
+  target.replaceChildren();
+
+  const message = document.createElement("span");
+  message.textContent = "Diff rendering failed.";
+  target.append(message);
+
+  if (url) {
+    target.append(" ");
+    const link = document.createElement("a");
+    link.href = url;
+    link.textContent = "Open raw diff";
+    target.append(link);
+  }
+}
+
+function mountDiffContainer(placeholder, source) {
+  const mount = placeholder || document.createElement("div");
+  mount.classList.add("barrett-pierre-diff");
+  if (placeholder) {
+    mount.replaceChildren();
+  } else {
+    source.after(mount);
+  }
 
   const fileContainer = document.createElement("diffs-container");
   mount.append(fileContainer);
+  return { mount, fileContainer };
+}
 
-  const options = diffRenderOptions(fileDiff, totalFiles);
+function postRenderDiffSwap(box, source) {
   let swapped = false;
-  const swapToPierre = () => {
+  return () => {
     if (swapped) return;
     swapped = true;
     requestAnimationFrame(() => {
-      source.remove();
-      box.dataset.barrettPierreState = "rendered";
+      source?.remove();
+      box.dataset.barrettPierreState = diffState.rendered;
       delete box.dataset.barrettPierreQueued;
     });
   };
+}
+
+function renderDiffBox(box, fileDiff, cacheKey, pierre, totalLineCount) {
+  if (box.dataset.barrettPierreState === diffState.rendered) return false;
+  if (box.dataset.barrettPierreState === diffState.rendering) return false;
+
+  const body = box.querySelector(".diff-file-body");
+  const placeholder = pierreDiffPlaceholder(box);
+  const source = nativeDiffSource(box);
+  if (
+    !body ||
+    (!placeholder && (!source || source.dataset.barrettPierre === "1"))
+  ) {
+    showDiffFallback(box, cacheKey);
+    return false;
+  }
+  box.dataset.barrettPierreState = diffState.rendering;
+  if (source) source.dataset.barrettPierre = "1";
+
+  const { mount, fileContainer } = mountDiffContainer(placeholder, source);
+  const options = diffRenderOptions(totalLineCount);
+  const swapToPierre = postRenderDiffSwap(box, source);
   options.onLineSelectionEnd = (range) => {
     if (!range) return;
     const prefix = range.side === "additions" ? "R" : "L";
@@ -766,12 +845,7 @@ function renderDiffFile(box, fileDiff, cacheKey, pierre, totalFiles) {
   options.onPostRender = swapToPierre;
 
   try {
-    const virtualizer = pierre.VirtualizedFileDiff
-      ? getDiffVirtualizer(pierre)
-      : null;
-    const instance = virtualizer
-      ? new pierre.VirtualizedFileDiff(options, virtualizer)
-      : new pierre.FileDiff(options);
+    const instance = new pierre.FileDiff(options);
     const rendered = instance.render({
       fileDiff: {
         ...fileDiff,
@@ -783,27 +857,72 @@ function renderDiffFile(box, fileDiff, cacheKey, pierre, totalFiles) {
     return true;
   } catch (error) {
     console.warn("Pierre diff rendering failed", error);
-    mount.remove();
-    delete source.dataset.barrettPierre;
+    if (placeholder) {
+      showDiffRenderFallback(box, cacheKey);
+    } else {
+      mount.remove();
+    }
+    if (source) {
+      delete source.dataset.barrettPierre;
+      source.dataset.barrettPierreFallback = "1";
+    }
     delete box.dataset.barrettPierreState;
     delete box.dataset.barrettPierreQueued;
     return false;
   }
 }
 
-function scheduleDiffRendering(boxes, byName, url, pierre) {
+function showDiffFallback(box, url) {
+  const source = nativeDiffSource(box);
+  if (source) source.dataset.barrettPierreFallback = "1";
+  if (!source) showDiffRenderFallback(box, url);
+  delete box.dataset.barrettPierreState;
+  delete box.dataset.barrettPierreQueued;
+}
+
+function showDiffFallbacks(boxes, url) {
+  for (const box of boxes) showDiffFallback(box, url);
+}
+
+function markDiffPending(box) {
+  if (!shouldRenderDiffBox(box)) return;
+  if (box.dataset.barrettPierreState || box.dataset.barrettPierreQueued) return;
+  const placeholder = pierreDiffPlaceholder(box);
+  const source = nativeDiffSource(box);
+  if (
+    !placeholder &&
+    (!source || source.dataset.barrettPierreFallback === "1")
+  ) {
+    return;
+  }
+  box.dataset.barrettPierreState = diffState.pending;
+}
+
+function markDiffsPending(boxes) {
+  for (const box of boxes) markDiffPending(box);
+}
+
+function scheduleDiffRendering(boxes, byName, url, pierre, totalLineCount) {
   const ordered = sortedDiffBoxes(boxes);
   const renderOne = (box) => {
-    const fileName = fileNameForBox(box);
-    const fileDiff = byName.get(fileName);
-    if (!fileDiff) return false;
-    return renderDiffFile(box, fileDiff, url, pierre, byName.size);
+    if (!shouldRenderDiffBox(box)) return false;
+    const fileDiff = diffFileForBox(box, byName);
+    if (!fileDiff) {
+      showDiffFallback(box, url);
+      return false;
+    }
+    return renderDiffBox(box, fileDiff, url, pierre, totalLineCount);
   };
 
   const pending = [];
   let renderedInitial = 0;
   for (const box of ordered) {
-    if (box.dataset.barrettPierreState || box.dataset.barrettPierreQueued) {
+    const state = box.dataset.barrettPierreState;
+    if (
+      state === diffState.rendered ||
+      state === diffState.rendering ||
+      box.dataset.barrettPierreQueued
+    ) {
       continue;
     }
     if (isNearViewport(box) || renderedInitial === 0) {
@@ -841,13 +960,50 @@ function scheduleDiffRendering(boxes, byName, url, pierre) {
   }
 }
 
+function queueDiffRendering() {
+  if (diffRenderQueued) return;
+  diffRenderQueued = true;
+  window.setTimeout(() => {
+    diffRenderQueued = false;
+    renderDiffView();
+  }, 0);
+}
+
+function observeDiffBoxes() {
+  const container = document.querySelector("#diff-file-boxes");
+  if (!container) return;
+  if (diffBoxObserver && diffBoxObserverContainer === container) return;
+  diffBoxObserver?.disconnect();
+  diffBoxObserverContainer = container;
+  diffBoxObserver = new MutationObserver((records) => {
+    let shouldRender = false;
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        const boxes = [];
+        if (node.matches?.('.diff-file-box[id^="diff-"]')) boxes.push(node);
+        boxes.push(
+          ...(node.querySelectorAll?.('.diff-file-box[id^="diff-"]') ?? []),
+        );
+        for (const box of boxes) {
+          if (!shouldRenderDiffBox(box)) continue;
+          markDiffPending(box);
+          shouldRender = true;
+        }
+      }
+    }
+    if (shouldRender) queueDiffRendering();
+  });
+  diffBoxObserver.observe(container, { childList: true, subtree: true });
+}
+
 async function renderDiffView() {
-  const boxes = Array.from(
-    document.querySelectorAll('#diff-file-boxes .diff-file-box[id^="diff-"]'),
-  );
+  const boxes = renderableDiffBoxes();
   if (boxes.length === 0) return;
   const url = diffUrlFromLocation();
   if (!url) return;
+  markDiffsPending(boxes);
+  observeDiffBoxes();
 
   try {
     const pierrePromise = loadPierre();
@@ -858,10 +1014,17 @@ async function renderDiffView() {
       pierre.parsePatchFiles,
       patchPromise,
     );
-    const byName = indexPatchFiles(parsed);
-    scheduleDiffRendering(boxes, byName, url, pierre);
+    const indexed = indexPatchFiles(parsed);
+    scheduleDiffRendering(
+      boxes,
+      indexed.byName,
+      url,
+      pierre,
+      indexed.totalLineCount,
+    );
   } catch (error) {
     console.warn("Pierre diff rendering failed", error);
+    showDiffFallbacks(boxes, url);
   }
 }
 

@@ -91,6 +91,7 @@ samp,
 .repository .code-view code,
 .repository .code-diff,
 .repository .code-diff code,
+.repository .barrett-pierre-diff-target,
 .repository .file-view.plain-text pre,
 .chroma,
 .chroma code,
@@ -100,6 +101,17 @@ samp,
   font-family: var(--fonts-monospace);
 }
 
+.repository
+  #diff-file-boxes
+  .diff-file-box:is(
+    [data-barrett-pierre-state="pending"],
+    [data-barrett-pierre-state="rendering"],
+    [data-barrett-pierre-queued="1"]
+  )
+  .code-diff:not([data-barrett-pierre-fallback="1"]) {
+  display: none;
+}
+
 .barrett-pierre-file {
   background: var(--barrett-pierre-code-bg);
   overflow-x: auto;
@@ -107,6 +119,22 @@ samp,
 
 .barrett-pierre-diff {
   background: var(--barrett-pierre-code-bg);
+}
+
+.barrett-pierre-diff-target {
+  min-height: 1px;
+}
+
+.diff-file-box[data-barrett-pierre-state="pending"]
+  .barrett-pierre-diff-target,
+.diff-file-box[data-barrett-pierre-state="rendering"]
+  .barrett-pierre-diff-target {
+  min-height: 4rem;
+}
+
+.barrett-pierre-diff-fallback {
+  color: var(--color-text-light);
+  padding: 0.75rem 1rem;
 }
 
 .barrett-pierre-file diffs-container,

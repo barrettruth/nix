@@ -75,6 +75,13 @@ let
     forceSSL = true;
     locations."/".return = "301 https://${target}$request_uri";
   };
+  forgejoMutableAssetProxy = {
+    proxyPass = "http://127.0.0.1:3000";
+    extraConfig = ''
+      proxy_hide_header Cache-Control;
+      add_header Cache-Control "no-cache" always;
+    '';
+  };
   forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
     allow-loopback-pinentry
   '';
@@ -609,7 +616,7 @@ let
   '';
 
   forgejoMidnightHeaderTmpl = pkgs.writeText "header.tmpl" ''
-    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight-diffs-perf">
+    <link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight">
     <script src="{{AssetUrlPrefix}}/js/midnight-cm6.js" defer></script>
     <script>
       (() => {
@@ -617,14 +624,15 @@ let
         if (parts.length < 2) return;
         const prefix = "/" + parts[0] + "/" + parts[1];
         const commitIndex = parts.indexOf("commit");
-        const pullsIndex = parts.indexOf("pulls");
-        let url = null;
-        if (commitIndex >= 0 && parts[commitIndex + 1]) {
-          url = prefix + "/commit/" + parts[commitIndex + 1] + ".diff";
-        } else if (pullsIndex >= 0 && parts[pullsIndex + 1]) {
-          url = prefix + "/pulls/" + parts[pullsIndex + 1] + ".diff";
+        const srcIndex = parts.indexOf("src");
+        const blameIndex = parts.indexOf("blame");
+        const isCommitDiff = commitIndex >= 0 && parts[commitIndex + 1];
+        const shouldPreloadPierre = isCommitDiff || srcIndex >= 0 || blameIndex >= 0;
+        if (shouldPreloadPierre) {
+          import("{{AssetUrlPrefix}}/js/pierre-preload.js?v=midnight").catch(() => {});
         }
-        if (!url) return;
+        if (!isCommitDiff) return;
+        const url = prefix + "/commit/" + parts[commitIndex + 1] + ".diff";
         window.__barrettForgejoDiffPreload = {
           url,
           textPromise: fetch(url, { credentials: "same-origin" }).then((response) => {
@@ -634,7 +642,7 @@ let
         };
       })();
     </script>
-    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight-diffs-perf"></script>
+    <script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight"></script>
   '';
   forgejoFooterTmpl = pkgs.writeText "footer.tmpl" "";
   forgejoFooterContentTmpl = pkgs.writeText "footer_content.tmpl" "";
@@ -852,7 +860,12 @@ in
     virtualHosts."git.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
-      locations."/".proxyPass = "http://127.0.0.1:3000";
+      locations = {
+        "/".proxyPass = "http://127.0.0.1:3000";
+        "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;
+        "= /assets/js/barrett-forgejo.js" = forgejoMutableAssetProxy;
+        "= /assets/js/pierre-preload.js" = forgejoMutableAssetProxy;
+      };
     };
     virtualHosts."delta.${identity.domain}" = {
       enableACME = true;
@@ -1125,6 +1138,7 @@ in
     "d /var/lib/forgejo/custom/public/assets/js 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/js/midnight-cm6.js - - - - ${forgejoMidnightCm6Js}"
     "L+ /var/lib/forgejo/custom/public/assets/js/barrett-forgejo.js - - - - ${forgejoCustom.frontend}/js/barrett-forgejo.js"
+    "L+ /var/lib/forgejo/custom/public/assets/js/pierre-preload.js - - - - ${forgejoCustom.frontend}/js/pierre-preload.js"
     "L+ /var/lib/forgejo/custom/public/assets/js/chunks - - - - ${forgejoCustom.frontend}/js/chunks"
     "d /var/lib/forgejo/custom/templates 0750 git git -"
     "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
@@ -1141,6 +1155,8 @@ in
     "L+ /var/lib/forgejo/custom/templates/mail/auth/reset_passwd.tmpl - - - - ${forgejoMailResetPasswdTmpl}"
     "L+ /var/lib/forgejo/custom/templates/mail/common/footer_simple.tmpl - - - - ${forgejoMailFooterSimpleTmpl}"
     "d /var/lib/forgejo/custom/templates/repo 0750 git git -"
+    "d /var/lib/forgejo/custom/templates/repo/diff 0750 git git -"
+    "L+ /var/lib/forgejo/custom/templates/repo/diff/box.tmpl - - - - ${forgejoCustom.templates}/repo/diff/box.tmpl"
     "L+ /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - - ${forgejoCustom.templates}/repo/view_file.tmpl"
     "d /var/lib/forgejo/custom/templates/user 0750 git git -"
     "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"
