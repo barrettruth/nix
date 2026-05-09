@@ -211,46 +211,32 @@ samp,
   .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
   tr.add-code
   .lines-num-new {
-  position: relative;
+  background-position: left top;
+  background-repeat: no-repeat;
 }
 
 .repository.pull.diff
   .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
   tr.del-code
-  .lines-num-old::before,
-.repository.pull.diff
-  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
-  tr.add-code
-  .lines-num-new::before {
-  content: "";
-  user-select: none;
-  contain: strict;
-  width: 4px;
-  height: 100%;
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.repository.pull.diff
-  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
-  tr.del-code
-  .lines-num-old::before {
-  background-image: linear-gradient(
+  .lines-num-old {
+  background-image: repeating-linear-gradient(
     0deg,
-    var(--diffs-bg-deletion-override) 50%,
-    var(--diffs-deletion-color-override) 50%
+    var(--diffs-bg-deletion-override) 0 2px,
+    var(--diffs-deletion-color-override) 2px 4px
   );
-  background-repeat: repeat;
-  background-size: 2px 2px;
+  background-size: 4px 4px;
+  background-repeat: repeat-y;
 }
 
 .repository.pull.diff
   .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
   tr.add-code
-  .lines-num-new::before {
-  background-color: var(--diffs-addition-color-override);
+  .lines-num-new {
+  background-image: linear-gradient(
+    var(--diffs-addition-color-override),
+    var(--diffs-addition-color-override)
+  );
+  background-size: 4px 100%;
 }
 
 .repository.pull.diff
