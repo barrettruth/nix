@@ -171,6 +171,17 @@ samp,
   color: var(--color-text-light-2);
 }
 
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  .lines-type-marker
+  > span,
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="none"]
+  .lines-type-marker
+  > span {
+  visibility: hidden;
+}
+
 .repository.pull.diff .barrett-pr-diff tr.same-code,
 .repository.pull.diff .barrett-pr-diff tr.same-code td {
   background: var(--barrett-pierre-code-bg);
@@ -190,6 +201,56 @@ samp,
 .repository.pull.diff .barrett-pr-diff tr.add-code,
 .repository.pull.diff .barrett-pr-diff tr.add-code td {
   background: var(--diffs-bg-addition-override);
+}
+
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  tr.del-code
+  .lines-num-old,
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  tr.add-code
+  .lines-num-new {
+  position: relative;
+}
+
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  tr.del-code
+  .lines-num-old::before,
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  tr.add-code
+  .lines-num-new::before {
+  content: "";
+  user-select: none;
+  contain: strict;
+  width: 4px;
+  height: 100%;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  tr.del-code
+  .lines-num-old::before {
+  background-image: linear-gradient(
+    0deg,
+    var(--diffs-bg-deletion-override) 50%,
+    var(--diffs-deletion-color-override) 50%
+  );
+  background-repeat: repeat;
+  background-size: 2px 2px;
+}
+
+.repository.pull.diff
+  .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
+  tr.add-code
+  .lines-num-new::before {
+  background-color: var(--diffs-addition-color-override);
 }
 
 .repository.pull.diff

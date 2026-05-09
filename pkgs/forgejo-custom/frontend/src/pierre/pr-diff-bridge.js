@@ -1,3 +1,6 @@
+import { applyLineDiffs, lineDiffOptionKey } from "./line-diff.js";
+import { pierreDiffRenderOptions } from "./options.js";
+
 const prDiffSelectors = {
   container: "#diff-file-boxes",
   boxes: '#diff-file-boxes .diff-file-box[id^="diff-"]',
@@ -46,18 +49,85 @@ function paintRow(row) {
   }
 }
 
+function codeForSide(row, side) {
+  const splitSelector =
+    side === "deletion"
+      ? ".lines-code-old code.code-inner"
+      : ".lines-code-new code.code-inner";
+  return (
+    row.querySelector(splitSelector) ||
+    row.querySelector(
+      ".lines-code:not(.lines-code-old):not(.lines-code-new) code.code-inner",
+    )
+  );
+}
+
+function rowChangeSide(row) {
+  if (row.classList.contains("del-code") || row.dataset.lineType === "del") {
+    return "deletion";
+  }
+  if (row.classList.contains("add-code") || row.dataset.lineType === "add") {
+    return "addition";
+  }
+  return null;
+}
+
+function applyPierreLineDiffs(table, options) {
+  const optionKey = lineDiffOptionKey(options);
+  let group = [];
+
+  const flush = () => {
+    if (group.length === 0) return;
+    if (group.every((row) => row.dataset.barrettPrDiffAlgorithm === optionKey)) {
+      group = [];
+      return;
+    }
+
+    const deletions = [];
+    const additions = [];
+
+    for (const row of group) {
+      const side = rowChangeSide(row);
+      if (side === "deletion") {
+        const code = codeForSide(row, "deletion");
+        if (code) deletions.push(code);
+      } else if (side === "addition") {
+        const code = codeForSide(row, "addition");
+        if (code) additions.push(code);
+      }
+    }
+
+    applyLineDiffs({ additions, deletions, options });
+    for (const row of group) row.dataset.barrettPrDiffAlgorithm = optionKey;
+    group = [];
+  };
+
+  for (const row of table.querySelectorAll(prDiffSelectors.rows)) {
+    if (rowChangeSide(row)) {
+      group.push(row);
+    } else {
+      flush();
+    }
+  }
+  flush();
+}
+
 function paintBox(box) {
   const nativeDiff = box.querySelector(prDiffSelectors.nativeDiff);
   const table = nativeDiff?.querySelector(prDiffSelectors.table);
   if (!nativeDiff || !table) return false;
+  const options = pierreDiffRenderOptions();
 
   box.dataset.barrettPrDiffState = prDiffState.painted;
   nativeDiff.classList.add("barrett-pr-diff");
+  nativeDiff.dataset.barrettPrDiffIndicators = options.diffIndicators;
+  nativeDiff.dataset.barrettPrDiffLineDiffType = options.lineDiffType;
   table.classList.add("barrett-pr-diff-table");
 
   for (const row of table.querySelectorAll(prDiffSelectors.rows)) {
     paintRow(row);
   }
+  applyPierreLineDiffs(table, options);
 
   return true;
 }

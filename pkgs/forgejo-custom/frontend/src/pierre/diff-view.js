@@ -1,5 +1,5 @@
 import { loadPierre } from "./client.js";
-import { pierreTheme } from "./themes.js";
+import { pierreDiffRenderOptions } from "./options.js";
 
 const diffTextCache = new Map();
 const diffParseCache = new Map();
@@ -121,23 +121,6 @@ function diffFileForBox(box, byName) {
   return null;
 }
 
-function diffStyleFromLocation() {
-  return new URLSearchParams(window.location.search).get("style") === "split"
-    ? "split"
-    : "unified";
-}
-
-function diffRenderOptions() {
-  return {
-    diffStyle: diffStyleFromLocation(),
-    disableFileHeader: true,
-    enableLineSelection: true,
-    lineDiffType: "char",
-    maxLineDiffLength: 500,
-    theme: pierreTheme,
-  };
-}
-
 function isNearViewport(element, margin = 1200) {
   const rect = element.getBoundingClientRect();
   return rect.bottom >= -margin && rect.top <= window.innerHeight + margin;
@@ -226,7 +209,7 @@ function renderDiffBox(box, fileDiff, cacheKey, pierre) {
   box.dataset.barrettPierreState = diffState.rendering;
 
   const fileContainer = mountDiffContainer(placeholder);
-  const options = diffRenderOptions();
+  const options = pierreDiffRenderOptions();
   const markRendered = markDiffRendered(box);
   options.onLineSelectionEnd = (range) => {
     if (!range) return;
