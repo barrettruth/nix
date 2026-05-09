@@ -114,8 +114,7 @@ samp,
   min-height: 1px;
 }
 
-.diff-file-box[data-barrett-pierre-state="pending"]
-  .barrett-pierre-diff-target,
+.diff-file-box[data-barrett-pierre-state="pending"] .barrett-pierre-diff-target,
 .diff-file-box[data-barrett-pierre-state="rendering"]
   .barrett-pierre-diff-target {
   min-height: 4rem;
