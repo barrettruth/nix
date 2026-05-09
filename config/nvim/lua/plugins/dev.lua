@@ -162,6 +162,7 @@ return {
                 extra_filetypes = { 'diff' },
                 hide_prefix = true,
                 highlights = {
+                    background = true,
                     gutter = true,
                     vim = {
                         enabled = true,

@@ -20,7 +20,11 @@ let prDiffRenderQueued = false;
 function applyNativeLineDiffs(table, options) {
   const optionKey = lineDiffOptionKey(options);
   for (const group of changedCodeCellGroups(table)) {
-    if (group.rows.every((row) => row.dataset.barrettPrDiffAlgorithm === optionKey)) {
+    if (
+      group.rows.every(
+        (row) => row.dataset.barrettPrDiffAlgorithm === optionKey,
+      )
+    ) {
       continue;
     }
 
@@ -80,7 +84,9 @@ function addedNodeMayContainDiffRows(node) {
   if (node.matches?.(".diff-file-box")) {
     return Boolean(node.querySelector(prDiffSelectors.table));
   }
-  if (node.querySelector?.(`${prDiffSelectors.boxes} ${prDiffSelectors.table}`)) {
+  if (
+    node.querySelector?.(`${prDiffSelectors.boxes} ${prDiffSelectors.table}`)
+  ) {
     return true;
   }
   return (

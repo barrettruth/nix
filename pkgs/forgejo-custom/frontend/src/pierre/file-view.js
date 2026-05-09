@@ -33,9 +33,11 @@ export async function renderFileView() {
       pierrePromise,
       contentsPromise,
     ]);
-    const file = new File(pierreFileRenderOptions({
-      onLineSelectionEnd: setLineHash,
-    }));
+    const file = new File(
+      pierreFileRenderOptions({
+        onLineSelectionEnd: setLineHash,
+      }),
+    );
     file.render({
       file: {
         name: filePath,

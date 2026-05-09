@@ -40,7 +40,8 @@ function changedCodeCells(row) {
   const oldCell = row.querySelector(".lines-code-old");
   if (
     oldCell?.classList.contains("del-code") ||
-    (row.classList.contains("del-code") && !oldCell?.classList.contains("add-code"))
+    (row.classList.contains("del-code") &&
+      !oldCell?.classList.contains("add-code"))
   ) {
     const code = codeNode(oldCell);
     if (code) cells.push({ side: "deletion", code });
@@ -49,7 +50,8 @@ function changedCodeCells(row) {
   const newCell = row.querySelector(".lines-code-new");
   if (
     newCell?.classList.contains("add-code") ||
-    (row.classList.contains("add-code") && !newCell?.classList.contains("del-code"))
+    (row.classList.contains("add-code") &&
+      !newCell?.classList.contains("del-code"))
   ) {
     const code = codeNode(newCell);
     if (code) cells.push({ side: "addition", code });

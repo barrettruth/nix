@@ -33,7 +33,8 @@ function activeSpanRanges(spans) {
   const ranges = [];
   let offset = 0;
   for (const [active, value] of spans) {
-    if (active === 1) ranges.push({ start: offset, end: offset + value.length });
+    if (active === 1)
+      ranges.push({ start: offset, end: offset + value.length });
     offset += value.length;
   }
   return ranges;
