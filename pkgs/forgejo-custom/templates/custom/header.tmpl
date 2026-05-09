@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="{{AssetUrlPrefix}}/css/barrett-forgejo.css?v=midnight">
+<script src="{{AssetUrlPrefix}}/js/midnight-cm6.js" defer></script>
+<script>
+  (() => {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return;
+    const prefix = "/" + parts[0] + "/" + parts[1];
+    const commitIndex = parts.indexOf("commit");
+    const srcIndex = parts.indexOf("src");
+    const blameIndex = parts.indexOf("blame");
+    const isCommitDiff = commitIndex >= 0 && parts[commitIndex + 1];
+    const shouldPreloadPierre = isCommitDiff || srcIndex >= 0 || blameIndex >= 0;
+    if (shouldPreloadPierre) {
+      import("{{AssetUrlPrefix}}/js/pierre-preload.js?v=midnight").catch(() => {});
+    }
+    if (!isCommitDiff) return;
+    const url = prefix + "/commit/" + parts[commitIndex + 1] + ".diff";
+    window.__barrettForgejoDiffPreload = {
+      url,
+      textPromise: fetch(url, { credentials: "same-origin" }).then((response) => {
+        if (!response.ok) throw new Error(response.statusText);
+        return response.text();
+      }),
+    };
+  })();
+</script>
+<script type="module" src="{{AssetUrlPrefix}}/js/barrett-forgejo.js?v=midnight"></script>

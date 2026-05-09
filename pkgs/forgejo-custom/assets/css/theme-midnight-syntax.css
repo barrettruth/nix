@@ -1,0 +1,198 @@
+/* ===== Chroma (file viewer, README, markdown code fences) ===== */
+.chroma .k,
+.chroma .kd,
+.chroma .kn,
+.chroma .kp,
+.chroma .kr,
+.chroma .kt,
+.chroma .cp,
+.chroma .cpf {
+  color: var(--midnight-syntax-keyword);
+}
+.chroma .s,
+.chroma .s1,
+.chroma .s2,
+.chroma .sa,
+.chroma .sb,
+.chroma .sc,
+.chroma .sd,
+.chroma .sh,
+.chroma .si,
+.chroma .sr,
+.chroma .ss,
+.chroma .sx,
+.chroma .se,
+.chroma .dl {
+  color: var(--midnight-syntax-string);
+}
+.chroma .m,
+.chroma .mb,
+.chroma .mf,
+.chroma .mh,
+.chroma .mi,
+.chroma .mo,
+.chroma .il,
+.chroma .kc,
+.chroma .no {
+  color: var(--midnight-syntax-constant);
+}
+.chroma .c,
+.chroma .c1,
+.chroma .ch,
+.chroma .cm,
+.chroma .cs {
+  color: var(--midnight-syntax-comment);
+  font-style: italic;
+}
+.chroma .err,
+.chroma .gr,
+.chroma .gt {
+  color: var(--midnight-syntax-error);
+}
+.chroma .gp,
+.chroma .go {
+  color: var(--midnight-syntax-comment);
+}
+.chroma .ge {
+  font-style: italic;
+}
+.chroma .gs {
+  font-weight: bold;
+}
+.chroma .gd {
+  color: var(--midnight-syntax-error);
+  background-color: var(--color-diff-removed-row-bg);
+}
+.chroma .gi {
+  color: var(--midnight-syntax-string);
+  background-color: var(--color-diff-added-row-bg);
+}
+.chroma .nf,
+.chroma .nc,
+.chroma .nd,
+.chroma .ne,
+.chroma .nb,
+.chroma .nv,
+.chroma .nl,
+.chroma .nn,
+.chroma .nt,
+.chroma .nx,
+.chroma .ni,
+.chroma .na,
+.chroma .o,
+.chroma .ow,
+.chroma .p,
+.chroma .pi,
+.chroma .bp,
+.chroma .l,
+.chroma .ld,
+.chroma .w,
+.chroma .fm,
+.chroma .vc,
+.chroma .vg,
+.chroma .vi,
+.chroma .gh,
+.chroma .gu,
+.chroma .gl,
+.chroma .g {
+  color: inherit;
+}
+/* ===== CodeMirror (web file editor) ===== */
+.CodeMirror.cm-s-default .cm-keyword,
+.CodeMirror.cm-s-paper .cm-keyword,
+.CodeMirror.cm-s-default .cm-meta,
+.CodeMirror.cm-s-paper .cm-meta {
+  color: var(--midnight-syntax-keyword);
+}
+.CodeMirror.cm-s-default .cm-string,
+.CodeMirror.cm-s-paper .cm-string,
+.CodeMirror.cm-s-default .cm-string-2,
+.CodeMirror.cm-s-paper .cm-string-2,
+.CodeMirror.cm-s-default .cm-quote,
+.CodeMirror.cm-s-paper .cm-quote {
+  color: var(--midnight-syntax-string);
+}
+.CodeMirror.cm-s-default .cm-atom,
+.CodeMirror.cm-s-paper .cm-atom,
+.CodeMirror.cm-s-default .cm-builtin,
+.CodeMirror.cm-s-paper .cm-builtin,
+.CodeMirror.cm-s-default .cm-number,
+.CodeMirror.cm-s-paper .cm-number {
+  color: var(--midnight-syntax-constant);
+}
+.CodeMirror.cm-s-default .cm-comment,
+.CodeMirror.cm-s-paper .cm-comment {
+  color: var(--midnight-syntax-comment);
+  font-style: italic;
+}
+.CodeMirror.cm-s-default .cm-error,
+.CodeMirror.cm-s-paper .cm-error {
+  color: var(--midnight-syntax-error);
+}
+.CodeMirror.cm-s-default .cm-header,
+.CodeMirror.cm-s-paper .cm-header,
+.CodeMirror.cm-s-default .cm-link,
+.CodeMirror.cm-s-paper .cm-link,
+.CodeMirror.cm-s-default .cm-url,
+.CodeMirror.cm-s-paper .cm-url {
+  color: var(--midnight-syntax-keyword);
+}
+.CodeMirror.cm-s-default .cm-hr,
+.CodeMirror.cm-s-paper .cm-hr {
+  color: var(--midnight-syntax-comment);
+}
+.CodeMirror.cm-s-default .cm-property,
+.CodeMirror.cm-s-paper .cm-property,
+.CodeMirror.cm-s-default .cm-variable,
+.CodeMirror.cm-s-paper .cm-variable,
+.CodeMirror.cm-s-default .cm-variable-2,
+.CodeMirror.cm-s-paper .cm-variable-2,
+.CodeMirror.cm-s-default .cm-variable-3,
+.CodeMirror.cm-s-paper .cm-variable-3,
+.CodeMirror.cm-s-default .cm-def,
+.CodeMirror.cm-s-paper .cm-def,
+.CodeMirror.cm-s-default .cm-tag,
+.CodeMirror.cm-s-paper .cm-tag,
+.CodeMirror.cm-s-default .cm-attribute,
+.CodeMirror.cm-s-paper .cm-attribute,
+.CodeMirror.cm-s-default .cm-bracket,
+.CodeMirror.cm-s-paper .cm-bracket,
+.CodeMirror.cm-s-default .cm-qualifier,
+.CodeMirror.cm-s-paper .cm-qualifier {
+  color: inherit;
+}
+/* ===== Markup (rendered markdown content) ===== */
+.markup .absent {
+  color: var(--midnight-syntax-error);
+}
+.markup img,
+.markup video {
+  max-width: 100%;
+  height: auto;
+}
+.markup video {
+  display: block;
+  object-fit: contain;
+}
+/* ===== CodeMirror 6 (file editor at /repos/.../_edit/...) =====
+   CM6 ships its own theme via EditorView.theme()/HighlightStyle.define()
+   in web_src/js/features/codemirror.ts with hardcoded VSCode-ish hex
+   colors. Those styles get injected into <style> tags AT EDITOR MOUNT
+   TIME and use obfuscated auto-generated class names, so per-token
+   recoloring is done via custom/public/assets/js/midnight-cm6.js
+   (a MutationObserver that rewrites the hex colors to midnight
+   palette equivalents). Here we just set the wrapper text + bg via
+   !important so the base text uses the midnight palette before the
+   JS runs (and for tokens the JS doesn't recolor). */
+.cm-editor {
+  color: var(--color-text) !important;
+  background-color: var(--color-code-bg) !important;
+}
+.cm-editor .cm-content,
+.cm-editor .cm-line,
+.cm-editor .cm-gutters {
+  color: var(--color-text) !important;
+}
+.cm-editor .cm-gutters {
+  background-color: var(--color-code-bg) !important;
+}
