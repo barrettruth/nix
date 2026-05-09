@@ -1,5 +1,6 @@
+import { fetchText } from "../shared/fetch.js";
 import { loadPierre } from "./client.js";
-import { pierreTheme } from "./themes.js";
+import { pierreFileRenderOptions } from "./options.js";
 
 function setLineHash(range) {
   if (!range) return;
@@ -27,23 +28,14 @@ export async function renderFileView() {
 
   try {
     const pierrePromise = loadPierre();
-    const contentsPromise = fetch(rawUrl, { credentials: "same-origin" }).then(
-      (response) => {
-        if (!response.ok) throw new Error(response.statusText);
-        return response.text();
-      },
-    );
+    const contentsPromise = fetchText(rawUrl);
     const [{ File }, contents] = await Promise.all([
       pierrePromise,
       contentsPromise,
     ]);
-    const file = new File({
-      disableFileHeader: true,
-      enableLineSelection: true,
-      overflow: "scroll",
-      theme: pierreTheme,
+    const file = new File(pierreFileRenderOptions({
       onLineSelectionEnd: setLineHash,
-    });
+    }));
     file.render({
       file: {
         name: filePath,

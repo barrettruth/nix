@@ -1,0 +1,47 @@
+:root {
+  --barrett-pierre-code-bg: var(--color-body);
+  --barrett-diff-added-line-bg: color-mix(
+    in srgb,
+    var(--color-diff-added-row-bg) 60%,
+    var(--color-body)
+  );
+  --barrett-diff-removed-line-bg: color-mix(
+    in srgb,
+    var(--color-diff-removed-row-bg) 60%,
+    var(--color-body)
+  );
+  --diffs-font-family: var(--fonts-monospace);
+  --diffs-header-font-family: var(--fonts-monospace);
+  --diffs-font-size: 13px;
+  --diffs-line-height: 1.6;
+  --diffs-tab-size: 2;
+  --diffs-font-features: normal;
+  --diffs-min-number-column-width: 3ch;
+  --diffs-gap-inline: 0;
+  --diffs-gap-block: 0;
+  --diffs-light-bg: var(--barrett-pierre-code-bg);
+  --diffs-dark-bg: var(--barrett-pierre-code-bg);
+  --diffs-light: var(--color-text);
+  --diffs-dark: var(--color-text);
+  --diffs-bg-buffer-override: var(--color-body);
+  --diffs-bg-hover-override: var(--color-hover);
+  --diffs-bg-context-override: var(--barrett-pierre-code-bg);
+  --diffs-bg-context-gutter-override: var(--color-body);
+  --diffs-bg-separator-override: var(--color-box-header);
+  --diffs-fg-number-override: var(--color-text-light-2);
+  --diffs-fg-number-addition-override: var(--color-green);
+  --diffs-fg-number-deletion-override: var(--color-red);
+  --diffs-fg-conflict-marker-override: var(--color-yellow);
+  --diffs-deletion-color-override: var(--color-red);
+  --diffs-addition-color-override: var(--color-green);
+  --diffs-modified-color-override: var(--color-blue);
+  --diffs-bg-deletion-override: var(--barrett-diff-removed-line-bg);
+  --diffs-bg-deletion-number-override: var(--barrett-diff-removed-line-bg);
+  --diffs-bg-deletion-emphasis-override: var(--color-diff-removed-row-bg);
+  --diffs-bg-addition-override: var(--barrett-diff-added-line-bg);
+  --diffs-bg-addition-number-override: var(--barrett-diff-added-line-bg);
+  --diffs-bg-addition-emphasis-override: var(--color-diff-added-row-bg);
+  --diffs-selection-color-override: var(--color-blue);
+  --diffs-bg-selection-override: var(--color-active);
+  --diffs-bg-selection-number-override: var(--color-active);
+}

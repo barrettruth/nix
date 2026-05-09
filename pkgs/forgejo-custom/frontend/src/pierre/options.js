@@ -1,19 +1,21 @@
+import { diffRenderOptions } from "../diff/options.js";
 import { pierreTheme } from "./themes.js";
-
-export function diffStyleFromLocation() {
-  return new URLSearchParams(window.location.search).get("style") === "split"
-    ? "split"
-    : "unified";
-}
 
 export function pierreDiffRenderOptions(overrides = {}) {
   return {
-    diffIndicators: "bars",
-    diffStyle: diffStyleFromLocation(),
+    ...diffRenderOptions(),
     disableFileHeader: true,
     enableLineSelection: true,
-    lineDiffType: "char",
-    maxLineDiffLength: 500,
+    theme: pierreTheme,
+    ...overrides,
+  };
+}
+
+export function pierreFileRenderOptions(overrides = {}) {
+  return {
+    disableFileHeader: true,
+    enableLineSelection: true,
+    overflow: "scroll",
     theme: pierreTheme,
     ...overrides,
   };

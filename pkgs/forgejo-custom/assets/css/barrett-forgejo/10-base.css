@@ -1,0 +1,54 @@
+@font-face {
+  font-family: "Nonicons";
+  src: url("/assets/fonts/nonicons.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+.barrett-nonicon {
+  display: inline-flex;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  color: var(--color-text-light-2);
+  font-family: "Nonicons";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  vertical-align: -0.125em;
+}
+
+.barrett-nonicon-folder {
+  color: var(--color-primary);
+}
+
+.navbar-left > a.item[href="https://forgejo.org/docs/latest/"],
+.navbar-right li:has(> a[href="https://forgejo.org/docs/latest/"]) {
+  display: none;
+}
+
+.markup code,
+.markup pre,
+.markup tt,
+pre,
+code,
+kbd,
+samp,
+.repository .code-view,
+.repository .code-view code,
+.repository .code-diff,
+.repository .code-diff code,
+.repository .barrett-pierre-diff-target,
+.repository .file-view.plain-text pre,
+.chroma,
+.chroma code,
+.cm-editor,
+.cm-editor .cm-content,
+.cm-editor .cm-line {
+  font-family: var(--fonts-monospace);
+}

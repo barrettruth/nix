@@ -27,6 +27,13 @@ in
   assets = pkgs.runCommand "barrett-forgejo-custom-assets" { } ''
     mkdir -p $out
     cp -R ${./assets}/. $out/
+    chmod -R u+w $out
+    cat \
+      ${./assets/css/barrett-forgejo/00-vars.css} \
+      ${./assets/css/barrett-forgejo/10-base.css} \
+      ${./assets/css/barrett-forgejo/20-pierre.css} \
+      ${./assets/css/barrett-forgejo/30-pr-native-diff.css} \
+      > $out/css/barrett-forgejo.css
     mkdir -p $out/fonts
     cp ${noniconsFont}/dist/nonicons.woff $out/fonts/nonicons.woff
   '';
