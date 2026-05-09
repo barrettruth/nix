@@ -101,17 +101,6 @@ samp,
   font-family: var(--fonts-monospace);
 }
 
-.repository
-  #diff-file-boxes
-  .diff-file-box:is(
-    [data-barrett-pierre-state="pending"],
-    [data-barrett-pierre-state="rendering"],
-    [data-barrett-pierre-queued="1"]
-  )
-  .code-diff:not([data-barrett-pierre-fallback="1"]) {
-  display: none;
-}
-
 .barrett-pierre-file {
   background: var(--barrett-pierre-code-bg);
   overflow-x: auto;

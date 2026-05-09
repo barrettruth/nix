@@ -1,4 +1,4 @@
-vim.opt.complete = { '.', 'w', 'b', 'o' }
+vim.opt.complete = { 'o', '.', 'w', 'b' }
 vim.o.completefunc = "v:lua.require'config.completion'.complete"
 vim.opt.completeopt = { 'menuone', 'noinsert', 'popup' }
 
