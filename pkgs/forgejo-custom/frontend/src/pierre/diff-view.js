@@ -32,10 +32,21 @@ function diffUrlFromLocation() {
   const parts = pathParts();
   const prefix = repoPrefix(parts);
   if (!prefix) return null;
+
   const commitIndex = parts.indexOf("commit");
   if (commitIndex >= 0 && parts[commitIndex + 1]) {
     return `${prefix}/commit/${encodeURIComponent(parts[commitIndex + 1])}.diff`;
   }
+
+  const compareIndex = parts.indexOf("compare");
+  if (compareIndex >= 0 && parts[compareIndex + 1]) {
+    const compareSpec = parts
+      .slice(compareIndex + 1)
+      .map(encodeURIComponent)
+      .join("/");
+    return `${prefix}/compare/${compareSpec}.diff`;
+  }
+
   return null;
 }
 

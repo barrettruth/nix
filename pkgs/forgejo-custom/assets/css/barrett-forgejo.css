@@ -129,3 +129,188 @@ samp,
 .barrett-pierre-diff diffs-container {
   display: block;
 }
+
+.repository.pull.diff .barrett-pr-diff {
+  background: var(--barrett-pierre-code-bg);
+  color: var(--color-text);
+  font-size: var(--diffs-font-size);
+  line-height: var(--diffs-line-height);
+}
+
+.repository.pull.diff .barrett-pr-diff table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.repository.pull.diff .barrett-pr-diff td {
+  border-color: transparent;
+}
+
+.repository.pull.diff .barrett-pr-diff .lines-code,
+.repository.pull.diff .barrett-pr-diff .lines-code code.code-inner {
+  color: var(--color-text);
+  background: transparent;
+  line-height: var(--diffs-line-height);
+  tab-size: var(--diffs-tab-size);
+}
+
+.repository.pull.diff .barrett-pr-diff .lines-code {
+  padding-left: 0.75rem !important;
+}
+
+.repository.pull.diff .barrett-pr-diff .lines-num,
+.repository.pull.diff .barrett-pr-diff .lines-escape,
+.repository.pull.diff .barrett-pr-diff .lines-type-marker {
+  color: var(--diffs-fg-number-override);
+  background: var(--color-body);
+  user-select: none;
+}
+
+.repository.pull.diff .barrett-pr-diff .lines-type-marker {
+  color: var(--color-text-light-2);
+}
+
+.repository.pull.diff .barrett-pr-diff tr.same-code,
+.repository.pull.diff .barrett-pr-diff tr.same-code td {
+  background: var(--barrett-pierre-code-bg);
+}
+
+.repository.pull.diff .barrett-pr-diff tr.tag-code,
+.repository.pull.diff .barrett-pr-diff tr.tag-code td {
+  color: var(--color-text-light);
+  background: var(--diffs-bg-separator-override);
+}
+
+.repository.pull.diff .barrett-pr-diff tr.del-code,
+.repository.pull.diff .barrett-pr-diff tr.del-code td {
+  background: var(--diffs-bg-deletion-override);
+}
+
+.repository.pull.diff .barrett-pr-diff tr.add-code,
+.repository.pull.diff .barrett-pr-diff tr.add-code td {
+  background: var(--diffs-bg-addition-override);
+}
+
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-num-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-escape-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-type-marker-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-code-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-num-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-escape-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-type-marker-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-code-old {
+  background: var(--color-diff-inactive);
+}
+
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-num-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-escape-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-type-marker-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .lines-code-old {
+  background: var(--diffs-bg-deletion-override);
+}
+
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-num-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-escape-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-type-marker-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.add-code
+  .lines-code-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .add-code.lines-num-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .add-code.lines-escape-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .add-code.lines-type-marker-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-split
+  tr.del-code
+  .add-code.lines-code-new {
+  background: var(--diffs-bg-addition-override);
+}
+
+.repository.pull.diff .barrett-pr-diff .del-code .lines-num,
+.repository.pull.diff .barrett-pr-diff .del-code .lines-type-marker,
+.repository.pull.diff .barrett-pr-diff .del-code.lines-num,
+.repository.pull.diff .barrett-pr-diff .del-code.lines-type-marker {
+  color: var(--diffs-fg-number-deletion-override);
+}
+
+.repository.pull.diff .barrett-pr-diff .add-code .lines-num,
+.repository.pull.diff .barrett-pr-diff .add-code .lines-type-marker,
+.repository.pull.diff .barrett-pr-diff .add-code.lines-num,
+.repository.pull.diff .barrett-pr-diff .add-code.lines-type-marker {
+  color: var(--diffs-fg-number-addition-override);
+}
+
+.repository.pull.diff .barrett-pr-diff .removed-code {
+  color: inherit;
+  background: var(--diffs-bg-deletion-emphasis-override);
+  border-radius: 0;
+}
+
+.repository.pull.diff .barrett-pr-diff .added-code {
+  color: inherit;
+  background: var(--diffs-bg-addition-emphasis-override);
+  border-radius: 0;
+}
+
+.repository.pull.diff .barrett-pr-diff .add-code-comment {
+  margin-right: 0.375rem;
+}
+
+.repository.pull.diff .barrett-pr-diff tr.add-comment td {
+  background: var(--color-body);
+}

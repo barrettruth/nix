@@ -112,7 +112,7 @@
 						{{$isImage:= or (call $.IsSniffedTypeAnImage $sniffedTypeBase) (call $.IsSniffedTypeAnImage $sniffedTypeHead)}}
 						{{$isCsv := (call $.IsCsvFile $file)}}
 						{{$showFileViewToggle := or $isImage (and (not $file.IsIncomplete) $isCsv)}}
-						{{$usePierreDiff := and $.PageIsDiff (not $.PageIsPullFiles) (not $file.IsIncomplete) (not $file.IsBin) (not $file.IsSubmodule) (not $showFileViewToggle)}}
+						{{$usePierreDiff := and (or $.PageIsDiff $.IsDiffCompare) (not $.PageIsPullFiles) (not $file.IsIncomplete) (not $file.IsBin) (not $file.IsSubmodule) (not $showFileViewToggle)}}
 						{{$isExpandable := or (gt $file.Addition 0) (gt $file.Deletion 0) $file.IsBin}}
 						{{$isReviewFile := and $.IsSigned $.PageIsPullFiles (not $.IsArchived) $.IsShowingAllCommits}}
 						<div class="diff-file-box diff-box file-content {{TabSizeClass $.Editorconfig $file.Name}} tw-mt-0" id="diff-{{$file.NameHash}}" data-old-filename="{{$file.OldName}}" data-new-filename="{{$file.Name}}" data-barrett-pierre-mode="{{if $usePierreDiff}}placeholder{{else}}native{{end}}" {{if or ($file.ShouldBeHidden) (not $isExpandable)}}data-folded="true"{{end}}>
