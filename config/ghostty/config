@@ -1,10 +1,7 @@
-font-family = mononoki
-# font-family = Atkinson Hyperlegible Mono
-# font-family = Berkeley Mono
+font-family = Atkinson Hyperlegible Mono
 font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt
 font-size = 20
-# adjust-cell-height = 10%
 theme = dark:midnight,light:daylight
 cursor-style-blink = false
 shell-integration-features = no-cursor
@@ -13,6 +10,7 @@ window-padding-x = 0
 window-padding-y = 0
 window-padding-color = background
 app-notifications = no-clipboard-copy,no-config-reload
+gtk-single-instance = false
 resize-overlay = never
 mouse-scroll-multiplier = 0.5
 quit-after-last-window-closed = true
