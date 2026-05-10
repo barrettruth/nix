@@ -30,6 +30,7 @@ let
       "forgejo-oauth-${name}-secret"
     ]) forgejoOauthSources
   );
+  hasDeltaR2BackupSecret = builtins.pathExists ../../secrets/vps/delta-r2-backup-env;
   webDeployUser = "web-deploy";
   webDeployGroup = "web-deploy";
   webDeployPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF4QXLB3ZH77HJwTbcYB/52jg7kAT+E6BwACf1ianOXS forgejo-actions-web-deploy-2026-05-01";
@@ -310,6 +311,7 @@ in
 
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL6OeNUf0FNpeNSq/XKyJTl4XDlmaV/UcV2SpPzgn4ag forgejo-actions-delta-deploy-2026-05-10"
   ];
 
   users.groups.${webDeployGroup} = { };
@@ -420,6 +422,14 @@ in
           mode = "0400";
           inherit restartUnits;
         };
+      mkDeltaSecret =
+        restartUnits: name:
+        mkVpsSecret name {
+          owner = "delta";
+          group = "delta";
+          mode = "0400";
+          inherit restartUnits;
+        };
     in
     lib.genAttrs [
       "forgejo-resend-api-key"
@@ -436,7 +446,18 @@ in
         (mkForgejoSecret [
           "forgejo.service"
           "forgejo-gpg-import.service"
-        ]);
+        ])
+    // {
+      "delta-env" = mkDeltaSecret [ "delta.service" ] "delta-env";
+    }
+    // lib.optionalAttrs hasDeltaR2BackupSecret {
+      "delta-r2-backup-env" = mkVpsSecret "delta-r2-backup-env" {
+        owner = "root";
+        group = "root";
+        mode = "0400";
+        restartUnits = [ "delta-r2-backup.service" ];
+      };
+    };
 
   services.forgejo = {
     enable = true;
@@ -770,27 +791,37 @@ in
       User = "delta";
       Group = "delta";
       StateDirectory = "delta";
-      EnvironmentFile = "/var/lib/delta/env";
+      EnvironmentFile = config.sops.secrets."delta-env".path;
     };
     environment = {
       NODE_ENV = "production";
       PORT = "3001";
       HOSTNAME = "127.0.0.1";
       DATABASE_URL = "/var/lib/delta/data.db";
+      OAUTH_REDIRECT_BASE_URL = "https://delta.${identity.domain}";
+      WEBAUTHN_RP_ID = "delta.${identity.domain}";
+      WEBAUTHN_ORIGIN = "https://delta.${identity.domain}";
     };
   };
 
   systemd.services.delta-r2-backup = {
     description = "Backup delta SQLite to Cloudflare R2";
-    serviceConfig = {
-      Type = "oneshot";
-      EnvironmentFile = "/etc/delta-r2-backup.env";
-    };
+    serviceConfig =
+      {
+        Type = "oneshot";
+      }
+      // lib.optionalAttrs hasDeltaR2BackupSecret {
+        EnvironmentFile = config.sops.secrets."delta-r2-backup-env".path;
+      };
     path = [
       pkgs.awscli2
       pkgs.gawk
     ];
     script = ''
+      : "''${R2_ACCESS_KEY_ID:?delta R2 backup secret is missing R2_ACCESS_KEY_ID}"
+      : "''${R2_SECRET_ACCESS_KEY:?delta R2 backup secret is missing R2_SECRET_ACCESS_KEY}"
+      : "''${R2_ENDPOINT:?delta R2 backup secret is missing R2_ENDPOINT}"
+
       export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
       export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
       ENDPOINT="$R2_ENDPOINT"
@@ -812,7 +843,7 @@ in
   };
 
   systemd.timers.delta-r2-backup = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = lib.optionals hasDeltaR2BackupSecret [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
       Persistent = true;
