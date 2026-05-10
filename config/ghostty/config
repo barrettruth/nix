@@ -1,4 +1,5 @@
-font-family = Atkinson Hyperlegible Mono
+font-family = mononoki
+# font-family = Atkinson Hyperlegible Mono
 # font-family = Berkeley Mono
 font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt
