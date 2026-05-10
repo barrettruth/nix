@@ -17,4 +17,3 @@ icon_position = off
 [ctl]
 appname = ctl
 icon_position = off
-format = %s\n%b

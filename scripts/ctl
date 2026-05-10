@@ -209,7 +209,7 @@ brightness)
     i=$((i + 1))
   done
   bar="${bar}]"
-  notify-send -a ctl -t 2500 -r 5555 "brightness: ${pct}%" "$bar"
+  notify-send -a ctl -t 2500 -r 5555 "Brightness" "$(printf '%s\n%s' "${pct}%" "$bar")"
   ;;
 volume)
   require wpctl notify-send
@@ -226,7 +226,7 @@ volume)
     ;;
   esac
   if wpctl get-volume "$SINK" | grep -q MUTED; then
-    notify-send -a ctl -t 2500 -r 5556 "audio sink" "muted"
+    notify-send -a ctl -t 2500 -r 5556 "Audio sink" "Muted"
   else
     vol=$(get_vol)
     filled=$((vol * 30 / 100))
@@ -243,7 +243,7 @@ volume)
       i=$((i + 1))
     done
     bar="${bar}]"
-    notify-send -a ctl -t 2500 -r 5556 "audio sink: ${vol}%" "$bar"
+    notify-send -a ctl -t 2500 -r 5556 "Audio sink" "$(printf '%s\n%s' "${vol}%" "$bar")"
   fi
   ;;
 wifi)
@@ -347,7 +347,7 @@ media)
     file=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
     rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
     printf '%s' "$file" | wl-copy
-    notify-send -a ctl -t 2500 "screen capture" "recording saved to ~${file#"$HOME"}"
+    notify-send -a ctl -t 2500 "Screen capture" "Recording saved to ~${file#"$HOME"}"
     exit 0
   fi
   pkill -x fuzzel 2>/dev/null && exit 0
@@ -362,7 +362,7 @@ media)
       f=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
       rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
       [ -n "$f" ] && rm -f "$f"
-      notify-send -a ctl -t 2500 "screen capture" "recording cancelled (1m limit)"
+      notify-send -a ctl -t 2500 "Screen capture" "Recording cancelled (1m limit)"
     fi) &
   }
   cap_desktop="   Capture Screen"
@@ -376,28 +376,28 @@ media)
   case "$chosen" in
   "$cap_desktop")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "screen capture" "screenshot saved to ~${file#"$HOME"}"
+    grim "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "Screen capture" "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$cap_area")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim -g "$(slurp)" "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "screen capture" "screenshot saved to ~${file#"$HOME"}"
+    grim -g "$(slurp)" "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "Screen capture" "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$cap_window")
     geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
-    grim -g "$geom" "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "screen capture" "screenshot saved to ~${file#"$HOME"}"
+    grim -g "$geom" "$file" && wl-copy <"$file" && echo "$file" && notify-send -a ctl -t 2500 "Screen capture" "Screenshot saved to ~${file#"$HOME"}"
     ;;
   "$rec_desktop")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
     echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-    notify-send -a ctl -t 2500 "screen capture" "recording started"
+    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
     wf-recorder -f "$file" &
     rec_watchdog
     ;;
   "$rec_area")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
     echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-    notify-send -a ctl -t 2500 "screen capture" "recording started"
+    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
     wf-recorder -g "$(slurp)" -f "$file" &
     rec_watchdog
     ;;
@@ -405,7 +405,7 @@ media)
     geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
     echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-    notify-send -a ctl -t 2500 "screen capture" "recording started"
+    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
     wf-recorder -g "$geom" -f "$file" &
     rec_watchdog
     ;;
@@ -862,11 +862,11 @@ dictate)
     rm -f "$dpid"
     sleep 0.2
     if [ ! -s "$daudio" ]; then
-      notify-send -a ctl -t 1250 "whisper" "no audio"
+      notify-send -a ctl -t 1250 "Whisper" "No audio"
       whisper_idle_schedule 15
       exit 1
     fi
-    notify-send -a ctl -t 1250 "whisper" "transcribing..."
+    notify-send -a ctl -t 1250 "Whisper" "Transcribing..."
     for _ in $(seq 1 50); do
       curl -s --max-time 1 "http://127.0.0.1:$dport/" >/dev/null 2>&1 && break
       sleep 0.1
@@ -877,19 +877,19 @@ dictate)
       -F "response_format=text" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
     rm -f "$daudio"
     if [ -z "$text" ]; then
-      notify-send -a ctl -t 1250 "whisper" "no speech detected"
+      notify-send -a ctl -t 1250 "Whisper" "No speech detected"
       whisper_idle_schedule 15
       exit 1
     fi
     printf '%s' "$text" | wl-copy
-    notify-send -a ctl -t 1250 "whisper" "$text"
+    notify-send -a ctl -t 1250 "Whisper" "$text"
     whisper_idle_schedule "$(whisper_idle_timeout "$dhistory")"
     exit 0
   fi
 
   whisper_idle_cancel
   systemctl --user start whisper-dictation 2>/dev/null
-  notify-send -a ctl -t 1250 "whisper" "recording..."
+  notify-send -a ctl -t 1250 "Whisper" "Recording..."
   pw-record "$daudio" &
   printf '%s' "$!" >"$dpid"
   ;;
@@ -898,11 +898,11 @@ idle)
   if systemctl --user is-active --quiet hypridle.service; then
     systemctl --user stop hypridle.service
     tmux set -g lock-after-time 0 2>/dev/null
-    notify-send -a ctl -t 2500 "idle manager" "disabled"
+    notify-send -a ctl -t 2500 "Idle manager" "Disabled"
   else
     systemctl --user start hypridle.service
     tmux set -g lock-after-time 300 2>/dev/null
-    notify-send -a ctl -t 2500 "idle manager" "enabled"
+    notify-send -a ctl -t 2500 "Idle manager" "Enabled"
   fi
   ;;
 *)
