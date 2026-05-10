@@ -22,7 +22,7 @@ let
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
-    pkgs.iosevka-bin
+    pkgs.atkinson-hyperlegible-mono
   ];
 
   users.users.${hostConfig.username}.packages =
