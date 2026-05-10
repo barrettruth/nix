@@ -21,6 +21,10 @@ let
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 in
 {
+  fonts.packages = lib.optionals hostConfig.enableDesktop [
+    pkgs.iosevka-bin
+  ];
+
   users.users.${hostConfig.username}.packages =
     with pkgs;
     [
