@@ -209,7 +209,7 @@ brightness)
     i=$((i + 1))
   done
   bar="${bar}]"
-  notify-send -a ctl -t 2500 -r 5555 "Brightness" "$(printf '%s\n%s' "${pct}%" "$bar")"
+  notify-send -a ctl -t 2500 -r 5555 "Brightness" "$bar"
   ;;
 volume)
   require wpctl notify-send
@@ -243,7 +243,7 @@ volume)
       i=$((i + 1))
     done
     bar="${bar}]"
-    notify-send -a ctl -t 2500 -r 5556 "Audio sink" "$(printf '%s\n%s' "${vol}%" "$bar")"
+    notify-send -a ctl -t 2500 -r 5556 "Audio sink" "$bar"
   fi
   ;;
 wifi)
