@@ -819,9 +819,16 @@ clip)
   [ -z "$entries" ] && exit 0
   count=$(printf '%s\n' "$entries" | wc -l)
   lines=$((count < 15 ? count : 15))
+  sep=$(printf '\034')
   printf '%s\n' "$entries" |
+    awk -F'\t' -v sep="$sep" '{
+      content = substr($0, index($0, "\t") + 1)
+      display = (length(content) > 63) ? substr(content, 1, 60) "..." : content
+      printf "       %s%s%s\n", display, sep, $0
+    }' |
     fuzzel --dmenu --no-icons --prompt="clip:  " \
-      --with-nth="       {2..}" --font="Berkeley Mono:size=12" \
+      --nth-delimiter="$sep" --with-nth=1 --accept-nth=2 \
+      --font="Berkeley Mono:size=12" \
       --lines="$lines" --width=75 |
     {
       IFS= read -r selected || exit 0
