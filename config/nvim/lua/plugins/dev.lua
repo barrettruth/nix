@@ -160,10 +160,9 @@ return {
                 debug = false,
                 integrations = { fugitive = true },
                 extra_filetypes = { 'diff' },
-                hide_prefix = true,
+                view = { prefix = false },
                 highlights = {
                     background = true,
-                    gutter = true,
                     vim = {
                         enabled = true,
                     },
