@@ -467,6 +467,7 @@ in
     dump = {
       enable = true;
       backupDir = "/var/backup/forgejo";
+      age = "3d";
     };
     secrets = {
       mailer.PASSWD = config.sops.secrets."forgejo-resend-api-key".path;
@@ -770,6 +771,17 @@ in
     };
   };
 
+  systemd.services.forgejo-dump.preStart = ''
+    find /var/backup/forgejo -maxdepth 1 -type f -name 'forgejo-dump-*' -mtime +3 -delete
+
+    free_bytes=$(df --output=avail -B1 /var/backup/forgejo | tail -n 1 | tr -d ' ')
+    min_free_bytes=$((20 * 1024 * 1024 * 1024))
+    if [ "$free_bytes" -lt "$min_free_bytes" ]; then
+      echo "Refusing Forgejo dump: less than 20G free in /var/backup/forgejo"
+      exit 1
+    fi
+  '';
+
   users.users.delta = {
     isSystemUser = true;
     home = "/opt/delta";
@@ -798,6 +810,7 @@ in
       PORT = "3001";
       HOSTNAME = "127.0.0.1";
       DATABASE_URL = "/var/lib/delta/data.db";
+      DELTA_PUBLIC_ORIGIN = "https://delta.${identity.domain}";
       OAUTH_REDIRECT_BASE_URL = "https://delta.${identity.domain}";
       WEBAUTHN_RP_ID = "delta.${identity.domain}";
       WEBAUTHN_ORIGIN = "https://delta.${identity.domain}";
