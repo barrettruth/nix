@@ -12,6 +12,7 @@ from functools import lru_cache
 from typing import Literal
 
 HOME = os.path.expanduser("~")
+SESSION_PROJECT_PATH_OPTION = "@mux-project-path"
 
 ManagedKind = Literal["role", "action"]
 PickerMode = Literal["open", "proj"]
@@ -124,6 +125,21 @@ def base_name(path: str) -> str:
     return "/" if stripped == "/" else os.path.basename(stripped)
 
 
+def project_base_name(path: str) -> str:
+    name = base_name(path)
+    return name.removesuffix(".nvim")
+
+
+def normalize_path(path: str) -> str:
+    return os.path.normpath(os.path.expanduser(path))
+
+
+def git_root_for_path(path: str) -> str:
+    normalized = normalize_path(path)
+    root = maybe_output(["git", "-C", normalized, "rev-parse", "--show-toplevel"])
+    return normalize_path(root) if root else normalized
+
+
 def display_path_parts(path: str) -> tuple[str, ...]:
     normalized = os.path.normpath(path)
     if normalized == HOME:
@@ -167,6 +183,158 @@ def project_name_contexts(paths: Sequence[str]) -> dict[str, str]:
                 for path, parts in suffixes.items()
             }
     return {path: format_path_parts(parts) for path, parts in contexts.items()}
+
+
+def sanitize_session_name(value: str) -> str:
+    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+    sanitized = "".join(char if char in allowed else "_" for char in value)
+    sanitized = sanitized.strip("_")
+    return sanitized or "project"
+
+
+def zoxide_project_paths() -> list[str]:
+    if not (projects := maybe_output(["zoxide", "query", "-l"])):
+        return []
+    directories: list[str] = []
+    seen: set[str] = set()
+    for directory in projects.splitlines():
+        if not directory:
+            continue
+        root = git_root_for_path(directory)
+        if root != normalize_path(directory) or root in seen:
+            continue
+        directories.append(root)
+        seen.add(root)
+    return directories
+
+
+def session_exists(session_name: str) -> bool:
+    sessions = maybe_output(["tmux", "list-sessions", "-F", "#{session_name}"])
+    return session_name in {line for line in sessions.splitlines() if line}
+
+
+def session_target(session_name: str) -> str:
+    return session_name
+
+
+def current_session_name() -> str:
+    return tmux_output("display-message", "-p", "#{session_name}")
+
+
+def session_project_path(session_name: str = "") -> str:
+    args = ["tmux", "show-options", "-qv"]
+    if session_name:
+        args.extend(["-t", session_target(session_name)])
+    args.append(SESSION_PROJECT_PATH_OPTION)
+    path = maybe_output(args)
+    return normalize_path(path) if path else ""
+
+
+def session_project_paths() -> list[str]:
+    paths: list[str] = []
+    lines = maybe_output(
+        ["tmux", "list-sessions", "-F", f"#{{{SESSION_PROJECT_PATH_OPTION}}}"]
+    )
+    for line in lines.splitlines():
+        if line:
+            paths.append(normalize_path(line))
+    return paths
+
+
+def existing_project_sessions() -> dict[str, str]:
+    sessions: dict[str, str] = {}
+    lines = maybe_output(
+        [
+            "tmux",
+            "list-sessions",
+            "-F",
+            f"#{{session_name}}\t#{{{SESSION_PROJECT_PATH_OPTION}}}",
+        ]
+    )
+    for line in lines.splitlines():
+        session_name, _, path = line.partition("\t")
+        if session_name and path:
+            sessions[normalize_path(path)] = session_name
+    return sessions
+
+
+def known_project_paths(extra: Sequence[str] = ()) -> list[str]:
+    paths: list[str] = []
+    seen: set[str] = set()
+    for path in [*extra, *session_project_paths(), *zoxide_project_paths()]:
+        normalized = git_root_for_path(path)
+        if normalized in seen:
+            continue
+        paths.append(normalized)
+        seen.add(normalized)
+    return paths
+
+
+def project_session_name_map(paths: Sequence[str]) -> dict[str, str]:
+    normalized_paths: list[str] = []
+    seen_paths: set[str] = set()
+    for path in paths:
+        normalized = git_root_for_path(path)
+        if normalized in seen_paths:
+            continue
+        normalized_paths.append(normalized)
+        seen_paths.add(normalized)
+
+    groups: dict[str, list[str]] = {}
+    for path in normalized_paths:
+        groups.setdefault(project_base_name(path), []).append(path)
+
+    names: dict[str, str] = {}
+    for project_name, group in groups.items():
+        if len(group) == 1:
+            names[group[0]] = sanitize_session_name(project_name)
+            continue
+        contexts = project_name_contexts(group)
+        for path in group:
+            context = contexts.get(path, "")
+            raw_name = f"{context}-{project_name}" if context else project_name
+            names[path] = sanitize_session_name(raw_name)
+
+    used: dict[str, str] = {}
+    for path in normalized_paths:
+        base = names[path]
+        name = base
+        suffix = 2
+        while name in used and used[name] != path:
+            name = f"{base}-{suffix}"
+            suffix += 1
+        used[name] = path
+        names[path] = name
+    return names
+
+
+def project_session_name(path: str, candidates: Sequence[str] = ()) -> str:
+    root = git_root_for_path(path)
+    if existing_name := existing_project_sessions().get(root):
+        return existing_name
+    paths = known_project_paths([root, *candidates])
+    return project_session_name_map(paths)[root]
+
+
+def ensure_project_session(path: str, candidates: Sequence[str] = ()) -> str:
+    root = git_root_for_path(path)
+    session_name = project_session_name(root, candidates)
+    if not session_exists(session_name):
+        _ = tmux("new-session", "-d", "-s", session_name, "-c", root, "-n", "prompt")
+    _ = tmux("set-option", "-t", session_target(session_name), SESSION_PROJECT_PATH_OPTION, root)
+    return session_name
+
+
+def switch_to_project(path: str, candidates: Sequence[str] = ()) -> str:
+    session_name = ensure_project_session(path, candidates)
+    if current_session_name() != session_name:
+        _ = tmux("switch-client", "-t", session_target(session_name))
+    return session_name
+
+
+def current_project_path() -> str:
+    path = session_project_path()
+    return path if path else git_root_for_path(current_path())
 
 
 def quote_sh(value: str) -> str:
@@ -296,13 +464,17 @@ def new_ready_channel() -> str:
     return f"mux-ready-{os.getpid()}-{time.time_ns()}"
 
 
-def window_name_for(name: str, scope: str) -> str:
-    return f"{name}@{scope}"
+def window_name_for(name: str, scope: str = "") -> str:
+    _ = scope
+    return canonical_name(name)
 
 
-def window_index_for_name(name: str) -> str:
+def window_index_for_name(name: str, session_name: str = "") -> str:
+    args = ["tmux", "list-windows", "-F", "#{window_name}\t#{window_index}"]
+    if session_name:
+        args.extend(["-t", session_target(session_name)])
     lines = maybe_output(
-        ["tmux", "list-windows", "-F", "#{window_name}\t#{window_index}"]
+        args
     )
     for line in lines.splitlines():
         window_name, _, index = line.partition("\t")
@@ -388,8 +560,9 @@ def is_pane_idle(target: str | None = None) -> bool:
 def spawn_or_focus_managed(
     name: str, path: str, command: str = "", *, ephemeral: bool = False
 ) -> None:
-    scope = scope_from_path(path)
-    window_name = window_name_for(name, scope)
+    root = git_root_for_path(path)
+    switch_to_project(root)
+    window_name = window_name_for(name)
     index = window_index_for_name(window_name)
     current_index = current_window_index()
 
@@ -403,25 +576,25 @@ def spawn_or_focus_managed(
             _ = tmux("kill-window", "-t", f":{index}")
         _ = tmux("rename-window", window_name)
         if command:
-            send_cmd(None, path, f"exec {command}" if ephemeral else command)
+            send_cmd(None, root, f"exec {command}" if ephemeral else command)
         return
 
     if index:
         _ = tmux("select-window", "-t", f":{index}")
         if command and not ephemeral and is_pane_idle(f":{index}"):
-            send_cmd(f":{index}", path, command)
+            send_cmd(f":{index}", root, command)
         return
 
     if command:
         if ephemeral:
-            _ = new_window_info(window_name, path, command)
+            _ = new_window_info(window_name, root, command)
             return
         channel = new_ready_channel()
-        _, pane_id = new_window_info(window_name, path, initial_shell_command(channel))
+        _, pane_id = new_window_info(window_name, root, initial_shell_command(channel))
         schedule_initial_cmd(pane_id, command, channel)
         return
 
-    _ = new_window_info(window_name, path, "")
+    _ = new_window_info(window_name, root, "")
 
 
 def role_command_for(name: str) -> str | None:
@@ -476,7 +649,7 @@ def open_managed(name: str) -> int:
 
 def open_role(name: str) -> int:
     try:
-        open_role_in_dir(name, current_path())
+        open_role_in_dir(name, current_project_path())
     except MuxError as exc:
         _ = tmux("display-message", str(exc))
         return 1
@@ -490,12 +663,12 @@ def open_role_in_dir(name: str, path: str) -> None:
     ensure_role_dependencies(name)
     if (command := role_command_for(name)) is None:
         raise MuxError(f"mux: unknown role '{name}'")
-    spawn_or_focus_managed(name, path, command, ephemeral=role.ephemeral)
+    spawn_or_focus_managed(name, git_root_for_path(path), command, ephemeral=role.ephemeral)
 
 
 def open_action(name: str) -> int:
     try:
-        open_action_in_dir(name, current_path())
+        open_action_in_dir(name, current_project_path())
     except MuxError as exc:
         _ = tmux("display-message", str(exc))
         return 1
@@ -504,14 +677,15 @@ def open_action(name: str) -> int:
 
 def open_action_in_dir(name: str, path: str) -> None:
     name = canonical_name(name)
+    root = git_root_for_path(path)
     if not (action := command_for_name(name)) or action.kind != "action":
-        raise MuxError(f"mux: no action '{name}' for '{scope_from_path(path)}'")
-    scope = scope_from_path(path)
-    if name == "git" and not git_ok(path, "rev-parse", "--is-inside-work-tree"):
+        raise MuxError(f"mux: no action '{name}' for '{scope_from_path(root)}'")
+    scope = project_session_name(root)
+    if name == "git" and not git_ok(root, "rev-parse", "--is-inside-work-tree"):
         raise MuxError("Not a git repository")
-    if (command := action_command_for_root(name, path)) is None:
+    if (command := action_command_for_root(name, root)) is None:
         raise MuxError(f"mux: no action '{name}' for '{scope}'")
-    spawn_or_focus_managed(name, path, command, ephemeral=action.ephemeral)
+    spawn_or_focus_managed(name, root, command, ephemeral=action.ephemeral)
 
 
 def color_escape(hex_code: str) -> str:
@@ -524,7 +698,7 @@ def tmux_color(option: str, default: str) -> str:
 
 
 def picker_prompt(mode: PickerMode) -> str:
-    return f"@{scope_from_path(current_path())}> " if mode == "open" else "open> "
+    return f"@{current_session_name()}> " if mode == "open" else "project> "
 
 
 def picker_header_commands(mode: PickerMode) -> list[ManagedCommandSpec]:
@@ -569,13 +743,12 @@ def format_project_entry(
     muted = color_escape(tmux_color("@fgAlt", "666666"))
     reset = "\033[0m"
     prefix = f"{accent}{label}{reset}" if is_current else label
-    suffix = f" {muted}· {context}{reset}" if context else ""
+    suffix = f"  {muted}[{context}]{reset}" if context else ""
     return f"{prefix}{suffix}\t{token}"
 
 
 def list_open_entries() -> str:
-    path = current_path()
-    scope = scope_from_path(path)
+    path = current_project_path()
     lines: list[str] = []
     for command in visible_commands_for_path(path):
         if command.kind == "role":
@@ -583,7 +756,7 @@ def list_open_entries() -> str:
                 format_open_entry(
                     command.name,
                     f"role:{command.name}",
-                    window_name_for(command.name, scope),
+                    window_name_for(command.name),
                 )
             )
             continue
@@ -591,30 +764,23 @@ def list_open_entries() -> str:
             format_open_entry(
                 command.name,
                 f"action:{command.name}",
-                window_name_for(command.name, scope),
+                window_name_for(command.name),
             )
         )
     return "\n".join(lines) + ("\n" if lines else "")
 
 
 def list_project_entries() -> str:
-    if not (projects := maybe_output(["zoxide", "query", "-l"])):
+    directories = zoxide_project_paths()
+    if not directories:
         return ""
-    path = current_path()
-    directories: list[str] = []
-    for directory in projects.splitlines():
-        if not directory:
-            continue
-        if (
-            maybe_output(["git", "-C", directory, "rev-parse", "--show-toplevel"])
-            != directory
-        ):
-            continue
-        directories.append(directory)
+    path = current_project_path()
+    names = project_session_name_map(known_project_paths(directories))
     lines = [
         format_project_entry(
-            format_path_parts(display_path_parts(directory)),
+            names[directory],
             f"proj:{directory}",
+            context=directory,
             is_current=directory == path,
         )
         for directory in directories
@@ -642,11 +808,7 @@ def dispatch_picker_action(value: str) -> int:
         case "action":
             return open_action(rest)
         case "proj":
-            try:
-                open_role_in_dir("edit", rest)
-            except MuxError as exc:
-                _ = tmux("display-message", str(exc))
-                return 1
+            switch_to_project(rest)
             return 0
         case _:
             return 0
@@ -752,8 +914,9 @@ def render_bar() -> int:
     total = len(lines)
     for index, session_name in enumerate(lines):
         key = session_key(index, total)
+        last = f"#{{?#{{==:#{{client_last_session}},{session_name}}},#[fg=#{{@accent}}]-#[default],}}"
         star = f"#{{?#{{==:#S,{session_name}}},#[fg=#{{@accent}}]*#[default],}}"
-        parts.append(f"{star}{key}#[fg=#{{@accent}}]:#[default]{session_name}")
+        parts.append(f"{last}{star}{key}#[fg=#{{@accent}}]:#[default]{session_name}")
     bar_content = " ".join(parts)
     plain_content = " ".join(
         f"{session_key(index, total)}:{session_name}"

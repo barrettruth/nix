@@ -120,3 +120,6 @@ trust_level = "trusted"
 
 [projects."/home/barrett/dev/death"]
 trust_level = "trusted"
+
+[projects."/home/barrett/dev/fonts"]
+trust_level = "trusted"
