@@ -1,0 +1,25 @@
+{
+  "runtime.version": "LuaJIT",
+  "runtime.path": [
+    "config/nvim/lua/?.lua",
+    "config/nvim/lua/?/init.lua"
+  ],
+  "diagnostics.globals": ["vim", "jit"],
+  "diagnostics.disable": [
+    "assign-type-mismatch",
+    "duplicate-set-field",
+    "inject-field",
+    "luadoc-miss-symbol",
+    "need-check-nil",
+    "param-type-mismatch",
+    "redundant-parameter",
+    "undefined-doc-class",
+    "undefined-doc-name",
+    "undefined-field"
+  ],
+  "workspace.library": ["$VIMRUNTIME/lua", "${3rd}/luv/library"],
+  "workspace.checkThirdParty": false,
+  "diagnostics.libraryFiles": "Disable",
+  "workspace.ignoreDir": [".direnv"],
+  "completion.callSnippet": "Replace"
+}

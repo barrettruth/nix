@@ -13,6 +13,7 @@ from typing import Literal
 
 HOME = os.path.expanduser("~")
 SESSION_PROJECT_PATH_OPTION = "@mux-project-path"
+PROJECT_PATH_PREVIEW_WIDTH = 42
 
 ManagedKind = Literal["role", "action"]
 PickerMode = Literal["open", "proj"]
@@ -125,11 +126,6 @@ def base_name(path: str) -> str:
     return "/" if stripped == "/" else os.path.basename(stripped)
 
 
-def project_base_name(path: str) -> str:
-    name = base_name(path)
-    return name.removesuffix(".nvim")
-
-
 def normalize_path(path: str) -> str:
     return os.path.normpath(os.path.expanduser(path))
 
@@ -140,49 +136,42 @@ def git_root_for_path(path: str) -> str:
     return normalize_path(root) if root else normalized
 
 
-def display_path_parts(path: str) -> tuple[str, ...]:
-    normalized = os.path.normpath(path)
+def is_git_root(path: str) -> bool:
+    return os.path.exists(os.path.join(path, ".git"))
+
+
+def enclosing_git_root(path: str) -> str:
+    current = os.path.realpath(normalize_path(path))
+    while True:
+        if is_git_root(current):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            return ""
+        current = parent
+
+
+def display_path(path: str) -> str:
+    normalized = normalize_path(path)
     if normalized == HOME:
-        return ("~",)
+        return "~"
     home_prefix = f"{HOME}{os.sep}"
     if normalized.startswith(home_prefix):
-        relative = normalized.removeprefix(home_prefix)
-        return ("~", *(part for part in relative.split(os.sep) if part))
-    parts = tuple(part for part in normalized.split(os.sep) if part)
-    return ("/", *parts) if normalized.startswith(os.sep) else parts
+        return f"~/{normalized.removeprefix(home_prefix)}"
+    return normalized
 
 
-def project_context_parts(path: str) -> tuple[str, ...]:
-    parts = display_path_parts(path)
-    return parts[:-1] or parts
+def parent_name(path: str) -> str:
+    parent = os.path.dirname(path.rstrip(os.sep))
+    return "" if not parent or parent == os.sep else base_name(parent)
 
 
-def format_path_parts(parts: Sequence[str]) -> str:
-    if not parts:
-        return ""
-    if parts[0] == "~":
-        return "~" if len(parts) == 1 else f"~/{'/'.join(parts[1:])}"
-    if parts[0] == "/":
-        return "/" if len(parts) == 1 else f"/{'/'.join(parts[1:])}"
-    return "/".join(parts)
-
-
-def project_name_contexts(paths: Sequence[str]) -> dict[str, str]:
-    if len(paths) < 2:
-        return {}
-    contexts = {path: project_context_parts(path) for path in paths}
-    max_depth = max(len(parts) for parts in contexts.values())
-    for depth in range(1, max_depth + 1):
-        suffixes = {
-            path: parts[-depth:] if len(parts) >= depth else parts
-            for path, parts in contexts.items()
-        }
-        if len(set(suffixes.values())) == len(paths):
-            return {
-                path: format_path_parts(parts)
-                for path, parts in suffixes.items()
-            }
-    return {path: format_path_parts(parts) for path, parts in contexts.items()}
+def truncate_start(value: str, width: int) -> str:
+    if len(value) <= width:
+        return value
+    if width <= 3:
+        return value[-width:]
+    return f"...{value[-(width - 3):]}"
 
 
 def sanitize_session_name(value: str) -> str:
@@ -200,12 +189,27 @@ def zoxide_project_paths() -> list[str]:
     for directory in projects.splitlines():
         if not directory:
             continue
-        root = git_root_for_path(directory)
-        if root != normalize_path(directory) or root in seen:
+        normalized = normalize_path(directory)
+        root = enclosing_git_root(normalized)
+        if (root and root != os.path.realpath(normalized)) or normalized in seen:
             continue
-        directories.append(root)
-        seen.add(root)
+        directories.append(normalized)
+        seen.add(normalized)
     return directories
+
+
+def unique_project_paths(
+    paths: Sequence[str], *, resolve_roots: bool = True
+) -> list[str]:
+    projects: list[str] = []
+    seen: set[str] = set()
+    for path in paths:
+        normalized = git_root_for_path(path) if resolve_roots else normalize_path(path)
+        if normalized in seen:
+            continue
+        projects.append(normalized)
+        seen.add(normalized)
+    return projects
 
 
 def session_exists(session_name: str) -> bool:
@@ -259,39 +263,23 @@ def existing_project_sessions() -> dict[str, str]:
 
 
 def known_project_paths(extra: Sequence[str] = ()) -> list[str]:
-    paths: list[str] = []
-    seen: set[str] = set()
-    for path in [*extra, *session_project_paths(), *zoxide_project_paths()]:
-        normalized = git_root_for_path(path)
-        if normalized in seen:
-            continue
-        paths.append(normalized)
-        seen.add(normalized)
-    return paths
+    return unique_project_paths(
+        [*extra, *session_project_paths(), *zoxide_project_paths()]
+    )
 
 
-def project_session_name_map(paths: Sequence[str]) -> dict[str, str]:
-    normalized_paths: list[str] = []
-    seen_paths: set[str] = set()
-    for path in paths:
-        normalized = git_root_for_path(path)
-        if normalized in seen_paths:
-            continue
-        normalized_paths.append(normalized)
-        seen_paths.add(normalized)
-
+def project_session_name_map(
+    paths: Sequence[str], *, resolve_roots: bool = True
+) -> dict[str, str]:
+    normalized_paths = unique_project_paths(paths, resolve_roots=resolve_roots)
     groups: dict[str, list[str]] = {}
     for path in normalized_paths:
-        groups.setdefault(project_base_name(path), []).append(path)
+        groups.setdefault(base_name(path), []).append(path)
 
     names: dict[str, str] = {}
     for project_name, group in groups.items():
-        if len(group) == 1:
-            names[group[0]] = sanitize_session_name(project_name)
-            continue
-        contexts = project_name_contexts(group)
         for path in group:
-            context = contexts.get(path, "")
+            context = parent_name(path) if len(group) > 1 else ""
             raw_name = f"{context}-{project_name}" if context else project_name
             names[path] = sanitize_session_name(raw_name)
 
@@ -313,14 +301,14 @@ def project_session_name(path: str, candidates: Sequence[str] = ()) -> str:
     if existing_name := existing_project_sessions().get(root):
         return existing_name
     paths = known_project_paths([root, *candidates])
-    return project_session_name_map(paths)[root]
+    return project_session_name_map(paths, resolve_roots=False)[root]
 
 
 def ensure_project_session(path: str, candidates: Sequence[str] = ()) -> str:
     root = git_root_for_path(path)
     session_name = project_session_name(root, candidates)
     if not session_exists(session_name):
-        _ = tmux("new-session", "-d", "-s", session_name, "-c", root, "-n", "prompt")
+        _ = tmux("new-session", "-d", "-s", session_name, "-c", root, "-n", "zsh")
     _ = tmux("set-option", "-t", session_target(session_name), SESSION_PROJECT_PATH_OPTION, root)
     return session_name
 
@@ -346,7 +334,7 @@ def canonical_name(name: str) -> str:
         case "code":
             return "edit"
         case "shell":
-            return "prompt"
+            return "zsh"
         case _:
             return name
 
@@ -356,7 +344,7 @@ def managed_commands() -> tuple[ManagedCommandSpec, ...]:
     commands = (
         ManagedCommandSpec("ai", "role", "a", always_visible=True, ephemeral=True),
         ManagedCommandSpec("edit", "role", "e", always_visible=True, ephemeral=True),
-        ManagedCommandSpec("prompt", "role", "p", always_visible=True),
+        ManagedCommandSpec("zsh", "role", "z", always_visible=True),
         ManagedCommandSpec("git", "action", "g", always_visible=True, ephemeral=True),
         ManagedCommandSpec("run", "action", "r", ephemeral=True),
         ManagedCommandSpec("build", "action", "b"),
@@ -469,18 +457,21 @@ def window_name_for(name: str, scope: str = "") -> str:
     return canonical_name(name)
 
 
-def window_index_for_name(name: str, session_name: str = "") -> str:
+@lru_cache(maxsize=None)
+def window_indexes(session_name: str = "") -> dict[str, str]:
     args = ["tmux", "list-windows", "-F", "#{window_name}\t#{window_index}"]
     if session_name:
         args.extend(["-t", session_target(session_name)])
-    lines = maybe_output(
-        args
-    )
+    lines = maybe_output(args)
+    indexes: dict[str, str] = {}
     for line in lines.splitlines():
         window_name, _, index = line.partition("\t")
-        if window_name == name:
-            return index
-    return ""
+        indexes[window_name] = index
+    return indexes
+
+
+def window_index_for_name(name: str, session_name: str = "") -> str:
+    return window_indexes(session_name).get(name, "")
 
 
 def current_window_index() -> str:
@@ -603,7 +594,7 @@ def role_command_for(name: str) -> str | None:
             return "codex"
         case "edit":
             return "nvim ."
-        case "prompt":
+        case "zsh":
             return ""
         case _:
             return None
@@ -693,6 +684,7 @@ def color_escape(hex_code: str) -> str:
     return f"\033[38;2;{int(code[0:2], 16)};{int(code[2:4], 16)};{int(code[4:6], 16)}m"
 
 
+@lru_cache(maxsize=None)
 def tmux_color(option: str, default: str) -> str:
     return maybe_output(["tmux", "show", "-gv", option]).replace("#", "") or default
 
@@ -737,13 +729,20 @@ def format_open_entry(label: str, token: str, window_name: str = "") -> str:
 
 
 def format_project_entry(
-    label: str, token: str, *, context: str = "", is_current: bool = False
+    label: str,
+    token: str,
+    *,
+    context: str = "",
+    is_current: bool = False,
+    label_width: int = 0,
 ) -> str:
     accent = color_escape(tmux_color("@accent", "7aa2f7"))
     muted = color_escape(tmux_color("@fgAlt", "666666"))
     reset = "\033[0m"
-    prefix = f"{accent}{label}{reset}" if is_current else label
-    suffix = f"  {muted}[{context}]{reset}" if context else ""
+    padding = " " * max(0, label_width - len(label))
+    prefix = f"{accent}{label}{reset}{padding}" if is_current else f"{label}{padding}"
+    preview = truncate_start(context, PROJECT_PATH_PREVIEW_WIDTH)
+    suffix = f"  {muted}[{preview}]{reset}" if preview else ""
     return f"{prefix}{suffix}\t{token}"
 
 
@@ -775,13 +774,19 @@ def list_project_entries() -> str:
     if not directories:
         return ""
     path = current_project_path()
-    names = project_session_name_map(known_project_paths(directories))
+    name_paths = unique_project_paths(
+        [*directories, *session_project_paths()], resolve_roots=False
+    )
+    names = project_session_name_map(name_paths, resolve_roots=False)
+    contexts = {directory: display_path(directory) for directory in directories}
+    label_width = max(len(names[directory]) for directory in directories)
     lines = [
         format_project_entry(
             names[directory],
             f"proj:{directory}",
-            context=directory,
+            context=contexts[directory],
             is_current=directory == path,
+            label_width=label_width,
         )
         for directory in directories
     ]
