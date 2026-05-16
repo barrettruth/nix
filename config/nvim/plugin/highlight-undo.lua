@@ -2,7 +2,7 @@ local ns = vim.api.nvim_create_namespace('highlight_undo')
 
 vim.api.nvim_set_hl(0, 'HighlightUndo', { link = 'IncSearch', default = true })
 
-for _, key in ipairs({ 'u', '<C-r>', 'U' }) do
+for _, key in ipairs({ 'u', '<c-r>', 'U' }) do
     vim.keymap.set('n', key, function()
         vim.api.nvim_buf_attach(0, false, {
             on_bytes = function(_, buf, _, sr, sc, _, _, _, _, ner, nec)

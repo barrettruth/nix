@@ -97,11 +97,11 @@ if vim.api.nvim__complete_set then
 end
 
 local function semantic_completion()
-    local prefix = vim.fn.pumvisible() == 1 and '<C-e>' or ''
+    local prefix = vim.fn.pumvisible() == 1 and '<c-e>' or ''
     if vim.bo.omnifunc ~= '' then
-        return prefix .. '<C-x><C-o>'
+        return prefix .. '<c-x><c-o>'
     end
-    return prefix .. '<C-n>'
+    return prefix .. '<c-n>'
 end
 
 local function completion_or_preview(keys, direction)
@@ -116,19 +116,19 @@ local function completion_or_preview(keys, direction)
 end
 
 vim.keymap.set('i', '<c-b>', function()
-    return completion_or_preview('<C-x><C-n>', 'up')
+    return completion_or_preview('<c-x><c-n>', 'up')
 end, { expr = true, desc = 'buffer completion or docs backward' })
 vim.keymap.set('i', '<c-e>', function()
-    return vim.fn.pumvisible() == 1 and '<C-e>' or '<C-x><C-u>'
+    return vim.fn.pumvisible() == 1 and '<c-e>' or '<c-x><c-u>'
 end, { expr = true, desc = 'env completion or cancel completion' })
 vim.keymap.set('i', '<c-f>', function()
-    return completion_or_preview('<C-x><C-f>', 'down')
+    return completion_or_preview('<c-x><c-f>', 'down')
 end, { expr = true, desc = 'file completion or docs forward' })
 vim.keymap.set('i', '<c-n>', function()
-    return '<C-n>'
+    return '<c-n>'
 end, { expr = true, desc = 'next completion' })
 vim.keymap.set('i', '<c-p>', function()
-    return '<C-p>'
+    return '<c-p>'
 end, { expr = true, desc = 'previous completion' })
 vim.keymap.set('i', '<c-s>', semantic_completion, {
     expr = true,
