@@ -16,14 +16,33 @@ let
 
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
+
+  chromiumArgs = [
+    "--ozone-platform=wayland"
+    "--silent-debugger-extension-api"
+    "--enable-features=AcceleratedVideoDecodeLinuxZeroCopyGL"
+  ];
+
+  chromiumBase = pkgs.chromium.override {
+    commandLineArgs = lib.concatStringsSep " " chromiumArgs;
+  };
+
+  chromium = pkgs.symlinkJoin {
+    name = chromiumBase.name;
+    paths = [ chromiumBase ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram "$out/bin/chromium" \
+        --set __NV_PRIME_RENDER_OFFLOAD 1 \
+        --set __NV_PRIME_RENDER_OFFLOAD_PROVIDER NVIDIA-G0 \
+        --set __GLX_VENDOR_LIBRARY_NAME nvidia \
+        --set __VK_LAYER_NV_optimus NVIDIA_only
+    '';
+  };
 in
 {
   config = lib.mkIf hostConfig.enableDesktop {
-    users.users.${username}.packages = [
-      (pkgs.chromium.override {
-        commandLineArgs = "--silent-debugger-extension-api";
-      })
-    ];
+    users.users.${username}.packages = [ chromium ];
 
     system.activationScripts.chromiumConfig.text = ''
       ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
