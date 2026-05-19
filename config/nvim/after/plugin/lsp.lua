@@ -20,6 +20,20 @@ vim.lsp.config('*', {
     on_attach = lsp.on_attach,
 })
 
+local function compose_on_attach(server)
+    local server_on_attach = vim.lsp.config[server].on_attach
+    if not server_on_attach or server_on_attach == lsp.on_attach then
+        return
+    end
+
+    vim.lsp.config(server, {
+        on_attach = function(client, bufnr)
+            lsp.on_attach(client, bufnr)
+            server_on_attach(client, bufnr)
+        end,
+    })
+end
+
 for _, server in ipairs({
     'bashls',
     'basedpyright',
@@ -42,6 +56,7 @@ for _, server in ipairs({
     if ok and config then
         vim.lsp.config(server, config)
     end
+    compose_on_attach(server)
     vim.lsp.enable(server)
 end
 

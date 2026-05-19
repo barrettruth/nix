@@ -125,7 +125,7 @@ function M.on_attach(client, bufnr)
             'document symbols',
         },
         {
-            Methods.textDocument_workspaceSymbol,
+            Methods.workspace_symbol,
             'gO',
             fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
             'workspace symbols',
@@ -146,7 +146,7 @@ function M.on_attach(client, bufnr)
 
     for _, m in ipairs(mappings) do
         local method, key, cmd, desc = unpack(m)
-        if client:supports_method(method) then
+        if method and client:supports_method(method) then
             vim.keymap.set('n', key, cmd, { buffer = bufnr, desc = desc })
         end
     end
