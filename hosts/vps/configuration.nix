@@ -664,6 +664,7 @@ in
     "d /var/lib/forgejo/custom/templates/repo 0750 git git -"
     "d /var/lib/forgejo/custom/templates/repo/diff 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/repo/diff/box.tmpl - - - - ${forgejoCustom.templates}/repo/diff/box.tmpl"
+    "L+ /var/lib/forgejo/custom/templates/repo/diff/options_dropdown.tmpl - - - - ${forgejoCustom.templates}/repo/diff/options_dropdown.tmpl"
     "L+ /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - - ${forgejoCustom.templates}/repo/view_file.tmpl"
     "d /var/lib/forgejo/custom/templates/user 0750 git git -"
     "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"

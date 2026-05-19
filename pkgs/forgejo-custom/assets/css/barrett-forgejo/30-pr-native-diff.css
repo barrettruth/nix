@@ -40,6 +40,17 @@
 }
 
 .repository.pull.diff
+  .barrett-pr-diff.code-diff-unified[data-barrett-pr-line-numbers="one"]
+  tr:not(.tag-code):not(.del-code)
+  .lines-num-old,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-unified[data-barrett-pr-line-numbers="one"]
+  tr.del-code
+  .lines-num-new {
+  display: none;
+}
+
+.repository.pull.diff
   .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
   .lines-type-marker
   > span,
