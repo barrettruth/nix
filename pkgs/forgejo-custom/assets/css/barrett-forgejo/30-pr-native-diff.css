@@ -97,7 +97,11 @@
 .repository.pull.diff
   .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
   tr.add-code
-  .lines-num-new {
+  .lines-num-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-unified[data-barrett-pr-line-numbers="one"][data-barrett-pr-diff-indicators="bars"]
+  tr.add-code
+  .lines-num-old {
   background-position: left top;
   background-repeat: no-repeat;
 }
