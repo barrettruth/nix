@@ -313,10 +313,16 @@ def ensure_project_session(path: str, candidates: Sequence[str] = ()) -> str:
     return session_name
 
 
-def switch_to_project(path: str, candidates: Sequence[str] = ()) -> str:
+def switch_to_project(
+    path: str, candidates: Sequence[str] = (), client_name: str = ""
+) -> str:
     session_name = ensure_project_session(path, candidates)
     if current_session_name() != session_name:
-        _ = tmux("switch-client", "-t", session_target(session_name))
+        args = ["switch-client"]
+        if client_name:
+            args.extend(["-c", client_name])
+        args.extend(["-t", session_target(session_name)])
+        _ = tmux(*args)
     return session_name
 
 
@@ -474,8 +480,47 @@ def window_index_for_name(name: str, session_name: str = "") -> str:
     return window_indexes(session_name).get(name, "")
 
 
-def current_window_index() -> str:
-    return tmux_output("display-message", "-p", "#{window_index}")
+def current_window_index(session_name: str = "") -> str:
+    if not session_name:
+        return tmux_output("display-message", "-p", "#{window_index}")
+    args = [
+        "tmux",
+        "list-windows",
+        "-t",
+        session_target(session_name),
+        "-F",
+        "#{?window_active,#{window_index},}",
+    ]
+    for line in maybe_output(args).splitlines():
+        if line:
+            return line
+    return ""
+
+
+def window_target(session_name: str, index: str) -> str:
+    return f"{session_target(session_name)}:{index}"
+
+
+def display_value(format_string: str, target: str | None = None) -> str:
+    args = ["display-message"]
+    if target:
+        args.extend(["-t", target])
+    args.extend(["-p", format_string])
+    return tmux_output(*args)
+
+
+def current_client_name() -> str:
+    return display_value("#{client_name}")
+
+
+def focus_window(session_name: str, index: str, client_name: str = "") -> None:
+    target = window_target(session_name, index)
+    _ = tmux("select-window", "-t", target)
+    args = ["switch-client"]
+    if client_name:
+        args.extend(["-c", client_name])
+    args.extend(["-t", target])
+    _ = tmux(*args)
 
 
 def pane_path(target: str | None = None) -> str:
@@ -518,17 +563,25 @@ def schedule_initial_cmd(target: str, command: str, channel: str = "") -> None:
     _ = tmux("run-shell", "-b", payload)
 
 
-def new_window_info(window_name: str, path: str, command: str) -> tuple[str, str]:
-    args = [
-        "new-window",
-        "-P",
-        "-F",
-        "#{window_index}\t#{pane_id}",
-        "-c",
-        path,
-        "-n",
-        window_name,
-    ]
+def new_window_info(
+    window_name: str, path: str, command: str, session_name: str = ""
+) -> tuple[str, str]:
+    args = ["new-window"]
+    if session_name:
+        args.append("-d")
+    args.extend(
+        [
+            "-P",
+            "-F",
+            "#{window_index}\t#{pane_id}",
+            "-c",
+            path,
+            "-n",
+            window_name,
+        ]
+    )
+    if session_name:
+        args.extend(["-t", f"{session_target(session_name)}:"])
     if command:
         args.append(command)
     info = tmux_output(*args)
@@ -536,11 +589,11 @@ def new_window_info(window_name: str, path: str, command: str) -> tuple[str, str
     return index, pane_id
 
 
-def is_adoptable() -> bool:
+def is_adoptable(target: str | None = None) -> bool:
     shell = base_name(shell_path())
-    name = tmux_output("display-message", "-p", "#{window_name}")
-    command = pane_command()
-    panes = int(tmux_output("display-message", "-p", "#{window_panes}") or "0")
+    name = display_value("#{window_name}", target)
+    command = pane_command(target)
+    panes = int(display_value("#{window_panes}", target) or "0")
     return panes == 1 and command == shell and name == shell
 
 
@@ -551,41 +604,54 @@ def is_pane_idle(target: str | None = None) -> bool:
 def spawn_or_focus_managed(
     name: str, path: str, command: str = "", *, ephemeral: bool = False
 ) -> None:
+    client_name = current_client_name()
     root = git_root_for_path(path)
-    switch_to_project(root)
+    session_name = ensure_project_session(root)
     window_name = window_name_for(name)
-    index = window_index_for_name(window_name)
-    current_index = current_window_index()
+    index = window_index_for_name(window_name, session_name)
+    current_index = current_window_index(session_name)
+    current_target = (
+        window_target(session_name, current_index) if current_index else session_name
+    )
 
     if index and index == current_index:
-        if command and not ephemeral and is_pane_idle():
-            send_cmd(None, path, command)
+        target = window_target(session_name, index)
+        if command and not ephemeral and is_pane_idle(target):
+            send_cmd(target, root, command)
+        focus_window(session_name, index, client_name)
         return
 
-    if is_adoptable():
+    if is_adoptable(current_target):
         if index:
-            _ = tmux("kill-window", "-t", f":{index}")
-        _ = tmux("rename-window", window_name)
+            _ = tmux("kill-window", "-t", window_target(session_name, index))
+        _ = tmux("rename-window", "-t", current_target, window_name)
         if command:
-            send_cmd(None, root, f"exec {command}" if ephemeral else command)
+            send_cmd(current_target, root, f"exec {command}" if ephemeral else command)
+        focus_window(session_name, current_index, client_name)
         return
 
     if index:
-        _ = tmux("select-window", "-t", f":{index}")
-        if command and not ephemeral and is_pane_idle(f":{index}"):
-            send_cmd(f":{index}", root, command)
+        target = window_target(session_name, index)
+        if command and not ephemeral and is_pane_idle(target):
+            send_cmd(target, root, command)
+        focus_window(session_name, index, client_name)
         return
 
     if command:
         if ephemeral:
-            _ = new_window_info(window_name, root, command)
+            index, _ = new_window_info(window_name, root, command, session_name)
+            focus_window(session_name, index, client_name)
             return
         channel = new_ready_channel()
-        _, pane_id = new_window_info(window_name, root, initial_shell_command(channel))
+        index, pane_id = new_window_info(
+            window_name, root, initial_shell_command(channel), session_name
+        )
+        focus_window(session_name, index, client_name)
         schedule_initial_cmd(pane_id, command, channel)
         return
 
-    _ = new_window_info(window_name, root, "")
+    index, _ = new_window_info(window_name, root, "", session_name)
+    focus_window(session_name, index, client_name)
 
 
 def role_command_for(name: str) -> str | None:
@@ -813,7 +879,7 @@ def dispatch_picker_action(value: str) -> int:
         case "action":
             return open_action(rest)
         case "proj":
-            switch_to_project(rest)
+            switch_to_project(rest, client_name=current_client_name())
             return 0
         case _:
             return 0
@@ -1008,7 +1074,7 @@ def switch_session(slot: str) -> int:
         line for line in maybe_output(["tmux", "ls", "-F", "#S"]).splitlines() if line
     ]
     try:
-        session = sessions[int(slot)]
+        session = sessions[-1] if slot == "last" else sessions[int(slot)]
     except (ValueError, IndexError):
         return 1
     _ = tmux("switch", "-t", session)
