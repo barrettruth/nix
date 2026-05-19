@@ -41,13 +41,21 @@
 
 .repository.pull.diff
   .barrett-pr-diff.code-diff-unified[data-barrett-pr-line-numbers="one"]
-  tr:not(.tag-code):not(.del-code)
-  .lines-num-old,
+  .lines-num-new {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: transparent !important;
+  overflow: hidden;
+}
+
 .repository.pull.diff
   .barrett-pr-diff.code-diff-unified[data-barrett-pr-line-numbers="one"]
-  tr.del-code
-  .lines-num-new {
-  display: none;
+  .lines-num-new
+  > * {
+  visibility: hidden;
 }
 
 .repository.pull.diff
@@ -110,7 +118,11 @@
 .repository.pull.diff
   .barrett-pr-diff[data-barrett-pr-diff-indicators="bars"]
   tr.add-code
-  .lines-num-new {
+  .lines-num-new,
+.repository.pull.diff
+  .barrett-pr-diff.code-diff-unified[data-barrett-pr-line-numbers="one"][data-barrett-pr-diff-indicators="bars"]
+  tr.add-code
+  .lines-num-old {
   background-image: linear-gradient(
     var(--diffs-addition-color-override),
     var(--diffs-addition-color-override)

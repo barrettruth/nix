@@ -103,6 +103,134 @@ function updateLineNumberModeUi() {
   preserveLineNumberModeInDiffLinks();
 }
 
+function saveLineNumberCell(cell) {
+  if (cell.hasAttribute("data-barrett-pr-original-line-number")) return;
+  cell.setAttribute(
+    "data-barrett-pr-original-line-number",
+    cell.getAttribute("data-line-num") || "",
+  );
+
+  const span = cell.querySelector("span");
+  cell.setAttribute(
+    "data-barrett-pr-original-rel",
+    span?.getAttribute("rel") || "",
+  );
+}
+
+function restoreLineNumberCell(cell) {
+  if (!cell.hasAttribute("data-barrett-pr-original-line-number")) return;
+
+  cell.setAttribute(
+    "data-line-num",
+    cell.getAttribute("data-barrett-pr-original-line-number") || "",
+  );
+
+  const span = cell.querySelector("span");
+  if (span) {
+    span.setAttribute(
+      "rel",
+      cell.getAttribute("data-barrett-pr-original-rel") || "",
+    );
+  }
+
+  delete cell.dataset.barrettPrLineNumberSource;
+}
+
+function copyLineNumberCell(target, source) {
+  saveLineNumberCell(target);
+
+  target.setAttribute(
+    "data-line-num",
+    source.getAttribute("data-line-num") || "",
+  );
+
+  const sourceSpan = source.querySelector("span");
+  const targetSpan = target.querySelector("span");
+  if (sourceSpan && targetSpan) {
+    targetSpan.setAttribute("rel", sourceSpan.getAttribute("rel") || "");
+  }
+
+  target.dataset.barrettPrLineNumberSource = source.classList.contains(
+    "lines-num-new",
+  )
+    ? "new"
+    : "old";
+}
+
+function saveColumnWidth(column) {
+  if (column.hasAttribute("data-barrett-pr-original-width")) return;
+  column.setAttribute(
+    "data-barrett-pr-original-width",
+    column.getAttribute("width") || "",
+  );
+  column.setAttribute(
+    "data-barrett-pr-original-style-width",
+    column.style.width || "",
+  );
+}
+
+function setColumnWidth(column, width) {
+  saveColumnWidth(column);
+  column.setAttribute("width", width);
+  column.style.width = `${width}px`;
+}
+
+function restoreColumnWidth(column) {
+  if (!column.hasAttribute("data-barrett-pr-original-width")) return;
+
+  const width = column.getAttribute("data-barrett-pr-original-width") || "";
+  if (width) column.setAttribute("width", width);
+  else column.removeAttribute("width");
+
+  column.style.width =
+    column.getAttribute("data-barrett-pr-original-style-width") || "";
+}
+
+function lineNumberSourceCell(row, oldCell, newCell) {
+  if (row.dataset.lineType === "del" || row.classList.contains("del-code")) {
+    return oldCell;
+  }
+  return newCell || oldCell;
+}
+
+function applyOneLineNumbers(table) {
+  const columns = table.querySelectorAll("colgroup > col");
+  if (columns.length >= 2) {
+    setColumnWidth(columns[0], 50);
+    setColumnWidth(columns[1], 0);
+  }
+
+  for (const row of table.querySelectorAll("tr[data-line-type]")) {
+    const oldCell = row.querySelector(":scope > .lines-num-old");
+    const newCell = row.querySelector(":scope > .lines-num-new");
+    if (!oldCell || !newCell) continue;
+
+    saveLineNumberCell(oldCell);
+    saveLineNumberCell(newCell);
+
+    const sourceCell = lineNumberSourceCell(row, oldCell, newCell);
+    if (sourceCell !== oldCell) copyLineNumberCell(oldCell, sourceCell);
+    else oldCell.dataset.barrettPrLineNumberSource = "old";
+  }
+}
+
+function restoreTwoLineNumbers(table) {
+  for (const column of table.querySelectorAll("colgroup > col")) {
+    restoreColumnWidth(column);
+  }
+  for (const cell of table.querySelectorAll(".lines-num-old, .lines-num-new")) {
+    restoreLineNumberCell(cell);
+  }
+}
+
+function applyLineNumberMode(table) {
+  if (currentLineNumberMode() === "one") {
+    applyOneLineNumbers(table);
+  } else {
+    restoreTwoLineNumbers(table);
+  }
+}
+
 function applyNativeLineDiffs(table, options) {
   const optionKey = lineDiffOptionKey(options);
   for (const group of changedCodeCellGroups(table)) {
@@ -137,6 +265,7 @@ function paintBox(box) {
   nativeDiff.dataset.barrettPrDiffIndicators = options.diffIndicators;
   nativeDiff.dataset.barrettPrLineNumbers = currentLineNumberMode();
 
+  applyLineNumberMode(table);
   applyNativeLineDiffs(table, options);
   return true;
 }
