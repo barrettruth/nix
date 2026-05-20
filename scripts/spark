@@ -1,0 +1,476 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2029
+set -euo pipefail
+
+default_host="spark"
+default_work_root=".cache/spark-builds"
+default_slice="spark-build.slice"
+default_cpu_quota="400%"
+default_memory_max="24G"
+default_tasks_max="4096"
+default_jobs="4"
+default_prune_days="7"
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  spark [options] <command> [args...]
+  spark [options] -- <command> [args...]
+  spark [options] --shell
+  spark [options] status
+  spark [options] prune
+  spark [options] clean
+  spark [options] cleanup
+  spark [options] nvim build
+  spark [options] nvim test [test-file]
+  spark [options] nvim shell
+
+Options:
+  -C, --repo <path>       Local repo/path to sync. Defaults to the git root.
+  --slot <name>           Remote slot. Defaults to the local branch or default.
+                          With --cleanup, an unset slot gets a unique suffix.
+  --host <host>           SSH host. Defaults to SPARK_HOST or spark.
+  --work-root <path>      Remote work root. Defaults to ~/.cache/spark-builds.
+  --cpu-quota <quota>     Shared slice CPU quota. Defaults to 400%.
+  --memory-max <size>     Shared slice memory ceiling. Defaults to 24G.
+  --tasks-max <count>     Shared slice task ceiling. Defaults to 4096.
+  -j, --jobs <count>      Build-tool parallelism. Defaults to 4.
+  --no-sync               Reuse the remote copy without syncing first.
+  --include-secrets       Do not hard-exclude secrets and .env files.
+  --cleanup               Remove this repo/slot from Spark when the command exits.
+  --shell                 Open an interactive shell in the remote copy.
+  --prune-days <days>     Age threshold for prune. Defaults to 7.
+  -h, --help              Show this help.
+EOF
+}
+
+die() {
+  printf 'spark: %s\n' "$*" >&2
+  exit 1
+}
+
+require() {
+  for cmd in "$@"; do
+    command -v "$cmd" >/dev/null 2>&1 || die "missing dependency: $cmd"
+  done
+}
+
+quote() {
+  printf '%q' "$1"
+}
+
+safe_name() {
+  printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '-'
+}
+
+short_hash() {
+  printf '%s' "$1" | sha256sum | awk '{ print substr($1, 1, 12) }'
+}
+
+remote_home() {
+  ssh "$host" 'printf %s "$HOME"'
+}
+
+remote_path() {
+  case "$1" in
+  /*) printf '%s' "$1" ;;
+  *) printf '%s/%s' "$remote_home_dir" "$1" ;;
+  esac
+}
+
+repo_root() {
+  if [ -n "$repo" ]; then
+    [ -d "$repo" ] || die "not a directory: $repo"
+    cd "$repo" && pwd -P
+    return
+  fi
+  git rev-parse --show-toplevel 2>/dev/null || pwd -P
+}
+
+branch_slot() {
+  local branch
+  branch="$(git -C "$repo" branch --show-current 2>/dev/null || true)"
+  if [ -z "$branch" ]; then
+    branch="$(basename "$repo")"
+  fi
+  safe_name "$branch"
+}
+
+default_slot() {
+  local base
+  base="$(branch_slot)"
+  if [ "$cleanup" -eq 1 ]; then
+    printf '%s-%s' "$base" "$(short_hash "$repo:$$:$(date +%s%N)")"
+  else
+    printf '%s' "$base"
+  fi
+}
+
+apply_nvim_command() {
+  [ "$#" -gt 0 ] || die "nvim requires build, test, or shell"
+  case "$1" in
+  build)
+    shift
+    command_args=(make CMAKE_BUILD_TYPE=RelWithDebInfo "$@")
+    ;;
+  deps)
+    shift
+    command_args=(make deps "$@")
+    ;;
+  test)
+    shift
+    if [ "$#" -gt 0 ]; then
+      command_args=(make functionaltest-lua "TEST_FILE=$1")
+      shift
+      command_args+=("$@")
+    else
+      command_args=(make functionaltest-lua)
+    fi
+    ;;
+  shell)
+    shell=1
+    ;;
+  *)
+    die "unknown nvim command: $1"
+    ;;
+  esac
+}
+
+configure_slice_command() {
+  printf 'systemctl --user set-property --runtime %s CPUQuota=%s MemoryMax=%s TasksMax=%s >/dev/null\n' \
+    "$(quote "$slice")" \
+    "$(quote "$cpu_quota")" \
+    "$(quote "$memory_max")" \
+    "$(quote "$tasks_max")"
+}
+
+remote_prune_command() {
+  cat <<EOF
+set -eu
+root=$(quote "$remote_root")
+days=$(quote "$prune_days")
+mkdir -p "\$root/worktrees" "\$root/locks" "\$root/meta"
+find "\$root/worktrees" -mindepth 2 -maxdepth 2 -type d -mtime "+\$days" -exec rm -rf {} +
+find "\$root/worktrees" -mindepth 1 -maxdepth 1 -type d -empty -delete
+find "\$root/locks" "\$root/meta" -type f -mtime "+\$days" -delete 2>/dev/null || true
+EOF
+}
+
+remote_secret_cleanup_command() {
+  [ "$include_secrets" -eq 0 ] || return 0
+  cat <<EOF
+cd $(quote "$remote_dir")
+rm -rf secrets .env
+find . \\
+  \\( -type d -name secrets -o -type f -name '.env' -o -type f -name '.env.*' -o -type f -name '*.pem' -o -type f -name 'id_*' \\) \\
+  -prune -exec rm -rf {} +
+EOF
+}
+
+sync_repo() {
+  require rsync ssh
+  printf 'spark: syncing %s -> %s:%s\n' "$repo" "$host" "$remote_dir" >&2
+  ssh "$host" "mkdir -p $(quote "$remote_dir")"
+
+  rsync_args=(
+    -az
+    --delete
+    --filter=':- .gitignore'
+    --filter=':- .sparkignore'
+    --filter='P /.deps/***'
+    --filter='H /.deps/***'
+    --filter='P /.direnv/***'
+    --filter='H /.direnv/***'
+    --filter='P /build/***'
+    --filter='H /build/***'
+    --filter='P /dist/***'
+    --filter='H /dist/***'
+    --filter='P /node_modules/***'
+    --filter='H /node_modules/***'
+    --filter='P /target/***'
+    --filter='H /target/***'
+    --exclude='/.git/'
+    --exclude='/result'
+    --exclude='/result-*'
+  )
+
+  if [ "$include_secrets" -eq 0 ]; then
+    rsync_args+=(
+      --exclude='/secrets/***'
+      --exclude='/.env'
+      --exclude='/.env.*'
+      --exclude='**/secrets/***'
+      --exclude='**/.env'
+      --exclude='**/.env.*'
+      --exclude='**/*.pem'
+      --exclude='**/id_*'
+    )
+  fi
+
+  rsync "${rsync_args[@]}" "$repo"/ "$host:$remote_dir"/
+  ssh "$host" "$(remote_secret_cleanup_command)"
+}
+
+run_remote() {
+  local unit cmd quoted_args nix_config
+  unit="spark-$(safe_name "$repo_name")-$(safe_name "$slot")-$$"
+  quoted_args=""
+  for cmd in "$@"; do
+    quoted_args+=" $(quote "$cmd")"
+  done
+  nix_config="$(printf 'max-jobs = 1\ncores = %s\n' "$jobs")"
+
+  printf 'spark: running in %s:%s\n' "$host" "$remote_dir" >&2
+  ssh "$host" "set -eu
+mkdir -p $(quote "$remote_root")/locks $(quote "$remote_root")/meta
+$(configure_slice_command)
+systemd-run --user --pipe --wait --collect \
+  --slice=$(quote "$slice") \
+  --unit=$(quote "$unit") \
+  -E SPARK_LOCAL_ROOT=$(quote "$repo") \
+  -E SPARK_REMOTE_ROOT=$(quote "$remote_dir") \
+  -E MAKEFLAGS=$(quote "-j$jobs") \
+  -E CMAKE_BUILD_PARALLEL_LEVEL=$(quote "$jobs") \
+  -E NIX_BUILD_CORES=$(quote "$jobs") \
+  -E NIX_CONFIG=$(quote "$nix_config") \
+  -E XDG_CACHE_HOME=$(quote "$remote_dir/.cache") \
+  -E XDG_STATE_HOME=$(quote "$remote_dir/.state") \
+  -E XDG_DATA_HOME=$(quote "$remote_dir/.local/share") \
+  -E CARGO_HOME=$(quote "$remote_dir/.cache/cargo") \
+  -E npm_config_cache=$(quote "$remote_dir/.cache/npm") \
+  -E PIP_CACHE_DIR=$(quote "$remote_dir/.cache/pip") \
+  -- bash -lc 'cd \"\$SPARK_REMOTE_ROOT\" && exec \"\$@\"' spark-command$quoted_args"
+}
+
+clean_remote_dir() {
+  ssh "$host" "cleanup_status=0; rm -rf $(quote "$remote_dir") || cleanup_status=\$?; rmdir $(quote "$remote_repo_dir") 2>/dev/null || true; exit \"\$cleanup_status\""
+}
+
+cleanup_on_exit() {
+  local status=$?
+  clean_remote_dir || true
+  exit "$status"
+}
+
+open_shell() {
+  local unit nix_config
+  unit="spark-$(safe_name "$repo_name")-$(safe_name "$slot")-shell-$$"
+  nix_config="$(printf 'max-jobs = 1\ncores = %s\n' "$jobs")"
+  printf 'spark: shell in %s:%s\n' "$host" "$remote_dir" >&2
+  ssh -t "$host" "set -eu
+$(configure_slice_command)
+systemd-run --user --pty --wait --collect \
+  --slice=$(quote "$slice") \
+  --unit=$(quote "$unit") \
+  -E SPARK_LOCAL_ROOT=$(quote "$repo") \
+  -E SPARK_REMOTE_ROOT=$(quote "$remote_dir") \
+  -E MAKEFLAGS=$(quote "-j$jobs") \
+  -E CMAKE_BUILD_PARALLEL_LEVEL=$(quote "$jobs") \
+  -E NIX_BUILD_CORES=$(quote "$jobs") \
+  -E NIX_CONFIG=$(quote "$nix_config") \
+  -E XDG_CACHE_HOME=$(quote "$remote_dir/.cache") \
+  -E XDG_STATE_HOME=$(quote "$remote_dir/.state") \
+  -E XDG_DATA_HOME=$(quote "$remote_dir/.local/share") \
+  -E CARGO_HOME=$(quote "$remote_dir/.cache/cargo") \
+  -E npm_config_cache=$(quote "$remote_dir/.cache/npm") \
+  -E PIP_CACHE_DIR=$(quote "$remote_dir/.cache/pip") \
+  --working-directory=$(quote "$remote_dir") \
+  -- \${SHELL:-bash} -l"
+}
+
+show_status() {
+  ssh "$host" "set -eu
+echo host=\$(hostname)
+echo user=\$(id -un)
+echo system=\$(nix eval --impure --raw --expr builtins.currentSystem 2>/dev/null || uname -m)
+echo nproc=\$(nproc)
+echo nproc_all=\$(nproc --all)
+grep -E 'Cpus_allowed_list|Mems_allowed_list' /proc/self/status
+free -h
+df -h / /nix 2>/dev/null || df -h /
+systemctl show user-\$(id -u).slice -p CPUQuotaPerSecUSec -p MemoryMax -p ControlGroup
+systemctl --user show $(quote "$slice") -p ActiveState -p CPUQuotaPerSecUSec -p MemoryMax -p TasksMax -p ControlGroup 2>/dev/null || true
+nvidia-smi --query-gpu=name,driver_version,utilization.gpu,utilization.memory --format=csv,noheader,nounits 2>/dev/null || true
+systemctl --user --no-pager --plain list-units 'forgejo-runner-spark-nix-*.service' 2>/dev/null || true
+[ -d $(quote "$remote_root") ] && du -sh $(quote "$remote_root") || true"
+}
+
+host="${SPARK_HOST:-$default_host}"
+work_root="${SPARK_WORK_ROOT:-$default_work_root}"
+slice="${SPARK_SLICE:-$default_slice}"
+cpu_quota="${SPARK_CPU_QUOTA:-$default_cpu_quota}"
+memory_max="${SPARK_MEMORY_MAX:-$default_memory_max}"
+tasks_max="${SPARK_TASKS_MAX:-$default_tasks_max}"
+jobs="${SPARK_JOBS:-$default_jobs}"
+prune_days="${SPARK_PRUNE_DAYS:-$default_prune_days}"
+repo=""
+slot=""
+slot_set=0
+sync=1
+shell=0
+include_secrets=0
+cleanup=0
+command_args=()
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  -C | --repo | --path)
+    [ "$#" -ge 2 ] || die "$1 requires a path"
+    repo="$2"
+    shift 2
+    ;;
+  --slot)
+    [ "$#" -ge 2 ] || die "$1 requires a name"
+    slot="$2"
+    slot_set=1
+    shift 2
+    ;;
+  --host)
+    [ "$#" -ge 2 ] || die "$1 requires a host"
+    host="$2"
+    shift 2
+    ;;
+  --work-root)
+    [ "$#" -ge 2 ] || die "$1 requires a path"
+    work_root="$2"
+    shift 2
+    ;;
+  --cpu-quota)
+    [ "$#" -ge 2 ] || die "$1 requires a quota"
+    cpu_quota="$2"
+    shift 2
+    ;;
+  --memory-max)
+    [ "$#" -ge 2 ] || die "$1 requires a size"
+    memory_max="$2"
+    shift 2
+    ;;
+  --tasks-max)
+    [ "$#" -ge 2 ] || die "$1 requires a count"
+    tasks_max="$2"
+    shift 2
+    ;;
+  -j | --jobs)
+    [ "$#" -ge 2 ] || die "$1 requires a count"
+    jobs="$2"
+    shift 2
+    ;;
+  --prune-days)
+    [ "$#" -ge 2 ] || die "$1 requires a day count"
+    prune_days="$2"
+    shift 2
+    ;;
+  --no-sync)
+    sync=0
+    shift
+    ;;
+  --sync)
+    sync=1
+    shift
+    ;;
+  --include-secrets)
+    include_secrets=1
+    shift
+    ;;
+  --cleanup)
+    cleanup=1
+    shift
+    ;;
+  --shell)
+    shell=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    die "unknown option: $1"
+    ;;
+  *)
+    break
+    ;;
+  esac
+done
+
+case "${1:-}" in
+status)
+  shift
+  [ "$#" -eq 0 ] || die "status takes no extra arguments"
+  require ssh
+  remote_home_dir="$(remote_home)"
+  remote_root="$(remote_path "$work_root")"
+  show_status
+  exit 0
+  ;;
+prune)
+  shift
+  [ "$#" -eq 0 ] || die "prune takes no extra arguments"
+  require ssh
+  remote_home_dir="$(remote_home)"
+  remote_root="$(remote_path "$work_root")"
+  ssh "$host" "$(remote_prune_command)"
+  exit 0
+  ;;
+nvim)
+  shift
+  apply_nvim_command "$@"
+  set --
+  ;;
+clean | cleanup)
+  shift
+  [ "$#" -eq 0 ] || die "cleanup takes no extra arguments"
+  command_args=(clean)
+  ;;
+esac
+
+if [ "${command_args[0]:-}" != clean ]; then
+  if [ "${#command_args[@]}" -eq 0 ]; then
+    command_args=("$@")
+  fi
+fi
+
+repo="$(repo_root)"
+if [ "$slot_set" -eq 0 ]; then
+  slot="$(default_slot)"
+fi
+repo_name="$(safe_name "$(basename "$repo")")"
+slot="$(safe_name "$slot")"
+repo_hash="$(short_hash "$repo")"
+
+require ssh
+remote_home_dir="$(remote_home)"
+remote_root="$(remote_path "$work_root")"
+remote_repo_dir="$remote_root/worktrees/$repo_name"
+remote_dir="$remote_repo_dir/$slot-$repo_hash"
+
+if [ "$cleanup" -eq 1 ] && [ "${command_args[0]:-}" != clean ]; then
+  trap cleanup_on_exit EXIT
+fi
+
+if [ "${command_args[0]:-}" = clean ]; then
+  clean_remote_dir
+  exit 0
+fi
+
+if [ "$sync" -eq 1 ]; then
+  sync_repo
+fi
+
+ssh "$host" "mkdir -p $(quote "$remote_dir/.spark-meta") && date +%s > $(quote "$remote_dir/.spark-meta/last-used") && touch $(quote "$remote_dir")"
+
+if [ "$shell" -eq 1 ]; then
+  open_shell
+  exit 0
+fi
+
+[ "${#command_args[@]}" -gt 0 ] || {
+  usage
+  exit 1
+}
+
+run_remote "${command_args[@]}"

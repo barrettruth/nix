@@ -16,7 +16,6 @@ let
     XDG_CACHE_HOME
     repo
     mkSymlink
-    mkMutableConfig
     mkDir
     ;
 
