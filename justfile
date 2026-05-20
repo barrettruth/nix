@@ -3,12 +3,12 @@ default:
 
 format:
     nix fmt -- --ci
-    shfmt -i 2 -d scripts/*
+    git ls-files 'scripts/**' ':!:scripts/mux.py' | xargs -r shfmt -i 2 -d
 
 lint:
     git ls-files '*.nix' | xargs deadnix --fail --no-lambda-pattern-names
     lua-language-server --check config/nvim --configpath "$(pwd)/config/nvim/.luarc.json" --checklevel=Warning
-    shellcheck scripts/*
+    git ls-files 'scripts/**' ':!:scripts/mux.py' | xargs -r shellcheck
 
 ci: format lint
     @:
