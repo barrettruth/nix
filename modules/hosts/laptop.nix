@@ -28,19 +28,6 @@ let
     enableDesktop = true;
     enableTexlive = true;
   };
-  laptopOverlays = overlays ++ [
-    (_final: prev: {
-      devin = prev.symlinkJoin {
-        name = "devin";
-        paths = [ prev."devin-cli" ];
-        nativeBuildInputs = [ prev.makeWrapper ];
-        postBuild = ''
-          wrapProgram $out/bin/devin \
-            --add-flags "--agent-config ${hostConfig.XDG_CONFIG_HOME}/devin/agent.yaml"
-        '';
-      };
-    })
-  ];
 in
 {
   flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
@@ -66,7 +53,7 @@ in
           log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
         };
         nixpkgs.hostPlatform = hostConfig.platform;
-        nixpkgs.overlays = laptopOverlays;
+        nixpkgs.overlays = overlays;
         nixpkgs.config.allowUnfreePredicate =
           pkg:
           builtins.elem (lib.getName pkg) (

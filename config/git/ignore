@@ -26,6 +26,4 @@ result
 result-*
 .direnv
 .envrc
-.claude
-.devin
 .codex

@@ -5,10 +5,6 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-    devin-cli-overlay = {
-      url = "github:charliemeyer2000/devin-cli-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nixpkgs-whisper.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
     disko = {
       url = "github:nix-community/disko";
@@ -16,7 +12,6 @@
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     direnv-instant.url = "github:Mic92/direnv-instant";
-    claude-code.url = "github:sadjow/claude-code-nix";
     codex.url = "github:sadjow/codex-cli-nix";
     tmux-mosaic = {
       url = "git+https://git.barrettruth.com/barrettruth/tmux-mosaic.git";

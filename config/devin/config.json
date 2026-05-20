@@ -1,9 +1,0 @@
-{
-  "agent": {
-    "model": "gpt-5-4-high-priority"
-  },
-  "shell": {
-    "setup_complete": true
-  },
-  "theme_mode": "light"
-}

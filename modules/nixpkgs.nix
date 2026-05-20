@@ -1,9 +1,7 @@
 { lib, inputs, ... }:
 let
   overlays = [
-    inputs.claude-code.overlays.default
     inputs.codex.overlays.default
-    inputs.devin-cli-overlay.overlays.default
     (final: prev: {
       tmuxPlugins = prev.tmuxPlugins // {
         mosaic = inputs.tmux-mosaic.packages.${final.system}.default;
@@ -14,9 +12,6 @@ let
   sharedUnfree = [
     "slack"
     "apple_cursor"
-    "claude-code"
-    "claude"
-    "devin"
   ];
 in
 {

@@ -7,9 +7,7 @@
 }:
 let
   agentPackages = with pkgs; [
-    claude-code
     codex
-    devin
   ];
 
   codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [

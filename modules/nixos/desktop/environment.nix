@@ -51,7 +51,6 @@ in
     JUPYTER_PLATFORM_DIRS = "1";
     OPAMROOT = "${XDG_DATA_HOME}/opam";
     DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
-    CLAUDE_CONFIG_DIR = "${XDG_CONFIG_HOME}/claude";
     CODEX_HOME = "${XDG_CONFIG_HOME}/codex";
     AWS_SHARED_CREDENTIALS_FILE = "${XDG_CONFIG_HOME}/aws/credentials";
     AWS_CONFIG_FILE = "${XDG_CONFIG_HOME}/aws/config";
@@ -62,7 +61,6 @@ in
     TEXMFVAR = "${XDG_CACHE_HOME}/texlive/texmf-var";
     TEXMFCONFIG = "${XDG_CONFIG_HOME}/texlive/texmf-config";
     INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
-    DEVIN_PERMISSION_MODE = "dangerous";
     HYPRLAND_NO_SD_VARS = "1";
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
     XCURSOR_SIZE = "24";
