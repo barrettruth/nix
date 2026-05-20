@@ -82,6 +82,13 @@ let
       add_header Cache-Control $forgejo_asset_cache_control always;
     '';
   };
+  forgejoStatsAssetProxy = {
+    proxyPass = "http://127.0.0.1:3000";
+    extraConfig = ''
+      proxy_hide_header Cache-Control;
+      add_header Cache-Control "public, max-age=900" always;
+    '';
+  };
   forgejoImmutableAssetProxy = {
     proxyPass = "http://127.0.0.1:3000";
     extraConfig = ''
@@ -369,6 +376,7 @@ in
       locations = {
         "/".proxyPass = "http://127.0.0.1:3000";
         "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;
+        "= /assets/github-repo-stats.json" = forgejoStatsAssetProxy;
         "= /assets/js/barrett-forgejo.js" = forgejoMutableAssetProxy;
         "= /assets/js/pierre-preload.js" = forgejoMutableAssetProxy;
         "= /manifest.json" = forgejoMutableAssetProxy;
@@ -612,6 +620,112 @@ in
         set -eu
         ${lib.concatStringsSep "\n" (lib.mapAttrsToList syncOne forgejoOauthSources)}
       '';
+  };
+
+  systemd.services.forgejo-github-stats-cache = {
+    description = "Cache public GitHub repository stats for Forgejo chrome";
+    after = [
+      "network-online.target"
+      "forgejo.service"
+    ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "git";
+      Group = "git";
+      WorkingDirectory = "/var/lib/forgejo";
+    };
+    path = [
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.jq
+    ];
+    script = ''
+      set -euo pipefail
+
+      owner="barrettruth"
+      stats_dir="/var/lib/forgejo/custom/public/assets"
+      output="$stats_dir/github-repo-stats.json"
+      pages_dir="$(mktemp -d)"
+      tmp="$(mktemp "$stats_dir/github-repo-stats.json.tmp.XXXXXX")"
+      trap 'rm -rf "$pages_dir" "$tmp"' EXIT
+
+      page=1
+      while [ "$page" -le 10 ]; do
+        body="$pages_dir/page-$page.json"
+        curl -fsSL \
+          --connect-timeout 10 \
+          --max-time 60 \
+          --retry 3 \
+          --retry-delay 5 \
+          --header "Accept: application/vnd.github+json" \
+          --header "User-Agent: barrett-forgejo-github-stats" \
+          --header "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/users/$owner/repos?type=owner&sort=full_name&per_page=100&page=$page" \
+          --output "$body"
+
+        jq -e 'type == "array"' "$body" >/dev/null
+        count="$(jq 'length' "$body")"
+        if [ "$count" -eq 0 ]; then
+          break
+        fi
+        page=$((page + 1))
+      done
+
+      generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      jq -s \
+        --arg owner "$owner" \
+        --arg generated_at "$generated_at" \
+        '
+          [ .[][] ] as $repos
+          | {
+              schema: 1,
+              owner: $owner,
+              generated_at: $generated_at,
+              source: ("https://api.github.com/users/" + $owner + "/repos"),
+              repos: (
+                $repos
+                | map({
+                    key: (.name | ascii_downcase),
+                    value: {
+                      name,
+                      full_name,
+                      html_url,
+                      description,
+                      archived,
+                      fork,
+                      private,
+                      stars: .stargazers_count,
+                      forks: .forks_count,
+                      open_issues: .open_issues_count,
+                      watchers: .watchers_count,
+                      default_branch,
+                      language,
+                      pushed_at,
+                      updated_at
+                    }
+                  })
+                | sort_by(.key)
+                | from_entries
+              )
+            }
+        ' "$pages_dir"/page-*.json > "$tmp"
+
+      chmod 0644 "$tmp"
+      mv "$tmp" "$output"
+    '';
+  };
+
+  systemd.timers.forgejo-github-stats-cache = {
+    description = "Refresh public GitHub repository stats for Forgejo chrome";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "5m";
+      OnUnitActiveSec = "6h";
+      Persistent = true;
+      RandomizedDelaySec = "10m";
+    };
   };
 
   users.users.git = {

@@ -32,7 +32,7 @@ let
         ];
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-FrYYStdYTPztIPpez07ThP15+Jmo56nNdPsbPb76YQ4=";
+        outputHash = "sha256-Bvp0NjYkL5q0hr5bBobZ5kJ0htDzV+ZorY2y6R7LN1A=";
       }
       ''
         set -euo pipefail
@@ -68,7 +68,7 @@ let
     pname = "forgejo-frontend-with-cm6-langs";
     inherit version;
     src = patchedSrc;
-    npmDepsHash = "sha256-xxYJXYvqCBI85Snte4i4F2/S+/lxsxNpIS53N6POKf8=";
+    npmDepsHash = "sha256-s1D9FgKg3myXIAdF+rFTGlxXd72fAvTAClN9fcO5tU8=";
 
     buildPhase = ''
       runHook preBuild

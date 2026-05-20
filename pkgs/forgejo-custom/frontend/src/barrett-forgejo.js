@@ -1,9 +1,11 @@
 import { replaceRepositoryFileIcons } from "./nonicons.js";
+import { renderGithubStats } from "./github-stats.js";
 import { renderPullRequestDiffView } from "./diff/pr-native-bridge.js";
 import { renderDiffView } from "./pierre/diff-view.js";
 import { renderFileView } from "./pierre/file-view.js";
 
 function init() {
+  renderGithubStats();
   renderFileView();
   renderDiffView();
   renderPullRequestDiffView();

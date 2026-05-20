@@ -54,3 +54,24 @@ samp,
 .cm-editor .cm-line {
   font-family: var(--fonts-monospace);
 }
+
+.barrett-github-stats-label,
+.barrett-github-list-stats,
+.barrett-github-stat {
+  display: inline-flex;
+  align-items: center;
+}
+
+.barrett-github-stats-label,
+.barrett-github-list-stats {
+  gap: 0.5rem;
+}
+
+.barrett-github-stat {
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.barrett-github-source {
+  font-weight: 500;
+}
