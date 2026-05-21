@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from __future__ import annotations
 
 import hashlib
 import os
@@ -230,7 +229,7 @@ class Spark:
                     self.shell = True
                     i += 1
                 case "-h" | "--help":
-                    sys.stderr.write(USAGE)
+                    _ = sys.stderr.write(USAGE)
                     raise SystemExit(0)
                 case "--":
                     return argv[i + 1 :]
@@ -263,13 +262,12 @@ class Spark:
                 require("ssh")
                 self.remote_home_dir = self.remote_home()
                 self.remote_root = self.remote_path(self.work_root)
-                self.ssh(self.remote_prune_command())
+                _ = self.ssh(self.remote_prune_command())
                 return
             case ["nvim", *rest]:
                 if self.cleanup:
                     die(
-                        "nvim commands do not support --cleanup; "
-                        "use spark nvim clean <issue>"
+                        "nvim commands do not support --cleanup; use spark nvim clean <issue>"
                     )
                 self.apply_nvim_command(rest)
                 argv = []
@@ -279,6 +277,10 @@ class Spark:
                 argv = []
             case _:
                 pass
+
+        if not argv and not self.command_args and not self.shell:
+            _ = sys.stderr.write(USAGE)
+            raise SystemExit(1)
 
         if self.command_args != ["clean"] and not self.command_args:
             self.command_args = argv
@@ -305,7 +307,7 @@ class Spark:
                 return
 
             if not self.command_args:
-                sys.stderr.write(USAGE)
+                _ = sys.stderr.write(USAGE)
                 raise SystemExit(1)
 
             self.run_remote(self.command_args)
@@ -350,6 +352,8 @@ class Spark:
             die("nvim requires build, deps, test, run, shell, or clean")
 
         match args:
+            case []:
+                die("nvim requires build, deps, test, run, shell, or clean")
             case ["build"]:
                 die("nvim build requires an issue number")
             case ["build", issue, *make_args]:
@@ -400,6 +404,8 @@ class Spark:
                 self.command_args = ["nvim-clean"]
             case [command, *_]:
                 die(f"unknown nvim command: {command}")
+            case _:
+                die("nvim requires build, deps, test, run, shell, or clean")
 
     def repo_root(self) -> str:
         if self.repo:
@@ -504,12 +510,34 @@ class Spark:
                 f"root={quote(self.remote_root)}",
                 f"days={quote(self.prune_days)}",
                 'mkdir -p "$root/worktrees" "$root/locks" "$root/meta"',
-                'find "$root/worktrees" -mindepth 2 -maxdepth 2 '
-                '-type d -mtime "+$days" -exec rm -rf {} +',
-                'find "$root/worktrees" -mindepth 1 -maxdepth 1 '
-                "-type d -empty -delete",
-                'find "$root/locks" "$root/meta" -type f -mtime "+$days" '
-                "-delete 2>/dev/null || true",
+                " ".join(
+                    [
+                        'find "$root/worktrees"',
+                        "-mindepth 2",
+                        "-maxdepth 2",
+                        "-type d",
+                        '-mtime "+$days"',
+                        "-exec rm -rf {} +",
+                    ]
+                ),
+                " ".join(
+                    [
+                        'find "$root/worktrees"',
+                        "-mindepth 1",
+                        "-maxdepth 1",
+                        "-type d",
+                        "-empty",
+                        "-delete",
+                    ]
+                ),
+                " ".join(
+                    [
+                        'find "$root/locks" "$root/meta"',
+                        "-type f",
+                        '-mtime "+$days"',
+                        "-delete 2>/dev/null || true",
+                    ]
+                ),
             ]
         )
 
@@ -519,9 +547,17 @@ class Spark:
                 f"cd {quote(self.remote_dir)}",
                 "rm -rf secrets .env",
                 "find . \\",
-                "  \\( -type d -name secrets -o -type f -name '.env' "
-                "-o -type f -name '.env.*' -o -type f -name '*.pem' "
-                "-o -type f -name 'id_*' \\) \\",
+                " ".join(
+                    [
+                        "  \\(",
+                        "-type d -name secrets",
+                        "-o -type f -name '.env'",
+                        "-o -type f -name '.env.*'",
+                        "-o -type f -name '*.pem'",
+                        "-o -type f -name 'id_*'",
+                        "\\) \\",
+                    ]
+                ),
                 "  -prune -exec rm -rf {} +",
             ]
         )
@@ -529,7 +565,7 @@ class Spark:
     def sync_repo(self) -> None:
         require("rsync", "ssh")
         eprint(f"spark: syncing {self.repo} -> {self.host}:{self.remote_dir}")
-        self.ssh(f"mkdir -p {quote(self.remote_dir)}")
+        _ = self.ssh(f"mkdir -p {quote(self.remote_dir)}")
 
         rsync_args = [
             "rsync",
@@ -568,7 +604,7 @@ class Spark:
                 ]
             )
 
-        checked_run(
+        _ = checked_run(
             [
                 *rsync_args,
                 f"{self.repo}/",
@@ -576,7 +612,7 @@ class Spark:
             ]
         )
         if not self.include_secrets:
-            self.ssh(self.remote_secret_cleanup_command())
+            _ = self.ssh(self.remote_secret_cleanup_command())
 
     def run_remote(self, args: list[str]) -> None:
         unit = f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
@@ -602,16 +638,15 @@ class Spark:
                 f"  -E CARGO_HOME={quote(f'{self.remote_dir}/.cache/cargo')} \\",
                 f"  -E npm_config_cache={quote(f'{self.remote_dir}/.cache/npm')} \\",
                 f"  -E PIP_CACHE_DIR={quote(f'{self.remote_dir}/.cache/pip')} \\",
-                '  -- bash -lc \'cd "$SPARK_REMOTE_ROOT" && exec "$@"\' '
-                f"spark-command {quoted_args}",
+                f'  -- bash -lc \'cd "$SPARK_REMOTE_ROOT" && exec "$@"\' spark-command {quoted_args}',
             ]
         )
         eprint(f"spark: running in {self.host}:{self.remote_dir}")
-        self.ssh(remote_command)
+        _ = self.ssh(remote_command)
 
     def clean_remote_dir(self, *, check: bool = True) -> None:
         if self.nvim_remote_dir_rel:
-            self.ssh(f"rm -rf {quote(self.remote_dir)}", check=check)
+            _ = self.ssh(f"rm -rf {quote(self.remote_dir)}", check=check)
             return
 
         command = (
@@ -620,19 +655,21 @@ class Spark:
             f"rmdir {quote(self.remote_repo_dir)} 2>/dev/null || true; "
             'exit "$cleanup_status"'
         )
-        self.ssh(command, check=check)
+        _ = self.ssh(command, check=check)
 
     def confirm_clean_remote_dir(self) -> None:
         eprint(f"spark: remote path: {self.host}:{self.remote_dir}")
-        self.ssh(
-            "path="
-            f"{quote(self.remote_dir)}; "
-            '[ -e "$path" ] || { '
-            'printf "spark: missing remote path: %s\\n" "$path" >&2; '
-            "exit 2; "
-            "}; "
-            'du -sh "$path" 2>/dev/null || true'
+        remote_command = "".join(
+            [
+                f"path={quote(self.remote_dir)}; ",
+                '[ -e "$path" ] || { ',
+                'printf "spark: missing remote path: %s\\n" "$path" >&2; ',
+                "exit 2; ",
+                "}; ",
+                'du -sh "$path" 2>/dev/null || true',
+            ]
         )
+        _ = self.ssh(remote_command)
         if self.assume_yes:
             eprint("spark: cleanup confirmed by --yes")
             self.clean_remote_dir()
@@ -680,7 +717,7 @@ class Spark:
             ]
         )
         eprint(f"spark: shell in {self.host}:{self.remote_dir}")
-        self.ssh(remote_command, tty=True)
+        _ = self.ssh(remote_command, tty=True)
 
     def show_status(self) -> None:
         remote_command = "\n".join(
@@ -688,29 +725,59 @@ class Spark:
                 "set -eu",
                 "echo host=$(hostname)",
                 "echo user=$(id -un)",
-                "echo system=$(nix eval --impure --raw --expr "
-                "builtins.currentSystem 2>/dev/null || uname -m)",
+                " ".join(
+                    [
+                        "echo system=$(nix eval",
+                        "--impure",
+                        "--raw",
+                        "--expr builtins.currentSystem",
+                        "2>/dev/null || uname -m)",
+                    ]
+                ),
                 "echo nproc=$(nproc)",
                 "echo nproc_all=$(nproc --all)",
                 "grep -E 'Cpus_allowed_list|Mems_allowed_list' /proc/self/status",
                 "free -h",
                 "df -h / /nix 2>/dev/null || df -h /",
-                "systemctl show user-$(id -u).slice "
-                "-p CPUQuotaPerSecUSec -p MemoryMax -p ControlGroup",
-                "systemctl --user show "
-                f"{quote(self.slice_name)} "
-                "-p ActiveState -p CPUQuotaPerSecUSec -p MemoryMax "
-                "-p TasksMax -p ControlGroup 2>/dev/null || true",
-                "nvidia-smi --query-gpu=name,driver_version,utilization.gpu,"
-                "utilization.memory --format=csv,noheader,nounits "
-                "2>/dev/null || true",
-                "systemctl --user --no-pager --plain list-units "
-                "'forgejo-runner-spark-nix-*.service' 2>/dev/null || true",
-                f"[ -d {quote(self.remote_root)} ] && "
-                f"du -sh {quote(self.remote_root)} || true",
+                " ".join(
+                    [
+                        "systemctl show user-$(id -u).slice",
+                        "-p CPUQuotaPerSecUSec",
+                        "-p MemoryMax",
+                        "-p ControlGroup",
+                    ]
+                ),
+                " ".join(
+                    [
+                        "systemctl --user show",
+                        quote(self.slice_name),
+                        "-p ActiveState",
+                        "-p CPUQuotaPerSecUSec",
+                        "-p MemoryMax",
+                        "-p TasksMax",
+                        "-p ControlGroup",
+                        "2>/dev/null || true",
+                    ]
+                ),
+                " ".join(
+                    [
+                        "nvidia-smi",
+                        "--query-gpu=name,driver_version,utilization.gpu,utilization.memory",
+                        "--format=csv,noheader,nounits",
+                        "2>/dev/null || true",
+                    ]
+                ),
+                " ".join(
+                    [
+                        "systemctl --user --no-pager --plain list-units",
+                        "'forgejo-runner-spark-nix-*.service'",
+                        "2>/dev/null || true",
+                    ]
+                ),
+                f"[ -d {quote(self.remote_root)} ] && du -sh {quote(self.remote_root)} || true",
             ]
         )
-        self.ssh(remote_command)
+        _ = self.ssh(remote_command)
 
     def ping_host(self) -> None:
         require("ssh")
@@ -729,7 +796,7 @@ class Spark:
             '"$(nproc)"'
         )
         eprint(f"spark: pinging {self.host}")
-        checked_run(
+        _ = checked_run(
             [
                 "ssh",
                 "-o",
@@ -743,10 +810,16 @@ class Spark:
         )
 
     def mark_remote_used(self) -> None:
-        self.ssh(
-            f"mkdir -p {quote(f'{self.remote_dir}/.spark-meta')} && "
-            f"date +%s > {quote(f'{self.remote_dir}/.spark-meta/last-used')} && "
-            f"touch {quote(self.remote_dir)}"
+        meta_dir = f"{self.remote_dir}/.spark-meta"
+        last_used = f"{meta_dir}/last-used"
+        _ = self.ssh(
+            " && ".join(
+                [
+                    f"mkdir -p {quote(meta_dir)}",
+                    f"date +%s > {quote(last_used)}",
+                    f"touch {quote(self.remote_dir)}",
+                ]
+            )
         )
 
 
