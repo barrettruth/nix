@@ -709,8 +709,9 @@ def display_error(message: str) -> int:
         check=False,
         stderr=subprocess.DEVNULL,
     )
-    if result.returncode != 0:
-        _ = sys.stderr.write(f"mux: {message}\n")
+    if result.returncode == 0:
+        return 0
+    _ = sys.stderr.write(f"mux: {message}\n")
     return 1
 
 
@@ -1104,9 +1105,7 @@ def switch_session(slot: str) -> int:
         except ValueError:
             return display_error(f"session slot must be a number or last: {slot}")
         if index < 0 or index >= len(sessions):
-            return display_error(
-                f"session slot {slot} does not exist; valid range is 0-{len(sessions) - 1}"
-            )
+            return display_error(f"session slot {slot} does not exist")
         session = sessions[index]
 
     _ = tmux("switch", "-t", session)

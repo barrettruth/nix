@@ -43,6 +43,9 @@ STOPWORDS = {
     "on",
     "open",
     "please",
+    "project",
+    "repo",
+    "repository",
     "related",
     "show",
     "that",
@@ -55,7 +58,32 @@ STOPWORDS = {
     "up",
     "where",
     "which",
+    "workspace",
     "with",
+}
+
+MULTIPLE_TOKENS = {
+    "all",
+    "both",
+    "changed",
+    "changes",
+    "dirty",
+    "files",
+    "many",
+    "matches",
+    "modified",
+    "multiple",
+    "related",
+    "several",
+    "staged",
+    "these",
+    "unstaged",
+    "untracked",
+}
+
+SINGULAR_TOKENS = {
+    "one",
+    "single",
 }
 
 TOKEN_ALIASES = {
@@ -97,6 +125,14 @@ class Candidate:
     path: Path
     score: float
     reason: str
+
+
+@dataclass(frozen=True)
+class QueryIntent:
+    wants_file: bool
+    wants_random: bool
+    wants_multiple: bool
+    wants_singular: bool
 
 
 @dataclass(frozen=True)
@@ -257,10 +293,10 @@ def clean_path_token(value: str) -> str:
     return value.strip().rstrip(".,;:!?)]}'\"")
 
 
-def pathlike_terms(query_parts: list[str]) -> list[str]:
+def pathlike_terms(query: str) -> list[str]:
     terms: list[str] = []
     seen: set[str] = set()
-    for part in query_parts:
+    for part in [query, *query.split(), *PATH_TOKEN_RE.findall(query)]:
         candidates = [part]
         candidates.extend(PATH_TOKEN_RE.findall(part))
         for candidate in candidates:
@@ -293,13 +329,53 @@ def implied_path_terms(query_words: set[str]) -> list[str]:
     return []
 
 
-def explicit_paths(root: Path, query_parts: list[str]) -> list[Path]:
+def query_intent(raw_query: str) -> QueryIntent:
+    words = set(tokenize(raw_query))
+    wants_random = "random" in words
+    wants_file = bool(words & {"file", "files", "random"})
+    wants_multiple = bool(words & MULTIPLE_TOKENS)
+    wants_singular = bool(words & SINGULAR_TOKENS)
+    if "file" in words and "files" not in words and not wants_multiple:
+        wants_singular = True
+    if wants_random and "files" not in words and not wants_multiple:
+        wants_singular = True
+    return QueryIntent(
+        wants_file=wants_file,
+        wants_random=wants_random,
+        wants_multiple=wants_multiple,
+        wants_singular=wants_singular,
+    )
+
+
+def effective_limit(raw_query: str, requested_limit: int | None) -> int:
+    if requested_limit is not None:
+        return max(1, requested_limit)
+    intent = query_intent(raw_query)
+    if intent.wants_singular:
+        return 1
+    return DEFAULT_LIMIT
+
+
+def project_files(root: Path) -> list[Path]:
+    return [normalize_path(path) for path in git_files(root) if path.is_file()]
+
+
+def random_project_files(root: Path, limit: int) -> list[Path]:
+    files = project_files(root)
+    if not files:
+        return []
+    count = min(max(1, limit), len(files))
+    if count == 1:
+        return [random.choice(files)]
+    return random.sample(files, count)
+
+
+def explicit_paths(root: Path, query: str) -> list[Path]:
     matches: list[Path] = []
-    raw_query = " ".join(query_parts)
-    query_words = set(tokenize(raw_query))
+    query_words = set(tokenize(query))
     wants_file = bool(query_words & {"file", "files", "random"})
     wants_random = "random" in query_words
-    terms = pathlike_terms(query_parts)
+    terms = pathlike_terms(query)
     term_paths = {normalize_path(term) for term in terms if not term.startswith("-")}
     for implied in implied_path_terms(query_words):
         implied_path = normalize_path(implied)
@@ -447,9 +523,15 @@ def resolve_files(root: Path, query_parts: list[str], limit: int) -> list[Candid
     if not raw_query:
         return [Candidate(root, 1, "project")]
 
-    explicit = explicit_paths(root, query_parts)
+    explicit = explicit_paths(root, raw_query)
     if explicit:
         return [Candidate(path, 100, "explicit path") for path in explicit[:limit]]
+
+    intent = query_intent(raw_query)
+    if intent.wants_random and intent.wants_file:
+        files = random_project_files(root, limit)
+        if files:
+            return [Candidate(path, 100, "random project file") for path in files]
 
     tokens = query_tokens(raw_query)
     if not tokens:
@@ -487,36 +569,10 @@ def resolve_files(root: Path, query_parts: list[str], limit: int) -> list[Candid
     return candidates[:limit]
 
 
-def quickfix_path(root: Path) -> Path:
-    name = re.sub(r"[^A-Za-z0-9_.-]+", "-", root.name or "project")
-    return Path(tempfile.gettempdir()) / f"edit-{os.getuid()}-{name}.quickfix"
-
-
-def write_quickfix(root: Path, query: str, candidates: list[Candidate]) -> Path:
-    path = quickfix_path(root)
-    lines = []
-    for candidate in candidates:
-        if candidate.path == root:
-            continue
-        text = f"edit: {query or candidate.reason}"
-        lines.append(f"{candidate.path}:1:1: {text}")
-    path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
-    return path
-
-
 def nvim_command(root: Path, query: str, candidates: list[Candidate]) -> str:
-    files = [candidate.path for candidate in candidates if candidate.path != root]
-    qf = write_quickfix(root, query, candidates)
-    args = ["nvim"]
-    if files:
-        args.append(f"+cgetfile {qf}")
-        if len(files) > 1:
-            args.append("+copen")
-        args.append("--")
-        args.extend(str(path) for path in files)
-    else:
-        args.append(str(root))
-    return "exec " + " ".join(shlex.quote(arg) for arg in args)
+    script = remote_script(root, query, candidates)
+    args = ["nvim", f"+luafile {script}"]
+    return f"cd {shlex.quote(str(root))} && exec " + " ".join(shlex.quote(arg) for arg in args)
 
 
 def vim_lua_string(value: str) -> str:
@@ -530,12 +586,12 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
             "filename": str(candidate.path),
             "lnum": 1,
             "col": 1,
-            "text": f"edit: {query or candidate.reason}",
+            "text": "",
         }
         for candidate in candidates
-        if candidate.path != root
+        if candidate.path != root and len(files) > 1
     ]
-    payload = {"title": f"edit: {query}" if query else "edit", "files": [str(p) for p in files], "items": items, "root": str(root)}
+    payload = {"title": "edit", "files": [str(p) for p in files], "items": items, "root": str(root)}
     fd, script_name = tempfile.mkstemp(prefix=f"open-{os.getuid()}-", suffix=".lua")
     os.close(fd)
     script = Path(script_name)
@@ -544,8 +600,8 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
             [
                 f"local payload = vim.json.decode({vim_lua_string(json.dumps(payload))})",
                 "local items = payload.items or {}",
-                "vim.fn.setqflist({}, ' ', { title = payload.title, items = items })",
-                "if #items > 1 then vim.cmd('botright copen') elseif #items == 1 then vim.cmd('cclose') end",
+                "vim.fn.setqflist({}, 'r', { title = payload.title, items = items })",
+                "if #items > 1 then vim.cmd('botright copen') else vim.cmd('cclose') end",
                 "local files = payload.files or {}",
                 "if #files == 0 then",
                 "  vim.cmd('edit ' .. vim.fn.fnameescape(payload.root))",
@@ -745,7 +801,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         description="Populate the mux edit window from a natural-language file target.",
     )
     parser.add_argument("-n", "--dry-run", action="store_true", help="print the resolved files")
-    parser.add_argument("-l", "--limit", type=int, default=DEFAULT_LIMIT, help="maximum files to populate")
+    parser.add_argument("-l", "--limit", type=int, default=None, help="maximum files to populate")
     parser.add_argument("query", nargs=argparse.REMAINDER)
     return parser.parse_args(argv)
 
@@ -755,7 +811,7 @@ def main(argv: list[str]) -> int:
     root = current_root()
     query_parts = args.query
     query = " ".join(query_parts).strip()
-    candidates = resolve_files(root, query_parts, max(1, args.limit))
+    candidates = resolve_files(root, query_parts, effective_limit(query, args.limit))
 
     if args.dry_run:
         print_plan(root, query, candidates)

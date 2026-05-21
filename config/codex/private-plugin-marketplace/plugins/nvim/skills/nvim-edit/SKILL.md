@@ -15,6 +15,9 @@ Expected behavior:
 - Prefer explicit paths when the user gives them.
 - For natural-language targets, choose likely repo files from file names, path
   tokens, content hits, and working-tree state.
+- Interpret the full target text as one natural-language command. Singular
+  requests such as "a random file" should populate one file unless Barrett
+  explicitly asks for multiple files or passes `--limit`.
 - Populate the mux `edit` window.
 - If `edit` already runs Neovim, remote into that instance and replace its
   arglist/quickfix list with the resolved files.
@@ -31,6 +34,9 @@ Rules:
   blocker.
 - For `/tmp`, absolute paths, directories, or random-file requests, let the
   helper resolve the target; do not reinterpret the request manually.
+- Do not add explanatory quickfix item text to Neovim. The helper may use the
+  quickfix list to navigate multiple files, but item messages should remain
+  blank.
 - Use `--dry-run` only when Barrett explicitly asks to preview resolution or
   when you are intentionally reporting ambiguity instead of opening the editor.
 
