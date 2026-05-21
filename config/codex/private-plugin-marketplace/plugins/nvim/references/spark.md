@@ -26,6 +26,7 @@ commands.
 Agent command forms:
 
 ```sh
+spark ping
 spark nvim build <issue>
 spark nvim deps <issue>
 spark nvim test <issue> [test-file]
@@ -33,6 +34,9 @@ spark nvim run <issue> -- <command> [args...]
 spark nvim shell <issue>
 spark nvim clean <issue>
 ```
+
+Use `spark ping` as the first health check when diagnosing Spark access. It
+does not sync the repository or start a build.
 
 Do not use generic `spark --cleanup ...` with Neovim worktrees. Do not call
 generic `spark clean` for Neovim issue mirrors. Use only

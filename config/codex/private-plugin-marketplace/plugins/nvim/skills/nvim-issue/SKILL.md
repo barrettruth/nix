@@ -5,16 +5,32 @@ description: Investigate Neovim GitHub issues before fixes. Use when given a Neo
 
 # nvim-issue
 
-Use `/nvim:issue` as the primary workflow for Neovim bugs.
+Use `$nvim-issue` as the primary workflow for Neovim bugs.
+
+Input: one Neovim issue number, with or without `#`.
+
+Output: absolute paths to `report.md`, `index.md`, and the worktree. Stop at
+the investigation report; do not propose fixes.
 
 Required flow:
 
-1. Normalize issue number and fetch raw context with `gh`.
-2. Fetch `upstream master`; create branch/worktree named only by the issue number.
-3. Create the issue wiki, raw source folders, append-only log, and ignored worktree pointer.
-4. Run `history` and `reproducer` in parallel; no lightweight mode.
-5. Run `integrator` after both role outputs exist.
-6. Print absolute `report.md`, `index.md`, and worktree paths.
+1. Normalize the issue number.
+2. Fetch raw issue context with `gh` and save it under `sources/github/`.
+3. Fetch `upstream master` in `/home/barrett/dev/neovim`.
+4. Create branch/worktree `<issue>` from `upstream/master` under
+   `/home/barrett/dev/neovim/.worktrees/<issue>`.
+5. Create the issue wiki, raw source folders, append-only log, and ignored
+   worktree pointer.
+6. Run `history` and `reproducer` in parallel as separate roles; no lightweight
+   mode.
+7. Run `integrator` after both role outputs exist.
+8. Print absolute `report.md`, `index.md`, and worktree paths.
+
+Stop conditions:
+
+- If the branch or worktree already exists, stop and report the exact path.
+- If `upstream` or Spark access is missing, stop and report the failing phase.
+- If reproduction fails, still write what was tried in detail.
 
 Role contract:
 
@@ -24,7 +40,7 @@ Role contract:
 
 The reproducer and integrator may describe what was tried, what failed, and why
 the issue is still unreproduced. They must not turn reproduction evidence into
-a fix proposal during `/nvim:issue`.
+a fix proposal during `$nvim-issue`.
 
 Read `../../references/workflow.md`, `../../references/issue-wiki.md`,
 `../../references/github.md`, `../../references/spark.md`, and

@@ -2,17 +2,20 @@
 
 Scope: only `neovim/neovim` in `/home/barrett/dev/neovim`.
 
-Primary command:
+Primary skill:
 
-- `/nvim:issue 12345`: investigate the GitHub issue and stop at a report.
+- `$nvim-issue 12345`: investigate the GitHub issue and stop at a report.
 
-Lower-level commands:
+Lower-level skills:
 
-- `/nvim:checkout`: worktree and current-checkout state
-- `/nvim:code`: implementation after Barrett explicitly asks
-- `/nvim:verify`: implementation-phase build/test verification
-- `/nvim:pr`: placeholder until commit and PR policy is researched
-- `/nvim:clean 12345`: manual cleanup for one issue-number worktree
+- `$nvim-wt`: worktree and current-checkout state
+- `$nvim-code`: implementation after Barrett explicitly asks
+- `$nvim-verify`: implementation-phase build/test verification
+- `$nvim-pr`: placeholder until commit and PR policy is researched
+- `$nvim-clean 12345`: manual cleanup for one issue-number worktree
+
+Plugin command files may also expose `/nvim:*` slash commands when the command
+surface is available, but the skill invocation contract is the reliable one.
 
 Commit, push, and PR are separate phases. The active issue/code/verify phases do
 not commit or mutate remotes. Commit requires Barrett to literally say
@@ -37,7 +40,7 @@ Issue flow:
 No solutions are allowed in this phase. Next investigation experiments are ok.
 For resumes, read only `index.md` first and follow its links selectively.
 
-Cleanup is manual only. `/nvim:clean <issue-number>` must inspect local state,
+Cleanup is manual only. `$nvim-clean <issue-number>` must inspect local state,
 prompt `y/N`, and never use GitHub status or auto-detection.
 
 Spark cleanup is separate: use `spark nvim clean <issue-number>` only when

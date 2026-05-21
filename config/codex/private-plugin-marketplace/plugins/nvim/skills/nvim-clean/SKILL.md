@@ -1,6 +1,6 @@
 ---
 name: nvim-clean
-description: Use when Barrett invokes `/nvim:clean 12345` or explicitly asks to remove one specific Neovim issue-number worktree. Performs manual local cleanup only; never auto-detects, batches, uses GitHub, or deletes without y/N confirmation.
+description: Use when Barrett invokes `$nvim-clean 12345` or explicitly asks to remove one specific Neovim issue-number worktree. Performs manual local cleanup only; never auto-detects, batches, uses GitHub, or deletes without y/N confirmation.
 ---
 
 # nvim-clean

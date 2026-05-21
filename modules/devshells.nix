@@ -7,8 +7,10 @@
         pkgs.just
         pkgs.deadnix
         pkgs.lua-language-server
+        pkgs.black
         pkgs.shellcheck
         pkgs.shfmt
+        pkgs.ty
       ];
     in
     {

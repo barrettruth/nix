@@ -309,7 +309,13 @@ def ensure_project_session(path: str, candidates: Sequence[str] = ()) -> str:
     session_name = project_session_name(root, candidates)
     if not session_exists(session_name):
         _ = tmux("new-session", "-d", "-s", session_name, "-c", root, "-n", "zsh")
-    _ = tmux("set-option", "-t", session_target(session_name), SESSION_PROJECT_PATH_OPTION, root)
+    _ = tmux(
+        "set-option",
+        "-t",
+        session_target(session_name),
+        SESSION_PROJECT_PATH_OPTION,
+        root,
+    )
     return session_name
 
 
@@ -720,7 +726,9 @@ def open_role_in_dir(name: str, path: str) -> None:
     ensure_role_dependencies(name)
     if (command := role_command_for(name)) is None:
         raise MuxError(f"mux: unknown role '{name}'")
-    spawn_or_focus_managed(name, git_root_for_path(path), command, ephemeral=role.ephemeral)
+    spawn_or_focus_managed(
+        name, git_root_for_path(path), command, ephemeral=role.ephemeral
+    )
 
 
 def open_action(name: str) -> int:
@@ -864,11 +872,11 @@ def picker_list(mode: PickerMode) -> str:
 
 
 def picker_mode_from_arg(mode: str) -> PickerMode | None:
-    match mode:
-        case "open" | "proj":
-            return mode
-        case _:
-            return None
+    if mode == "open":
+        return "open"
+    if mode == "proj":
+        return "proj"
+    return None
 
 
 def dispatch_picker_action(value: str) -> int:
@@ -1134,7 +1142,12 @@ def main(argv: list[str]) -> int:
             return usage_error("action requires a name")
         case ["_dispatch"]:
             return usage_error("_dispatch requires a value")
-        case ["_picker_open"] | ["_picker_open", _] | ["_picker_open", _, _] | ["_picker_open", _, _, _]:
+        case (
+            ["_picker_open"]
+            | ["_picker_open", _]
+            | ["_picker_open", _, _]
+            | ["_picker_open", _, _, _]
+        ):
             return usage_error("_picker_open requires mode, kind, name, and value")
         case [command, *_]:
             return usage_error(f"unknown command: {command}")

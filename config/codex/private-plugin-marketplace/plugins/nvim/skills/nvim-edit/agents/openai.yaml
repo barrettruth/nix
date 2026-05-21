@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neovim Edit"
+  short_description: "Populate the mux edit Neovim window."
+  default_prompt: "Populate the edit window with the relevant Neovim files for this task."

@@ -13,7 +13,7 @@ Hard rules:
 - Never add AI, assistant, co-author, or signed-off attribution.
 - Never claim tests or repro attempts passed without exact command evidence.
 - Never clean, prune, force-push, or delete unless asked.
-- Cleanup means `/nvim:clean <issue-number>` or an explicit cleanup request; it
+- Cleanup means `$nvim-clean <issue-number>` or an explicit cleanup request; it
   is one worktree at a time and prompts `y/N`.
 - Local git state changes are allowed when the current phase needs them, but
   commits and remote mutations remain separately gated.

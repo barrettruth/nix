@@ -3,6 +3,10 @@
 Planning notes only. This file is not part of the `nvim` skill and does not
 grant agents permission to commit, push, clean, publish, or interact remotely.
 
+Keep setup reproducible from this Nix config. Do not treat personal Codex paths
+such as `~/.agents` as part of the workflow setup; use the tracked
+`config/codex/private-plugin-marketplace` marketplace and `config/codex/config.toml`.
+
 ## Commit And PR Gates
 
 - Dedicated commit workflow with literal `commit` permission only.

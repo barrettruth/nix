@@ -17,7 +17,7 @@ Required flow:
 5. Make the smallest coherent patch.
 6. Stop before commits, pushes, or PR work. Commit requires literal `commit`,
    and commits are main-thread only.
-7. Hand off expensive build/test loops to `/nvim:verify`; do not run local
+7. Hand off expensive build/test loops to `$nvim-verify`; do not run local
    Neovim builds directly.
 
 Read `../../references/issue-wiki.md` and `../../references/guardrails.md`.

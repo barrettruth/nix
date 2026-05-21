@@ -16,8 +16,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "nvim",
-    "shortDescription": "Neovim issue investigation workflows",
-    "longDescription": "Private Neovim issue workflow for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run parallel history and reproduction investigation, write a cross-session issue wiki, and stop before solutions or commits.",
+    "shortDescription": "Neovim issue, worktree, verification, and edit-window workflows",
+    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run parallel history and reproduction investigation, verify changes, and populate the mux edit Neovim window from natural-language file targets.",
     "developerName": "Barrett Ruth",
     "category": "Coding",
     "capabilities": [
@@ -30,7 +30,7 @@
     "defaultPrompt": [
       "Investigate Neovim issue #12345 without proposing fixes",
       "Create a Neovim issue worktree and write the report",
-      "Clean up Neovim issue worktree 12345"
+      "Populate the edit window with the relevant mux command files"
     ],
     "brandColor": "#57A143",
     "screenshots": []

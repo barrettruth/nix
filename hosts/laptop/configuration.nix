@@ -236,10 +236,10 @@ in
   ];
 
   programs.ssh.extraConfig = ''
-    Host spark spark.harivan.sh
-        HostName spark.harivan.sh
+    Host spark
+        HostName spark-1
         User barrett
-        ProxyCommand ${pkgs.cloudflared}/bin/cloudflared access ssh --hostname %h
+        HostKeyAlias spark
   '';
 
   nix.settings = {

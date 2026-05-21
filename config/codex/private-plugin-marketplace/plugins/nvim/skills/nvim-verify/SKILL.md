@@ -5,7 +5,7 @@ description: Verify Neovim implementation work. Use when running focused local o
 
 # nvim-verify
 
-For `/nvim:issue`, reproduction is handled by the `reproducer` role and future
+For `$nvim-issue`, reproduction is handled by the `reproducer` role and future
 `nvim-repro` work. Use this skill for implementation-phase checks.
 
 Workflow:
