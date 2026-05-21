@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neovim Verify"
+  short_description: "Run focused Neovim checks with Spark."
+  default_prompt: "Verify this Neovim worktree with focused tests."

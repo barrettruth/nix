@@ -8,8 +8,10 @@ default_slice="spark-build.slice"
 default_cpu_quota="400%"
 default_memory_max="24G"
 default_tasks_max="4096"
-default_jobs="4"
+default_jobs="2"
 default_prune_days="7"
+nvim_local_root="/home/barrett/dev/neovim"
+nvim_remote_root="dev/neovim"
 
 usage() {
   cat >&2 <<'EOF'
@@ -21,9 +23,12 @@ Usage:
   spark [options] prune
   spark [options] clean
   spark [options] cleanup
-  spark [options] nvim build
-  spark [options] nvim test [test-file]
-  spark [options] nvim shell
+  spark [options] nvim build <issue> [make-args...]
+  spark [options] nvim deps <issue> [make-args...]
+  spark [options] nvim test <issue> [test-file] [make-args...]
+  spark [options] nvim run <issue> -- <command> [args...]
+  spark [options] nvim shell <issue>
+  spark [options] nvim clean <issue>
 
 Options:
   -C, --repo <path>       Local repo/path to sync. Defaults to the git root.
@@ -34,13 +39,20 @@ Options:
   --cpu-quota <quota>     Shared slice CPU quota. Defaults to 400%.
   --memory-max <size>     Shared slice memory ceiling. Defaults to 24G.
   --tasks-max <count>     Shared slice task ceiling. Defaults to 4096.
-  -j, --jobs <count>      Build-tool parallelism. Defaults to 4.
+  -j, --jobs <count>      Build-tool parallelism. Defaults to 2.
   --no-sync               Reuse the remote copy without syncing first.
   --include-secrets       Do not hard-exclude secrets and .env files.
   --cleanup               Remove this repo/slot from Spark when the command exits.
   --shell                 Open an interactive shell in the remote copy.
   --prune-days <days>     Age threshold for prune. Defaults to 7.
   -h, --help              Show this help.
+
+Neovim:
+  <issue> is a numeric Neovim issue number.
+  The local worktree is /home/barrett/dev/neovim/.worktrees/<issue>.
+  The Spark mirror is ~/dev/neovim/.worktrees/<issue>.
+  The local worktree is the source of truth; build/test/run/shell sync it first.
+  nvim clean is the only Neovim cleanup path and prompts y/N.
 EOF
 }
 
@@ -106,19 +118,54 @@ default_slot() {
   fi
 }
 
+normalize_issue() {
+  local issue="${1#\#}"
+  case "$issue" in
+  '' | *[!0-9]*)
+    die "expected numeric Neovim issue number, got: $1"
+    ;;
+  esac
+  printf '%s' "$issue"
+}
+
+set_nvim_issue_paths() {
+  nvim_issue="$(normalize_issue "$1")"
+  slot="$nvim_issue"
+  slot_set=1
+  nvim_remote_dir_rel="$nvim_remote_root/.worktrees/$nvim_issue"
+  nvim_local_worktree="$nvim_local_root/.worktrees/$nvim_issue"
+}
+
+require_nvim_local_worktree() {
+  [ -d "$nvim_local_worktree" ] || die "missing local Neovim worktree: $nvim_local_worktree"
+  repo="$nvim_local_worktree"
+}
+
 apply_nvim_command() {
-  [ "$#" -gt 0 ] || die "nvim requires build, test, or shell"
+  [ "$#" -gt 0 ] || die "nvim requires build, deps, test, run, shell, or clean"
   case "$1" in
   build)
     shift
+    [ "$#" -ge 1 ] || die "nvim build requires an issue number"
+    set_nvim_issue_paths "$1"
+    shift
+    require_nvim_local_worktree
     command_args=(make CMAKE_BUILD_TYPE=RelWithDebInfo "$@")
     ;;
   deps)
     shift
+    [ "$#" -ge 1 ] || die "nvim deps requires an issue number"
+    set_nvim_issue_paths "$1"
+    shift
+    require_nvim_local_worktree
     command_args=(make deps "$@")
     ;;
   test)
     shift
+    [ "$#" -ge 1 ] || die "nvim test requires an issue number"
+    set_nvim_issue_paths "$1"
+    shift
+    require_nvim_local_worktree
     if [ "$#" -gt 0 ]; then
       command_args=(make functionaltest-lua "TEST_FILE=$1")
       shift
@@ -127,8 +174,36 @@ apply_nvim_command() {
       command_args=(make functionaltest-lua)
     fi
     ;;
+  run)
+    shift
+    [ "$#" -ge 1 ] || die "nvim run requires an issue number"
+    set_nvim_issue_paths "$1"
+    shift
+    require_nvim_local_worktree
+    if [ "${1:-}" = -- ]; then
+      shift
+    fi
+    [ "$#" -gt 0 ] || die "nvim run requires a command"
+    command_args=("$@")
+    ;;
   shell)
     shell=1
+    shift
+    [ "$#" -ge 1 ] || die "nvim shell requires an issue number"
+    set_nvim_issue_paths "$1"
+    shift
+    [ "$#" -eq 0 ] || die "nvim shell takes only an issue number"
+    require_nvim_local_worktree
+    ;;
+  clean | cleanup)
+    shift
+    [ "$#" -ge 1 ] || die "nvim clean requires an issue number"
+    set_nvim_issue_paths "$1"
+    shift
+    [ "$#" -eq 0 ] || die "nvim clean takes only an issue number"
+    repo="$nvim_local_root"
+    sync=0
+    command_args=(nvim-clean)
     ;;
   *)
     die "unknown nvim command: $1"
@@ -189,6 +264,7 @@ sync_repo() {
     --filter='H /node_modules/***'
     --filter='P /target/***'
     --filter='H /target/***'
+    --exclude='/.git'
     --exclude='/.git/'
     --exclude='/result'
     --exclude='/result-*'
@@ -243,7 +319,24 @@ systemd-run --user --pipe --wait --collect \
 }
 
 clean_remote_dir() {
+  if [ -n "$nvim_remote_dir_rel" ]; then
+    ssh "$host" "rm -rf $(quote "$remote_dir")"
+    return
+  fi
   ssh "$host" "cleanup_status=0; rm -rf $(quote "$remote_dir") || cleanup_status=\$?; rmdir $(quote "$remote_repo_dir") 2>/dev/null || true; exit \"\$cleanup_status\""
+}
+
+confirm_clean_remote_dir() {
+  local answer
+  printf 'spark: remote path: %s:%s\n' "$host" "$remote_dir" >&2
+  ssh "$host" "path=$(quote "$remote_dir"); [ -e \"\$path\" ] || { printf 'spark: missing remote path: %s\n' \"\$path\" >&2; exit 2; }; du -sh \"\$path\" 2>/dev/null || true"
+  printf 'Remove Spark Neovim mirror %s:%s? y/N ' "$host" "$remote_dir" >&2
+  read -r answer
+  if [ "$answer" != y ]; then
+    printf 'spark: cleanup cancelled\n' >&2
+    return 0
+  fi
+  clean_remote_dir
 }
 
 cleanup_on_exit() {
@@ -306,6 +399,9 @@ prune_days="${SPARK_PRUNE_DAYS:-$default_prune_days}"
 repo=""
 slot=""
 slot_set=0
+nvim_issue=""
+nvim_remote_dir_rel=""
+nvim_local_worktree=""
 sync=1
 shell=0
 include_secrets=0
@@ -417,6 +513,7 @@ prune)
   exit 0
   ;;
 nvim)
+  [ "$cleanup" -eq 0 ] || die "nvim commands do not support --cleanup; use spark nvim clean <issue>"
   shift
   apply_nvim_command "$@"
   set --
@@ -445,8 +542,13 @@ repo_hash="$(short_hash "$repo")"
 require ssh
 remote_home_dir="$(remote_home)"
 remote_root="$(remote_path "$work_root")"
-remote_repo_dir="$remote_root/worktrees/$repo_name"
-remote_dir="$remote_repo_dir/$slot-$repo_hash"
+if [ -n "$nvim_remote_dir_rel" ]; then
+  remote_dir="$(remote_path "$nvim_remote_dir_rel")"
+  remote_repo_dir="$(dirname "$remote_dir")"
+else
+  remote_repo_dir="$remote_root/worktrees/$repo_name"
+  remote_dir="$remote_repo_dir/$slot-$repo_hash"
+fi
 
 if [ "$cleanup" -eq 1 ] && [ "${command_args[0]:-}" != clean ]; then
   trap cleanup_on_exit EXIT
@@ -454,6 +556,11 @@ fi
 
 if [ "${command_args[0]:-}" = clean ]; then
   clean_remote_dir
+  exit 0
+fi
+
+if [ "${command_args[0]:-}" = nvim-clean ]; then
+  confirm_clean_remote_dir
   exit 0
 fi
 

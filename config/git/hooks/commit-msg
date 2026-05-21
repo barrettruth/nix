@@ -3,16 +3,19 @@ set -eu
 
 msg_file="$1"
 
-sed -i \
-  -e '/^Co-Authored-By:.*[Dd]evin/d' \
-  -e '/^Co-Authored-By:.*[Cc]laude/d' \
-  -e '/^Co-Authored-By:.*[Cc]opilot/d' \
-  -e '/^Co-Authored-By:.*\[bot\]/d' \
-  -e '/^Signed-off-by:.*[Dd]evin/d' \
-  -e '/^Signed-off-by:.*[Cc]laude/d' \
-  -e '/^Signed-off-by:.*[Cc]opilot/d' \
-  -e '/^Signed-off-by:.*\[bot\]/d' \
-  -e '/^Generated with \[/d' \
-  "$msg_file"
+if grep -Eiq '^(co-authored-by|signed-off-by|ai-assisted|co-assisted|generated-by|authored-by-ai|assisted-by|written-by-ai):' "$msg_file" ||
+  grep -Eiq '^generated with([: ].*)?$' "$msg_file" ||
+  grep -Eiq '^(generated|implemented|written|authored|assisted)( by| with)? .*[^[:alnum:]_](codex|chatgpt|openai|claude|anthropic|copilot|devin|cursor|windsurf|aider)([^[:alnum:]_]|$)' "$msg_file"; then
+  cat >&2 <<'EOF'
+Commit blocked: do not add AI, assistant, co-author, or signed-off attribution.
+
+Remove trailers or prose attribution such as:
+  Co-authored-by: ...
+  Signed-off-by: ...
+  AI-assisted: ...
+  Generated with ...
+EOF
+  exit 1
+fi
 
 sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$msg_file"

@@ -54,6 +54,15 @@ min_rollout_idle_hours = 24
 command = "mgrep"
 args = ["mcp"]
 
+[[hooks.PreToolUse]]
+matcher = "Bash"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 /home/barrett/.config/nix/config/codex/hooks/nvim-pre-tool-use.py"
+timeout = 5
+statusMessage = "Checking Neovim guarded commands"
+
 [sandbox_workspace_write]
 network_access = true
 

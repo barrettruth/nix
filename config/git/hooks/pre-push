@@ -1,3 +1,42 @@
 #!/bin/sh
+set -eu
+
+zero_sha=0000000000000000000000000000000000000000
+blocked=0
+
+has_forbidden_attribution() {
+  message=$1
+
+  printf '%s\n' "$message" | grep -Eiq '^(co-authored-by|signed-off-by|ai-assisted|co-assisted|generated-by|authored-by-ai|assisted-by|written-by-ai):' ||
+    printf '%s\n' "$message" | grep -Eiq '^generated with([: ].*)?$' ||
+    printf '%s\n' "$message" | grep -Eiq '^(generated|implemented|written|authored|assisted)( by| with)? .*[^[:alnum:]_](codex|chatgpt|openai|claude|anthropic|copilot|devin|cursor|windsurf|aider)([^[:alnum:]_]|$)'
+}
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero_sha" ] && continue
+
+  if [ "$remote_sha" = "$zero_sha" ]; then
+    commits=$(git rev-list "$local_sha" --not --remotes --tags 2>/dev/null || git rev-list "$local_sha")
+  else
+    commits=$(git rev-list "$remote_sha..$local_sha")
+  fi
+
+  for commit in $commits; do
+    message=$(git log -1 --format=%B "$commit")
+    if has_forbidden_attribution "$message"; then
+      printf >&2 '%s\n' "Push blocked: commit $commit contains AI, assistant, co-author, or signed-off attribution."
+      blocked=1
+    fi
+  done
+done
+
+if [ "$blocked" -ne 0 ]; then
+  cat >&2 <<'EOF'
+
+Remove prohibited attribution before pushing.
+EOF
+  exit 1
+fi
+
 command -v git-lfs >/dev/null 2>&1 || { printf >&2 "\n%s\n\n" "This repository is configured for Git LFS but 'git-lfs' was not found on your path. If you no longer wish to use Git LFS, remove this hook by deleting the 'pre-push' file in the hooks directory (set by 'core.hookspath'; usually '.git/hooks')."; exit 2; }
 git lfs pre-push "$@"

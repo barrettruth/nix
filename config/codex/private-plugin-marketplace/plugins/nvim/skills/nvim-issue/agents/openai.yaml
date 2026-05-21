@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neovim Issue"
+  short_description: "Investigate Neovim issues before fixes."
+  default_prompt: "Investigate this Neovim issue without proposing fixes."

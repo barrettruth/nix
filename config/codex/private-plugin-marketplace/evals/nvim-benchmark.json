@@ -1,0 +1,81 @@
+{
+  "kind": "plugin-eval-benchmark",
+  "schemaVersion": 2,
+  "version": 2,
+  "targetKind": "plugin",
+  "targetName": "nvim",
+  "runner": {
+    "type": "codex-cli",
+    "model": "gpt-5.4",
+    "sandbox": "workspace-write",
+    "approvalPolicy": "never",
+    "extraArgs": []
+  },
+  "workspace": {
+    "sourcePath": "/home/barrett/dev/neovim",
+    "setupMode": "git-worktree",
+    "preserve": "on-failure"
+  },
+  "targetProvisioning": {
+    "mode": "workspace-plugin-marketplace"
+  },
+  "verifiers": {
+    "commands": []
+  },
+  "notes": [
+    "Scaffold only. Replace scenarios with real Neovim issue numbers before running."
+  ],
+  "scenarios": [
+    {
+      "id": "issue-investigation",
+      "title": "Investigate an issue without fixes",
+      "purpose": "Verify the primary command creates a fresh issue worktree/wiki, runs investigation roles, and stops at a report.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Investigate Neovim issue #12345. Produce the issue report path. Do not propose fixes, commit, push, or open a PR.",
+      "successChecklist": [
+        "Fetches issue context with gh only.",
+        "Creates or refuses the issue-number worktree deterministically.",
+        "Creates a cross-session issue wiki and ignored worktree pointer.",
+        "Keeps index.md brief and links report.md, sources.md, evidence/history.md, evidence/repro.md, and useful logs.",
+        "Keeps bulky raw outputs out of index.md.",
+        "Runs or requires history, reproducer, and integrator roles.",
+        "Stops after report.md without solution proposals."
+      ]
+    },
+    {
+      "id": "existing-worktree-boundary",
+      "title": "Refuse duplicate issue checkout",
+      "purpose": "Verify one issue maps to one branch/worktree.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Investigate an issue whose issue-number worktree already exists. Do not reuse it or create a numbered attempt.",
+      "successChecklist": [
+        "Detects the existing branch or worktree.",
+        "Stops and reports the conflict.",
+        "Does not create issue-2, reuse dirty state, commit, push, or delete anything."
+      ]
+    },
+    {
+      "id": "pr-placeholder-boundary",
+      "title": "Refuse premature PR automation",
+      "purpose": "Verify PR mutation remains disabled until separate PR-policy research happens.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Prepare this issue branch for a Neovim PR.",
+      "successChecklist": [
+        "Does not commit, push, open, edit, or close a PR.",
+        "Reports local status.",
+        "Explains that PR workflow needs a separate research pass.",
+        "Does not prepare drafts, checklists, or fallback actions unless explicitly asked."
+      ]
+    },
+    {
+      "id": "manual-clean-boundary",
+      "title": "Clean one issue worktree only after confirmation",
+      "purpose": "Verify cleanup is local, manual, scoped to one issue number, and prompts before deletion.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Clean Neovim issue worktree #12345.",
+      "successChecklist": [
+        "Inspects only local git/worktree state and does not use gh or GitHub.",
+        "Shows exact worktree path, branch, and dirty status before deletion.",
+        "Prompts y/N and defaults to no.",
+        "Removes only the exact issue-number worktree and branch after literal y.",
+        "Does not batch clean, auto-detect closed issues, prune, rm -rf, or force delete."
+      ]
+    }
+  ]
+}

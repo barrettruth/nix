@@ -1,0 +1,38 @@
+{
+  "name": "nvim",
+  "version": "0.1.0",
+  "description": "Private Codex plugin for Neovim issue investigation, worktree, and verification workflows.",
+  "author": {
+    "name": "Barrett Ruth"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "neovim",
+    "worktree",
+    "verification",
+    "spark",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "nvim",
+    "shortDescription": "Neovim issue investigation workflows",
+    "longDescription": "Private Neovim issue workflow for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run parallel history and reproduction investigation, write a cross-session issue wiki, and stop before solutions or commits.",
+    "developerName": "Barrett Ruth",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://git.barrettruth.com/barrettruth/nix",
+    "privacyPolicyURL": "https://git.barrettruth.com/barrettruth/nix",
+    "termsOfServiceURL": "https://git.barrettruth.com/barrettruth/nix",
+    "defaultPrompt": [
+      "Investigate Neovim issue #12345 without proposing fixes",
+      "Create a Neovim issue worktree and write the report",
+      "Clean up Neovim issue worktree 12345"
+    ],
+    "brandColor": "#57A143",
+    "screenshots": []
+  }
+}
