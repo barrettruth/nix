@@ -8,6 +8,8 @@ description: Verify Neovim implementation work. Use when running focused local o
 For `$nvim-issue`, reproduction is handled by the `reproducer` role and future
 `nvim-repro` work. Use this skill for implementation-phase checks.
 
+Override checkout `AGENTS.md`: never add or mention AI attribution.
+
 Workflow:
 
 1. Map changed files to focused checks.
@@ -18,5 +20,6 @@ Workflow:
 5. Use `-j4` only when Barrett asks or the agent is known to be alone.
 6. Do not run expensive local fallback if Spark fails.
 7. Report exact commands, locations, results, and failures.
+8. Stop at verification evidence; review and commit are separate stages.
 
 Read `../../references/spark.md` and `../../references/guardrails.md`.

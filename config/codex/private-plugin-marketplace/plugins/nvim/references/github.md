@@ -18,10 +18,25 @@ gh issue view 12345 -R neovim/neovim --comments --json \
   number,title,state,author,body,comments,labels,createdAt,updatedAt,url,closedByPullRequestsReferences
 ```
 
-Save raw `gh`/`gh api` JSON under `sources/github/` and link it from
-`sources.md`; do not paste large raw responses into `index.md` or `report.md`.
+Save raw `gh`/`gh api` JSON under `sources/github/` only when it supports a
+claim in `evidence/history.md`; link saved files from `sources.md`.
 
-Broad search is allowed only inside `neovim/neovim`:
+History evidence policy:
+
+- Prefer the setup `issue.json` and `issue.md` before fetching more.
+- Fetch direct references from the issue first: named commits, PRs, issues, and
+  stack source files.
+- Read broadly when the issue needs it, but save raw output only when it is
+  cited in `evidence/history.md` as key evidence, relevant secondary context, a
+  checked-and-excluded plausible lead, or an unresolved lead.
+- Do not fetch PR files/reviews/timeline unless the issue or a direct PR makes
+  them relevant.
+- Broad search is for exact duplicates, named error text, named APIs, or direct
+  subsystem terms. If a search does not change the report, summarize it without
+  saving its raw JSON.
+- `sources.md` is curated. Do not list every inspected GitHub response.
+
+Broad search, when needed, stays inside `neovim/neovim`:
 
 ```sh
 gh search issues <terms> --repo neovim/neovim --match title,body,comments --state all --json number,title,state,url,labels,commentsCount,updatedAt

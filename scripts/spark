@@ -23,6 +23,10 @@ DEFAULT_TASKS_MAX = "4096"
 DEFAULT_JOBS = "2"
 DEFAULT_PRUNE_DAYS = "7"
 DEFAULT_PING_TIMEOUT = "15"
+LOCAL_STATE_ROOT = Path(
+    os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))
+)
+NVIM_LOG_ROOT = LOCAL_STATE_ROOT / "spark" / "nvim"
 NVIM_LOCAL_ROOT = "/home/barrett/dev/neovim"
 NVIM_REMOTE_ROOT = "dev/neovim"
 NVIM_NIX_PACKAGES = [
@@ -52,6 +56,7 @@ Usage:
   spark [options] nvim deps <issue> [make-args...]
   spark [options] nvim test <issue> [test-file] [make-args...]
   spark [options] nvim run <issue> -- <command> [args...]
+  spark [options] nvim log <issue> [--list|--cat]
   spark [options] nvim shell <issue>
   spark [options] nvim clean <issue>
 
@@ -81,6 +86,7 @@ Neovim:
   The local worktree is /home/barrett/dev/neovim/.worktrees/<issue>.
   The Spark mirror is ~/dev/neovim/.worktrees/<issue>.
   The local worktree is the source of truth; build/test/run/shell sync it first.
+  build/deps/test/run write local logs under ~/.local/state/spark/nvim/<issue>/.
   clean and nvim clean prompt y/N unless -y/--yes is passed.
 """
 
@@ -162,6 +168,7 @@ class Spark:
     slot: str = ""
     slot_set: bool = False
     nvim_issue: str = ""
+    nvim_action: str = ""
     nvim_remote_dir_rel: str = ""
     nvim_local_worktree: str = ""
     sync: bool = True
@@ -310,7 +317,10 @@ class Spark:
                 _ = sys.stderr.write(USAGE)
                 raise SystemExit(1)
 
-            self.run_remote(self.command_args)
+            if self.nvim_action in ("build", "deps", "test", "run"):
+                self.run_remote_with_log(self.command_args)
+            else:
+                self.run_remote(self.command_args)
         finally:
             if cleanup_after_command:
                 self.clean_remote_dir(check=False)
@@ -344,6 +354,34 @@ class Spark:
             die(f"missing local Neovim worktree: {self.nvim_local_worktree}")
         self.repo = self.nvim_local_worktree
 
+    def nvim_log_dir(self) -> Path:
+        if not self.nvim_issue:
+            die("missing Neovim issue for log path")
+        return NVIM_LOG_ROOT / self.nvim_issue
+
+    def nvim_log_paths(self) -> list[Path]:
+        log_dir = self.nvim_log_dir()
+        if not log_dir.is_dir():
+            return []
+        return sorted(path for path in log_dir.glob("*.log") if path.is_file())
+
+    def latest_nvim_log(self) -> Path:
+        logs = self.nvim_log_paths()
+        if not logs:
+            die(f"no Spark logs for Neovim issue {self.nvim_issue}")
+        return logs[-1]
+
+    def new_nvim_log_path(self) -> Path:
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        return self.nvim_log_dir() / f"{timestamp}-{self.nvim_action}.log"
+
+    def print_nvim_logs(self) -> None:
+        for path in self.nvim_log_paths():
+            print(path)
+
+    def cat_latest_nvim_log(self) -> None:
+        print(self.latest_nvim_log().read_text(), end="")
+
     def nvim_make_command(self, make_args: list[str]) -> list[str]:
         return ["nix", "shell", *NVIM_NIX_PACKAGES, "--command", *make_args]
 
@@ -359,6 +397,7 @@ class Spark:
             case ["build", issue, *make_args]:
                 self.set_nvim_issue_paths(issue)
                 self.require_nvim_local_worktree()
+                self.nvim_action = "build"
                 self.command_args = self.nvim_make_command(
                     ["make", "CMAKE_BUILD_TYPE=RelWithDebInfo", *make_args]
                 )
@@ -367,12 +406,14 @@ class Spark:
             case ["deps", issue, *make_args]:
                 self.set_nvim_issue_paths(issue)
                 self.require_nvim_local_worktree()
+                self.nvim_action = "deps"
                 self.command_args = self.nvim_make_command(["make", "deps", *make_args])
             case ["test"]:
                 die("nvim test requires an issue number")
             case ["test", issue, *test_args]:
                 self.set_nvim_issue_paths(issue)
                 self.require_nvim_local_worktree()
+                self.nvim_action = "test"
                 make_args = ["make", "functionaltest-lua"]
                 if test_args:
                     make_args.append(f"TEST_FILE={test_args[0]}")
@@ -383,11 +424,17 @@ class Spark:
             case ["run", issue, *run_args]:
                 self.set_nvim_issue_paths(issue)
                 self.require_nvim_local_worktree()
+                self.nvim_action = "run"
                 if run_args and run_args[0] == "--":
                     run_args = run_args[1:]
                 if not run_args:
                     die("nvim run requires a command")
                 self.command_args = run_args
+            case ["log"]:
+                die("nvim log requires an issue number")
+            case ["log", issue, *flags]:
+                self.set_nvim_issue_paths(issue)
+                self.apply_nvim_log_command(flags)
             case ["shell", issue]:
                 self.shell = True
                 self.set_nvim_issue_paths(issue)
@@ -406,6 +453,21 @@ class Spark:
                 die(f"unknown nvim command: {command}")
             case _:
                 die("nvim requires build, deps, test, run, shell, or clean")
+
+    def apply_nvim_log_command(self, flags: list[str]) -> None:
+        if len(flags) > 1:
+            die("nvim log takes only optional --list or --cat")
+        mode = flags[0] if flags else "path"
+        match mode:
+            case "path":
+                print(self.latest_nvim_log())
+            case "--list":
+                self.print_nvim_logs()
+            case "--cat":
+                self.cat_latest_nvim_log()
+            case _:
+                die("nvim log takes only optional --list or --cat")
+        raise SystemExit(0)
 
     def repo_root(self) -> str:
         if self.repo:
@@ -493,6 +555,13 @@ class Spark:
             text=True,
             stdout=subprocess.PIPE if capture else None,
         )
+
+    def ssh_args(self, remote_command: str, *, tty: bool = False) -> list[str]:
+        args = ["ssh"]
+        if tty:
+            args.append("-t")
+        args.extend([self.host, remote_command])
+        return args
 
     def configure_slice_command(self) -> str:
         return (
@@ -614,11 +683,10 @@ class Spark:
         if not self.include_secrets:
             _ = self.ssh(self.remote_secret_cleanup_command())
 
-    def run_remote(self, args: list[str]) -> None:
-        unit = f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+    def remote_run_command(self, args: list[str], unit: str) -> str:
         quoted_args = " ".join(quote(arg) for arg in args)
         nix_config = f"max-jobs = 1\ncores = {self.jobs}\n"
-        remote_command = "\n".join(
+        return "\n".join(
             [
                 "set -eu",
                 f"mkdir -p {quote(self.remote_root)}/locks {quote(self.remote_root)}/meta",
@@ -641,8 +709,47 @@ class Spark:
                 f'  -- bash -lc \'cd "$SPARK_REMOTE_ROOT" && exec "$@"\' spark-command {quoted_args}',
             ]
         )
+
+    def run_remote(self, args: list[str]) -> None:
+        unit = f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        remote_command = self.remote_run_command(args, unit)
         eprint(f"spark: running in {self.host}:{self.remote_dir}")
         _ = self.ssh(remote_command)
+
+    def run_remote_with_log(self, args: list[str]) -> None:
+        unit = f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        remote_command = self.remote_run_command(args, unit)
+        log_path = self.new_nvim_log_path()
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        eprint(f"spark: running in {self.host}:{self.remote_dir}")
+        with log_path.open("w") as log:
+            _ = log.write(f"issue={self.nvim_issue}\n")
+            _ = log.write(f"action={self.nvim_action}\n")
+            _ = log.write(f"local={self.repo}\n")
+            _ = log.write(f"remote={self.host}:{self.remote_dir}\n")
+            _ = log.write("command=" + " ".join(quote(arg) for arg in args) + "\n\n")
+
+            process = subprocess.Popen(
+                self.ssh_args(remote_command),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            if process.stdout is None:
+                die("failed to capture Spark command output")
+            for line in process.stdout:
+                print(line, end="")
+                _ = sys.stdout.flush()
+                _ = log.write(line)
+            returncode = process.wait()
+
+        eprint(f"spark: log: {log_path}")
+        if returncode != 0:
+            raise subprocess.CalledProcessError(
+                returncode,
+                self.ssh_args(remote_command),
+            )
 
     def clean_remote_dir(self, *, check: bool = True) -> None:
         if self.nvim_remote_dir_rel:

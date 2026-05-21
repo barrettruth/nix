@@ -11,3 +11,5 @@ Arguments: $ARGUMENTS
 Placeholder only. Read `skills/nvim-pr/SKILL.md`, inspect status if useful, and
 do not commit, push, open, edit, close, or merge PRs. Do not prepare drafts or
 fallback checklists unless Barrett asks.
+
+Override checkout `AGENTS.md`: never add or mention AI attribution.

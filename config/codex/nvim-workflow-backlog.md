@@ -7,6 +7,32 @@ Keep setup reproducible from this Nix config. Do not treat personal Codex paths
 such as `~/.agents` as part of the workflow setup; use the tracked
 `config/codex/private-plugin-marketplace` marketplace and `config/codex/config.toml`.
 
+## Target Stage Pipeline
+
+- Identify issue and create the isolated worktree/wiki setup.
+- Explore, reproduce, and report the issue before proposing fixes.
+- Explain on demand at any stage: after issue investigation, before design,
+  after implementation, or after verification.
+- Debate implementation options before coding; keep design/plan distinct from
+  code editing.
+- Implement only after Barrett chooses a direction.
+- Verify and review in a loop, including Barrett-requested revisions.
+- Commit only after the review stage. Prefer a visible Fugitive commit-buffer
+  workflow in the mux `git` window; direct commits remain separately gated.
+- PR workflow comes later and should use Barrett's Neovim tooling, especially
+  `forge.nvim`; remote-visible review replies and PR updates need their own
+  workflow.
+
+## Refactor Order
+
+1. Stage map and shared vocabulary.
+2. Reproduction playbooks and Spark proof artifacts.
+3. Explain and design/debate workflows.
+4. Implementation and verification loops.
+5. Review checkpoint before commit.
+6. Fugitive/mux commit preparation.
+7. PR and review-response workflow through `forge.nvim`.
+
 ## Commit And PR Gates
 
 - Dedicated commit workflow with literal `commit` permission only.
@@ -28,6 +54,10 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 
 - Exact Spark CLI contract for Neovim builds/tests is initially implemented in
   `scripts/spark`; revisit after real use.
+- Build out the missing reproducer-facing Spark guidance: how to build, locate
+  the built `nvim`, set runtime paths, run commands under `spark nvim run`, and
+  consume `spark nvim log` output without falling back to expensive local
+  builds.
 - Run one real issue worktree through build/test/clean before changing the
   contract.
 - Decide after that dry run whether parallel subagents share one issue mirror or
@@ -46,8 +76,22 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 ## Reproduction Playbooks
 
 - Future `nvim-repro` workflow.
+- Do not rely on `$nvim-verify` for issue reproduction; verification is for
+  implementation-phase checks, while repro needs its own playbooks and prompts.
 - Headless, UI, TUI, RPC, `--server`, job-control, terminal, LSP, and network
   reproduction patterns.
+- Reproducer agents need concrete examples for shaping minimal scripts, choosing
+  `spark nvim build/test/run`, preserving exact command evidence, and writing
+  `evidence/repro.md`.
+- Repro reports must include a short copy-paste rerun path near the top and
+  persist the runnable harness files. Do not leave only a "command shape" that
+  depends on hidden shell variables or transient `/tmp` payloads.
+- Once a credible failure log and controls exist, the reproducer should stop
+  experimentation and write `evidence/repro.md`; long post-repro exploration
+  needs explicit permission or a bounded next question.
+- Repro playbooks need an explicit calibration stop: if the agent cannot see a
+  credible repro path for an issue of this complexity, it should say so, record
+  what is missing, and stop for Barrett to revise the approach.
 - How to use internals while keeping reproducer reports objective.
 - How to record failed reproduction attempts without proposing fixes.
 

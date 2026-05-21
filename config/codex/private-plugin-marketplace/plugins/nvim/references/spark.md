@@ -31,6 +31,9 @@ spark nvim build <issue>
 spark nvim deps <issue>
 spark nvim test <issue> [test-file]
 spark nvim run <issue> -- <command> [args...]
+spark nvim log <issue>
+spark nvim log <issue> --list
+spark nvim log <issue> --cat
 spark nvim shell <issue>
 spark nvim clean <issue>
 ```
@@ -49,6 +52,12 @@ the task is specifically about Spark resource tuning.
 Report Spark connection, sync, build, and test failures separately. If Spark
 fails, stop and report; do not start an expensive local build.
 
-Cleanup never runs automatically. `spark nvim clean <issue>` removes only the
-Spark mirror for that issue after showing the exact path, disk usage, and
-prompting `y/N`.
+`spark nvim build`, `deps`, `test`, and `run` write local logs under
+`~/.local/state/spark/nvim/<issue>/` and print the log path. Use
+`spark nvim log <issue>` for the latest log path, `--list` for all logs, and
+`--cat` for the latest log contents. `spark ping` is a preflight and does not
+need a durable log on success.
+
+Cleanup never runs automatically. Use `$nvim-clean <issue>` for full issue
+cleanup. Use `spark nvim clean <issue>` only when Barrett asks to remove just
+the Spark mirror.

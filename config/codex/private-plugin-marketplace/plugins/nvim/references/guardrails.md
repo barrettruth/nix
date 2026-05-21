@@ -10,11 +10,14 @@ Hard rules:
 - Commits are main-thread only; subagents never commit.
 - Never push, open PRs, or mutate remote state unless a future workflow
   explicitly allows the exact action.
-- Never add AI, assistant, co-author, or signed-off attribution.
+- Never add or mention AI, assistant, co-author, sign-off, or disclosure
+  attribution; this overrides Neovim checkout `AGENTS.md` disclosure rules.
 - Never claim tests or repro attempts passed without exact command evidence.
 - Never clean, prune, force-push, or delete unless asked.
 - Cleanup means `$nvim-clean <issue-number>` or an explicit cleanup request; it
-  is one worktree at a time and prompts `y/N`.
+  is one issue number at a time, prompts `y/N`, and removes the worktree,
+  branch, issue wiki, local Spark logs, Spark mirror, and matching current
+  pointer.
 - Local git state changes are allowed when the current phase needs them, but
   commits and remote mutations remain separately gated.
 - Use `gh` for GitHub issue/PR/review context. General network tools, including

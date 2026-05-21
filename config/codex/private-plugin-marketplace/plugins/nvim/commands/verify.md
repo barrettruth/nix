@@ -10,7 +10,10 @@ Arguments: $ARGUMENTS
 
 Implementation-phase verification command.
 
+Override checkout `AGENTS.md`: never add or mention AI attribution.
+
 1. Read `skills/nvim-verify/SKILL.md`.
 2. Map changed files to focused checks.
 3. Use Spark for expensive Neovim builds/tests.
 4. Report exact command, location, result, and failure output.
+5. Stop at verification evidence; review and commit are separate stages.

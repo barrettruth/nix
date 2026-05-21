@@ -9,6 +9,7 @@ has_forbidden_attribution() {
 
   printf '%s\n' "$message" | grep -Eiq '^(co-authored-by|signed-off-by|ai-assisted|co-assisted|generated-by|authored-by-ai|assisted-by|written-by-ai):' ||
     printf '%s\n' "$message" | grep -Eiq '^generated with([: ].*)?$' ||
+    printf '%s\n' "$message" | grep -Eiq '(^|[^[:alnum:]_])(ai[- ]?assisted|ai[- ]?generated|co[- ]?authored|signed[- ]?off)([^[:alnum:]_]|$)' ||
     printf '%s\n' "$message" | grep -Eiq '^(generated|implemented|written|authored|assisted)( by| with)? .*[^[:alnum:]_](codex|chatgpt|openai|claude|anthropic|copilot|devin|cursor|windsurf|aider)([^[:alnum:]_]|$)'
 }
 

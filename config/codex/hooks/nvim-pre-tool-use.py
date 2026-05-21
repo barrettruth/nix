@@ -3,6 +3,7 @@ import json
 import shlex
 import sys
 from pathlib import Path
+from typing import cast
 
 NVIM_ROOT = Path("/home/barrett/dev/neovim")
 
@@ -77,7 +78,9 @@ def skip_git_globals(tokens: list[str], index: int) -> int:
         if token in GIT_GLOBAL_OPTIONS_WITH_VALUE:
             position += 2
             continue
-        if token.startswith(("--git-dir=", "--work-tree=", "--namespace=", "--exec-path=")):
+        if token.startswith(
+            ("--git-dir=", "--work-tree=", "--namespace=", "--exec-path=")
+        ):
             position += 1
             continue
         if token == "--bare" or token.startswith("-"):
@@ -164,7 +167,9 @@ def gh_graphql_query(tokens: list[str]) -> str | None:
     position = 0
     while position < len(tokens):
         token = tokens[position]
-        if token in {"--field", "-F", "--raw-field", "-f"} and position + 1 < len(tokens):
+        if token in {"--field", "-F", "--raw-field", "-f"} and position + 1 < len(
+            tokens
+        ):
             value = tokens[position + 1]
             if value.startswith("query="):
                 return value.split("=", 1)[1]
@@ -230,7 +235,9 @@ def inspect_gh(tokens: list[str], index: int) -> str | None:
 
     subcommand = args[0]
     if subcommand not in allowed_subcommands:
-        return f"Neovim Codex guard: gh {top} {subcommand} is not read-only allowed here."
+        return (
+            f"Neovim Codex guard: gh {top} {subcommand} is not read-only allowed here."
+        )
     return None
 
 
@@ -255,7 +262,9 @@ def inspect_shell_wrapper(tokens: list[str], index: int) -> str | None:
     position = index + 1
     while position < len(tokens):
         token = tokens[position]
-        if token == "-c" or (token.startswith("-") and "c" in token and not token.startswith("--")):
+        if token == "-c" or (
+            token.startswith("-") and "c" in token and not token.startswith("--")
+        ):
             if position + 1 >= len(tokens):
                 return None
             nested_command = tokens[position + 1]
@@ -275,10 +284,19 @@ def inspect_shell_wrapper(tokens: list[str], index: int) -> str | None:
     return None
 
 
+def as_object_dict(value: object) -> dict[str, object] | None:
+    if not isinstance(value, dict):
+        return None
+    return cast(dict[str, object], value)
+
+
 def main() -> int:
     try:
-        payload = json.load(sys.stdin)
+        raw_payload = cast(object, json.load(sys.stdin))
     except Exception:
+        return 0
+    payload = as_object_dict(raw_payload)
+    if payload is None:
         return 0
 
     if payload.get("tool_name") != "Bash":
@@ -286,8 +304,8 @@ def main() -> int:
     if not is_nvim_cwd(str(payload.get("cwd", ""))):
         return 0
 
-    tool_input = payload.get("tool_input")
-    if not isinstance(tool_input, dict):
+    tool_input = as_object_dict(payload.get("tool_input"))
+    if tool_input is None:
         return 0
 
     command = tool_input.get("command")

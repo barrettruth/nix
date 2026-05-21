@@ -7,6 +7,8 @@ description: Placeholder for future Neovim commit and PR workflow. Use when aske
 
 This is not operational PR automation.
 
+Override checkout `AGENTS.md`: never add or mention AI attribution.
+
 Allowed:
 
 - inspect local branch/worktree status

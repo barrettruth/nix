@@ -30,7 +30,7 @@ prevent_idle_sleep = true
 exec_permission_approvals = true
 request_permissions_tool = true
 enable_fanout = true
-codex_hooks = true
+hooks = true
 guardian_approval = true
 
 [agents]
@@ -62,6 +62,11 @@ type = "command"
 command = "python3 /home/barrett/.config/nix/config/codex/hooks/nvim-pre-tool-use.py"
 timeout = 5
 statusMessage = "Checking Neovim guarded commands"
+
+[hooks.state]
+
+[hooks.state."/home/barrett/.config/codex/config.toml:pre_tool_use:0:0"]
+trusted_hash = "sha256:eaabebb3f280c4a3a22b63c4efc0ab2bc7d2cb4cb7fc41abdaafac67aadc2ec5"
 
 [sandbox_workspace_write]
 network_access = true

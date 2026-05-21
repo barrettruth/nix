@@ -5,6 +5,7 @@ msg_file="$1"
 
 if grep -Eiq '^(co-authored-by|signed-off-by|ai-assisted|co-assisted|generated-by|authored-by-ai|assisted-by|written-by-ai):' "$msg_file" ||
   grep -Eiq '^generated with([: ].*)?$' "$msg_file" ||
+  grep -Eiq '(^|[^[:alnum:]_])(ai[- ]?assisted|ai[- ]?generated|co[- ]?authored|signed[- ]?off)([^[:alnum:]_]|$)' "$msg_file" ||
   grep -Eiq '^(generated|implemented|written|authored|assisted)( by| with)? .*[^[:alnum:]_](codex|chatgpt|openai|claude|anthropic|copilot|devin|cursor|windsurf|aider)([^[:alnum:]_]|$)' "$msg_file"; then
   cat >&2 <<'EOF'
 Commit blocked: do not add AI, assistant, co-author, or signed-off attribution.

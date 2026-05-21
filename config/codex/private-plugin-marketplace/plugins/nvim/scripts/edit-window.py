@@ -599,6 +599,16 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
         "\n".join(
             [
                 f"local payload = vim.json.decode({vim_lua_string(json.dumps(payload))})",
+                "local function reset_editor_state()",
+                "  pcall(vim.fn.setreg, '/', '')",
+                "  pcall(vim.fn.histdel, 'search')",
+                "  pcall(function() vim.v.errmsg = '' end)",
+                "  pcall(vim.cmd, 'silent! nohlsearch')",
+                "  pcall(vim.cmd, 'silent! messages clear')",
+                "  pcall(function() vim.v.errmsg = '' end)",
+                "  pcall(vim.api.nvim_echo, {{ ' ', 'Normal' }}, false, {})",
+                "end",
+                "reset_editor_state()",
                 "local items = payload.items or {}",
                 "vim.fn.setqflist({}, 'r', { title = payload.title, items = items })",
                 "if #items > 1 then vim.cmd('botright copen') else vim.cmd('cclose') end",
@@ -611,7 +621,8 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
                 "  vim.cmd('edit ' .. vim.fn.fnameescape(files[1]))",
                 "  for i = 2, #files do vim.cmd('badd ' .. vim.fn.fnameescape(files[i])) end",
                 "end",
-                "vim.cmd('redraw')",
+                "reset_editor_state()",
+                "vim.cmd('redraw!')",
             ]
         )
         + "\n",

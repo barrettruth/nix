@@ -1,4 +1,4 @@
 interface:
   display_name: "Neovim Clean"
-  short_description: "Manually remove one Neovim issue worktree."
-  default_prompt: "Clean up Neovim issue worktree 12345."
+  short_description: "Manually remove one Neovim issue checkout and artifacts."
+  default_prompt: "Clean up Neovim issue 12345."
