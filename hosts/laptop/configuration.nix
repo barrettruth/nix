@@ -221,7 +221,7 @@ in
   ];
   fonts.fontconfig.defaultFonts = {
     sansSerif = [ "SF Pro Display" ];
-    monospace = [ "Berkeley Mono" ];
+    monospace = [ "Iosevka Term" ];
     serif = [ "Times New Roman" ];
   };
 

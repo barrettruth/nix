@@ -5,6 +5,7 @@
     let
       commonPackages = [
         pkgs.just
+        pkgs.basedpyright
         pkgs.deadnix
         pkgs.lua-language-server
         pkgs.black

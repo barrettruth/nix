@@ -20,7 +20,7 @@ let
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
-    pkgs.atkinson-hyperlegible-mono
+    (pkgs.iosevka-bin.override { variant = "SGr-IosevkaTerm"; })
   ];
 
   users.users.${hostConfig.username}.packages =

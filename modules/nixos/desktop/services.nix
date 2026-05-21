@@ -128,7 +128,7 @@ lib.mkMerge [
         ExecStart = pkgs.writeShellScript "dconf-setup" ''
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/font-name "'SF Pro Display 11'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/document-font-name "'SF Pro Display 11'"
-          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/monospace-font-name "'Berkeley Mono 11'"
+          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/monospace-font-name "'Iosevka Term 11'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/system/location/enabled true
         '';
       };
