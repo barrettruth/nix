@@ -64,7 +64,8 @@
       "userInput": "Use the local Codex plugin \"nvim\" if it helps. Plan next steps for Neovim issue #12345 from the existing issue wiki. Do not edit code, verify, commit, push, or open a PR.",
       "successChecklist": [
         "Reads index.md first and follows only needed evidence links.",
-        "Produces exactly three evidence-backed outcomes.",
+        "Writes evidence/plan.md and keeps index.md brief.",
+        "Produces a realistic evidence-backed outcome set, usually two to four.",
         "Includes one recommendation.",
         "Uses outcome types such as fix, alternate-fix, no-change, clarify, more-repro, or test-or-docs.",
         "Does not edit source, run implementation, commit, push, comment, or open a PR."

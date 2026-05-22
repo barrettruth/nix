@@ -20,7 +20,7 @@ let
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
-    pkgs.hack-font
+    pkgs.iosevka
   ];
 
   users.users.${hostConfig.username}.packages =

@@ -14,7 +14,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
   separate stage after intake.
 - Explain on demand at any stage: after issue investigation, before planning,
   after implementation, or after verification.
-- Plan exactly three outcome options before implementation, then recommend one.
+- Plan realistic outcome options before implementation, then recommend one.
 - Implement only after Barrett chooses an outcome.
 - Verify and review in a loop, including Barrett-requested revisions.
 - Commit only after the review stage. Prefer a visible Fugitive commit-buffer

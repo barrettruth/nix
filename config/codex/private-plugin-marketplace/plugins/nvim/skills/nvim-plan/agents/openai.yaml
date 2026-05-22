@@ -1,4 +1,4 @@
 interface:
   display_name: "Neovim Plan"
-  short_description: "Choose three evidence-backed outcomes before implementation."
+  short_description: "Choose realistic evidence-backed outcomes before implementation."
   default_prompt: "Plan next steps for Neovim issue 12345."

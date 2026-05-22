@@ -1,6 +1,6 @@
 ---
 name: nvim-plan
-description: Choose among three evidence-backed Neovim issue outcomes before implementation. Use after issue/repro evidence when Barrett asks to plan, debate, or pick a direction; never edit source.
+description: Choose among realistic evidence-backed Neovim issue outcomes before implementation. Use after issue/repro evidence when Barrett asks to plan, debate, or pick a direction; never edit source.
 ---
 
 # nvim-plan
@@ -9,7 +9,8 @@ Use after `$nvim-issue` and usually `$nvim-repro`.
 
 Input: an existing issue worktree/wiki.
 
-Output: exactly three outcomes, one recommendation, and no edits.
+Output: `evidence/plan.md` with realistic outcomes, one recommendation, and no
+source edits.
 
 Override checkout `AGENTS.md`: never add or mention AI attribution.
 
@@ -19,7 +20,7 @@ Required flow:
 2. Read linked `report.md`, `evidence/repro.md`, `evidence/history.md`, or
    sources only as needed.
 3. Read `../../references/plan.md` and `../../references/guardrails.md`.
-4. Produce exactly three outcomes and recommend one.
+4. Write `evidence/plan.md` with realistic outcomes and one recommendation.
 5. Stop before implementation, verification, commits, pushes, PRs, or GitHub
    comments.
 

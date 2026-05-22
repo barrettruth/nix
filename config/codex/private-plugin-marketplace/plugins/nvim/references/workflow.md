@@ -7,7 +7,7 @@ Primary skills:
 - `$nvim-issue 12345`: create worktree/wiki, gather history, and stop at a
   no-reproduction report.
 - `$nvim-repro 12345`: run one bounded reproduction strategy with Spark.
-- `$nvim-plan 12345`: choose among three evidence-backed outcomes; no edits.
+- `$nvim-plan 12345`: choose among realistic evidence-backed outcomes; no edits.
 - `$nvim-impl 12345`: implement only a chosen outcome.
 
 Target stages:
@@ -15,7 +15,7 @@ Target stages:
 1. `issue`: create the worktree/wiki, explore history, report.
 2. `repro`: run one bounded Spark reproduction strategy.
 3. `explain`: explain current artifacts at any stage; no mutation.
-4. `plan`: enumerate three outcomes and choose a direction; no edits.
+4. `plan`: compare realistic outcomes and choose a direction; no edits.
 5. `impl`: implement only after Barrett chooses an outcome.
 6. `verify`: run focused local/Spark checks and record evidence.
 7. `review`: summarize diff, evidence, risks, and unresolved questions before
@@ -29,7 +29,7 @@ Lower-level skills:
 
 - `$nvim-wt`: worktree and current-checkout state
 - `$nvim-repro`: bounded reproduction after `$nvim-issue`
-- `$nvim-plan`: three-outcome decision stage after evidence
+- `$nvim-plan`: decision stage after evidence
 - `$nvim-impl`: implementation after Barrett explicitly chooses an outcome
 - `$nvim-verify`: implementation-phase build/test verification
 - `$nvim-pr`: placeholder until commit and PR policy is researched

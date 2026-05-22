@@ -17,7 +17,7 @@
   "interface": {
     "displayName": "nvim",
     "shortDescription": "Neovim issue, repro, planning, verification, and edit-window workflows",
-    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded Spark reproduction as a separate stage, choose among three outcomes before implementation, verify changes, and populate the mux edit Neovim window from natural-language file targets.",
+    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded Spark reproduction as a separate stage, choose among realistic outcomes before implementation, verify changes, and populate the mux edit Neovim window from natural-language file targets.",
     "developerName": "Barrett Ruth",
     "category": "Coding",
     "capabilities": [
@@ -30,7 +30,7 @@
     "defaultPrompt": [
       "Investigate Neovim issue #12345 without proposing fixes",
       "Reproduce Neovim issue #12345 with the configured Spark strategy",
-      "Plan three possible outcomes for Neovim issue #12345 before editing",
+      "Plan realistic outcomes for Neovim issue #12345 before editing",
       "Create a Neovim issue worktree and write the report",
       "Populate the edit window with the relevant mux command files"
     ],

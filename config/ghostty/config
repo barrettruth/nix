@@ -1,7 +1,7 @@
-font-family = Hack
-font-family-bold = Hack
-font-family-italic = Hack
-font-family-bold-italic = Hack
+font-family = Iosevka
+font-family-bold = Iosevka
+font-family-italic = Iosevka
+font-family-bold-italic = Iosevka
 font-style = Regular
 font-style-bold = Bold
 font-style-italic = Italic
