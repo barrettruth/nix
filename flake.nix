@@ -14,7 +14,7 @@
     direnv-instant.url = "github:Mic92/direnv-instant";
     codex.url = "github:sadjow/codex-cli-nix";
     delta = {
-      url = "path:/home/barrett/dev/delta";
+      url = "git+file:///home/barrett/dev/delta";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     tmux-mosaic = {

@@ -49,3 +49,13 @@ Forbidden:
 - Broad test/doc rewrites.
 - Expensive local builds/tests; hand those to `$nvim-verify`.
 - Commits, pushes, PRs, GitHub comments, or AI attribution.
+
+## `no-change`
+
+Do not implement.
+
+Use when the plan says the issue is already fixed, duplicate, invalid,
+expected, stale, outside Neovim, or otherwise should not receive a patch here.
+
+If Barrett explicitly selects `no-change`, stop with the local rationale from
+`evidence/plan.md`. Do not edit source, tests, docs, or GitHub state.
