@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neovim Impl"
+  short_description: "Implement the chosen Neovim outcome only."
+  default_prompt: "Implement the chosen Neovim issue outcome."

@@ -6,7 +6,8 @@ This reference is for GitHub/history context only.
 GitHub access is read-only unless a future PR workflow explicitly allows one
 exact remote action.
 
-Forbidden in active issue/code/verify phases: comments, reviews, replies,
+Forbidden in active issue/repro/plan/impl/verify/review phases: comments,
+reviews, replies,
 reactions, issue/PR edits, labels, assignments, subscriptions, workflow
 dispatch/reruns/cancels, auth token exposure, aliases/extensions that hide
 writes, and GraphQL mutations.

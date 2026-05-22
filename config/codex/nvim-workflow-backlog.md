@@ -12,11 +12,10 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 - Identify issue and create the isolated worktree/wiki setup.
 - Explore and report the issue before proposing fixes; reproduction is a
   separate stage after intake.
-- Explain on demand at any stage: after issue investigation, before design,
+- Explain on demand at any stage: after issue investigation, before planning,
   after implementation, or after verification.
-- Debate implementation options before coding; keep design/plan distinct from
-  code editing.
-- Implement only after Barrett chooses a direction.
+- Plan exactly three outcome options before implementation, then recommend one.
+- Implement only after Barrett chooses an outcome.
 - Verify and review in a loop, including Barrett-requested revisions.
 - Commit only after the review stage. Prefer a visible Fugitive commit-buffer
   workflow in the mux `git` window; direct commits remain separately gated.
@@ -28,7 +27,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 
 1. Stage map and shared vocabulary.
 2. Reproduction playbooks and Spark proof artifacts.
-3. Explain and design/debate workflows.
+3. Explain and plan/outcome workflows.
 4. Implementation and verification loops.
 5. Review checkpoint before commit.
 6. Fugitive/mux commit preparation.
@@ -88,7 +87,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 - Repro reports must include a short copy-paste rerun path near the top and
   persist the runnable harness files. Do not leave only a "command shape" that
   depends on hidden shell variables or transient `/tmp` payloads.
-- Once a credible failure log and controls exist, the reproducer should stop
+- Once credible failure evidence exists, the reproducer should stop
   experimentation and write `evidence/repro.md`; long post-repro exploration
   needs explicit permission or a bounded next question.
 - Repro playbooks need an explicit calibration stop: if the agent cannot see a

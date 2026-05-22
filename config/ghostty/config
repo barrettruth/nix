@@ -1,11 +1,11 @@
-font-family = Monocraft
-font-family-bold = Monocraft
-font-family-italic = Monocraft
-font-family-bold-italic = Monocraft
+font-family = Courier New
+font-family-bold = Courier New
+font-family-italic = Courier New
+font-family-bold-italic = Courier New
 font-style = Regular
 font-style-bold = Bold
 font-style-italic = Italic
-font-style-bold-italic = Bold-Italic
+font-style-bold-italic = Bold Italic
 font-synthetic-style = false
 font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Neovim Code"
-  short_description: "Make focused Neovim code changes with evidence-first guardrails."
-  default_prompt: "Implement this Neovim change from a worktree."

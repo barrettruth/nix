@@ -103,5 +103,5 @@
   --fonts-override: "SF Pro", "STIX Two Text";
   --fonts-monospace:
     "Berkeley Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace, var(--fonts-emoji);
+    Consolas, "Liberation Mono", monospace, var(--fonts-emoji);
 }

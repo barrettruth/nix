@@ -7,14 +7,16 @@ Primary skills:
 - `$nvim-issue 12345`: create worktree/wiki, gather history, and stop at a
   no-reproduction report.
 - `$nvim-repro 12345`: run one bounded reproduction strategy with Spark.
+- `$nvim-plan 12345`: choose among three evidence-backed outcomes; no edits.
+- `$nvim-impl 12345`: implement only a chosen outcome.
 
 Target stages:
 
 1. `issue`: create the worktree/wiki, explore history, report.
 2. `repro`: run one bounded Spark reproduction strategy.
 3. `explain`: explain current artifacts at any stage; no mutation.
-4. `design`: debate implementation options and choose a direction; no edits.
-5. `code`: implement only after Barrett asks or chooses a direction.
+4. `plan`: enumerate three outcomes and choose a direction; no edits.
+5. `impl`: implement only after Barrett chooses an outcome.
 6. `verify`: run focused local/Spark checks and record evidence.
 7. `review`: summarize diff, evidence, risks, and unresolved questions before
    commit.
@@ -27,7 +29,8 @@ Lower-level skills:
 
 - `$nvim-wt`: worktree and current-checkout state
 - `$nvim-repro`: bounded reproduction after `$nvim-issue`
-- `$nvim-code`: implementation after Barrett explicitly asks
+- `$nvim-plan`: three-outcome decision stage after evidence
+- `$nvim-impl`: implementation after Barrett explicitly chooses an outcome
 - `$nvim-verify`: implementation-phase build/test verification
 - `$nvim-pr`: placeholder until commit and PR policy is researched
 - `$nvim-clean 12345`: manual full cleanup for one issue-number checkout
@@ -35,7 +38,7 @@ Lower-level skills:
 Plugin command files may also expose `/nvim:*` slash commands when the command
 surface is available, but the skill invocation contract is the reliable one.
 
-Stage boundaries matter. Issue, explain, design, code, verify, and review do
+Stage boundaries matter. Issue, repro, explain, plan, impl, verify, and review do
 not commit or mutate remotes. Commit requires Barrett to literally say
 `commit`, and commits are main-thread only. PR/review-response work is separate
 from commit.
