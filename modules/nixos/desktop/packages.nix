@@ -45,6 +45,8 @@ in
       imagemagick
       luarocks
 
+      delta-cli
+
       rustup
       uv
       python3

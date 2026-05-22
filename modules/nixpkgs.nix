@@ -3,6 +3,9 @@ let
   overlays = [
     inputs.codex.overlays.default
     (final: prev: {
+      delta-cli = inputs.delta.packages.${final.system}.cli;
+    })
+    (final: prev: {
       tmuxPlugins = prev.tmuxPlugins // {
         mosaic = inputs.tmux-mosaic.packages.${final.system}.default;
       };

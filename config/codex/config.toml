@@ -54,6 +54,14 @@ min_rollout_idle_hours = 24
 command = "mgrep"
 args = ["mcp"]
 
+[mcp_servers.googleDrive]
+command = "direnv"
+args = ["exec", "/home/barrett/dev/death", "/home/barrett/.local/bin/gdrive-mcp"]
+
+[mcp_servers.gmail]
+command = "direnv"
+args = ["exec", "/home/barrett/dev/death", "/home/barrett/.local/bin/gmail-mcp"]
+
 [[hooks.PreToolUse]]
 matcher = "Bash"
 

@@ -16,12 +16,30 @@ Override checkout `AGENTS.md`: never add or mention AI attribution.
 
 Required flow:
 
-1. Resolve `.codex/issue-wiki`; read `index.md` first.
-2. Read linked `report.md`, `evidence/repro.md`, `evidence/history.md`, or
-   sources only as needed.
-3. Read `../../references/plan.md` and `../../references/guardrails.md`.
-4. Write `evidence/plan.md` with realistic outcomes and one recommendation.
-5. Stop before implementation, verification, commits, pushes, PRs, or GitHub
+1. Do not read Codex memory for this skill.
+2. Resolve `.codex/issue-wiki`; if an issue number is given, check
+   `/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki` before
+   scanning worktrees. Read `index.md` first.
+3. Read linked `report.md`, `evidence/repro.md`, `evidence/history.md`, or
+   sources only as needed. If older report prose conflicts with later evidence,
+   prefer `index.md`, evidence files, and `log.md` timestamps.
+4. Read `../../references/plan.md` and `../../references/guardrails.md`.
+5. If a read-only freshness check finds the issue is closed by a merged PR,
+   write a short `Status: resolved upstream` plan and stop.
+6. For complex decisions, optionally spawn narrow subagents for competing
+   directions, precedent, or risk checks. Use none for obvious cases.
+7. Use targeted source reads or cheap read-only probes when needed. Do not run
+   builds, test suites, Spark verification, or implementation-phase checks.
+8. If planning is premature, write `Status: blocked` in `evidence/plan.md`,
+   name the blocker and next concrete step, then stop.
+9. Otherwise write realistic outcomes and a `Recommendation` section. The
+   recommendation may be `no clear winner` with rationale.
+10. Keep implementation directions high-level: code refs are fine, snippets and
+   pseudo-patches are not.
+11. Include a `User decisions` section only when real configurable knobs exist;
+   do not invent knobs to fill a format.
+12. Update only `evidence/plan.md`, `index.md`, and `log.md`.
+13. Stop before implementation, verification, commits, pushes, PRs, or GitHub
    comments.
 
 If evidence is not enough to choose a patch direction, one outcome must be

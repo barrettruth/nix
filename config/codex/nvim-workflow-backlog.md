@@ -98,10 +98,10 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 
 ## Context And Speed
 
-- Research `codegraph` only after one or two real issue reports show concrete
-  token/context pain.
-- Compare other context-reduction tools before adopting one, and keep any tool
-  read-only until it proves useful.
+- Evaluate codebase indexing or context-reduction approaches only after one or
+  two real issue reports show concrete token/context pain.
+- Compare candidates before adopting one, and keep any tool read-only until it
+  proves useful.
 - Decide how generated code maps link into the issue wiki without bloating
   `index.md`.
 - Post-optimize agent speed after the core workflow and guardrails work.

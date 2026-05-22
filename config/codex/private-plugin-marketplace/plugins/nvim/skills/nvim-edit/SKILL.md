@@ -13,6 +13,9 @@ Communication:
   narrate resolver steps, or announce that the helper script is being run.
 - Before opening, say only which file(s) are being opened and why, in one or two
   sentences.
+- After the helper exits successfully, stop. Do not announce verification,
+  inspect tmux state, capture the pane, retry, or reopen the window unless
+  Barrett explicitly reports that it failed or asks for verification.
 - Do not report intermediate failed candidate searches. If a first resolver is
   too broad or wrong, discard it silently and report only the final path(s).
 
@@ -22,7 +25,7 @@ Expected behavior:
   current session's `@mux-project-path` and falls back to the current working
   directory when outside tmux.
 - Prefer explicit paths when the user gives them.
-- Treat everything after `$nvim:open` as a natural-language command for Codex to
+- Treat everything after `$nvim-edit` as a natural-language command for Codex to
   interpret before invoking the helper.
 - For natural-language targets, use normal repo investigation to decide the
   concrete file path(s): `rg --files`, `rg` content searches, Git status, path
@@ -47,6 +50,10 @@ Rules:
 - Do not edit files, run tests, commit, push, open PRs, or mutate remotes.
 - Do not kill or restart an existing Neovim instance implicitly.
 - Do not send raw keys into a busy non-Neovim `edit` window. Report the blocker.
+- Treat a zero exit from `edit-window.py` as success. Do not perform post-open
+  tmux/window/process checks in normal navigation requests; those checks are
+  only for nonzero helper exits, explicit dry-run/verification requests, or
+  when Barrett says the visible editor state is wrong.
 - Do not pass unresolved natural-language text to the helper. Resolve the
   target first, then call the helper with concrete path(s).
 - Do not split trivial resolution into multiple visible tool calls. Compose the
