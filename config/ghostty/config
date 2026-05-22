@@ -1,11 +1,15 @@
-font-family = PxPlus IBM VGA 8x16
-font-family-bold = PxPlus IBM VGA 8x16
-font-family-italic = PxPlus IBM VGA 8x16
-font-family-bold-italic = PxPlus IBM VGA 8x16
-font-synthetic-style = bold,italic,bold-italic
+font-family = Monocraft
+font-family-bold = Monocraft
+font-family-italic = Monocraft
+font-family-bold-italic = Monocraft
+font-style = Regular
+font-style-bold = Bold
+font-style-italic = Italic
+font-style-bold-italic = Bold-Italic
+font-synthetic-style = false
 font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt
-font-size = 20
+font-size = 24
 theme = dark:midnight,light:daylight
 cursor-style-blink = false
 shell-integration-features = no-cursor

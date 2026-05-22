@@ -1,7 +1,7 @@
 @import url("themes/theme.css");
 
 * {
-  font-family: "Berkeley Mono", "JetBrainsMono Nerd Font", monospace;
+  font-family: "Berkeley Mono", monospace;
   font-size: 14px;
   border: none;
   border-radius: 0;

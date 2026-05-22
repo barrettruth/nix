@@ -20,7 +20,7 @@ let
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
-    pkgs.ultimate-oldschool-pc-font-pack
+    pkgs.monocraft
   ];
 
   users.users.${hostConfig.username}.packages =
@@ -150,7 +150,6 @@ in
       cinny-desktop
       element-desktop
       xdg-desktop-portal-gtk
-      nerd-fonts.jetbrains-mono
       papirus-icon-theme
       apple-cursor
       libnotify
