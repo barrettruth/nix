@@ -24,10 +24,12 @@ Required flow:
    sources only as needed. If older report prose conflicts with later evidence,
    prefer `index.md`, evidence files, and `log.md` timestamps.
 4. Read `../../references/plan.md` and `../../references/guardrails.md`.
-5. If a read-only freshness check finds the issue is closed by a merged PR,
-   write a short `Status: resolved upstream` plan and stop.
+5. Run one bounded read-only freshness check for current GitHub issue state. If
+   it finds the issue is closed by a merged PR, write a short
+   `Status: resolved upstream` plan and stop.
 6. For complex decisions, optionally spawn narrow subagents for competing
-   directions, precedent, or risk checks. Use none for obvious cases.
+   directions, precedent, or risk checks only after freshness and blocked-status
+   checks do not stop the workflow. Use none for obvious cases.
 7. Use targeted source reads or cheap read-only probes when needed. Do not run
    builds, test suites, Spark verification, or implementation-phase checks.
 8. If planning is premature, write `Status: blocked` in `evidence/plan.md`,
@@ -39,8 +41,8 @@ Required flow:
 11. Include a `User decisions` section only when real configurable knobs exist;
    do not invent knobs to fill a format.
 12. Update only `evidence/plan.md`, `index.md`, and `log.md`.
-13. Stop before implementation, verification, commits, pushes, PRs, or GitHub
-   comments.
+13. Stop before implementation, verification, commits, pushes, PRs, or any
+   GitHub mutation.
 
 If evidence is not enough to choose a patch direction, one outcome must be
 `more-repro` or `clarify`; do not invent an implementation plan.

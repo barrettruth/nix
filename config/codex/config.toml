@@ -71,10 +71,19 @@ command = "python3 /home/barrett/.config/nix/config/codex/hooks/nvim-pre-tool-us
 timeout = 5
 statusMessage = "Checking Neovim guarded commands"
 
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 /home/barrett/.config/nix/config/codex/hooks/google-workspace-pre-tool-use.py"
+timeout = 5
+statusMessage = "Checking Google Workspace guarded commands"
+
 [hooks.state]
 
 [hooks.state."/home/barrett/.config/codex/config.toml:pre_tool_use:0:0"]
 trusted_hash = "sha256:eaabebb3f280c4a3a22b63c4efc0ab2bc7d2cb4cb7fc41abdaafac67aadc2ec5"
+
+[hooks.state."/home/barrett/.config/codex/config.toml:pre_tool_use:0:1"]
+trusted_hash = "sha256:ff38bbd36bac7cdd1e7cf27594829349d901a1210e17ebe9a993b2db2a4e19ee"
 
 [sandbox_workspace_write]
 network_access = true

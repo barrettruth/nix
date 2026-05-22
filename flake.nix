@@ -13,6 +13,10 @@
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     direnv-instant.url = "github:Mic92/direnv-instant";
     codex.url = "github:sadjow/codex-cli-nix";
+    googleworkspace-cli = {
+      url = "github:googleworkspace/cli/a3768d0e82ad83cca2da97724e46bea4ff0e6dbd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     delta = {
       url = "git+file:///home/barrett/dev/delta";
       inputs.nixpkgs.follows = "nixpkgs";

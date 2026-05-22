@@ -11,6 +11,9 @@ let
   ];
 
   codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [
+    pkgs.google-cloud-sdk
+    pkgs.google-workspace-cli
+    pkgs.google-workspace-guard
     pkgs.mgrep
   ];
 

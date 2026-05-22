@@ -69,5 +69,8 @@ in
 
   environment.extraInit = ''
     export PATH="${repo}/scripts:${homeDirectory}/.local/bin:${XDG_DATA_HOME}/cargo/bin:${XDG_DATA_HOME}/go/bin:${XDG_DATA_HOME}/pnpm:$PATH"
+    if [ -z "''${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json" ]; then
+      export GOOGLE_APPLICATION_CREDENTIALS="${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json"
+    fi
   '';
 }

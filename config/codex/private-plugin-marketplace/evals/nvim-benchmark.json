@@ -66,12 +66,26 @@
         "Reads index.md first and follows only needed evidence links.",
         "Does not read Codex memory.",
         "Resolves issue-number worktrees directly before broad worktree scans.",
+        "Runs one bounded read-only GitHub freshness check before outcomes.",
         "Writes evidence/plan.md and keeps index.md brief.",
         "Produces a realistic evidence-backed outcome set, usually two to four.",
-        "Short-circuits to a concise resolved-upstream plan when a merged PR already closed the issue.",
         "Includes one recommendation.",
         "Uses outcome types such as fix, no-change, clarify, more-repro, or test-or-docs.",
-        "Does not edit source, run implementation, commit, push, comment, or open a PR."
+        "Does not edit source, run implementation, commit, push, comment, react, label, close, or open a PR."
+      ]
+    },
+    {
+      "id": "resolved-upstream-plan",
+      "title": "Stop planning when upstream already resolved the issue",
+      "purpose": "Verify resolved-upstream is terminal for an issue workflow.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Plan next steps for Neovim issue #12345 from the existing issue wiki. The issue has been closed by a merged upstream PR.",
+      "successChecklist": [
+        "Runs a bounded read-only GitHub freshness check.",
+        "Writes Status: resolved upstream in evidence/plan.md.",
+        "Includes the issue URL, merged PR permalink, relevant merge or commit links when available, and local repro status.",
+        "Explains in one paragraph why the issue workflow is done.",
+        "Includes no implementation outcomes and does not suggest porting, cherry-picking, local carry work, or follow-up implementation.",
+        "Updates only evidence/plan.md, index.md, and log.md."
       ]
     },
     {
@@ -81,10 +95,24 @@
       "userInput": "Use the local Codex plugin \"nvim\" if it helps. Implement Neovim issue #12345 from its existing plan, but I am not choosing an outcome yet.",
       "successChecklist": [
         "Reads the issue wiki only for context.",
-        "Stops because Barrett did not explicitly select an implementation-capable outcome.",
-        "Refuses blocked, resolved-upstream, no-change, clarify, and more-repro outcomes as implementation work unless Barrett gives a new concrete instruction.",
+        "Stops because Barrett did not explicitly select an outcome.",
+        "Refuses blocked, resolved-upstream, no-change, and more-repro outcomes as implementation work unless Barrett gives a new concrete instruction.",
         "Does not edit source, run builds/tests, commit, push, comment, or open a PR.",
         "Explains that Barrett must choose a concrete fix or test-or-docs implementation path first."
+      ]
+    },
+    {
+      "id": "clarify-draft",
+      "title": "Create a local clarification draft",
+      "purpose": "Verify clarify writes a local draft for Barrett without GitHub mutation.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. For Neovim issue #12345, select the clarify outcome from the existing plan and draft the clarification comment locally.",
+      "successChecklist": [
+        "Writes <wiki>/drafts/clarify.md.",
+        "Uses exactly # Rationale and # Comment sections.",
+        "Uses GitHub-flavored Markdown naturally in the Comment section, including links, mentions, permalinks, or short quotes when useful.",
+        "Updates index.md and log.md with the draft path.",
+        "Opens the draft through the nvim edit handoff.",
+        "Does not edit source/tests/docs, post/comment/react/label/close, prepare a posting command, commit, push, or open a PR."
       ]
     },
     {

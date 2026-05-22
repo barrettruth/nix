@@ -11,6 +11,10 @@ If an issue number is provided, resolve the worktree directly at
 `/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki`; do not scan all
 worktrees unless that path is missing.
 
+Before enumerating outcomes, run one bounded read-only freshness check for the
+issue's current GitHub state. Use `gh issue view` and, if needed, a narrow PR
+lookup for closing/merged PRs. This check must not mutate GitHub.
+
 Outcome types:
 
 - `fix`: implement one concrete source change.
@@ -31,15 +35,25 @@ viable paths.
 If planning is premature, write `Status: blocked` in `evidence/plan.md` and
 stop without outcomes. Name the blocker and the next concrete step, such as
 rerunning `$nvim-repro`, gathering missing GitHub context, or asking Barrett for
-a user decision.
+a user decision. Include relevant local paths or GitHub links and a short
+explanation of why planning cannot proceed.
 
 If a read-only freshness check finds the issue is already closed by a merged PR,
-write a short `Status: resolved upstream` plan and stop. Include the merged PR,
-the local repro status, and at most one optional local-carry outcome. Do not
-promote superseded historical alternatives into full outcomes.
+write a short `Status: resolved upstream` plan and stop. Include the issue URL,
+merged PR permalink, relevant merge/commit links when available, local repro
+status, and a one-paragraph explanation of why the issue workflow is done.
+Include no implementation outcomes. Do not promote superseded historical
+alternatives into full outcomes.
+
+Otherwise, write `Status: planned`. This means planning completed; it does not
+grant implementation permission. `$nvim-impl` still requires Barrett to
+explicitly choose an implementation-capable outcome.
 
 Each outcome should state evidence, tradeoff, and next verification step in
-2-4 bullets. Do not edit source, commit, push, open PRs, or post comments.
+2-4 bullets. Do not edit source, commit, push, open PRs, or mutate GitHub.
+GitHub mutation includes comments, reviews, replies, reactions, labels,
+assignments, closing/reopening issues or PRs, workflow dispatch/reruns, and
+GraphQL mutations.
 
 Include a `Recommendation` section. It may recommend one outcome or say
 `no clear winner`, but it must give a short rationale. If there is no clear
@@ -51,9 +65,11 @@ acceptability, or verification scope. There is no quota: many issues have none;
 some feature work may have several.
 
 For complex plans, the coordinator may spawn narrow subagents for competing
-directions, precedent, or risk checks. Use none for obvious cases. The
-coordinator owns `evidence/plan.md`; subagents return concise evidence and do
-not write wiki files.
+directions, precedent, or risk checks only after freshness and
+premature-planning checks do not stop the workflow. Use none for obvious,
+blocked, no-change, or resolved-upstream cases. The coordinator owns
+`evidence/plan.md`; subagents return concise evidence and do not write wiki
+files.
 
 Allowed during planning: targeted source reads, `rg`, `git show/log/blame`,
 small read-only scripts, and cheap probes that do not modify the worktree.
