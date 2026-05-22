@@ -17,7 +17,7 @@
   "interface": {
     "displayName": "nvim",
     "shortDescription": "Neovim issue, worktree, verification, and edit-window workflows",
-    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run parallel history and reproduction investigation, verify changes, and populate the mux edit Neovim window from natural-language file targets.",
+    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded Spark reproduction as a separate stage, verify changes, and populate the mux edit Neovim window from natural-language file targets.",
     "developerName": "Barrett Ruth",
     "category": "Coding",
     "capabilities": [
@@ -29,6 +29,7 @@
     "termsOfServiceURL": "https://git.barrettruth.com/barrettruth/nix",
     "defaultPrompt": [
       "Investigate Neovim issue #12345 without proposing fixes",
+      "Reproduce Neovim issue #12345 with the configured Spark strategy",
       "Create a Neovim issue worktree and write the report",
       "Populate the edit window with the relevant mux command files"
     ],

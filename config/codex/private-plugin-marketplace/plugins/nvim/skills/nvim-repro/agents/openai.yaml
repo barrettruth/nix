@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neovim Repro"
+  short_description: "Run one bounded Neovim reproduction strategy with Spark; no Codex memory."
+  default_prompt: "Reproduce Neovim issue 12345 with the configured strategy."

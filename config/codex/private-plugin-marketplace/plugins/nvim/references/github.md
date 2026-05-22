@@ -1,7 +1,7 @@
 # GitHub Data Policy
 
 Use `gh` and `gh api` for GitHub issue, PR, review, and timeline context.
-General network tools are allowed for non-GitHub docs, builds, and repros.
+This reference is for GitHub/history context only.
 
 GitHub access is read-only unless a future PR workflow explicitly allows one
 exact remote action.
@@ -26,6 +26,14 @@ History evidence policy:
 - Prefer the setup `issue.json` and `issue.md` before fetching more.
 - Fetch direct references from the issue first: named commits, PRs, issues, and
   stack source files.
+- Use controlled fanout by default. The parent history role must spawn up to
+  three narrow child agents immediately unless the issue lacks that lane:
+  direct commit/PR context, local source-path context, and related/excluded
+  GitHub searches. The parent owns `evidence/history.md`, `sources.md`, and any
+  saved raw source decisions.
+- Child agents return concise evidence summaries and exact commands/URLs; they
+  do not write final wiki files unless the parent assigns a specific raw-source
+  path.
 - Read broadly when the issue needs it, but save raw output only when it is
   cited in `evidence/history.md` as key evidence, relevant secondary context, a
   checked-and-excluded plausible lead, or an unresolved lead.

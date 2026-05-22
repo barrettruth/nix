@@ -10,7 +10,8 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 ## Target Stage Pipeline
 
 - Identify issue and create the isolated worktree/wiki setup.
-- Explore, reproduce, and report the issue before proposing fixes.
+- Explore and report the issue before proposing fixes; reproduction is a
+  separate stage after intake.
 - Explain on demand at any stage: after issue investigation, before design,
   after implementation, or after verification.
 - Debate implementation options before coding; keep design/plan distinct from
@@ -75,7 +76,8 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 
 ## Reproduction Playbooks
 
-- Future `nvim-repro` workflow.
+- Expand the initial `$nvim-repro` workflow beyond the current `script`
+  strategy.
 - Do not rely on `$nvim-verify` for issue reproduction; verification is for
   implementation-phase checks, while repro needs its own playbooks and prompts.
 - Headless, UI, TUI, RPC, `--server`, job-control, terminal, LSP, and network

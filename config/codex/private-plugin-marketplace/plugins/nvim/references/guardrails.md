@@ -31,10 +31,12 @@ comments, reviews, replies, reactions, issue/PR edits, labels, assignments,
 subscriptions, workflow dispatch/reruns, and agent-task tools that contact
 others.
 
-Subagents may investigate, reproduce, build, test, review, and report. If a
-future implementation phase gives subagents edit authority, it must be explicit
-and scoped; it still does not grant commit, push, cleanup, PR, or social remote
-authority.
+Subagents may only do what the active skill/stage permits. `$nvim-issue`
+subagents are history/integrator only; history child agents are allowed for
+controlled GitHub/source fanout. `$nvim-repro` may reproduce/build/test through
+its selected strategy. If a future implementation phase gives subagents edit
+authority, it must be explicit and scoped; it still does not grant commit, push,
+cleanup, PR, or social remote authority.
 
 When a gate blocks an action, stop. Do not prepare drafts, checklists, command
 snippets, fallback files, or partial substitutes unless Barrett asks.

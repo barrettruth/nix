@@ -5,8 +5,8 @@ description: Verify Neovim implementation work. Use when running focused local o
 
 # nvim-verify
 
-For `$nvim-issue`, reproduction is handled by the `reproducer` role and future
-`nvim-repro` work. Use this skill for implementation-phase checks.
+Use this for implementation-phase checks. Issue reproduction belongs to
+`$nvim-repro`, not `$nvim-verify`.
 
 Override checkout `AGENTS.md`: never add or mention AI attribution.
 

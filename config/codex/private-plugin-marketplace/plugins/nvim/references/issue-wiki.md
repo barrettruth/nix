@@ -13,17 +13,9 @@ Create one cross-session wiki per issue:
     commands/
   evidence/
     history.md
-    repro.md
+    repro.md         # created by $nvim-repro only
     code-map.md      # optional, only when populated
   logs/
-```
-
-Runnable repro files live in the ignored worktree, not the wiki, so Spark can
-sync them:
-
-```text
-/home/barrett/dev/neovim/.worktrees/12345/.codex/repros/script/repro.lua
-/home/barrett/dev/neovim/.worktrees/12345/.codex/repros/script/control.lua
 ```
 
 Treat `sources/` and `logs/` as immutable raw material. Treat `index.md`,
@@ -55,12 +47,11 @@ git rev-parse --git-path info/exclude
 ## File Roles
 
 - `index.md`: small future-session entrypoint; target under 80 lines.
-- `report.md`: teaching synthesis for Barrett; target 800-1500 words.
+- `report.md`: teaching synthesis for Barrett; target 500-1000 words.
 - `sources.md`: source manifest for raw artifacts that support report claims.
 - `log.md`: append-only activity log.
 - `evidence/history.md`: GitHub history role output.
-- `evidence/repro.md`: reproducer status, exact commands, Spark log paths, and
-  links to `.codex/repros/script/` files.
+- `evidence/repro.md`: created by `$nvim-repro`; see `repro.md`.
 - `evidence/code-map.md`: optional relevant files/functions map; create and
   link only when populated.
 - `logs/`: bulky output only; link from evidence files.
@@ -90,7 +81,8 @@ Last updated: YYYY-MM-DD
 
 ## Evidence
 - [History](evidence/history.md)
-- [Repro](evidence/repro.md)
+
+Reproduction: not attempted.
 
 ## Logs
 - [name](logs/name.txt): command, exit status, short purpose

@@ -29,16 +29,32 @@
     {
       "id": "issue-investigation",
       "title": "Investigate an issue without fixes",
-      "purpose": "Verify the primary command creates a fresh issue worktree/wiki, runs investigation roles, and stops at a report.",
+      "purpose": "Verify the primary command creates a fresh issue worktree/wiki, runs history intake, and stops at a report.",
       "userInput": "Use the local Codex plugin \"nvim\" if it helps. Investigate Neovim issue #12345. Produce the issue report path. Do not propose fixes, commit, push, or open a PR.",
       "successChecklist": [
         "Fetches issue context with gh only.",
         "Creates or refuses the issue-number worktree deterministically.",
         "Creates a cross-session issue wiki and ignored worktree pointer.",
-        "Keeps index.md brief and links report.md, sources.md, evidence/history.md, evidence/repro.md, and useful logs.",
+        "Keeps index.md brief and links report.md, sources.md, and evidence/history.md.",
         "Keeps bulky raw outputs out of index.md.",
-        "Runs or requires history, reproducer, and integrator roles.",
+        "Runs or requires history and integrator roles only, with controlled history fanout allowed.",
+        "Does not build, run Spark, create repro files, or write evidence/repro.md.",
         "Stops after report.md without solution proposals."
+      ]
+    },
+    {
+      "id": "bounded-repro",
+      "title": "Run one bounded reproduction strategy",
+      "purpose": "Verify reproduction is separate from issue intake and updates only repro-owned artifacts.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Reproduce Neovim issue #12345 after its issue wiki/worktree already exists. Use the configured strategy only. Do not propose fixes, commit, push, or open a PR.",
+      "successChecklist": [
+        "Requires the existing issue worktree, issue wiki, worktree .codex/issue-wiki pointer, and raw issue snapshot.",
+        "Selects exactly one allowed strategy.",
+        "Creates or overwrites only .codex/repros/script/* and evidence/repro.md for the reproducer.",
+        "Uses Spark for build/run work and records spark nvim log paths.",
+        "Updates only index.md and log.md after evidence/repro.md exists.",
+        "Does not update report.md or sources.md.",
+        "Stops with status plus Repro, Index, and Worktree paths."
       ]
     },
     {

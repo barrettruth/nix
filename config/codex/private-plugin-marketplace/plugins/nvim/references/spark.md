@@ -1,6 +1,6 @@
 # Spark Contract
 
-Use Spark for expensive Neovim builds/tests and parallel reproducer work. Agents
+Use Spark for expensive Neovim builds/tests and `$nvim-repro` work. Agents
 should assume Spark works and should not quietly fall back to local Neovim
 builds.
 
@@ -57,6 +57,13 @@ fails, stop and report; do not start an expensive local build.
 `spark nvim log <issue>` for the latest log path, `--list` for all logs, and
 `--cat` for the latest log contents. `spark ping` is a preflight and does not
 need a durable log on success.
+
+When running the source-built Neovim binary from its worktree, include
+`VIMRUNTIME=runtime`, for example:
+
+```sh
+spark nvim run <issue> -- env VIMRUNTIME=runtime build/bin/nvim --clean --headless -n -i NONE -l <script>
+```
 
 Cleanup never runs automatically. Use `$nvim-clean <issue>` for full issue
 cleanup. Use `spark nvim clean <issue>` only when Barrett asks to remove just

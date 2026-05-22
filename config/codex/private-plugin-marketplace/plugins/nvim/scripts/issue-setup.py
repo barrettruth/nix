@@ -257,7 +257,8 @@ Last updated: {now}
 
 ## Evidence
 - [History](evidence/history.md)
-- [Repro](evidence/repro.md)
+
+Reproduction: not attempted.
 
 ## Open Questions
 - Pending investigation.
@@ -265,7 +266,7 @@ Last updated: {now}
     )
     write_if_missing(
         wiki / "report.md",
-        f"# Neovim issue {issue}\n\nPending history and reproduction evidence.\n",
+        f"# Neovim issue {issue}\n\nPending history evidence.\n",
     )
     write_if_missing(
         wiki / "sources.md",
@@ -286,7 +287,6 @@ gh issue view {issue} --repo {GH_REPO} --json ...
             f"\n## [{now}] setup\nCreated issue wiki and worktree pointer.\n"
         )
     write_if_missing(wiki / "evidence/history.md", "# History\n\nPending.\n")
-    write_if_missing(wiki / "evidence/repro.md", "# Reproduction\n\nPending.\n")
 
 
 def ensure_ignored(worktree: Path) -> None:
@@ -294,8 +294,6 @@ def ensure_ignored(worktree: Path) -> None:
 
 
 def write_pointers(issue: str, worktree: Path, wiki: Path) -> None:
-    (worktree / ".codex" / "repros" / "script").mkdir(parents=True, exist_ok=True)
-
     pointer = worktree / ".codex" / "issue-wiki"
     pointer.parent.mkdir(parents=True, exist_ok=True)
     _ = pointer.write_text(
