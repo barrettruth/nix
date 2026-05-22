@@ -20,7 +20,7 @@ let
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
-    (pkgs.iosevka-bin.override { variant = "SGr-IosevkaTerm"; })
+    pkgs.ultimate-oldschool-pc-font-pack
   ];
 
   users.users.${hostConfig.username}.packages =

@@ -1,4 +1,8 @@
-font-family = Iosevka Term
+font-family = PxPlus IBM VGA 8x16
+font-family-bold = PxPlus IBM VGA 8x16
+font-family-italic = PxPlus IBM VGA 8x16
+font-family-bold-italic = PxPlus IBM VGA 8x16
+font-synthetic-style = bold,italic,bold-italic
 font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt
 font-size = 20
