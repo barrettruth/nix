@@ -14,6 +14,9 @@ Inputs:
   If it fails, stop. Use its printed paths; do not rediscover them manually.
 - Coordinator selects exactly one strategy from the allowlist, then spawns one
   isolated reproducer subagent.
+- If the raw issue is not a bug claim, for example a feature request or
+  behavior question with no erroneous runtime behavior to exercise, write
+  `Status: not applicable` in `evidence/repro.md` and stop without Spark.
 - Coordinator prompts must be short: issue number, paths, references to read,
   owned write paths, and hard prohibitions. Do not paste this full contract into
   the subagent prompt.
@@ -63,12 +66,13 @@ those markers are missing, use `Status: blocked` and explain which path was not
 exercised.
 
 Do not do open-ended exploration. After the first credible reproduction, stop
-and write `evidence/repro.md`. If the script strategy cannot reproduce after a
-small bounded set of attempts, stop and record what was tried.
+and write `evidence/repro.md`. If reproduction is not applicable, or if the
+script strategy cannot reproduce after a small bounded set of attempts, stop
+and record why.
 
 `evidence/repro.md` must contain:
 
-- `Status`: reproduced, not reproduced, or blocked.
+- `Status`: reproduced, not reproduced, blocked, or not applicable.
 - Repro file path.
 - Exact build/run commands.
 - `spark nvim log <issue>` paths for each build/run/test command.

@@ -1,6 +1,6 @@
 ---
 name: nvim-repro
-description: Reproduce a Neovim issue after `$nvim-issue` has created the worktree and issue wiki. Use when Barrett explicitly asks for bounded reproduction evidence; do not read Codex memory; requires an existing issue number/worktree/wiki and uses Spark with one selected strategy.
+description: Reproduce a Neovim issue after `$nvim-issue` has created the worktree and issue wiki, or mark reproduction not applicable for non-bug issues. Use when Barrett explicitly asks for bounded reproduction evidence; do not read Codex memory.
 ---
 
 # nvim-repro
@@ -20,7 +20,9 @@ Required flow:
    Do not read Codex memory for this skill.
 2. Run `../../scripts/repro-preflight.py <issue>`. If it fails, stop. Use its
    printed paths; do not rediscover them manually.
-3. Select one allowed strategy. Current allowlist: `script`.
+3. If the issue is not a bug claim, write `Status: not applicable` in
+   `evidence/repro.md` and skip Spark. Otherwise select one allowed strategy.
+   Current allowlist: `script`.
 4. Spawn one isolated reproducer subagent for that strategy. Do not fork full
    conversation context. Keep the prompt short: issue number, paths, references
    to read, owned write paths, and hard prohibitions only. Do not paste the

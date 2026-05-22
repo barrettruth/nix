@@ -15,13 +15,12 @@ let
   ];
 
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
-  courier-new = pkgs.callPackage ../../../pkgs/courier-new.nix { };
 
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
-    courier-new
+    pkgs.hack-font
   ];
 
   users.users.${hostConfig.username}.packages =

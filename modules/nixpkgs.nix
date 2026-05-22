@@ -12,7 +12,6 @@ let
   sharedUnfree = [
     "slack"
     "apple_cursor"
-    "courier-new"
   ];
 in
 {
