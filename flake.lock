@@ -26,10 +26,10 @@
         ]
       },
       "locked": {
-        "lastModified": 1779499626,
-        "narHash": "sha256-Ax/AslkaMVvigJcpQTHznNSJF/Q+Y4+zsJDYKcqM+58=",
+        "lastModified": 1779502546,
+        "narHash": "sha256-MAQmIMTbdxyToWQoo6H5d42GJydxOoUcprgM+IDsF+A=",
         "ref": "refs/heads/main",
-        "rev": "59da54b97181a26f5b4d7c5fd07c43b55552726e",
+        "rev": "1b2deb5428abee332f2f08845179b462da9155f5",
         "revCount": 594,
         "type": "git",
         "url": "file:///home/barrett/dev/delta"
