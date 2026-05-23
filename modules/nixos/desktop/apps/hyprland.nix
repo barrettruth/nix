@@ -148,9 +148,23 @@ in
       };
     };
 
+    systemd.user.services.idle-manager-state = waylandGate // {
+      description = "Apply persisted idle manager state";
+      path = with pkgs; [
+        coreutils
+        tmux
+      ];
+      serviceConfig = waylandGate.serviceConfig // {
+        Type = "oneshot";
+        ExecStart = "${repo}/scripts/ctl idle apply-state";
+      };
+    };
+
     systemd.user.services.hypridle = waylandGate // {
+      after = waylandGate.after ++ [ "idle-manager-state.service" ];
       description = "Hypridle idle daemon";
       serviceConfig = waylandGate.serviceConfig // {
+        ExecCondition = "${repo}/scripts/ctl idle enabled";
         ExecStart = wrapWaylandExec "${pkgs.hypridle}/bin/hypridle";
       };
     };

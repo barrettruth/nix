@@ -46,6 +46,48 @@ whisper_idle_timeout() {
   esac
 }
 
+idle_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
+idle_state_file="$idle_state_dir/idle-manager"
+idle_lock_after_time=300
+
+idle_read_state() {
+  state="$(cat "$idle_state_file" 2>/dev/null || true)"
+  case "$state" in
+  disabled) printf '%s\n' disabled ;;
+  *) printf '%s\n' enabled ;;
+  esac
+}
+
+idle_write_state() {
+  mkdir -p "$idle_state_dir"
+  printf '%s\n' "$1" >"$idle_state_file"
+}
+
+idle_apply_state() {
+  case "$(idle_read_state)" in
+  disabled) timeout=0 ;;
+  *) timeout="$idle_lock_after_time" ;;
+  esac
+
+  command -v tmux >/dev/null 2>&1 && tmux set -g lock-after-time "$timeout" 2>/dev/null || true
+}
+
+idle_is_enabled() {
+  [ "$(idle_read_state)" != disabled ]
+}
+
+idle_enable() {
+  idle_write_state enabled
+  systemctl --user start hypridle.service
+  idle_apply_state
+}
+
+idle_disable() {
+  idle_write_state disabled
+  systemctl --user stop hypridle.service
+  idle_apply_state
+}
+
 case "$1" in
 screenshot)
   dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
@@ -898,16 +940,31 @@ dictate)
   printf '%s' "$!" >"$dpid"
   ;;
 idle)
-  require notify-send
-  if systemctl --user is-active --quiet hypridle.service; then
-    systemctl --user stop hypridle.service
-    tmux set -g lock-after-time 0 2>/dev/null
-    notify-send -a ctl -t 2500 "Idle manager" "Disabled"
-  else
-    systemctl --user start hypridle.service
-    tmux set -g lock-after-time 300 2>/dev/null
-    notify-send -a ctl -t 2500 "Idle manager" "Enabled"
-  fi
+  case "${2:-toggle}" in
+  toggle)
+    require notify-send
+    if systemctl --user is-active --quiet hypridle.service; then
+      idle_disable
+      notify-send -a ctl -t 2500 "Idle manager" "Disabled"
+    else
+      idle_enable
+      notify-send -a ctl -t 2500 "Idle manager" "Enabled"
+    fi
+    ;;
+  state)
+    idle_read_state
+    ;;
+  apply-state)
+    idle_apply_state
+    ;;
+  enabled)
+    idle_is_enabled
+    ;;
+  *)
+    echo "Usage: ctl idle [toggle|state|apply-state|enabled]" >&2
+    exit 1
+    ;;
+  esac
   ;;
 *)
   echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|clip|dictate}" >&2

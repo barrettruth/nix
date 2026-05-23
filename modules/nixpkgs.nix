@@ -2,18 +2,27 @@
 let
   overlays = [
     inputs.codex.overlays.default
-    (final: prev: {
-      delta-cli = inputs.delta.packages.${final.system}.cli;
-      google-workspace-cli = inputs.googleworkspace-cli.packages.${final.system}.default;
-      google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
-        gws = final.google-workspace-cli;
-      };
-    })
-    (final: prev: {
-      tmuxPlugins = prev.tmuxPlugins // {
-        mosaic = inputs.tmux-mosaic.packages.${final.system}.default;
-      };
-    })
+    (final: _prev:
+      let
+        system = final.stdenv.hostPlatform.system;
+      in
+      {
+        delta-cli = inputs.delta.packages.${system}.cli;
+        google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
+        google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
+          gws = final.google-workspace-cli;
+        };
+      })
+    (final: prev:
+      let
+        system = final.stdenv.hostPlatform.system;
+      in
+      {
+        tmuxPlugins = prev.tmuxPlugins // {
+          mosaic = inputs.tmux-mosaic.packages.${system}.default;
+        };
+      }
+    )
   ];
 
   sharedUnfree = [

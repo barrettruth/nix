@@ -32,5 +32,5 @@ pkgs/                            custom derivations
 
 ## Hosts
 
-- **vps** — NixOS VPS. Public Forgejo at `git.barrettruth.com`, Vaultwarden at `vault.barrettruth.com`, `delta` at `delta.barrettruth.com`. Deploy with `just rebuild-vps`.
+- **vps** — NixOS VPS. Public Forgejo at `git.barrettruth.com`, Vaultwarden at `vault.barrettruth.com`, `delta` at `delta.barrettruth.com`.
 - **laptop** — Dell XPS 9500 workstation. Deploy locally with `nixos-rebuild switch --flake .#laptop`.
