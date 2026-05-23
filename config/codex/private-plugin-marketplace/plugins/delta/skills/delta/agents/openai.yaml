@@ -1,0 +1,4 @@
+interface:
+  display_name: "Delta"
+  short_description: "Use the Delta CLI safely"
+  default_prompt: "Use $delta to inspect my Delta tasks and explain the current state."

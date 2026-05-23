@@ -1,7 +1,7 @@
 {
   "name": "nvim",
   "version": "0.1.0",
-  "description": "Private Codex plugin for Neovim issue investigation, planning, worktree, and verification workflows.",
+  "description": "Private Codex plugin for Neovim issue investigation, planning, worktree, verification, and review workflows.",
   "author": {
     "name": "Barrett Ruth"
   },
@@ -10,14 +10,15 @@
     "neovim",
     "worktree",
     "verification",
+    "review",
     "spark",
     "codex"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "nvim",
-    "shortDescription": "Neovim issue, repro, planning, verification, and edit-window workflows",
-    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded Spark reproduction as a separate stage, choose among realistic outcomes before implementation, verify changes, and populate the mux edit Neovim window from natural-language file targets.",
+    "shortDescription": "Neovim issue, repro, planning, verification, review, and edit-window workflows",
+    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded Spark reproduction as a separate stage, choose among realistic outcomes before implementation, verify changes, review local patch state, and populate mux Neovim windows for editing/review.",
     "developerName": "Barrett Ruth",
     "category": "Coding",
     "capabilities": [
@@ -31,6 +32,8 @@
       "Investigate Neovim issue #12345 without proposing fixes",
       "Reproduce Neovim issue #12345 with the configured Spark strategy",
       "Plan realistic outcomes for Neovim issue #12345 before editing",
+      "Verify the implementation work for Neovim issue #12345",
+      "Review the implementation patch for Neovim issue #12345",
       "Create a Neovim issue worktree and write the report",
       "Populate the edit window with the relevant mux command files"
     ],

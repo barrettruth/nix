@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neovim Review"
+  short_description: "Review Neovim patch state and prepare mux review UI."
+  default_prompt: "Review this Neovim implementation patch."

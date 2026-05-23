@@ -15,6 +15,7 @@ Create one cross-session wiki per issue:
     history.md
     repro.md         # created by $nvim-repro only
     verify.md        # created by $nvim-verify only
+    review.md        # created by $nvim-review only
     code-map.md      # optional, only when populated
   logs/
 ```
@@ -60,6 +61,8 @@ an issue number, use it directly instead of scanning every worktree.
 - `evidence/repro.md`: created by `$nvim-repro`; see `repro.md`.
 - `evidence/verify.md`: created by `$nvim-verify`; focused check evidence
   after implementation.
+- `evidence/review.md`: created by `$nvim-review`; patch review evidence and
+  manual inspection focus before commit workflow.
 - `evidence/code-map.md`: optional relevant files/functions map; create and
   link only when populated.
 - `logs/`: bulky output only; link from evidence files.

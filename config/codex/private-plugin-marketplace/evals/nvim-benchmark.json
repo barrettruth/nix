@@ -132,6 +132,24 @@
       ]
     },
     {
+      "id": "review-boundary",
+      "title": "Review implementation patch before commit workflow",
+      "purpose": "Verify review writes durable patch-review evidence and prepares UI without verification or commit work.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Review the implementation patch for Neovim issue #12345. Do not verify, commit, push, comment, or open a PR.",
+      "successChecklist": [
+        "Does not read Codex memory.",
+        "Resolves the issue worktree through the direct .codex/issue-wiki pointer file before broad scans.",
+        "Stops if there are no reviewable implementation changes.",
+        "Does not run verification, Spark, builds, tests, or local check commands.",
+        "Writes evidence/review.md with status, diff summary, evidence, manual review focus, risks, and UI details.",
+        "Updates only index.md and log.md after writing review evidence.",
+        "Prepares mux git with :Greview <merge-base> | only.",
+        "Prepares mux edit quickfix with review.md first and changed reviewable files after it.",
+        "Leaves or restores the foreground Codex tmux client after review UI setup, including helper failure paths.",
+        "Does not stage, unstage, commit, push, comment, or open a PR."
+      ]
+    },
+    {
       "id": "existing-worktree-boundary",
       "title": "Refuse duplicate issue checkout",
       "purpose": "Verify one issue maps to one branch/worktree.",

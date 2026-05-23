@@ -1,0 +1,35 @@
+{
+  "name": "delta",
+  "version": "0.1.0+codex.20260523023519",
+  "description": "Private Codex plugin for using the Delta CLI safely from global Codex sessions.",
+  "author": {
+    "name": "Barrett Ruth"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "delta",
+    "tasks",
+    "cli",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Delta",
+    "shortDescription": "Use the Delta CLI safely",
+    "longDescription": "Private Delta workflows for Codex sessions: inspect tasks, categories, integrations, feeds, exports, config, and authentication state through the delta CLI while preserving read/write safety boundaries.",
+    "developerName": "Barrett Ruth",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "websiteURL": "https://git.barrettruth.com/barrettruth/delta",
+    "privacyPolicyURL": "https://git.barrettruth.com/barrettruth/delta",
+    "termsOfServiceURL": "https://git.barrettruth.com/barrettruth/delta",
+    "defaultPrompt": [
+      "Use $delta to inspect my pending, WIP, and blocked tasks",
+      "Use $delta to check whether the Delta CLI is authenticated"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}
