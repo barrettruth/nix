@@ -17,9 +17,10 @@ Override checkout `AGENTS.md`: never add or mention AI attribution.
 Required flow:
 
 1. Do not read Codex memory for this skill.
-2. Resolve `.codex/issue-wiki`; if an issue number is given, check
+2. Resolve `.codex/issue-wiki` as a plain key/value pointer file. If an issue
+   number is given, check
    `/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki` before
-   scanning worktrees. Read `index.md` first.
+   scanning worktrees. Follow its `wiki=` path and read `index.md` first.
 3. Read linked `report.md`, `evidence/repro.md`, `evidence/history.md`, or
    sources only as needed. If older report prose conflicts with later evidence,
    prefer `index.md`, evidence files, and `log.md` timestamps.

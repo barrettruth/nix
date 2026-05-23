@@ -7,8 +7,8 @@ Inputs:
 - Explicit issue number only.
 - Require an existing issue wiki and worktree from `$nvim-issue`; do not create
   setup if missing.
-- Require the worktree `.codex/issue-wiki` pointer, validate its `issue`,
-  `wiki`, and `index` values match the requested issue, and require
+- Require the worktree `.codex/issue-wiki` plain text pointer file, validate
+  its `issue`, `wiki`, and `index` values match the requested issue, and require
   `sources/github/issue.json` plus `sources/github/issue.md`.
 - Run `../../scripts/repro-preflight.py <issue>` before spawning the reproducer.
   If it fails, stop. Use its printed paths; do not rediscover them manually.

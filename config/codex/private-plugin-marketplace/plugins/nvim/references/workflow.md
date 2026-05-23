@@ -44,7 +44,8 @@ not commit or mutate remotes. Commit requires Barrett to literally say
 from commit.
 
 `.worktrees/.codex/current` is the global active-worktree pointer.
-`.codex/issue-wiki` is the per-worktree issue-wiki pointer.
+`.codex/issue-wiki` is a per-worktree plain text pointer file; follow its
+`wiki=` path to the issue wiki.
 
 Issue flow is owned by `skills/nvim-issue/SKILL.md`; this file only records
 stage boundaries. For resumes, read only `index.md` first and follow its links

@@ -37,7 +37,8 @@ Setup script contract:
 - Fetches `upstream master`.
 - Creates branch/worktree `<issue>` under `.worktrees/<issue>`.
 - Keeps `.worktrees/` out of main-checkout status with local git excludes.
-- Creates the issue wiki and ignored `.codex/issue-wiki` pointer.
+- Creates the issue wiki and ignored `.codex/issue-wiki` plain text pointer
+  file.
 - Stops if the branch or worktree already exists.
 
 Reference paths are relative to this file:

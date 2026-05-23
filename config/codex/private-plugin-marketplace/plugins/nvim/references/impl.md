@@ -136,13 +136,14 @@ work.
 
 These are hard guards, not implementation outcomes.
 
-- `Status: blocked`: stop. Report the blocker and next concrete step from
+- `Status: blocked`: stop. Quote the exact `Status:` line from
+  `evidence/plan.md`. Report the blocker and next concrete step from
   `evidence/plan.md`, with relevant local paths or GitHub links. Give a short
   explanation of why implementation cannot proceed. Do not edit
   source/tests/docs, run repro, run verification, or draft GitHub text unless
   Barrett gives a new explicit instruction.
-- `Status: resolved upstream`: terminal stop for this issue workflow. Report the
-  upstream resolution with the issue URL, merged PR permalink, relevant
-  merge/commit links when available, and a one-paragraph explanation of why the
-  issue workflow is done. Do not port, cherry-pick, edit, verify, or suggest
-  follow-up implementation.
+- `Status: resolved upstream`: terminal stop for this issue workflow. Quote the
+  exact `Status:` line from `evidence/plan.md`. Report the upstream resolution
+  with the issue URL, merged PR permalink, relevant merge/commit links when
+  available, and a one-paragraph explanation of why the issue workflow is done.
+  Do not port, cherry-pick, edit, verify, or suggest follow-up implementation.

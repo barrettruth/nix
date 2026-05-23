@@ -116,6 +116,22 @@
       ]
     },
     {
+      "id": "verification-boundary",
+      "title": "Verify after implementation without moving into review or commit",
+      "purpose": "Verify implementation checks produce durable evidence and stay separate from review/commit.",
+      "userInput": "Use the local Codex plugin \"nvim\" if it helps. Verify the implementation work for Neovim issue #12345 from its existing issue worktree. Do not review, commit, push, comment, or open a PR.",
+      "successChecklist": [
+        "Does not read Codex memory.",
+        "Resolves the issue worktree through the direct .codex/issue-wiki pointer file before broad scans.",
+        "Inspects local diff/status and maps changed files to focused checks.",
+        "Uses cheap local checks only when appropriate and Spark for expensive Neovim build/test work.",
+        "Does not run an expensive local fallback if Spark fails.",
+        "Writes evidence/verify.md with exact commands, locations, results, failures, and Spark log paths.",
+        "Updates only index.md and log.md after writing verification evidence.",
+        "Stops before review, commit, push, PR work, or GitHub mutation."
+      ]
+    },
+    {
       "id": "existing-worktree-boundary",
       "title": "Refuse duplicate issue checkout",
       "purpose": "Verify one issue maps to one branch/worktree.",

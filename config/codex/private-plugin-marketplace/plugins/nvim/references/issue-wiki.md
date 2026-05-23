@@ -14,6 +14,7 @@ Create one cross-session wiki per issue:
   evidence/
     history.md
     repro.md         # created by $nvim-repro only
+    verify.md        # created by $nvim-verify only
     code-map.md      # optional, only when populated
   logs/
 ```
@@ -22,7 +23,7 @@ Treat `sources/` and `logs/` as immutable raw material. Treat `index.md`,
 `report.md`, `sources.md`, `log.md`, and `evidence/*.md` as derived markdown
 that agents may update.
 
-Create this pointer inside the worktree:
+Create this plain text pointer file inside the worktree:
 
 ```text
 .codex/issue-wiki
@@ -44,6 +45,11 @@ append `.codex/` to the local exclude file from:
 git rev-parse --git-path info/exclude
 ```
 
+Agents should read `.codex/issue-wiki` as a key/value pointer file and follow
+its `wiki=` path. It is not a directory. If the direct
+`/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki` path exists for
+an issue number, use it directly instead of scanning every worktree.
+
 ## File Roles
 
 - `index.md`: small future-session entrypoint; target under 80 lines.
@@ -52,6 +58,8 @@ git rev-parse --git-path info/exclude
 - `log.md`: append-only activity log.
 - `evidence/history.md`: GitHub history role output.
 - `evidence/repro.md`: created by `$nvim-repro`; see `repro.md`.
+- `evidence/verify.md`: created by `$nvim-verify`; focused check evidence
+  after implementation.
 - `evidence/code-map.md`: optional relevant files/functions map; create and
   link only when populated.
 - `logs/`: bulky output only; link from evidence files.

@@ -8,8 +8,9 @@ evidence, prefer `index.md`, `evidence/repro.md`, `evidence/history.md`, and
 `log.md` timestamps for current status.
 
 If an issue number is provided, resolve the worktree directly at
-`/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki`; do not scan all
-worktrees unless that path is missing.
+`/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki`. This is a
+plain text pointer file; follow its `wiki=` path. Do not scan all worktrees
+unless that direct path is missing.
 
 Before enumerating outcomes, run one bounded read-only freshness check for the
 issue's current GitHub state. Use `gh issue view` and, if needed, a narrow PR
