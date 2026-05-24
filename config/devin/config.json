@@ -1,0 +1,13 @@
+{
+  "agent": {
+    "model": "gpt-5-4-xhigh-priority"
+  },
+  "shell": {
+    "setup_complete": true
+  },
+  "theme_mode": "light",
+  "version": 1,
+  "devin": {
+    "org_id": "org-f27ebacf926a440d96985a94ab9b66bf"
+  }
+}

@@ -8,6 +8,7 @@
 let
   agentPackages = with pkgs; [
     codex
+    devin
   ];
 
   codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [

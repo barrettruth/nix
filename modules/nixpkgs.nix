@@ -2,6 +2,7 @@
 let
   overlays = [
     inputs.codex.overlays.default
+    inputs.devin.overlays.default
     (final: _prev:
       let
         system = final.stdenv.hostPlatform.system;
@@ -28,6 +29,7 @@ let
   sharedUnfree = [
     "slack"
     "apple_cursor"
+    "devin"
   ];
 in
 {
