@@ -254,6 +254,7 @@ let
 in
 {
   imports = [
+    ./finance.nix
     ./delta.nix
     ./disk-config.nix
     ./hardware-configuration.nix
