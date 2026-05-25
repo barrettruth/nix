@@ -24,11 +24,18 @@ system-instructions:
     commands, do not invent recipe names, and prefer the repo's nix shell for
     verification when the repo uses Nix or direnv.
   - >
+    If a required command is missing, not on PATH, or fails with "command not
+    found", do not immediately conclude that the tool is unavailable and do not
+    suggest installing it yet. First check whether the repository provides the
+    tool through its own Nix or direnv environment.
+  - >
     In repositories that have both `flake.nix` and `.envrc`, prefer
     `direnv exec <repo-root> <command>` for one-shot shell commands and
     verification that use the default dev shell. This reuses the repo's
     nix-direnv cache and avoids leaving persistent `/tmp/nix-develop-*` and
-    `/tmp/nix-shell.*` directories behind. Use `nix develop --command ...`
-    only when a non-default shell such as `.#ci` is required, when direnv is
-    unavailable or not configured for the repo, or when the user explicitly
-    asks for `nix develop`.
+    `/tmp/nix-shell.*` directories behind. If `flake.nix` exists without a
+    usable `.envrc`, or if `direnv exec` fails because direnv is unavailable or
+    not configured for the repo, retry with `nix develop --command ...` before
+    concluding the tool is unavailable. Use `nix develop --command ...`
+    immediately only when a non-default shell such as `.#ci` is required or
+    when the user explicitly asks for `nix develop`.

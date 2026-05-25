@@ -2,6 +2,11 @@
   "agent": {
     "model": "gpt-5-4-xhigh-priority"
   },
+  "read_config_from": {
+    "cursor": false,
+    "windsurf": false,
+    "claude": false
+  },
   "shell": {
     "setup_complete": true
   },
