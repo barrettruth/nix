@@ -20,8 +20,12 @@
       devShells = {
         default = pkgs.mkShell {
           packages = commonPackages ++ [
+            pkgs.age
+            pkgs.authelia
             pkgs.xxd
             pkgs.pre-commit
+            pkgs.sops
+            pkgs.ssh-to-age
           ];
         };
         ci = pkgs.mkShell {
