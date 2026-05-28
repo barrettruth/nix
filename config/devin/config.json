@@ -1,6 +1,6 @@
 {
   "agent": {
-    "model": "gpt-5-4-xhigh-priority"
+    "model": "gpt-5-5-xhigh-priority"
   },
   "read_config_from": {
     "cursor": false,
