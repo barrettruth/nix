@@ -17,6 +17,7 @@ let
     "finance-authelia-jwt-secret"
     "finance-authelia-session-secret"
     "finance-authelia-storage-key"
+    "finance-authelia-smtp-password"
     "finance-authelia-users"
   ];
   hasFinanceAutheliaSecrets = lib.all (
@@ -107,10 +108,17 @@ in
         mode = "0400";
         restartUnits = [ "authelia-finance.service" ];
       };
+      "finance-authelia-smtp-password" = mkVpsSecret "finance-authelia-smtp-password" {
+        owner = "authelia-finance";
+        group = "authelia-finance";
+        mode = "0400";
+        restartUnits = [ "authelia-finance.service" ];
+      };
       "finance-authelia-users" = mkVpsSecret "finance-authelia-users" {
         owner = "authelia-finance";
         group = "authelia-finance";
         mode = "0400";
+        path = "/run/secrets/finance-authelia-users.yaml";
         restartUnits = [ "authelia-finance.service" ];
       };
     });
@@ -121,6 +129,9 @@ in
       jwtSecretFile = config.sops.secrets."finance-authelia-jwt-secret".path;
       sessionSecretFile = config.sops.secrets."finance-authelia-session-secret".path;
       storageEncryptionKeyFile = config.sops.secrets."finance-authelia-storage-key".path;
+    };
+    environmentVariables = {
+      AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE = config.sops.secrets."finance-authelia-smtp-password".path;
     };
     settings = {
       theme = "auto";
@@ -159,7 +170,15 @@ in
         ];
       };
       storage.local.path = "/var/lib/authelia-finance/db.sqlite3";
-      notifier.filesystem.filename = "/var/lib/authelia-finance/notification.txt";
+      notifier.smtp = {
+        address = "submissions://smtp.resend.com:2465";
+        timeout = "10s";
+        username = "resend";
+        sender = "finance auth <noreply@${identity.domain}>";
+        subject = "[finance auth] {title}";
+        startup_check_address = "br@${identity.domain}";
+        tls.server_name = "smtp.resend.com";
+      };
       webauthn.display_name = "finance";
     };
   };
@@ -176,7 +195,11 @@ in
 
   systemd.services.finance = {
     description = "finance - private finance shell";
-    after = [ "network.target" ];
+    after = [
+      "network.target"
+      "authelia-finance.service"
+    ];
+    requires = [ "authelia-finance.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig =
       {
