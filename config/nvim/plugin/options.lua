@@ -47,7 +47,7 @@ vim.o.number = true
 vim.o.relativenumber = true
 vim.o.signcolumn = 'no'
 
-vim.o.statuscolumn = "%{%v:virtnum?'':'%s%C %=%{v:relnum?v:relnum:v:lnum} '%}"
+require('config.statuscolumn').setup()
 vim.o.statusline = "%!v:lua.require'config.statusline'.render()"
 
 vim.opt.path:append('**')
