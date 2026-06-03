@@ -56,6 +56,7 @@ let
     [ui]
     editor = "nvim"
     pager = "less -FRX"
+    default-command = "log"
     diff-editor = ":builtin"
     merge-editor = "vimdiff"
 
