@@ -311,7 +311,7 @@ volume)
     ;;
   esac
   if wpctl get-volume "$SINK" | grep -q MUTED; then
-    notify-send -a ctl -t 2500 -r 5556 "Audio sink" "Muted"
+    notify-send -a ctl -t 2500 -r 5556 "Volume" "Muted"
   else
     vol=$(get_vol)
     filled=$((vol * 30 / 100))
@@ -328,7 +328,7 @@ volume)
       i=$((i + 1))
     done
     bar="${bar}]"
-    notify-send -a ctl -t 2500 -r 5556 "Audio sink" "$bar"
+    notify-send -a ctl -t 2500 -r 5556 "Volume" "$bar"
   fi
   ;;
 wifi)
@@ -951,11 +951,11 @@ dictate)
     rm -f "$dpid"
     sleep 0.2
     if [ ! -s "$daudio" ]; then
-      notify-send -a ctl -t 1250 "Whisper" "No audio"
+      notify-send -a ctl -t 1250 "Dictation" "No audio"
       whisper_idle_schedule 15
       exit 1
     fi
-    notify-send -a ctl -t 1250 "Whisper" "Transcribing..."
+    notify-send -a ctl -t 1250 "Dictation" "Transcribing..."
     for _ in $(seq 1 50); do
       curl -s --max-time 1 "http://127.0.0.1:$dport/" >/dev/null 2>&1 && break
       sleep 0.1
@@ -966,19 +966,19 @@ dictate)
       -F "response_format=text" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -s ' ')
     rm -f "$daudio"
     if [ -z "$text" ]; then
-      notify-send -a ctl -t 1250 "Whisper" "No speech detected"
+      notify-send -a ctl -t 1250 "Dictation" "No speech detected"
       whisper_idle_schedule 15
       exit 1
     fi
     printf '%s' "$text" | wl-copy
-    notify-send -a ctl -t 1250 "Whisper" "$text"
+    notify-send -a ctl -t 1250 "Dictation" "$text"
     whisper_idle_schedule "$(whisper_idle_timeout "$dhistory")"
     exit 0
   fi
 
   whisper_idle_cancel
   systemctl --user start whisper-dictation 2>/dev/null
-  notify-send -a ctl -t 1250 "Whisper" "Recording..."
+  notify-send -a ctl -t 1250 "Dictation" "Recording..."
   pw-record "$daudio" &
   printf '%s' "$!" >"$dpid"
   ;;
@@ -988,10 +988,10 @@ idle)
     require notify-send
     if systemctl --user is-active --quiet hypridle.service; then
       idle_off
-      notify-send -a ctl -t 2500 "Idle manager" "Off"
+      notify-send -a ctl -t 2500 "Idle" "Off"
     else
       idle_on
-      notify-send -a ctl -t 2500 "Idle manager" "On"
+      notify-send -a ctl -t 2500 "Idle" "On"
     fi
     ;;
   on)
