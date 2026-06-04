@@ -18,6 +18,7 @@ let
     username
     homeDirectory
     XDG_CONFIG_HOME
+    XDG_STATE_HOME
     repo
     mkSymlink
     mkDir
@@ -43,6 +44,9 @@ let
     env = HYPRCURSOR_SIZE,24
     env = HYPRCURSOR_THEME,macOS
     env = GSK_RENDERER,ngl
+    decoration {
+      screen_shader = ${XDG_STATE_HOME}/hypr/screen-shader.frag
+    }
     exec-once = ${hyprSessionEnv}/bin/hypr-session-env import
     source = ${repo}/config/hypr/hyprland.conf
   '';
@@ -130,6 +134,18 @@ let
       on-timeout = ${pkgs.systemd}/bin/systemctl suspend
     }
   '';
+
+  hypridleStart = pkgs.writeShellScript "hypridle-start" ''
+    set -eu
+
+    if [ "$(${repo}/scripts/ctl idle state)" = off ]; then
+      ${pkgs.tmux}/bin/tmux set -g lock-after-time 0 2>/dev/null || true
+      exit 0
+    fi
+
+    ${pkgs.tmux}/bin/tmux set -g lock-after-time 300 2>/dev/null || true
+    exec ${wrapWaylandExec "${pkgs.hypridle}/bin/hypridle"}
+  '';
 in
 {
   config = lib.mkIf hostConfig.enableWayland {
@@ -148,29 +164,16 @@ in
       };
     };
 
-    systemd.user.services.idle-manager-state = waylandGate // {
-      description = "Apply persisted idle manager state";
-      path = with pkgs; [
-        coreutils
-        tmux
-      ];
-      serviceConfig = waylandGate.serviceConfig // {
-        Type = "oneshot";
-        ExecStart = "${repo}/scripts/ctl idle apply-state";
-      };
-    };
-
     systemd.user.services.hypridle = waylandGate // {
-      after = waylandGate.after ++ [ "idle-manager-state.service" ];
       description = "Hypridle idle daemon";
       serviceConfig = waylandGate.serviceConfig // {
-        ExecCondition = "${repo}/scripts/ctl idle enabled";
-        ExecStart = wrapWaylandExec "${pkgs.hypridle}/bin/hypridle";
+        ExecStart = "${hypridleStart}";
       };
     };
 
     system.activationScripts.hyprlandConfig.text = ''
       ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
+      ${mkDir "${XDG_STATE_HOME}/hypr"}
       ${mkDir "${homeDirectory}/Pictures/Screensavers"}
 
       ${mkSymlink "${hyprThemes}/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
@@ -193,6 +196,14 @@ in
 
       ${readTheme}
       ${mkSymlink "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"}
+
+      grayscale="$(cat "${XDG_STATE_HOME}/hypr/grayscale" 2>/dev/null)" || grayscale="off"
+      case "$grayscale" in
+        on) screen_shader="${repo}/config/hypr/shaders/grayscale.frag" ;;
+        *) screen_shader="${repo}/config/hypr/shaders/pass-through.frag" ;;
+      esac
+      ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
+      chown -h ${username}:users "${XDG_STATE_HOME}/hypr/screen-shader.frag"
 
       wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
       wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"

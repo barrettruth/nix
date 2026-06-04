@@ -49,12 +49,16 @@ whisper_idle_timeout() {
 idle_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
 idle_state_file="$idle_state_dir/idle-manager"
 idle_lock_after_time=300
+grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
+grayscale_state_file="$grayscale_state_dir/grayscale"
+grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
+grayscale_shader_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nix/config/hypr/shaders"
 
 idle_read_state() {
   state="$(cat "$idle_state_file" 2>/dev/null || true)"
   case "$state" in
-  disabled) printf '%s\n' disabled ;;
-  *) printf '%s\n' enabled ;;
+  off | disabled) printf '%s\n' off ;;
+  *) printf '%s\n' on ;;
   esac
 }
 
@@ -63,29 +67,68 @@ idle_write_state() {
   printf '%s\n' "$1" >"$idle_state_file"
 }
 
-idle_apply_state() {
+idle_apply_runtime() {
   case "$(idle_read_state)" in
-  disabled) timeout=0 ;;
+  off) timeout=0 ;;
   *) timeout="$idle_lock_after_time" ;;
   esac
 
   command -v tmux >/dev/null 2>&1 && tmux set -g lock-after-time "$timeout" 2>/dev/null || true
 }
 
-idle_is_enabled() {
-  [ "$(idle_read_state)" != disabled ]
-}
-
-idle_enable() {
-  idle_write_state enabled
+idle_on() {
+  idle_write_state on
   systemctl --user start hypridle.service
-  idle_apply_state
+  idle_apply_runtime
 }
 
-idle_disable() {
-  idle_write_state disabled
+idle_off() {
+  idle_write_state off
   systemctl --user stop hypridle.service
-  idle_apply_state
+  idle_apply_runtime
+}
+
+grayscale_read_state() {
+  state="$(cat "$grayscale_state_file" 2>/dev/null || true)"
+  case "$state" in
+  on) printf '%s\n' on ;;
+  *) printf '%s\n' off ;;
+  esac
+}
+
+grayscale_write_state() {
+  mkdir -p "$grayscale_state_dir"
+  printf '%s\n' "$1" >"$grayscale_state_file"
+}
+
+grayscale_target() {
+  case "$1" in
+  on) printf '%s\n' "$grayscale_shader_dir/grayscale.frag" ;;
+  *) printf '%s\n' "$grayscale_shader_dir/pass-through.frag" ;;
+  esac
+}
+
+grayscale_apply_runtime() {
+  target="$(grayscale_target "$(grayscale_read_state)")"
+  [ -f "$target" ] || {
+    echo "ctl: missing shader: $target" >&2
+    exit 1
+  }
+  mkdir -p "$grayscale_state_dir"
+  ln -sfnT "$target" "$grayscale_shader_file"
+  if [ "${XDG_CURRENT_DESKTOP:-}" = "Hyprland" ]; then
+    hyprctl keyword decoration:screen_shader "$target" >/dev/null
+  fi
+}
+
+grayscale_on() {
+  grayscale_write_state on
+  grayscale_apply_runtime
+}
+
+grayscale_off() {
+  grayscale_write_state off
+  grayscale_apply_runtime
 }
 
 case "$1" in
@@ -944,30 +987,57 @@ idle)
   toggle)
     require notify-send
     if systemctl --user is-active --quiet hypridle.service; then
-      idle_disable
+      idle_off
       notify-send -a ctl -t 2500 "Idle manager" "Disabled"
     else
-      idle_enable
+      idle_on
       notify-send -a ctl -t 2500 "Idle manager" "Enabled"
     fi
+    ;;
+  on)
+    idle_on
+    ;;
+  off)
+    idle_off
     ;;
   state)
     idle_read_state
     ;;
-  apply-state)
-    idle_apply_state
+  *)
+    echo "Usage: ctl idle [toggle|state|on|off]" >&2
+    exit 1
     ;;
-  enabled)
-    idle_is_enabled
+  esac
+  ;;
+grayscale)
+  case "${2:-toggle}" in
+  toggle)
+    require notify-send
+    if [ "$(grayscale_read_state)" = on ]; then
+      grayscale_off
+      notify-send -a ctl -t 2500 "Grayscale" "Disabled"
+    else
+      grayscale_on
+      notify-send -a ctl -t 2500 "Grayscale" "Enabled"
+    fi
+    ;;
+  on)
+    grayscale_on
+    ;;
+  off)
+    grayscale_off
+    ;;
+  state)
+    grayscale_read_state
     ;;
   *)
-    echo "Usage: ctl idle [toggle|state|apply-state|enabled]" >&2
+    echo "Usage: ctl grayscale [toggle|state|on|off]" >&2
     exit 1
     ;;
   esac
   ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|clip|dictate}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|grayscale|clip|dictate}" >&2
   exit 1
   ;;
 esac
