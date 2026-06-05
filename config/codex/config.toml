@@ -7,6 +7,8 @@ plan_mode_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 commit_attribution = ""
+approvals_reviewer = "user"
+service_tier = "default"
 
 [features]
 undo = true
@@ -32,6 +34,7 @@ request_permissions_tool = true
 enable_fanout = true
 hooks = true
 guardian_approval = true
+terminal_resize_reflow = true
 
 [agents]
 max_threads = 8
@@ -81,9 +84,14 @@ statusMessage = "Checking Google Workspace guarded commands"
 
 [hooks.state."/home/barrett/.config/codex/config.toml:pre_tool_use:0:0"]
 trusted_hash = "sha256:eaabebb3f280c4a3a22b63c4efc0ab2bc7d2cb4cb7fc41abdaafac67aadc2ec5"
+enabled = true
 
 [hooks.state."/home/barrett/.config/codex/config.toml:pre_tool_use:0:1"]
 trusted_hash = "sha256:ff38bbd36bac7cdd1e7cf27594829349d901a1210e17ebe9a993b2db2a4e19ee"
+
+[hooks.state."/home/barrett/dev/diffs.nvim/.codex/config.toml:pre_tool_use:0:0"]
+trusted_hash = "sha256:5684b36f6df43b96d0b9ed10366f24cc9b2953141c16f0addd4bbebd8db03487"
+enabled = true
 
 [sandbox_workspace_write]
 network_access = true
@@ -159,6 +167,12 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/barrett/dev/Hyprland"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/sioyek-dev"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/philipmruth.com"]
 trust_level = "trusted"
 
 [marketplaces.barrett-private]

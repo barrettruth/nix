@@ -11,6 +11,9 @@ system-instructions:
     When responding with code changes, always explain what the change does
     and why. Never respond with bare code excerpts unless explicitly asked.
   - >
+    When creating issues or PRs, first read and follow the repository's issue
+    or pull request template if one exists.
+  - >
     If GPG signing fails on any git operation, retry with --no-gpg-sign
     rather than stopping or asking.
   - >

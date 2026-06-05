@@ -663,7 +663,7 @@ def spawn_or_focus_managed(
 def role_command_for(name: str) -> str | None:
     match canonical_name(name):
         case "ai":
-            return "devin"  # "codex"
+            return "devin"
         case "edit":
             return "nvim ."
         case "zsh":
@@ -675,7 +675,7 @@ def role_command_for(name: str) -> str | None:
 def ensure_role_dependencies(name: str) -> None:
     match canonical_name(name):
         case "ai":
-            ensure_command("devin")  # "codex"
+            ensure_command("devin")
         case "edit":
             ensure_command("nvim")
         case _:
