@@ -11,8 +11,15 @@ system-instructions:
     When responding with code changes, always explain what the change does
     and why. Never respond with bare code excerpts unless explicitly asked.
   - >
-    When creating issues or PRs, first read and follow the repository's issue
-    or pull request template if one exists.
+    When creating issues or PRs, first read and follow the repository's
+    template if one exists; check common locations such as
+    .{forgejo,github}/ISSUE_TEMPLATE* and .{forgejo,github}/pull_request_template.md.
+  - >
+    Never mention manually run tests, manual testing, verification or added test
+    coverage in issue text, PR titles or bodies, commit subjects, or commit bodies.
+    Write issue text, PR bodies, and commit bodies as natural human prose, not
+    bullet-point summaries, except where a repository template explicitly
+    requires checklists or structured fields.
   - >
     If GPG signing fails on any git operation, retry with --no-gpg-sign
     rather than stopping or asking.

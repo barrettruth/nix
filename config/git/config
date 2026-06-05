@@ -54,13 +54,16 @@
 	cmd = nvim -c 'CodeDiff' $LOCAL $REMOTE
 
 [merge]
-	tool = codediff
+	tool = diffs-nvim
 
 [mergetool]
 	prompt = false
 
 [mergetool "codediff"]
 	cmd = nvim -c 'CodeDiff' $LOCAL $REMOTE $MERGED
+
+[mergetool "diffs-nvim"]
+	cmd = nvim "$MERGED"
 
 [push]
 	autoSetupRemote = true
