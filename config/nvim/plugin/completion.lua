@@ -122,8 +122,15 @@ vim.keymap.set('i', '<c-e>', function()
     return vim.fn.pumvisible() == 1 and '<c-e>' or '<c-x><c-u>'
 end, { expr = true, desc = 'env completion or cancel completion' })
 vim.keymap.set('i', '<c-f>', function()
-    return completion_or_preview('<c-x><c-f>', 'down')
-end, { expr = true, desc = 'file completion or docs forward' })
+    set_preview_border()
+    if scroll_preview('down') then
+        return ''
+    end
+    if vim.fn.pumvisible() == 1 then
+        return ''
+    end
+    return "<c-r>=v:lua.require'config.completion.files'.trigger()<cr>"
+end, { expr = true, desc = 'fuzzy file completion or docs forward' })
 vim.keymap.set('i', '<c-n>', function()
     return '<c-n>'
 end, { expr = true, desc = 'next completion' })
@@ -134,3 +141,9 @@ vim.keymap.set('i', '<c-s>', semantic_completion, {
     expr = true,
     desc = 'semantic completion',
 })
+
+-- Eagerly load the file provider so its warmup autocmds register and the
+-- project index is ready before the first <c-f>.
+vim.schedule(function()
+    require('config.completion.files').warmup(0)
+end)
