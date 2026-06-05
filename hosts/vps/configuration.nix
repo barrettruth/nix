@@ -823,8 +823,6 @@ in
     "d /var/lib/forgejo/custom/templates/repo 0750 git git -"
     "d /var/lib/forgejo/custom/templates/repo/diff 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/repo/diff/box.tmpl - - - - ${pierreForgejo.templates}/repo/diff/box.tmpl"
-    "r /var/lib/forgejo/custom/templates/repo/diff/options_dropdown.tmpl - - - -"
-    "r /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - -"
     "d /var/lib/forgejo/custom/templates/user 0750 git git -"
     "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/user/auth/oauth_container.tmpl - - - - ${forgejoOauthContainerTmpl}"
