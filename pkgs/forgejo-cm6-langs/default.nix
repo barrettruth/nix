@@ -110,7 +110,6 @@ buildGoModule {
 
   patches = [
     "${pkgs.path}/pkgs/by-name/fo/forgejo/static-root-path.patch"
-    ../forgejo-custom/patches/0001-client-side-file-rendering.patch
     ./oauth-avatar-on-registration.patch
     ./profile-root-landing.patch
   ];
@@ -161,6 +160,6 @@ buildGoModule {
   meta = forgejo.meta // {
     description =
       forgejo.meta.description
-      + " (with @codemirror/legacy-modes registered for INI/TOML/Shell/Lua/Ruby/Dockerfile/Perl/Nginx/Vim script/Diff and client-side source file rendering hooks)";
+      + " (with @codemirror/legacy-modes registered for INI/TOML/Shell/Lua/Ruby/Dockerfile/Perl/Nginx/Vim script/Diff)";
   };
 }

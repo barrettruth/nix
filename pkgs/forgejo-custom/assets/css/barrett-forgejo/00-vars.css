@@ -1,5 +1,5 @@
 :root {
-  --barrett-pierre-code-bg: var(--color-body);
+  --barrett-code-bg: var(--color-body);
   --barrett-diff-added-line-bg: color-mix(
     in srgb,
     var(--color-diff-added-row-bg) 60%,
@@ -19,13 +19,13 @@
   --diffs-min-number-column-width: 3ch;
   --diffs-gap-inline: 0;
   --diffs-gap-block: 0;
-  --diffs-light-bg: var(--barrett-pierre-code-bg);
-  --diffs-dark-bg: var(--barrett-pierre-code-bg);
+  --diffs-light-bg: var(--barrett-code-bg);
+  --diffs-dark-bg: var(--barrett-code-bg);
   --diffs-light: var(--color-text);
   --diffs-dark: var(--color-text);
   --diffs-bg-buffer-override: var(--color-body);
   --diffs-bg-hover-override: var(--color-hover);
-  --diffs-bg-context-override: var(--barrett-pierre-code-bg);
+  --diffs-bg-context-override: var(--barrett-code-bg);
   --diffs-bg-context-gutter-override: var(--color-body);
   --diffs-bg-separator-override: var(--color-box-header);
   --diffs-fg-number-override: var(--color-text-light-2);

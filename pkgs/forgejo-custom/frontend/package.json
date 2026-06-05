@@ -4,11 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/barrett-forgejo.js src/pierre-preload.js --bundle --format=esm --target=es2022 --outdir=dist --entry-names=[name] --chunk-names=chunks/[name]-[hash] --splitting --minify"
+    "build": "esbuild src/barrett-forgejo.js --bundle --format=esm --target=es2022 --outdir=dist --entry-names=[name] --chunk-names=chunks/[name]-[hash] --splitting --minify"
   },
-  "dependencies": {
-    "@pierre/diffs": "1.1.21"
-  },
+  "dependencies": {},
   "devDependencies": {
     "esbuild": "0.25.12"
   }

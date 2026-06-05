@@ -1,5 +1,6 @@
 {
   pkgs,
+  pierreForgejo,
   ...
 }:
 let
@@ -50,7 +51,7 @@ let
     pname = "barrett-forgejo-custom-frontend";
     version = "0.0.0";
     src = frontendSrc;
-    npmDepsHash = "sha256-g5GB86S7laJ92nE61HlbiQ5wJm0XgikcPMw+VY9vOXI=";
+    npmDepsHash = "sha256-w3TmCL18MC+Hs4T5HSxt1y0D58NS1Muuo98GHdHiABE=";
     installPhase = ''
       runHook preInstall
       mkdir -p $out/js
@@ -97,8 +98,6 @@ let
         cat \
           ${assetsSrc}/css/barrett-forgejo/00-vars.css \
           ${assetsSrc}/css/barrett-forgejo/10-base.css \
-          ${assetsSrc}/css/barrett-forgejo/20-pierre.css \
-          ${assetsSrc}/css/barrett-forgejo/30-pr-native-diff.css \
           > $out/css/barrett-forgejo.css
         mkdir -p $out/fonts
         cp ${noniconsFont}/dist/nonicons.woff $out/fonts/nonicons.woff
@@ -140,9 +139,10 @@ let
 
     substituteInPlace $out/custom/header.tmpl \
       --replace-fail __BARRETT_FORGEJO_CSS_VERSION__ "$(version_for ${assets}/css/barrett-forgejo.css)" \
+      --replace-fail __PIERRE_FORGEJO_CSS_VERSION__ "$(version_for ${pierreForgejo.assets}/css/pierre-forgejo.css)" \
       --replace-fail __BARRETT_FORGEJO_CM6_VERSION__ "$(version_for ${assets}/js/midnight-cm6.js)" \
       --replace-fail __BARRETT_FORGEJO_JS_VERSION__ "$(version_for ${frontend}/js/barrett-forgejo.js)" \
-      --replace-fail __BARRETT_FORGEJO_PIERRE_PRELOAD_VERSION__ "$(version_for ${frontend}/js/pierre-preload.js)"
+      --replace-fail __PIERRE_FORGEJO_JS_VERSION__ "$(version_for ${pierreForgejo.frontend}/js/pierre-forgejo.js)"
   '';
 in
 {

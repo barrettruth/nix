@@ -29,6 +29,10 @@
       url = "git+https://git.barrettruth.com/barrettruth/tmux-mosaic.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pierrejo = {
+      url = "git+https://git.harivan.sh/harivansh-afk/pierrejo.git?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";

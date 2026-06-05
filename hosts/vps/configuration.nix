@@ -3,6 +3,7 @@
   pkgs,
   lib,
   modulesPath,
+  inputs,
   identity,
   mkVpsSecret,
   ...
@@ -144,7 +145,8 @@ let
         cp $out/avatar.png $out/avatar_default.png
         oxipng -o 4 --strip safe $out/*.png
       '';
-  forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom { };
+  pierreForgejo = inputs.pierrejo.lib.mkPierreForgejo { inherit pkgs; };
+  forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom { inherit pierreForgejo; };
 
   forgejoSfProRegularFontFile = builtins.path {
     path = ../../fonts/san-francisco-pro/SF-Pro.ttf;
@@ -282,6 +284,7 @@ in
     ./delta.nix
     ./disk-config.nix
     ./hardware-configuration.nix
+    pierreForgejo.nixosModule
     (modulesPath + "/profiles/minimal.nix")
     (modulesPath + "/profiles/headless.nix")
   ];
@@ -401,9 +404,10 @@ in
       locations = {
         "/".proxyPass = "http://127.0.0.1:3000";
         "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;
+        "= /assets/css/pierre-forgejo.css" = forgejoMutableAssetProxy;
         "= /assets/github-repo-stats.json" = forgejoStatsAssetProxy;
         "= /assets/js/barrett-forgejo.js" = forgejoMutableAssetProxy;
-        "= /assets/js/pierre-preload.js" = forgejoMutableAssetProxy;
+        "= /assets/js/pierre-forgejo.js" = forgejoMutableAssetProxy;
         "= /manifest.json" = forgejoMutableAssetProxy;
         "~* ^/assets/fonts/.*\\.(?:ttf|otf|woff|woff2)$" = forgejoImmutableAssetProxy;
         "~* ^/assets/.*\\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico)$" = forgejoMutableAssetProxy;
@@ -470,7 +474,7 @@ in
 
   services.forgejo = {
     enable = true;
-    package = pkgs.callPackage ../../pkgs/forgejo-cm6-langs { };
+    package = pierreForgejo.mkForgejoWithPierre (pkgs.callPackage ../../pkgs/forgejo-cm6-langs { });
     user = "git";
     group = "git";
     dump = {
@@ -566,8 +570,23 @@ in
     };
   };
 
+  services.pierre-ssr.enable = true;
+
   systemd.services.forgejo = {
-    environment.GNUPGHOME = "/var/lib/forgejo/.gnupg";
+    after = [ "pierre-ssr.service" ];
+    wants = [ "pierre-ssr.service" ];
+    environment = {
+      GNUPGHOME = "/var/lib/forgejo/.gnupg";
+      PIERRE_SSR_SOCKET = config.services.pierre-ssr.socketPath;
+    };
+    restartTriggers = [
+      forgejoCustom.frontend
+      forgejoCustom.assets
+      forgejoCustom.templates
+      pierreForgejo.frontend
+      pierreForgejo.assets
+      pierreForgejo.templates
+    ];
     serviceConfig.LoadCredential = lib.mkAfter [
       "gpg-passphrase:${config.sops.secrets."forgejo-gpg-passphrase".path}"
     ];
@@ -781,11 +800,12 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-fonts.css - - - - ${forgejoCustom.assets}/css/theme-midnight-fonts.css"
     "L+ /var/lib/forgejo/custom/public/assets/css/theme-midnight-syntax.css - - - - ${forgejoCustom.assets}/css/theme-midnight-syntax.css"
     "L+ /var/lib/forgejo/custom/public/assets/css/barrett-forgejo.css - - - - ${forgejoCustom.assets}/css/barrett-forgejo.css"
+    "L+ /var/lib/forgejo/custom/public/assets/css/pierre-forgejo.css - - - - ${pierreForgejo.assets}/css/pierre-forgejo.css"
     "d /var/lib/forgejo/custom/public/assets/js 0750 git git -"
     "L+ /var/lib/forgejo/custom/public/assets/js/midnight-cm6.js - - - - ${forgejoCustom.assets}/js/midnight-cm6.js"
     "L+ /var/lib/forgejo/custom/public/assets/js/barrett-forgejo.js - - - - ${forgejoCustom.frontend}/js/barrett-forgejo.js"
-    "L+ /var/lib/forgejo/custom/public/assets/js/pierre-preload.js - - - - ${forgejoCustom.frontend}/js/pierre-preload.js"
-    "L+ /var/lib/forgejo/custom/public/assets/js/chunks - - - - ${forgejoCustom.frontend}/js/chunks"
+    "L+ /var/lib/forgejo/custom/public/assets/js/pierre-forgejo.js - - - - ${pierreForgejo.frontend}/js/pierre-forgejo.js"
+    "L+ /var/lib/forgejo/custom/public/assets/js/chunks - - - - ${pierreForgejo.frontend}/js/chunks"
     "d /var/lib/forgejo/custom/templates 0750 git git -"
     "d /var/lib/forgejo/custom/templates/custom 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/custom/header.tmpl - - - - ${forgejoCustom.templates}/custom/header.tmpl"
@@ -802,9 +822,9 @@ in
     "L+ /var/lib/forgejo/custom/templates/mail/common/footer_simple.tmpl - - - - ${forgejoMailFooterSimpleTmpl}"
     "d /var/lib/forgejo/custom/templates/repo 0750 git git -"
     "d /var/lib/forgejo/custom/templates/repo/diff 0750 git git -"
-    "L+ /var/lib/forgejo/custom/templates/repo/diff/box.tmpl - - - - ${forgejoCustom.templates}/repo/diff/box.tmpl"
-    "L+ /var/lib/forgejo/custom/templates/repo/diff/options_dropdown.tmpl - - - - ${forgejoCustom.templates}/repo/diff/options_dropdown.tmpl"
-    "L+ /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - - ${forgejoCustom.templates}/repo/view_file.tmpl"
+    "L+ /var/lib/forgejo/custom/templates/repo/diff/box.tmpl - - - - ${pierreForgejo.templates}/repo/diff/box.tmpl"
+    "r /var/lib/forgejo/custom/templates/repo/diff/options_dropdown.tmpl - - - -"
+    "r /var/lib/forgejo/custom/templates/repo/view_file.tmpl - - - -"
     "d /var/lib/forgejo/custom/templates/user 0750 git git -"
     "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/user/auth/oauth_container.tmpl - - - - ${forgejoOauthContainerTmpl}"
