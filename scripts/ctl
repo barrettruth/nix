@@ -48,7 +48,6 @@ whisper_idle_timeout() {
 
 idle_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
 idle_state_file="$idle_state_dir/idle-manager"
-idle_lock_after_time=300
 grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 grayscale_state_file="$grayscale_state_dir/grayscale"
 grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
@@ -68,12 +67,7 @@ idle_write_state() {
 }
 
 idle_apply_runtime() {
-  case "$(idle_read_state)" in
-  off) timeout=0 ;;
-  *) timeout="$idle_lock_after_time" ;;
-  esac
-
-  command -v tmux >/dev/null 2>&1 && tmux set -g lock-after-time "$timeout" 2>/dev/null || true
+  command -v tmux >/dev/null 2>&1 && tmux set -g lock-after-time 0 2>/dev/null || true
 }
 
 idle_on() {

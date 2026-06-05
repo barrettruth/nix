@@ -138,12 +138,12 @@ let
   hypridleStart = pkgs.writeShellScript "hypridle-start" ''
     set -eu
 
+    ${pkgs.tmux}/bin/tmux set -g lock-after-time 0 2>/dev/null || true
+
     if [ "$(${repo}/scripts/ctl idle state)" = off ]; then
-      ${pkgs.tmux}/bin/tmux set -g lock-after-time 0 2>/dev/null || true
       exit 0
     fi
 
-    ${pkgs.tmux}/bin/tmux set -g lock-after-time 300 2>/dev/null || true
     exec ${wrapWaylandExec "${pkgs.hypridle}/bin/hypridle"}
   '';
 in
