@@ -201,6 +201,7 @@ in
     ];
     requires = [ "authelia-finance.service" ];
     wantedBy = [ "multi-user.target" ];
+    unitConfig.ConditionPathExists = "${financeDir}/.next/standalone/server.js";
     serviceConfig =
       {
         Type = "simple";
@@ -211,7 +212,6 @@ in
         User = "finance";
         Group = "finance";
         StateDirectory = "finance";
-        ConditionPathExists = "${financeDir}/.next/standalone/server.js";
       }
       // lib.optionalAttrs hasFinanceEnvSecret {
         EnvironmentFile = config.sops.secrets."finance-env".path;

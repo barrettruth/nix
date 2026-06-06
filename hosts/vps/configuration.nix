@@ -401,6 +401,7 @@ in
     virtualHosts."git.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
+      serverAliases = [ "forge.${identity.domain}" ];
       locations = {
         "/".proxyPass = "http://127.0.0.1:3000";
         "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;

@@ -88,7 +88,10 @@ return {
             vim.g.forge = {
                 sources = {
                     forgejo = {
-                        hosts = { 'git.barrettruth.com' },
+                        hosts = {
+                            'git.barrettruth.com',
+                            'forge.barrettruth.com',
+                        },
                     },
                 },
             }

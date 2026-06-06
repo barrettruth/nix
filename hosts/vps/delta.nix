@@ -102,6 +102,7 @@ in
     description = "delta - personal todo/productivity platform";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
+    unitConfig.ConditionPathExists = "/opt/delta/.next/standalone/server.js";
     serviceConfig = {
       Type = "simple";
       WorkingDirectory = "/opt/delta";
