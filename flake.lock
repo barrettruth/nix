@@ -281,11 +281,11 @@
         "rev": "0f0c07cfadae6436c97abd76f59fcc3fc131d2e7",
         "revCount": 10,
         "type": "git",
-        "url": "ssh://git@git.barrettruth.com/barrettruth/fonts.git"
+        "url": "ssh://git@forge.barrettruth.com/barrettruth/fonts.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@git.barrettruth.com/barrettruth/fonts.git"
+        "url": "ssh://git@forge.barrettruth.com/barrettruth/fonts.git"
       }
     },
     "git-hooks-nix": {
@@ -630,11 +630,11 @@
         "rev": "52a4b39369ae2170f0f9022c6b27cc5a5eb7ab7c",
         "revCount": 132,
         "type": "git",
-        "url": "https://git.barrettruth.com/barrettruth/tmux-mosaic.git"
+        "url": "https://forge.barrettruth.com/barrettruth/tmux-mosaic.git"
       },
       "original": {
         "type": "git",
-        "url": "https://git.barrettruth.com/barrettruth/tmux-mosaic.git"
+        "url": "https://forge.barrettruth.com/barrettruth/tmux-mosaic.git"
       }
     },
     "treefmt-nix": {

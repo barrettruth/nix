@@ -22,7 +22,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     fonts = {
-      url = "git+ssh://git@git.barrettruth.com/barrettruth/fonts.git";
+      url = "git+ssh://git@forge.barrettruth.com/barrettruth/fonts.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     delta = {
@@ -30,7 +30,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     tmux-mosaic = {
-      url = "git+https://git.barrettruth.com/barrettruth/tmux-mosaic.git";
+      url = "git+https://forge.barrettruth.com/barrettruth/tmux-mosaic.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pierrejo = {

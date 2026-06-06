@@ -22,9 +22,9 @@
     "capabilities": [
       "Interactive"
     ],
-    "websiteURL": "https://git.barrettruth.com/barrettruth/delta",
-    "privacyPolicyURL": "https://git.barrettruth.com/barrettruth/delta",
-    "termsOfServiceURL": "https://git.barrettruth.com/barrettruth/delta",
+    "websiteURL": "https://forge.barrettruth.com/barrettruth/delta",
+    "privacyPolicyURL": "https://forge.barrettruth.com/barrettruth/delta",
+    "termsOfServiceURL": "https://forge.barrettruth.com/barrettruth/delta",
     "defaultPrompt": [
       "Use $delta to inspect my pending, WIP, and blocked tasks",
       "Use $delta to check whether the Delta CLI is authenticated"

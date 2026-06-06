@@ -377,10 +377,9 @@ in
       forceSSL = true;
       locations."/".proxyPass = "http://127.0.0.1:8222";
     };
-    virtualHosts."git.${identity.domain}" = {
+    virtualHosts."forge.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
-      serverAliases = [ "forge.${identity.domain}" ];
       locations = {
         "/".proxyPass = "http://127.0.0.1:3000";
         "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;
@@ -394,6 +393,7 @@ in
         "~* ^/avatars/[0-9a-f]+$" = forgejoImmutableAssetProxy;
       };
     };
+    virtualHosts."git.${identity.domain}" = mkRedirectHost "forge.${identity.domain}";
   };
 
   services.journald.extraConfig = ''
@@ -472,10 +472,10 @@ in
         APP_NAME = identity.fullName;
       };
       server = {
-        DOMAIN = "git.${identity.domain}";
-        ROOT_URL = "https://git.${identity.domain}/";
+        DOMAIN = "forge.${identity.domain}";
+        ROOT_URL = "https://forge.${identity.domain}/";
         HTTP_PORT = 3000;
-        SSH_DOMAIN = "git.${identity.domain}";
+        SSH_DOMAIN = "forge.${identity.domain}";
         LANDING_PAGE = "/barrettruth";
       };
       service = {
