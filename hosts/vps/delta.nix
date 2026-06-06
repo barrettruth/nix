@@ -15,6 +15,7 @@ let
   hasSoftwareSyncSecrets = lib.all (
     name: builtins.pathExists ../../secrets/vps/${name}
   ) softwareSyncSecretNames;
+  deltaSoftwareSync = pkgs.callPackage ../../pkgs/delta-software-sync { };
   softwareSyncConfig = pkgs.writeText "delta-software-sync.json" (
     builtins.toJSON {
       delta = {
@@ -169,7 +170,7 @@ in
       Type = "oneshot";
       User = "delta";
       Group = "delta";
-      ExecStart = "${pkgs.delta-software-sync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode active";
+      ExecStart = "${deltaSoftwareSync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode active";
     };
   };
 
@@ -194,7 +195,7 @@ in
       Type = "oneshot";
       User = "delta";
       Group = "delta";
-      ExecStart = "${pkgs.delta-software-sync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode discovery";
+      ExecStart = "${deltaSoftwareSync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode discovery";
     };
   };
 
