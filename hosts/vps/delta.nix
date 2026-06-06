@@ -11,7 +11,6 @@ let
   softwareSyncSecretNames = [
     "delta-software-sync-delta-api-key"
     "delta-software-sync-forgejo-token"
-    "delta-software-sync-github-token"
   ];
   hasSoftwareSyncSecrets = lib.all (
     name: builtins.pathExists ../../secrets/vps/${name}
@@ -30,12 +29,6 @@ let
           baseUrl = "https://git.${identity.domain}";
           tokenFile = config.sops.secrets."delta-software-sync-forgejo-token".path;
           priority = 10;
-        }
-        {
-          provider = "github";
-          baseUrl = "https://github.com";
-          tokenFile = config.sops.secrets."delta-software-sync-github-token".path;
-          priority = 20;
         }
       ];
     }
@@ -75,15 +68,6 @@ in
       ];
     };
     "delta-software-sync-forgejo-token" = mkVpsSecret "delta-software-sync-forgejo-token" {
-      owner = "delta";
-      group = "delta";
-      mode = "0400";
-      restartUnits = [
-        "delta-software-sync-active.service"
-        "delta-software-sync-discovery.service"
-      ];
-    };
-    "delta-software-sync-github-token" = mkVpsSecret "delta-software-sync-github-token" {
       owner = "delta";
       group = "delta";
       mode = "0400";
