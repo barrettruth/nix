@@ -37,9 +37,8 @@ pkgs/                            custom derivations
 
 ## Delta Software Sync
 
-The VPS can run `delta-software-sync` as two systemd timers: active task polling
-every 5 minutes and repository/authored-PR discovery every 30 minutes. The
-timers are enabled only when both SOPS secrets exist:
+The VPS runs `delta-software-sync` as one discovery timer every 5 minutes. The
+timer is enabled only when both SOPS secrets exist:
 
 - `delta-software-sync-delta-api-key`
 - `delta-software-sync-forgejo-token`

@@ -72,19 +72,13 @@ in
       owner = "delta";
       group = "delta";
       mode = "0400";
-      restartUnits = [
-        "delta-software-sync-active.service"
-        "delta-software-sync-discovery.service"
-      ];
+      restartUnits = [ "delta-software-sync-discovery.service" ];
     };
     "delta-software-sync-forgejo-token" = mkVpsSecret "delta-software-sync-forgejo-token" {
       owner = "delta";
       group = "delta";
       mode = "0400";
-      restartUnits = [
-        "delta-software-sync-active.service"
-        "delta-software-sync-discovery.service"
-      ];
+      restartUnits = [ "delta-software-sync-discovery.service" ];
     };
   }
   // lib.optionalAttrs hasSoftwareSyncGithubSecret {
@@ -92,10 +86,7 @@ in
       owner = "delta";
       group = "delta";
       mode = "0400";
-      restartUnits = [
-        "delta-software-sync-active.service"
-        "delta-software-sync-discovery.service"
-      ];
+      restartUnits = [ "delta-software-sync-discovery.service" ];
     };
   };
 
@@ -179,31 +170,6 @@ in
     };
   };
 
-  systemd.services.delta-software-sync-active = lib.mkIf hasSoftwareSyncSecrets {
-    description = "Sync active forge Software tasks into delta";
-    after = [
-      "network-online.target"
-      "delta.service"
-    ];
-    wants = [ "network-online.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "delta";
-      Group = "delta";
-      ExecStart = "${deltaSoftwareSync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode active";
-    };
-  };
-
-  systemd.timers.delta-software-sync-active = {
-    wantedBy = lib.optionals hasSoftwareSyncSecrets [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "2m";
-      OnUnitActiveSec = "5m";
-      RandomizedDelaySec = "30s";
-      Persistent = true;
-    };
-  };
-
   systemd.services.delta-software-sync-discovery = lib.mkIf hasSoftwareSyncSecrets {
     description = "Discover forge Software tasks for delta";
     after = [
@@ -222,9 +188,8 @@ in
   systemd.timers.delta-software-sync-discovery = {
     wantedBy = lib.optionals hasSoftwareSyncSecrets [ "timers.target" ];
     timerConfig = {
-      OnBootSec = "4m";
-      OnUnitActiveSec = "30m";
-      RandomizedDelaySec = "2m";
+      OnBootSec = "2m";
+      OnUnitActiveSec = "5m";
       Persistent = true;
     };
   };
