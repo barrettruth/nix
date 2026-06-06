@@ -1,6 +1,6 @@
 ---
 name: nvim-edit
-description: Use when Barrett asks Codex to populate the current mux edit Neovim window from a natural-language file target. Navigation only; do not edit files.
+description: Use when Barrett asks to populate the current mux edit Neovim window from a natural-language file target. Navigation only; do not edit files.
 ---
 
 # nvim-edit
@@ -25,7 +25,7 @@ Expected behavior:
   current session's `@mux-project-path` and falls back to the current working
   directory when outside tmux.
 - Prefer explicit paths when the user gives them.
-- Treat everything after `$nvim-edit` as a natural-language command for Codex to
+- Treat the natural-language request that invoked this skill as a command to
   interpret before invoking the helper.
 - For natural-language targets, use normal repo investigation to decide the
   concrete file path(s): `rg --files`, `rg` content searches, Git status, path
@@ -69,7 +69,7 @@ Rules:
 Helper:
 
 ```sh
-python3 /home/barrett/.config/nix/config/codex/private-plugin-marketplace/plugins/nvim/scripts/edit-window.py --dry-run <path> [<path> ...]
-python3 /home/barrett/.config/nix/config/codex/private-plugin-marketplace/plugins/nvim/scripts/edit-window.py <path> [<path> ...]
-file=$(git ls-files | shuf -n 1) && python3 /home/barrett/.config/nix/config/codex/private-plugin-marketplace/plugins/nvim/scripts/edit-window.py "$file"
+python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py --dry-run <path> [<path> ...]
+python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py <path> [<path> ...]
+file=$(git ls-files | shuf -n 1) && python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py "$file"
 ```

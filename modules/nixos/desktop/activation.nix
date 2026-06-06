@@ -163,6 +163,21 @@ in
     ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
     ${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}
     ${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
+
+    ${mkDir "${XDG_CONFIG_HOME}/codex/skills"}
+    if [ -L "${XDG_CONFIG_HOME}/devin/skills" ]; then
+      rm -f "${XDG_CONFIG_HOME}/devin/skills"
+    fi
+    ${mkDir "${XDG_CONFIG_HOME}/devin/skills"}
+    for skill in ${repo}/config/skills/*/; do
+      [ -f "$skill/SKILL.md" ] || continue
+      name="$(basename "$skill")"
+      for agentdir in "${XDG_CONFIG_HOME}/codex/skills" "${XDG_CONFIG_HOME}/devin/skills"; do
+        ln -sfnT "$skill" "$agentdir/$name"
+        chown -h ${username}:users "$agentdir/$name"
+      done
+    done
+
     ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
     ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${XDG_CONFIG_HOME}/tmux/themes/midnight.conf"}
     ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${XDG_CONFIG_HOME}/tmux/themes/daylight.conf"}
