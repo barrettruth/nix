@@ -318,6 +318,8 @@ class GitHubAdapter(ForgeAdapter):
             if not rows:
                 break
             for row in rows:
+                if row.get("private") is not False:
+                    continue
                 repos.append(
                     RepoRef(
                         provider=self.provider,
@@ -461,6 +463,8 @@ class ForgejoAdapter(ForgeAdapter):
             if not rows:
                 break
             for row in rows:
+                if row.get("private") is not False:
+                    continue
                 owner = (
                     row.get("owner", {}).get("login")
                     or row.get("owner", {}).get("username")

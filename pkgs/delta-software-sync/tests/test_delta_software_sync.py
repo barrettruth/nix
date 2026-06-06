@@ -43,6 +43,14 @@ class FakeHttp:
         return self.payload
 
 
+class FakeSequenceHttp:
+    def __init__(self, payloads):
+        self.payloads = list(payloads)
+
+    def request_json(self, *_args, **_kwargs):
+        return self.payloads.pop(0)
+
+
 def repo(provider, owner, name, priority):
     return RepoRef(
         provider=provider,
@@ -153,6 +161,41 @@ class DiscoveryBatchTests(unittest.TestCase):
             {batch.as_delta_batch()["source"]["label"] for batch in batches},
             {"barrettruth/delta", "barrettruth/nix"},
         )
+
+    def test_forgejo_owned_repos_are_public_only(self):
+        with NamedTemporaryFile("w") as token_file:
+            token_file.write("token")
+            token_file.flush()
+            adapter = ForgejoAdapter(
+                provider="forgejo",
+                base_url="https://git.example.com",
+                token_file=token_file.name,
+                priority=10,
+                maintainer="barrettruth",
+                http=FakeSequenceHttp(
+                    [
+                        [
+                            {
+                                "owner": {"login": "barrettruth"},
+                                "name": "public-repo",
+                                "html_url": "https://git.example.com/barrettruth/public-repo",
+                                "private": False,
+                            },
+                            {
+                                "owner": {"login": "barrettruth"},
+                                "name": "private-repo",
+                                "html_url": "https://git.example.com/barrettruth/private-repo",
+                                "private": True,
+                            },
+                        ],
+                        [],
+                    ]
+                ),
+            )
+
+            repos = adapter.list_owned_repos()
+
+        self.assertEqual([repo.name for repo in repos], ["public-repo"])
 
     def test_forgejo_authored_pulls_accept_string_repository_owner(self):
         with NamedTemporaryFile("w") as token_file:

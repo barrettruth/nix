@@ -43,3 +43,6 @@ timers are enabled only when both SOPS secrets exist:
 
 - `delta-software-sync-delta-api-key`
 - `delta-software-sync-forgejo-token`
+
+Add `delta-software-sync-github-token` to also sync open GitHub PRs authored by
+the maintainer.

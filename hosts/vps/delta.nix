@@ -15,6 +15,7 @@ let
   hasSoftwareSyncSecrets = lib.all (
     name: builtins.pathExists ../../secrets/vps/${name}
   ) softwareSyncSecretNames;
+  hasSoftwareSyncGithubSecret = builtins.pathExists ../../secrets/vps/delta-software-sync-github-token;
   deltaSoftwareSync = pkgs.callPackage ../../pkgs/delta-software-sync { };
   softwareSyncConfig = pkgs.writeText "delta-software-sync.json" (
     builtins.toJSON {
@@ -30,6 +31,14 @@ let
           baseUrl = "https://git.${identity.domain}";
           tokenFile = config.sops.secrets."delta-software-sync-forgejo-token".path;
           priority = 10;
+        }
+      ]
+      ++ lib.optionals hasSoftwareSyncGithubSecret [
+        {
+          provider = "github";
+          baseUrl = "https://github.com";
+          tokenFile = config.sops.secrets."delta-software-sync-github-token".path;
+          priority = 20;
         }
       ];
     }
@@ -69,6 +78,17 @@ in
       ];
     };
     "delta-software-sync-forgejo-token" = mkVpsSecret "delta-software-sync-forgejo-token" {
+      owner = "delta";
+      group = "delta";
+      mode = "0400";
+      restartUnits = [
+        "delta-software-sync-active.service"
+        "delta-software-sync-discovery.service"
+      ];
+    };
+  }
+  // lib.optionalAttrs hasSoftwareSyncGithubSecret {
+    "delta-software-sync-github-token" = mkVpsSecret "delta-software-sync-github-token" {
       owner = "delta";
       group = "delta";
       mode = "0400";
