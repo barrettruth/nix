@@ -34,14 +34,3 @@ pkgs/                            custom derivations
 
 - **vps** — NixOS VPS. Public Forgejo at `git.barrettruth.com`, Vaultwarden at `vault.barrettruth.com`, `delta` at `delta.barrettruth.com`.
 - **laptop** — Dell XPS 9500 workstation. Deploy locally with `nixos-rebuild switch --flake .#laptop`.
-
-## Delta Software Sync
-
-The VPS runs `delta-software-sync` as one discovery timer every 5 minutes. The
-timer is enabled only when both SOPS secrets exist:
-
-- `delta-software-sync-delta-api-key`
-- `delta-software-sync-forgejo-token`
-
-Add `delta-software-sync-github-token` to also sync open GitHub PRs authored by
-the maintainer.
