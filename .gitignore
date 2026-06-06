@@ -2,12 +2,6 @@ result
 .direnv/
 .envrc
 fonts/*
-!fonts/signifier/
-!fonts/berkeley-mono/
-!fonts/san-francisco-pro/
-fonts/san-francisco-pro/*
-!fonts/san-francisco-pro/SF-Pro.ttf
-!fonts/san-francisco-pro/SF-Pro-Italic.ttf
 config/chromium/extension/theme.css
 config/chromium/extension/theme.js
 config/nvim/lazy-lock.json

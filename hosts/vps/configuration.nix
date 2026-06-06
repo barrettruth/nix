@@ -146,32 +146,11 @@ let
         oxipng -o 4 --strip safe $out/*.png
       '';
   pierreForgejo = inputs.pierrejo.lib.mkPierreForgejo { inherit pkgs; };
-  forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom { inherit pierreForgejo; };
+  forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom {
+    inherit pierreForgejo;
+    barrettWebfonts = inputs.fonts.packages.${pkgs.stdenv.hostPlatform.system}.web;
+  };
 
-  forgejoSfProRegularFontFile = builtins.path {
-    path = ../../fonts/san-francisco-pro/SF-Pro.ttf;
-    name = "SF-Pro.ttf";
-  };
-  forgejoSfProItalicFontFile = builtins.path {
-    path = ../../fonts/san-francisco-pro/SF-Pro-Italic.ttf;
-    name = "SF-Pro-Italic.ttf";
-  };
-  forgejoBerkeleyMonoRegularFontFile = builtins.path {
-    path = ../../fonts/berkeley-mono/BerkeleyMono-Regular.ttf;
-    name = "BerkeleyMono-Regular.ttf";
-  };
-  forgejoBerkeleyMonoItalicFontFile = builtins.path {
-    path = ../../fonts/berkeley-mono/BerkeleyMono-Italic.ttf;
-    name = "BerkeleyMono-Italic.ttf";
-  };
-  forgejoBerkeleyMonoBoldFontFile = builtins.path {
-    path = ../../fonts/berkeley-mono/BerkeleyMono-Bold.ttf;
-    name = "BerkeleyMono-Bold.ttf";
-  };
-  forgejoBerkeleyMonoBoldItalicFontFile = builtins.path {
-    path = ../../fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf;
-    name = "BerkeleyMono-BoldItalic.ttf";
-  };
   forgejoStixTwoFontFile = pkgs.runCommand "stix-two-text.ttf" { } ''
     cp '${pkgs.stix-two}/share/fonts/truetype/STIXTwoText[wght].ttf' $out
   '';
@@ -831,17 +810,17 @@ in
     "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons.woff - - - - ${forgejoCustom.assets}/fonts/nonicons.woff"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/nonicons-v1.woff2"
     "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${forgejoSfProRegularFontFile}"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf - - - - ${forgejoSfProItalicFontFile}"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2"
     "d /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf - - - - ${forgejoBerkeleyMonoRegularFontFile}"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf - - - - ${forgejoBerkeleyMonoItalicFontFile}"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf - - - - ${forgejoBerkeleyMonoBoldFontFile}"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf - - - - ${forgejoBerkeleyMonoBoldItalicFontFile}"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Regular.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Italic.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Bold.ttf"
+    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2"

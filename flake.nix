@@ -21,6 +21,10 @@
       url = "github:googleworkspace/cli/a3768d0e82ad83cca2da97724e46bea4ff0e6dbd";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    fonts = {
+      url = "git+ssh://git@git.barrettruth.com/barrettruth/fonts.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     delta = {
       url = "git+file:///home/barrett/dev/delta";
       inputs.nixpkgs.follows = "nixpkgs";

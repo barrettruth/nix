@@ -9,6 +9,8 @@ let
         system = final.stdenv.hostPlatform.system;
       in
       {
+        barrett-fonts = inputs.fonts.packages.${system}.desktop;
+        barrett-webfonts = inputs.fonts.packages.${system}.web;
         delta-software-sync = final.callPackage ../pkgs/delta-software-sync { };
         delta-cli = inputs.delta.packages.${system}.cli;
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
@@ -51,6 +53,12 @@ in
     in
     {
       _module.args.pkgs = pkgs;
-      packages.delta-software-sync = pkgs.delta-software-sync;
+      packages = {
+        inherit (pkgs)
+          barrett-fonts
+          barrett-webfonts
+          delta-software-sync
+          ;
+      };
     };
 }

@@ -92,7 +92,6 @@ let
 in
 {
   systemd.tmpfiles.rules = [
-    "L+ ${XDG_DATA_HOME}/fonts - - - - ${repo}/fonts"
     "d ${homeDirectory}/dev 0755 ${username} users -"
     "d ${homeDirectory}/Pictures/Screensavers 0755 ${username} users -"
     "d ${homeDirectory}/Pictures/Screenshots 0755 ${username} users -"
@@ -211,8 +210,8 @@ in
 
     [ -L ${homeDirectory}/.zshenv ] && rm ${homeDirectory}/.zshenv || true
 
-    if [ ! -d ${repo}/fonts ] || [ -z "$(ls -A ${repo}/fonts 2>/dev/null)" ]; then
-      echo "WARNING: ~/.config/nix/fonts is missing or empty"
+    if [ "$(readlink "${XDG_DATA_HOME}/fonts" 2>/dev/null || true)" = "${repo}/fonts" ]; then
+      rm "${XDG_DATA_HOME}/fonts"
     fi
   '';
 }

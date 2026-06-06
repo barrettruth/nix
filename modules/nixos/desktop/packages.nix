@@ -24,6 +24,7 @@ let
 in
 {
   fonts.packages = lib.optionals hostConfig.enableDesktop [
+    pkgs.barrett-fonts
     pkgs.iosevka
   ];
 

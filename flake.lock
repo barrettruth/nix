@@ -268,6 +268,26 @@
         "type": "github"
       }
     },
+    "fonts": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1780744292,
+        "narHash": "sha256-/KpGqrjBphNeOAADQ+EGH7+IJu5eaVmV7yq7vVX+ws4=",
+        "ref": "refs/heads/main",
+        "rev": "0f0c07cfadae6436c97abd76f59fcc3fc131d2e7",
+        "revCount": 10,
+        "type": "git",
+        "url": "ssh://git@git.barrettruth.com/barrettruth/fonts.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@git.barrettruth.com/barrettruth/fonts.git"
+      }
+    },
     "git-hooks-nix": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -521,6 +541,7 @@
         "direnv-instant": "direnv-instant",
         "disko": "disko",
         "flake-parts": "flake-parts_3",
+        "fonts": "fonts",
         "googleworkspace-cli": "googleworkspace-cli",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_5",
