@@ -568,10 +568,14 @@ class ForgejoAdapter(ForgeAdapter):
             ):
                 continue
             repo_row = row.get("repository") or {}
-            owner = repo_row.get("owner", {}).get("login") or repo_row.get(
-                "owner", {}
-            ).get("username")
-            name = repo_row.get("name")
+            repo_owner = repo_row.get("owner") if isinstance(repo_row, dict) else None
+            if isinstance(repo_owner, dict):
+                owner = repo_owner.get("login") or repo_owner.get("username")
+            elif isinstance(repo_owner, str):
+                owner = repo_owner
+            else:
+                owner = None
+            name = repo_row.get("name") if isinstance(repo_row, dict) else None
             if not owner or not name:
                 path = (
                     urllib.parse.urlparse(row.get("html_url", ""))
@@ -586,7 +590,10 @@ class ForgejoAdapter(ForgeAdapter):
                 base_url=self.base_url,
                 owner=owner,
                 name=name,
-                html_url=repo_row.get("html_url") or f"{self.base_url}/{owner}/{name}",
+                html_url=(
+                    repo_row.get("html_url") if isinstance(repo_row, dict) else None
+                )
+                or f"{self.base_url}/{owner}/{name}",
                 priority=self.priority,
             )
             items.append(self._pull_item(repo, row, False))

@@ -1,8 +1,10 @@
 import unittest
+from tempfile import NamedTemporaryFile
 
 from delta_software_sync import (
     Batch,
     ExternalItem,
+    ForgejoAdapter,
     JsonHttpClient,
     RateLimitError,
     RepoRef,
@@ -31,6 +33,14 @@ class FakeAdapter:
 
     def list_authored_open_pulls(self):
         return self.authored
+
+
+class FakeHttp:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def request_json(self, *_args, **_kwargs):
+        return self.payload
 
 
 def repo(provider, owner, name, priority):
@@ -143,6 +153,40 @@ class DiscoveryBatchTests(unittest.TestCase):
             {batch.as_delta_batch()["source"]["label"] for batch in batches},
             {"barrettruth/delta", "barrettruth/nix"},
         )
+
+    def test_forgejo_authored_pulls_accept_string_repository_owner(self):
+        with NamedTemporaryFile("w") as token_file:
+            token_file.write("token")
+            token_file.flush()
+            adapter = ForgejoAdapter(
+                provider="forgejo",
+                base_url="https://git.example.com",
+                token_file=token_file.name,
+                priority=10,
+                maintainer="barrettruth",
+                http=FakeHttp(
+                    [
+                        {
+                            "poster": {"login": "barrettruth"},
+                            "number": 7,
+                            "title": "PR",
+                            "body": "Body",
+                            "state": "open",
+                            "html_url": "https://git.example.com/someone/project/pulls/7",
+                            "repository": {
+                                "owner": "someone",
+                                "name": "project",
+                            },
+                        }
+                    ]
+                ),
+            )
+
+            items = adapter.list_authored_open_pulls()
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].source.owner, "someone")
+        self.assertEqual(items[0].source.name, "project")
 
 
 class ActivityTests(unittest.TestCase):
