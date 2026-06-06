@@ -26,11 +26,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780736766,
-        "narHash": "sha256-+fWO5lvQ8y7E0mvaFLqJub5Z2m1fqHfBhUouubGpUyI=",
+        "lastModified": 1780740893,
+        "narHash": "sha256-buGXRNHS+SMgywDV0vMqMdmr2skyTHeJfgwogzYwL2g=",
         "ref": "refs/heads/main",
-        "rev": "abe85957e88deef545885cd8f6658233b8b5584a",
-        "revCount": 599,
+        "rev": "3aca5237a811aca75c7ad13eaee257c922bcb551",
+        "revCount": 600,
         "type": "git",
         "url": "file:///home/barrett/dev/delta"
       },
