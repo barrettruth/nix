@@ -8,6 +8,38 @@
 }:
 let
   hasDeltaR2BackupSecret = builtins.pathExists ../../secrets/vps/delta-r2-backup-env;
+  softwareSyncSecretNames = [
+    "delta-software-sync-delta-api-key"
+    "delta-software-sync-forgejo-token"
+    "delta-software-sync-github-token"
+  ];
+  hasSoftwareSyncSecrets = lib.all (
+    name: builtins.pathExists ../../secrets/vps/${name}
+  ) softwareSyncSecretNames;
+  softwareSyncConfig = pkgs.writeText "delta-software-sync.json" (
+    builtins.toJSON {
+      delta = {
+        url = "http://127.0.0.1:3001";
+        apiKeyFile = config.sops.secrets."delta-software-sync-delta-api-key".path;
+      };
+      maintainerUsername = "barrettruth";
+      category = "Software";
+      forges = [
+        {
+          provider = "forgejo";
+          baseUrl = "https://git.${identity.domain}";
+          tokenFile = config.sops.secrets."delta-software-sync-forgejo-token".path;
+          priority = 10;
+        }
+        {
+          provider = "github";
+          baseUrl = "https://github.com";
+          tokenFile = config.sops.secrets."delta-software-sync-github-token".path;
+          priority = 20;
+        }
+      ];
+    }
+  );
 in
 {
   services.nginx.virtualHosts."delta.${identity.domain}" = {
@@ -30,6 +62,35 @@ in
       group = "root";
       mode = "0400";
       restartUnits = [ "delta-r2-backup.service" ];
+    };
+  }
+  // lib.optionalAttrs hasSoftwareSyncSecrets {
+    "delta-software-sync-delta-api-key" = mkVpsSecret "delta-software-sync-delta-api-key" {
+      owner = "delta";
+      group = "delta";
+      mode = "0400";
+      restartUnits = [
+        "delta-software-sync-active.service"
+        "delta-software-sync-discovery.service"
+      ];
+    };
+    "delta-software-sync-forgejo-token" = mkVpsSecret "delta-software-sync-forgejo-token" {
+      owner = "delta";
+      group = "delta";
+      mode = "0400";
+      restartUnits = [
+        "delta-software-sync-active.service"
+        "delta-software-sync-discovery.service"
+      ];
+    };
+    "delta-software-sync-github-token" = mkVpsSecret "delta-software-sync-github-token" {
+      owner = "delta";
+      group = "delta";
+      mode = "0400";
+      restartUnits = [
+        "delta-software-sync-active.service"
+        "delta-software-sync-discovery.service"
+      ];
     };
   };
 
@@ -109,6 +170,56 @@ in
     wantedBy = lib.optionals hasDeltaR2BackupSecret [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
+      Persistent = true;
+    };
+  };
+
+  systemd.services.delta-software-sync-active = lib.mkIf hasSoftwareSyncSecrets {
+    description = "Sync active forge Software tasks into delta";
+    after = [
+      "network-online.target"
+      "delta.service"
+    ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "delta";
+      Group = "delta";
+      ExecStart = "${pkgs.delta-software-sync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode active";
+    };
+  };
+
+  systemd.timers.delta-software-sync-active = {
+    wantedBy = lib.optionals hasSoftwareSyncSecrets [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "2m";
+      OnUnitActiveSec = "5m";
+      RandomizedDelaySec = "30s";
+      Persistent = true;
+    };
+  };
+
+  systemd.services.delta-software-sync-discovery = lib.mkIf hasSoftwareSyncSecrets {
+    description = "Discover forge Software tasks for delta";
+    after = [
+      "network-online.target"
+      "delta.service"
+    ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "delta";
+      Group = "delta";
+      ExecStart = "${pkgs.delta-software-sync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode discovery";
+    };
+  };
+
+  systemd.timers.delta-software-sync-discovery = {
+    wantedBy = lib.optionals hasSoftwareSyncSecrets [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "4m";
+      OnUnitActiveSec = "30m";
+      RandomizedDelaySec = "2m";
       Persistent = true;
     };
   };
