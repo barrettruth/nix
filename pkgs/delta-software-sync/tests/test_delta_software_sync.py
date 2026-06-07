@@ -14,6 +14,7 @@ from delta_software_sync import (
     build_active_batches,
     build_discovery_batches,
     external_human_activity_at,
+    repo_from_source_info,
 )
 
 
@@ -361,6 +362,28 @@ class ActiveBatchTests(unittest.TestCase):
         build_active_batches({"github": RecordingAdapter()}, tasks, "Software")
 
         self.assertEqual(set(seen), {"1", "2", "3"})
+
+
+class RepoFromSourceInfoTests(unittest.TestCase):
+    def test_source_id_round_trips_when_url_host_differs(self):
+        info = {
+            "sourceKind": "forge_repository",
+            "sourceProvider": "forgejo",
+            "sourceId": "git.barrettruth.com/barrettruth/delta",
+            "sourceUrl": "https://forge.barrettruth.com/barrettruth/delta",
+            "sourceTitle": "barrettruth/delta",
+            "externalId": "1",
+            "threadType": "issue",
+        }
+
+        repo = repo_from_source_info(info)
+
+        self.assertIsNotNone(repo)
+        assert repo is not None
+        self.assertEqual(repo.source_id, "git.barrettruth.com/barrettruth/delta")
+        self.assertEqual(repo.provider, "forgejo")
+        self.assertEqual(repo.owner, "barrettruth")
+        self.assertEqual(repo.name, "delta")
 
 
 class RateLimitTests(unittest.TestCase):

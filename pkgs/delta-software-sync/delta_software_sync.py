@@ -698,12 +698,13 @@ def repo_from_source_info(source_info: JsonObject) -> RepoRef | None:
     if not source_id or not source_provider or not source_title:
         return None
     host, owner, name = str(source_id).split("/", 2)
-    parsed = urllib.parse.urlparse(str(source_url or f"https://{host}/{owner}/{name}"))
-    base_url = (
-        f"{parsed.scheme}://{parsed.netloc}"
-        if parsed.scheme and parsed.netloc
-        else f"https://{host}"
-    )
+    # Derive base_url from the stored sourceId host (not sourceUrl) so the
+    # RepoRef's computed source_id round-trips to the same value Delta stored.
+    # Otherwise a host change (e.g. git.* -> forge.* in html_url) would make the
+    # reconcile pass re-post under a different source id and duplicate the task.
+    parsed = urllib.parse.urlparse(str(source_url)) if source_url else None
+    scheme = parsed.scheme if parsed and parsed.scheme else "https"
+    base_url = f"{scheme}://{host}"
     return RepoRef(
         provider=str(source_provider),
         base_url=base_url,

@@ -28,7 +28,7 @@ let
       forges = [
         {
           provider = "forgejo";
-          baseUrl = "https://git.${identity.domain}";
+          baseUrl = "https://forge.${identity.domain}";
           tokenFile = config.sops.secrets."delta-software-sync-forgejo-token".path;
           priority = 10;
         }
