@@ -1,3 +1,5 @@
+import contextlib
+import io
 import unittest
 from tempfile import NamedTemporaryFile
 
@@ -8,6 +10,8 @@ from delta_software_sync import (
     JsonHttpClient,
     RateLimitError,
     RepoRef,
+    SyncError,
+    build_active_batches,
     build_discovery_batches,
     external_human_activity_at,
 )
@@ -267,6 +271,96 @@ class ActivityTests(unittest.TestCase):
         ]
 
         self.assertIsNone(external_human_activity_at(thread, comments, "barrettruth"))
+
+
+def software_task(owner, name, external_id, status="pending"):
+    return {
+        "status": status,
+        "sourceInfo": {
+            "sourceKind": "forge_repository",
+            "sourceProvider": "github",
+            "sourceId": f"github.com/{owner}/{name}",
+            "sourceUrl": f"https://github.com/{owner}/{name}",
+            "sourceTitle": f"{owner}/{name}",
+            "externalId": external_id,
+            "threadType": "pull_request",
+        },
+    }
+
+
+class ActiveBatchTests(unittest.TestCase):
+    def test_skips_items_whose_fetch_fails_and_keeps_the_rest(self):
+        class FetchAdapter:
+            provider = "github"
+
+            def fetch_item(self, repo_ref, external_id, _thread_type):
+                if repo_ref.owner == "nvimtools":
+                    raise SyncError("403 forbidden")
+                return ExternalItem(
+                    source=repo_ref,
+                    external_id=external_id,
+                    thread_type="pull_request",
+                    title="ok",
+                    body=None,
+                    url=f"{repo_ref.html_url}/pulls/{external_id}",
+                    remote_state="cancelled",
+                )
+
+        tasks = [
+            software_task("someone", "project", "3"),
+            software_task("nvimtools", "none-ls-extras.nvim", "47"),
+        ]
+
+        with contextlib.redirect_stderr(io.StringIO()) as captured:
+            batches = build_active_batches(
+                {"github": FetchAdapter()}, tasks, "Software"
+            )
+
+        flat = [entry for batch in batches for entry in batch.as_delta_batch()["items"]]
+        self.assertEqual({entry["externalId"] for entry in flat}, {"3"})
+        self.assertIn("none-ls-extras.nvim#47", captured.getvalue())
+
+    def test_propagates_rate_limit_errors(self):
+        class RateLimitedAdapter:
+            provider = "github"
+
+            def fetch_item(self, _repo_ref, _external_id, _thread_type):
+                raise RateLimitError("slow down")
+
+        tasks = [software_task("someone", "project", "3")]
+
+        with self.assertRaises(RateLimitError):
+            build_active_batches({"github": RateLimitedAdapter()}, tasks, "Software")
+
+    def test_only_reconciles_active_status_tasks(self):
+        seen: list[str] = []
+
+        class RecordingAdapter:
+            provider = "github"
+
+            def fetch_item(self, repo_ref, external_id, _thread_type):
+                seen.append(external_id)
+                return ExternalItem(
+                    source=repo_ref,
+                    external_id=external_id,
+                    thread_type="pull_request",
+                    title="ok",
+                    body=None,
+                    url=f"{repo_ref.html_url}/pulls/{external_id}",
+                    remote_state="open",
+                )
+
+        tasks = [
+            software_task("someone", "project", "1", status="pending"),
+            software_task("someone", "project", "2", status="wip"),
+            software_task("someone", "project", "3", status="blocked"),
+            software_task("someone", "project", "4", status="done"),
+            software_task("someone", "project", "5", status="cancelled"),
+        ]
+
+        build_active_batches({"github": RecordingAdapter()}, tasks, "Software")
+
+        self.assertEqual(set(seen), {"1", "2", "3"})
 
 
 class RateLimitTests(unittest.TestCase):

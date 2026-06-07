@@ -735,11 +735,20 @@ def build_active_batches(
         adapter = adapters_by_provider.get(repo.provider)
         if not adapter:
             continue
-        fetched = adapter.fetch_item(
-            repo,
-            str(source_info.get("externalId")),
-            str(source_info.get("threadType") or "issue"),
-        )
+        try:
+            fetched = adapter.fetch_item(
+                repo,
+                str(source_info.get("externalId")),
+                str(source_info.get("threadType") or "issue"),
+            )
+        except RateLimitError:
+            raise
+        except SyncError as error:
+            print(
+                f"skipping {repo.label}#{source_info.get('externalId')}: {error}",
+                file=sys.stderr,
+            )
+            continue
         if fetched:
             items.append(fetched)
     return group_batches(items, category)

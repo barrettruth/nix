@@ -43,6 +43,34 @@ let
       ];
     }
   );
+  mkSoftwareSyncService =
+    { mode, description }:
+    lib.mkIf hasSoftwareSyncSecrets {
+      inherit description;
+      after = [
+        "network-online.target"
+        "delta.service"
+      ];
+      wants = [ "network-online.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "delta";
+        Group = "delta";
+        ExecStart = "${deltaSoftwareSync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode ${mode}";
+      };
+    };
+  softwareSyncUnits = [
+    "delta-software-sync-discovery.service"
+    "delta-software-sync-active.service"
+  ];
+  mkSoftwareSyncTimer = onBootSec: {
+    wantedBy = lib.optionals hasSoftwareSyncSecrets [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = onBootSec;
+      OnUnitActiveSec = "5m";
+      Persistent = true;
+    };
+  };
 in
 {
   services.nginx.virtualHosts."delta.${identity.domain}" = {
@@ -72,13 +100,13 @@ in
       owner = "delta";
       group = "delta";
       mode = "0400";
-      restartUnits = [ "delta-software-sync-discovery.service" ];
+      restartUnits = softwareSyncUnits;
     };
     "delta-software-sync-forgejo-token" = mkVpsSecret "delta-software-sync-forgejo-token" {
       owner = "delta";
       group = "delta";
       mode = "0400";
-      restartUnits = [ "delta-software-sync-discovery.service" ];
+      restartUnits = softwareSyncUnits;
     };
   }
   // lib.optionalAttrs hasSoftwareSyncGithubSecret {
@@ -86,7 +114,7 @@ in
       owner = "delta";
       group = "delta";
       mode = "0400";
-      restartUnits = [ "delta-software-sync-discovery.service" ];
+      restartUnits = softwareSyncUnits;
     };
   };
 
@@ -171,27 +199,16 @@ in
     };
   };
 
-  systemd.services.delta-software-sync-discovery = lib.mkIf hasSoftwareSyncSecrets {
+  systemd.services.delta-software-sync-discovery = mkSoftwareSyncService {
+    mode = "discovery";
     description = "Discover forge Software tasks for delta";
-    after = [
-      "network-online.target"
-      "delta.service"
-    ];
-    wants = [ "network-online.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "delta";
-      Group = "delta";
-      ExecStart = "${deltaSoftwareSync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode discovery";
-    };
   };
 
-  systemd.timers.delta-software-sync-discovery = {
-    wantedBy = lib.optionals hasSoftwareSyncSecrets [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "2m";
-      OnUnitActiveSec = "5m";
-      Persistent = true;
-    };
+  systemd.services.delta-software-sync-active = mkSoftwareSyncService {
+    mode = "active";
+    description = "Reconcile tracked forge Software tasks for delta";
   };
+
+  systemd.timers.delta-software-sync-discovery = mkSoftwareSyncTimer "2m";
+  systemd.timers.delta-software-sync-active = mkSoftwareSyncTimer "4m";
 }
