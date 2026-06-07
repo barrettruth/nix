@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import subprocess
 import sys
 import time
@@ -22,12 +21,6 @@ class Args:
     files: list[Path]
 
 
-@dataclass(frozen=True)
-class TmuxTarget:
-    client: str
-    window: str
-
-
 def run(
     args: list[str], *, cwd: Path | None = None, capture: bool = False
 ) -> subprocess.CompletedProcess[str]:
@@ -40,6 +33,13 @@ def run(
     )
 
 
+def maybe_output(args: list[str]) -> str:
+    proc = subprocess.run(
+        args, check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+    )
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
 def tmux(*args: str, capture: bool = False) -> subprocess.CompletedProcess[str]:
     return run(["tmux", *args], capture=capture)
 
@@ -48,82 +48,110 @@ def tmux_output(*args: str) -> str:
     return tmux(*args, capture=True).stdout.rstrip("\n")
 
 
-def current_window_target() -> TmuxTarget:
-    session = tmux_output("display-message", "-p", "#{session_name}")
-    index = tmux_output("display-message", "-p", "#{window_index}")
-    client = tmux_output("display-message", "-p", "#{client_name}")
-    return TmuxTarget(client=client, window=f"{session}:{index}")
+def worktree_root(worktree: Path) -> Path:
+    out = maybe_output(["git", "-C", str(worktree), "rev-parse", "--show-toplevel"])
+    return Path(out).resolve() if out else worktree.resolve()
 
 
-def restore_window(target: TmuxTarget) -> None:
-    try:
-        _ = tmux("select-window", "-t", target.window)
-        if target.client:
-            _ = tmux("switch-client", "-c", target.client, "-t", target.window)
-    except subprocess.CalledProcessError as exc:
-        print(f"review-ui: failed to restore tmux window: {exc}", file=sys.stderr)
+# The review lives in the session the user is attached to (their current
+# session), not a mux-spawned per-worktree session.
+def attached_session() -> str:
+    out = maybe_output(["tmux", "list-clients", "-F", "#{client_session}"])
+    for line in out.splitlines():
+        name = line.strip()
+        if name:
+            return name
+    return tmux_output("display-message", "-p", "#{session_name}")
 
 
-def git_window_target(session: str) -> str:
-    rows = tmux_output(
-        "list-windows", "-t", session, "-F", "#{window_name}\t#{window_index}"
+def find_git_window(session: str, root: Path) -> str | None:
+    fmt = (
+        "#{window_index}\t#{window_name}\t#{pane_current_command}\t#{pane_current_path}"
     )
+    rows = tmux_output("list-windows", "-t", session, "-F", fmt)
     for row in rows.splitlines():
-        name, index = row.split("\t", 1)
-        if name == "git":
+        parts = row.split("\t")
+        if len(parts) < 4:
+            continue
+        index, name, command, path = parts[:4]
+        if name == "git" and command == "nvim" and Path(path).resolve() == root:
             return f"{session}:{index}"
-    raise RuntimeError("mux git did not create a git window")
+    return None
 
 
-def pane_output(target: str, fmt: str) -> str:
-    return tmux_output("display-message", "-p", "-t", target, fmt)
-
-
-def git_window_ready(target: str, worktree: Path) -> bool:
-    command = pane_output(target, "#{pane_current_command}")
-    cwd = Path(pane_output(target, "#{pane_current_path}")).resolve()
-    return command == "nvim" and cwd == worktree
-
-
-def wait_for_git_window(target: str, worktree: Path) -> None:
+def wait_for_nvim(target: str) -> None:
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
-        if git_window_ready(target, worktree):
+        command = maybe_output(
+            ["tmux", "display-message", "-p", "-t", target, "#{pane_current_command}"]
+        )
+        if command == "nvim":
             return
         time.sleep(0.05)
-    raise RuntimeError(f"mux git window is not ready for Diff review: {target}")
+    raise RuntimeError(f"git window nvim did not start: {target}")
 
 
-def send_review(worktree: Path, base: str) -> None:
-    _ = run(
-        ["mux", "_picker_open", "proj", "action", "git", f"proj:{worktree}"],
-        cwd=worktree,
-    )
-    session = tmux_output("display-message", "-p", "#{session_name}")
-    target = git_window_target(session)
-    wait_for_git_window(target, worktree)
+def open_git_review(session: str, root: Path, base: str) -> str:
+    target = find_git_window(session, root)
+    if target is None:
+        index = tmux_output(
+            "new-window",
+            "-d",
+            "-t",
+            f"{session}:",
+            "-c",
+            str(root),
+            "-n",
+            "git",
+            "-P",
+            "-F",
+            "#{window_index}",
+            "nvim",
+        )
+        target = f"{session}:{index}"
+        wait_for_nvim(target)
     command = f"Diff review ++layout=unified {base} | only"
     _ = tmux("send-keys", "-t", target, "Escape")
     _ = tmux("send-keys", "-t", target, ":" + command, "Enter")
+    return target
 
 
-def populate_edit(worktree: Path, files: list[Path]) -> None:
+def populate_edit(session: str, root: Path, files: list[Path]) -> None:
     _ = run(
         [
             "python3",
             str(EDIT_HELPER),
+            "--session",
+            session,
+            "--root",
+            str(root),
             "--limit",
             str(len(files)),
             *[str(path) for path in files],
         ],
-        cwd=worktree,
+        cwd=root,
     )
+
+
+def focus(target: str) -> None:
+    session = target.split(":", 1)[0]
+    _ = tmux("select-window", "-t", target)
+    clients = maybe_output(
+        ["tmux", "list-clients", "-t", session, "-F", "#{client_name}"]
+    )
+    for client in clients.splitlines():
+        client = client.strip()
+        if client:
+            _ = subprocess.run(
+                ["tmux", "switch-client", "-c", client, "-t", target], check=False
+            )
+            break
 
 
 def parse_args(argv: list[str]) -> Args:
     parser = argparse.ArgumentParser(
         description="Prepare the mux review UI (git :Diff review + edit quickfix) "
-        "for a set of changed files in a worktree."
+        "in the current session for a worktree's changes."
     )
     _ = parser.add_argument("--worktree", required=True, type=Path)
     _ = parser.add_argument("--base", required=True)
@@ -139,8 +167,9 @@ def parse_args(argv: list[str]) -> Args:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     worktree = args.worktree.resolve()
+    root = worktree_root(worktree)
     files = [
-        path.resolve() if path.is_absolute() else (worktree / path).resolve()
+        path.resolve() if path.is_absolute() else (root / path).resolve()
         for path in args.files
     ]
 
@@ -152,18 +181,15 @@ def main(argv: list[str]) -> int:
         if not path.exists():
             raise SystemExit(f"review-ui: missing file: {path}")
 
-    original = current_window_target() if os.environ.get("TMUX") else None
-    try:
-        send_review(worktree, args.base)
-        populate_edit(worktree, files)
-    finally:
-        if original:
-            restore_window(original)
+    session = attached_session()
+    git_target = open_git_review(session, root, args.base)
+    populate_edit(session, root, files)
+    focus(git_target)
 
     print(
-        f"review-ui: git window prepared with Diff review ++layout=unified {args.base}"
+        f"review-ui: {session} git = :Diff review ++layout=unified {args.base}; "
+        f"edit quickfix = {len(files)} files"
     )
-    print(f"review-ui: edit quickfix populated with {len(files)} files")
     return 0
 
 

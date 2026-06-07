@@ -179,7 +179,9 @@ def maybe_output(args: Iterable[str]) -> str:
     return proc.stdout.rstrip("\n")
 
 
-def tmux(*args: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess[str]:
+def tmux(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
     return run(["tmux", *args], check=check, capture=capture)
 
 
@@ -190,12 +192,15 @@ def tmux_output(*args: str) -> str:
 def in_tmux() -> bool:
     if not os.environ.get("TMUX"):
         return False
-    return subprocess.run(
-        ["tmux", "display-message", "-p", "#{session_name}"],
-        check=False,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    ).returncode == 0
+    return (
+        subprocess.run(
+            ["tmux", "display-message", "-p", "#{session_name}"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
 
 
 def normalize_path(path: str | Path) -> Path:
@@ -303,7 +308,10 @@ def pathlike_terms(query: str) -> list[str]:
             cleaned = clean_path_token(candidate)
             if not cleaned:
                 continue
-            looks_pathlike = any(sep in cleaned for sep in ("/", ".", "~")) or Path(cleaned).is_absolute()
+            looks_pathlike = (
+                any(sep in cleaned for sep in ("/", ".", "~"))
+                or Path(cleaned).is_absolute()
+            )
             if not looks_pathlike or cleaned in seen:
                 continue
             terms.append(cleaned)
@@ -387,7 +395,11 @@ def explicit_paths(root: Path, query: str) -> list[Path]:
             continue
         raw = Path(part).expanduser()
         pattern = raw if raw.is_absolute() else root / raw
-        globbed = sorted(pattern.parent.glob(pattern.name)) if any(c in part for c in "*?[") else []
+        globbed = (
+            sorted(pattern.parent.glob(pattern.name))
+            if any(c in part for c in "*?[")
+            else []
+        )
         candidates = globbed or [pattern]
         for candidate in candidates:
             if not candidate.exists():
@@ -416,7 +428,9 @@ def unique_paths(paths: Iterable[Path]) -> list[Path]:
     return result
 
 
-def score_file(root: Path, path: Path, tokens: list[str], raw_query: str) -> Candidate | None:
+def score_file(
+    root: Path, path: Path, tokens: list[str], raw_query: str
+) -> Candidate | None:
     relpath = rel(root, path)
     path_text = " ".join(split_path_tokens(relpath))
     path_tokens = set(split_path_tokens(relpath))
@@ -459,7 +473,9 @@ def score_file(root: Path, path: Path, tokens: list[str], raw_query: str) -> Can
         else:
             score -= 2
 
-    if "config" in expanded and ("config" in path_tokens or path.suffix in {".conf", ".toml", ".nix"}):
+    if "config" in expanded and (
+        "config" in path_tokens or path.suffix in {".conf", ".toml", ".nix"}
+    ):
         score += 5
     if "script" in expanded or "command" in expanded:
         if "scripts" in path_tokens or path.suffix in {".py", ".sh"}:
@@ -556,7 +572,9 @@ def resolve_files(root: Path, query_parts: list[str], limit: int) -> list[Candid
         existing = scored.get(path)
         boost = 2 + (4 * count)
         if existing:
-            scored[path] = Candidate(path, existing.score + boost, existing.reason + ", content")
+            scored[path] = Candidate(
+                path, existing.score + boost, existing.reason + ", content"
+            )
         else:
             scored[path] = Candidate(path, boost, "content")
 
@@ -572,7 +590,9 @@ def resolve_files(root: Path, query_parts: list[str], limit: int) -> list[Candid
 def nvim_command(root: Path, query: str, candidates: list[Candidate]) -> str:
     script = remote_script(root, query, candidates)
     args = ["nvim", f"+luafile {script}"]
-    return f"cd {shlex.quote(str(root))} && exec " + " ".join(shlex.quote(arg) for arg in args)
+    return f"cd {shlex.quote(str(root))} && exec " + " ".join(
+        shlex.quote(arg) for arg in args
+    )
 
 
 def vim_lua_string(value: str) -> str:
@@ -591,7 +611,12 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
         for candidate in candidates
         if candidate.path != root and len(files) > 1
     ]
-    payload = {"title": "edit", "files": [str(p) for p in files], "items": items, "root": str(root)}
+    payload = {
+        "title": "edit",
+        "files": [str(p) for p in files],
+        "items": items,
+        "root": str(root),
+    }
     fd, script_name = tempfile.mkstemp(prefix=f"open-{os.getuid()}-", suffix=".lua")
     os.close(fd)
     script = Path(script_name)
@@ -609,9 +634,7 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
                 "  pcall(vim.api.nvim_echo, {{ ' ', 'Normal' }}, false, {})",
                 "end",
                 "reset_editor_state()",
-                "local items = payload.items or {}",
-                "vim.fn.setqflist({}, 'r', { title = payload.title, items = items })",
-                "if #items > 1 then vim.cmd('botright copen') else vim.cmd('cclose') end",
+                "pcall(vim.cmd, 'silent! only')",
                 "local files = payload.files or {}",
                 "if #files == 0 then",
                 "  vim.cmd('edit ' .. vim.fn.fnameescape(payload.root))",
@@ -621,6 +644,9 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
                 "  vim.cmd('edit ' .. vim.fn.fnameescape(files[1]))",
                 "  for i = 2, #files do vim.cmd('badd ' .. vim.fn.fnameescape(files[i])) end",
                 "end",
+                "local items = payload.items or {}",
+                "vim.fn.setqflist({}, 'r', { title = payload.title, items = items })",
+                "if #items > 1 then vim.cmd('botright copen') vim.cmd('wincmd p') else vim.cmd('cclose') end",
                 "reset_editor_state()",
                 "vim.cmd('redraw!')",
             ]
@@ -636,8 +662,12 @@ def list_windows(session: str) -> list[Window]:
     lines = maybe_output(["tmux", "list-windows", "-t", session, "-F", fmt])
     windows: list[Window] = []
     for line in lines.splitlines():
-        name, index, command, pane_id, pane_pid, panes = (line.split("\t") + [""] * 6)[:6]
-        windows.append(Window(name, index, command, pane_id, pane_pid, int(panes or "0")))
+        name, index, command, pane_id, pane_pid, panes = (line.split("\t") + [""] * 6)[
+            :6
+        ]
+        windows.append(
+            Window(name, index, command, pane_id, pane_pid, int(panes or "0"))
+        )
     return windows
 
 
@@ -665,7 +695,9 @@ def focus_window(session: str, index: str) -> None:
 
 
 def shell_name() -> str:
-    shell = os.environ.get("SHELL") or maybe_output(["tmux", "show", "-gqv", "default-shell"])
+    shell = os.environ.get("SHELL") or maybe_output(
+        ["tmux", "show", "-gqv", "default-shell"]
+    )
     return Path(shell or "sh").name
 
 
@@ -674,7 +706,9 @@ def send_command(target: str, command: str) -> None:
 
 
 def pane_command(target: str) -> str:
-    return maybe_output(["tmux", "display-message", "-p", "-t", target, "#{pane_current_command}"])
+    return maybe_output(
+        ["tmux", "display-message", "-p", "-t", target, "#{pane_current_command}"]
+    )
 
 
 def wait_for_pane_command(target: str, expected: str, timeout: float = 2.0) -> bool:
@@ -691,7 +725,11 @@ def wait_for_pane_command(target: str, expected: str, timeout: float = 2.0) -> b
 
 def report_launch_failure(target: str) -> None:
     command = pane_command(target) or "closed"
-    tmux("display-message", f"edit: Neovim did not stay running in edit window ({command})", check=False)
+    tmux(
+        "display-message",
+        f"edit: Neovim did not stay running in edit window ({command})",
+        check=False,
+    )
 
 
 def process_children(pid: str) -> list[str]:
@@ -732,7 +770,9 @@ def nvim_socket_for_pane(window: Window, root: Path) -> str:
     return ""
 
 
-def remote_into_nvim(socket: str, root: Path, query: str, candidates: list[Candidate]) -> bool:
+def remote_into_nvim(
+    socket: str, root: Path, query: str, candidates: list[Candidate]
+) -> bool:
     script = remote_script(root, query, candidates)
     expr = f"execute('luafile ' . fnameescape({vim_lua_string(str(script))}))"
     proc = subprocess.run(
@@ -744,10 +784,23 @@ def remote_into_nvim(socket: str, root: Path, query: str, candidates: list[Candi
     return proc.returncode == 0
 
 
-def open_in_tmux(root: Path, query: str, candidates: list[Candidate]) -> int:
-    session = tmux_output("display-message", "-p", "#{session_name}")
+def open_in_tmux(
+    root: Path, query: str, candidates: list[Candidate], session: str | None = None
+) -> int:
+    adopt = session is None
+    if session is None:
+        session = tmux_output("display-message", "-p", "#{session_name}")
     command = nvim_command(root, query, candidates)
-    edit = next((window for window in list_windows(session) if window.name == EDIT_WINDOW_NAME), None)
+    edit = next(
+        (window for window in list_windows(session) if window.name == EDIT_WINDOW_NAME),
+        None,
+    )
+
+    if edit is not None and not adopt:
+        # With an explicit target session, reuse the edit window only when it is
+        # already an nvim at the requested root; otherwise open a fresh one.
+        if not (edit.command == "nvim" and nvim_socket_for_pane(edit, root)):
+            edit = None
 
     if edit:
         focus_window(session, edit.index)
@@ -756,7 +809,11 @@ def open_in_tmux(root: Path, query: str, candidates: list[Candidate]) -> int:
             socket = nvim_socket_for_pane(edit, root)
             if socket and remote_into_nvim(socket, root, query, candidates):
                 return 0
-            tmux("display-message", "edit: could not reach existing edit Neovim server", check=False)
+            tmux(
+                "display-message",
+                "edit: could not reach existing edit Neovim server",
+                check=False,
+            )
             return 1
         if edit.command == shell_name():
             send_command(target, command)
@@ -764,18 +821,32 @@ def open_in_tmux(root: Path, query: str, candidates: list[Candidate]) -> int:
                 report_launch_failure(target)
                 return 1
             return 0
-        tmux("display-message", f"edit: edit window is busy with {edit.command}", check=False)
+        tmux(
+            "display-message",
+            f"edit: edit window is busy with {edit.command}",
+            check=False,
+        )
         return 1
 
-    current = current_window()
-    if current.name == shell_name() and current.command == shell_name() and current.panes == 1:
-        tmux("rename-window", "-t", window_target(session, current.index), EDIT_WINDOW_NAME)
-        send_command(window_target(session, current.index), command)
-        focus_window(session, current.index)
-        if not wait_for_pane_command(window_target(session, current.index), "nvim"):
-            report_launch_failure(window_target(session, current.index))
-            return 1
-        return 0
+    if adopt:
+        current = current_window()
+        if (
+            current.name == shell_name()
+            and current.command == shell_name()
+            and current.panes == 1
+        ):
+            tmux(
+                "rename-window",
+                "-t",
+                window_target(session, current.index),
+                EDIT_WINDOW_NAME,
+            )
+            send_command(window_target(session, current.index), command)
+            focus_window(session, current.index)
+            if not wait_for_pane_command(window_target(session, current.index), "nvim"):
+                report_launch_failure(window_target(session, current.index))
+                return 1
+            return 0
 
     index = tmux_output(
         "new-window",
@@ -811,15 +882,30 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         prog="edit",
         description="Populate the mux edit window from a natural-language file target.",
     )
-    parser.add_argument("-n", "--dry-run", action="store_true", help="print the resolved files")
-    parser.add_argument("-l", "--limit", type=int, default=None, help="maximum files to populate")
+    parser.add_argument(
+        "-n", "--dry-run", action="store_true", help="print the resolved files"
+    )
+    parser.add_argument(
+        "-l", "--limit", type=int, default=None, help="maximum files to populate"
+    )
+    parser.add_argument(
+        "--session",
+        default=None,
+        help="target tmux session for the edit window (default: current session)",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="repository root for the edit window (default: current mux project)",
+    )
     parser.add_argument("query", nargs=argparse.REMAINDER)
     return parser.parse_args(argv)
 
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    root = current_root()
+    root = args.root.resolve() if args.root else current_root()
     query_parts = args.query
     query = " ".join(query_parts).strip()
     candidates = resolve_files(root, query_parts, effective_limit(query, args.limit))
@@ -833,7 +919,7 @@ def main(argv: list[str]) -> int:
         os.execlp("sh", "sh", "-lc", command)
         return 127
 
-    return open_in_tmux(root, query, candidates)
+    return open_in_tmux(root, query, candidates, session=args.session)
 
 
 if __name__ == "__main__":
