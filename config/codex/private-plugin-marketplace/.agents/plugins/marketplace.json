@@ -15,18 +15,6 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Coding"
-    },
-    {
-      "name": "delta",
-      "source": {
-        "source": "local",
-        "path": "./plugins/delta"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
     }
   ]
 }

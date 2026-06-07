@@ -182,6 +182,3 @@ source = "/home/barrett/.config/nix/config/codex/private-plugin-marketplace"
 
 [plugins."nvim@barrett-private"]
 enabled = true
-
-[plugins."delta@barrett-private"]
-enabled = true

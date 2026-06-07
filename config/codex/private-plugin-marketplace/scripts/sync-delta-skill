@@ -2,12 +2,11 @@
 set -euo pipefail
 
 marketplace_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+nix_config_root="$(cd -- "$marketplace_root/../.." && pwd -P)"
 delta_repo="${DELTA_REPO:-/home/barrett/dev/delta}"
 source_skill="${DELTA_SKILL_SOURCE:-$delta_repo/.codex/skills/delta}"
-plugin_root="$marketplace_root/plugins/delta"
-target_skill="$plugin_root/skills/delta"
+target_skill="$nix_config_root/skills/delta"
 skill_creator="/home/barrett/.config/codex/skills/.system/skill-creator"
-plugin_creator="/home/barrett/.config/codex/skills/.system/plugin-creator"
 
 die() {
   printf 'sync-delta-skill: %s\n' "$*" >&2
@@ -22,27 +21,14 @@ require_path() {
 }
 
 require_path "$source_skill/SKILL.md" "Delta source skill"
-require_path "$plugin_root/.codex-plugin/plugin.json" "Delta plugin manifest"
 require_path "$skill_creator/scripts/quick_validate.py" "skill validator"
-require_path "$plugin_creator/scripts/validate_plugin.py" "plugin validator"
-require_path "$plugin_creator/scripts/update_plugin_cachebuster.py" "cachebuster helper"
 
 printf 'Validating source skill: %s\n' "$source_skill"
 nix develop "$delta_repo" --command \
   python3 "$skill_creator/scripts/quick_validate.py" "$source_skill"
 
-printf 'Syncing skill into plugin: %s\n' "$target_skill"
+printf 'Syncing skill into SSOT: %s\n' "$target_skill"
 mkdir -p "$(dirname -- "$target_skill")"
 rsync -a --delete "$source_skill/" "$target_skill/"
 
-printf 'Bumping plugin cachebuster\n'
-python3 "$plugin_creator/scripts/update_plugin_cachebuster.py" "$plugin_root"
-
-printf 'Validating plugin: %s\n' "$plugin_root"
-nix develop "$delta_repo" --command \
-  python3 "$plugin_creator/scripts/validate_plugin.py" "$plugin_root"
-
-printf 'Installing refreshed plugin cache: delta@barrett-private\n'
-codex plugin add delta@barrett-private
-
-printf '%s\n' "Done. Start a fresh Codex thread to load the refreshed \$delta skill."
+printf '%s\n' "Done. Synced delta skill to $target_skill. Run a NixOS rebuild to refresh the codex/devin symlinks, then start a fresh agent session."

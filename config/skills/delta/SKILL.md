@@ -1,11 +1,11 @@
 ---
 name: delta
-description: "Use when Barrett asks Codex or subagents to inspect or operate the Delta productivity platform through the delta CLI, including tasks, categories, feeds, exports, config, auth status, and integration status. Use for CLI/product operation, not for changing the Delta codebase."
+description: "Use when Barrett asks to inspect or operate the Delta productivity platform through the delta CLI, including tasks, categories, feeds, exports, config, auth status, and integration status. Use for CLI/product operation, not for changing the Delta codebase."
 ---
 
 # Delta
 
-Use `$delta` to inspect or operate Delta through the installed `delta` CLI.
+Use this skill to inspect or operate Delta through the installed `delta` CLI.
 
 This skill is for product/operator work only. It is not for changing the Delta
 codebase, opening PRs, deployments, releases, or repo maintenance.
@@ -17,7 +17,7 @@ codebase, opening PRs, deployments, releases, or repo maintenance.
 2. Choose the fewest CLI commands that can answer the request. Prefer `--json`
    for tasks, categories, dependencies, and integrations.
 3. Treat the CLI and server response as the source of truth for live Delta
-   state. Do not search Codex memory for current tasks, auth state,
+   state. Do not rely on prior memory or cached context for current tasks, auth state,
    integrations, feeds, exports, or categories.
 4. Check `delta auth status` only when auth may affect the request, the user
    asks about auth, or another command reports an auth problem.

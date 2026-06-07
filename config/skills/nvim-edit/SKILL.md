@@ -1,6 +1,6 @@
 ---
 name: nvim-edit
-description: Use when Barrett asks to populate the current mux edit Neovim window from a natural-language file target. Navigation only; do not edit files.
+description: Use when Barrett asks to open, show, or pull up file(s) in his editor — e.g. "open in my editor", "open in nvim/neovim", "pull this up", or "populate the mux edit window" — resolving a natural-language file target. Editor navigation only; do not edit file contents.
 ---
 
 # nvim-edit

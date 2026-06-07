@@ -5,7 +5,7 @@ by `SKILL.md`. The goal is fast operator judgment: use the CLI as source of
 truth, choose minimal commands, and ask before risky actions.
 
 Prefer `--json` for structured reads when the command supports it. Do not use
-Codex memory for live Delta state. Do not use `--debug` unless Barrett
+prior memory or cached context for live Delta state. Do not use `--debug` unless Barrett
 explicitly approves it.
 
 ## Allowed Reads
