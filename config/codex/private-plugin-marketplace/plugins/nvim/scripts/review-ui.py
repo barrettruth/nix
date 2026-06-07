@@ -59,44 +59,44 @@ def restore_window(target: TmuxTarget) -> None:
         print(f"review-ui: failed to restore tmux window: {exc}", file=sys.stderr)
 
 
-def git_window_target(session: str) -> str:
+def vcs_window_target(session: str) -> str:
     rows = tmux_output(
         "list-windows", "-t", session, "-F", "#{window_name}\t#{window_index}"
     )
     for row in rows.splitlines():
         name, index = row.split("\t", 1)
-        if name == "git":
+        if name == "vcs":
             return f"{session}:{index}"
-    raise RuntimeError("mux git did not create a git window")
+    raise RuntimeError("mux vcs did not create a vcs window")
 
 
 def pane_output(target: str, fmt: str) -> str:
     return tmux_output("display-message", "-p", "-t", target, fmt)
 
 
-def git_window_ready(target: str, worktree: Path) -> bool:
+def vcs_window_ready(target: str, worktree: Path) -> bool:
     command = pane_output(target, "#{pane_current_command}")
     cwd = Path(pane_output(target, "#{pane_current_path}")).resolve()
     return command == "nvim" and cwd == worktree
 
 
-def wait_for_git_window(target: str, worktree: Path) -> None:
+def wait_for_vcs_window(target: str, worktree: Path) -> None:
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
-        if git_window_ready(target, worktree):
+        if vcs_window_ready(target, worktree):
             return
         time.sleep(0.05)
-    raise RuntimeError(f"mux git window is not ready for Greview: {target}")
+    raise RuntimeError(f"mux vcs window is not ready for Greview: {target}")
 
 
 def send_greview(worktree: Path, base: str) -> None:
     _ = run(
-        ["mux", "_picker_open", "proj", "action", "git", f"proj:{worktree}"],
+        ["mux", "_picker_open", "proj", "action", "vcs", f"proj:{worktree}"],
         cwd=worktree,
     )
     session = tmux_output("display-message", "-p", "#{session_name}")
-    target = git_window_target(session)
-    wait_for_git_window(target, worktree)
+    target = vcs_window_target(session)
+    wait_for_vcs_window(target, worktree)
     command = f"Greview {base} | only"
     _ = tmux("send-keys", "-t", target, "Escape")
     _ = tmux("send-keys", "-t", target, ":" + command, "Enter")
@@ -153,7 +153,7 @@ def main(argv: list[str]) -> int:
         if original:
             restore_window(original)
 
-    print(f"review-ui: git window prepared with Greview {args.base}")
+    print(f"review-ui: vcs window prepared with Greview {args.base}")
     print(f"review-ui: edit quickfix populated with {len(files)} files")
     return 0
 

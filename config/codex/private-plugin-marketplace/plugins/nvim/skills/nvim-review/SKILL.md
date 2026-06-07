@@ -1,6 +1,6 @@
 ---
 name: nvim-review
-description: Review local Neovim implementation changes without Codex memory. Use after implementation work exists and before any commit workflow; writes review evidence and prepares mux git/edit UI.
+description: Review local Neovim implementation changes without Codex memory. Use after implementation work exists and before any commit workflow; writes review evidence and prepares mux vcs/edit UI.
 ---
 
 # nvim-review

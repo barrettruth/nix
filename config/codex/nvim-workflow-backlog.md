@@ -18,7 +18,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 - Implement only after Barrett chooses an outcome.
 - Verify and review in a loop, including Barrett-requested revisions.
 - Commit only after the review stage. Prefer a visible Fugitive commit-buffer
-  workflow in the mux `git` window; direct commits remain separately gated.
+  workflow in the mux `vcs` window; direct commits remain separately gated.
 - PR workflow comes later and should use Barrett's Neovim tooling, especially
   `forge.nvim`; remote-visible review replies and PR updates need their own
   workflow.

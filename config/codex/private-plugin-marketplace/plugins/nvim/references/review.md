@@ -87,7 +87,7 @@ Then prepare the live UI with:
 ../../scripts/review-ui.py --worktree <worktree> --base <merge-base> -- <wiki>/evidence/review.md <changed-file>...
 ```
 
-The helper owns only live UI setup: `mux git`, `:Greview <base> | only`, mux
+The helper owns only live UI setup: `mux vcs`, `:Greview <base> | only`, mux
 `edit` quickfix population, and restoring the foreground tmux window. It does
 not read the issue wiki, inspect git, write markdown, verify, stage, commit, or
 touch GitHub.

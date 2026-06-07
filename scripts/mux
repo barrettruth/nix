@@ -357,7 +357,7 @@ def managed_commands() -> tuple[ManagedCommandSpec, ...]:
         ManagedCommandSpec("ai", "role", "a", always_visible=True, ephemeral=True),
         ManagedCommandSpec("edit", "role", "e", always_visible=True, ephemeral=True),
         ManagedCommandSpec("zsh", "role", "z", always_visible=True),
-        ManagedCommandSpec("git", "action", "g", always_visible=True, ephemeral=True),
+        ManagedCommandSpec("vcs", "action", "v", always_visible=True, ephemeral=True),
         ManagedCommandSpec("run", "action", "r", ephemeral=True),
         ManagedCommandSpec("build", "action", "b"),
         ManagedCommandSpec("test", "action", "t"),
@@ -685,7 +685,7 @@ def ensure_role_dependencies(name: str) -> None:
 def action_command_for_root(name: str, root: str) -> str | None:
     name = canonical_name(name)
     match name:
-        case "git":
+        case "vcs":
             return 'nvim -c "Git|only"'
         case action if action in managed_just_action_names():
             if not justfile_path(root):
@@ -759,7 +759,7 @@ def open_action_in_dir(name: str, path: str) -> None:
     if not (action := command_for_name(name)) or action.kind != "action":
         raise MuxError(f"mux: no action '{name}' for '{scope_from_path(root)}'")
     scope = project_session_name(root)
-    if name == "git" and not git_ok(root, "rev-parse", "--is-inside-work-tree"):
+    if name == "vcs" and not git_ok(root, "rev-parse", "--is-inside-work-tree"):
         raise MuxError("Not a git repository")
     if (command := action_command_for_root(name, root)) is None:
         raise MuxError(f"mux: no action '{name}' for '{scope}'")

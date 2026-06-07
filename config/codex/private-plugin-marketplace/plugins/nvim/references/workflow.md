@@ -24,7 +24,7 @@ Target stages:
 7. `review`: summarize diff, evidence, risks, and unresolved questions before
    commit.
 8. `commit`: prepare or make a commit only after explicit permission; prefer a
-   visible Fugitive buffer in the mux `git` window.
+   visible Fugitive buffer in the mux `vcs` window.
 9. `pr`: later workflow through `forge.nvim`; remote-visible actions remain
    separately gated.
 

@@ -143,7 +143,7 @@
         "Does not run verification, Spark, builds, tests, or local check commands.",
         "Writes evidence/review.md with status, diff summary, evidence, manual review focus, risks, and UI details.",
         "Updates only index.md and log.md after writing review evidence.",
-        "Prepares mux git with :Greview <merge-base> | only.",
+        "Prepares mux vcs with :Greview <merge-base> | only.",
         "Prepares mux edit quickfix with review.md first and changed reviewable files after it.",
         "Leaves or restores the foreground Codex tmux client after review UI setup, including helper failure paths.",
         "Does not stage, unstage, commit, push, comment, or open a PR."
