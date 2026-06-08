@@ -109,6 +109,36 @@ def current_root() -> Path:
     return git_root(Path.cwd())
 
 
+def worktree_for_branch(repo: Path, branch: str) -> Path | None:
+    block: dict[str, str] = {}
+    rows = maybe_output(
+        ["git", "-C", str(repo), "worktree", "list", "--porcelain"]
+    ).splitlines() + [""]
+    for line in rows:
+        if line.startswith("worktree "):
+            block = {"path": line[len("worktree ") :]}
+        elif line.startswith("branch "):
+            block["branch"] = line[len("branch ") :]
+        elif line == "" and block:
+            if block.get("branch") == f"refs/heads/{branch}":
+                return normalize_path(block["path"])
+            block = {}
+    return None
+
+
+def resolve_root(base: Path, target: str | None) -> Path:
+    if not target:
+        return base
+    candidate = Path(target).expanduser()
+    if candidate.is_dir() and git_rc(candidate, "rev-parse", "--is-inside-work-tree") == 0:
+        top = maybe_output(["git", "-C", str(candidate), "rev-parse", "--show-toplevel"])
+        return normalize_path(top) if top else candidate.resolve()
+    wt = worktree_for_branch(base, target)
+    if wt is None:
+        die(f"'{target}' is not a worktree path or a branch checked out under {base}")
+    return wt
+
+
 @dataclass(frozen=True)
 class Window:
     name: str
@@ -358,7 +388,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="files to stage iff nothing is staged (never git add -A)",
     )
     parser.add_argument(
-        "--root", type=Path, default=None, help="repo root (default: current project)"
+        "--root", type=Path, default=None, help="base repo (default: current project)"
+    )
+    parser.add_argument(
+        "--target",
+        default=None,
+        help="branch or worktree path the changes live in (default: base repo)",
     )
     parser.add_argument(
         "--session", default=None, help="tmux session (default: current)"
@@ -374,7 +409,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    root = args.root.resolve() if args.root else current_root()
+    base = args.root.resolve() if args.root else current_root()
+    root = resolve_root(base, args.target)
     if git_rc(root, "rev-parse", "--is-inside-work-tree") != 0:
         die(f"not a git repository: {root}")
 

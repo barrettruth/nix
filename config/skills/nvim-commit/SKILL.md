@@ -115,6 +115,17 @@ python3 /home/barrett/.config/nix/config/skills/nvim-commit/scripts/commit-windo
 MSG
 ```
 
+If the changes live in a worktree or a branch checked out elsewhere (e.g. one
+just reviewed via `nvim-changes`), infer that from context and pass it via
+`--target` — a branch name or worktree path — so staging and the commit happen
+there. Default is the current project.
+
+```sh
+python3 /home/barrett/.config/nix/config/skills/nvim-commit/scripts/commit-window.py --stage <path> ... --target <branch|worktree-path> <<'MSG'
+<subject>
+MSG
+```
+
 Use `--dry-run` to preview the message and staging without touching tmux/nvim.
 
 Rules:
