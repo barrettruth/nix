@@ -34,6 +34,7 @@ in
   boot.kernelParams = [
     "loglevel=3"
     "quiet"
+    "i8042.noaux"
   ];
   boot.tmp.cleanOnBoot = true;
 
