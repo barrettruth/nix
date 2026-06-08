@@ -52,34 +52,21 @@ does.
 - Absolutely no AI/assistant/tool attribution, co-author, or signed-off
   trailers, in any form. Non-negotiable and hook-enforced.
 
-## Context (pre-resolved)
+## Context — gather in one pass
 
-Branch:
+Gather it in ONE command, then draft — don't split this across calls. Read
+individual hunks (`git diff -- <path>`) only if `--stat` is too coarse to name
+the change, and check `git config --get commit.template` only if the subject
+style is unclear.
 
-!`git rev-parse --abbrev-ref HEAD 2>/dev/null`
-
-Recent subjects on the default branch (subject style):
-
-!`def=$(git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's@^origin/@@'); [ -n "$def" ] || def=main; git log --no-merges -n 30 --format='%s' "$def" 2>/dev/null`
-
-Recent full messages (body / tone precedent):
-
-!`git log --no-merges -n 8 --format='%B%x00' 2>/dev/null`
-
-Precedent for the files being changed:
-
-!`files=$(git diff --name-only HEAD 2>/dev/null); [ -n "$files" ] && git log --no-merges -n 8 --format='%s' -- $files 2>/dev/null`
-
-Commit template, if the repo configures one:
-
-!`t=$(git config --get commit.template 2>/dev/null); [ -n "$t" ] && cat "$t" 2>/dev/null`
-
-Staging shape (staged vs not — never `git add -A`):
-
-!`git status --porcelain=v1 2>/dev/null; echo '---'; git diff --stat HEAD 2>/dev/null`
-
-Read specific hunks (`git diff -- <path>` or `git diff --staged -- <path>`)
-only if the stat above is not enough to write an accurate subject.
+```sh
+R=$(git rev-parse --show-toplevel)
+D=$(git -C "$R" rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's@^origin/@@'); [ -n "$D" ] || D=$(git -C "$R" rev-parse --abbrev-ref HEAD)
+git -C "$R" status --porcelain=v1                     # staged vs not (never -A)
+git -C "$R" --no-pager diff --stat HEAD               # shape of the change
+git -C "$R" log --no-merges -n 20 --format='%s' "$D"  # subject style
+git -C "$R" log --no-merges -n 5  "$D"                # body/tone precedent
+```
 
 ## Staging
 

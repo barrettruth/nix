@@ -77,11 +77,18 @@ def main_repo(start: Path) -> Path | None:
     return Path(common).resolve().parent
 
 
-def attached_session() -> str:
+def current_session() -> str:
+    # The session of the pane this command runs in, not whichever window is
+    # focused -- otherwise an agent invoking this lands the UI in the user's
+    # focused project. Matches nvim-commit/nvim-edit.
+    session = tmux_out("display-message", "-p", "#{session_name}")
+    if session:
+        return session
+    # Fallback for the rare case of being run outside tmux.
     for line in out(["tmux", "list-clients", "-F", "#{client_session}"]).splitlines():
         if line.strip():
             return line.strip()
-    return tmux_out("display-message", "-p", "#{session_name}")
+    return ""
 
 
 def session_project(session: str) -> Path | None:
@@ -147,8 +154,8 @@ def resolve_worktree(repo: Path | None, target: str | None) -> Path:
         if repo is None:
             die(f"cannot resolve branch '{target}': pass --repo <repo-root>")
         return ensure_branch_worktree(repo, target)  # type: ignore[arg-type]
-    # No target: review the project the user is currently attached to.
-    proj = session_project(attached_session())
+    # No target: review the project of the session this command runs in.
+    proj = session_project(current_session())
     if proj and git_ok(proj, "rev-parse", "--is-inside-work-tree"):
         return toplevel(proj) or proj
     here = toplevel(Path.cwd())
@@ -319,7 +326,7 @@ def main(argv: list[str]) -> int:
         print(f"review-ui: no reviewable changes in {branch} ({wt}) vs {base[:10]}")
         return 0
 
-    session = attached_session()
+    session = current_session()
     vcs_target = open_vcs_review(session, wt, base)
     populate_edit(session, wt, files)
     focus(vcs_target)

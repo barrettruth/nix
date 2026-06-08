@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -15,16 +16,57 @@ from typing import Iterable, NoReturn
 SESSION_PROJECT_PATH_OPTION = "@mux-project-path"
 VCS_WINDOW_NAME = "vcs"
 
-# Open fugitive's commit status and a fresh commit buffer in the vcs window.
-STATUS_LUA = "\n".join(
+# Wipe any stale PR compose buffers, then ask forge.nvim to open a draft create
+# compose. Driving via :Forge (not require) ensures lz.n loads forge + its config.
+CREATE_LUA = "\n".join(
     [
-        "pcall(vim.cmd, 'silent! only')",
-        "local b = vim.fn.bufnr('COMMIT_EDITMSG')",
-        "if b > 0 then pcall(vim.cmd, 'silent! bwipeout! ' .. b) end",
-        "pcall(vim.cmd, 'silent! Git')",
-        "pcall(vim.cmd, 'silent! only')",
-        "pcall(vim.cmd, 'Git commit')",
+        "for _, b in ipairs(vim.fn.getbufinfo()) do",
+        "  local n = b.name or ''",
+        "  if n:find('/pr/', 1, true) and vim.bo[b.bufnr].filetype == 'forgecompose' then",
+        "    pcall(vim.cmd, 'silent! bwipeout! ' .. b.bufnr)",
+        "  end",
+        "end",
+        "pcall(vim.cmd, 'silent! Forge pr create draft')",
     ]
+)
+
+# Fallback when a PR already exists for the branch (create aborts): open the edit
+# compose instead.
+EDIT_LUA = "pcall(vim.cmd, 'silent! Forge pr edit')"
+
+# Synchronous "does an open PR already exist for this branch?" check. Runs after
+# CREATE_LUA, so forge is loaded with its config. 1 = a PR exists (-> edit),
+# 0 = none / unknown (-> wait for the create compose). This is the authoritative
+# create-vs-edit signal; never infer it from a poll timeout (create is async and
+# base resolution can be slow).
+PR_EXISTS_LUA = (
+    '(function() local ok, f = pcall(require, "forge") if not ok then return 0 end '
+    "local d = f.detect() if not d then return 0 end "
+    "local pr, err = f.current_pr({ forge = d }) if err then return 0 end "
+    'if type(pr) == "table" and pr.num then return 1 end return 0 end)()'
+)
+
+# Return the name of the live PR compose buffer (or '' if none is ready yet).
+POLL_LUA = (
+    "(function() for _, b in ipairs(vim.fn.getbufinfo()) do "
+    'local n = b.name or "" '
+    'if n:find("/pr/", 1, true) and vim.api.nvim_buf_is_valid(b.bufnr) '
+    'and vim.bo[b.bufnr].filetype == "forgecompose" '
+    "and #vim.api.nvim_buf_get_lines(b.bufnr, 0, -1, false) > 1 then return n end "
+    'end return "" end)()'
+)
+
+# For an existing PR's edit compose: is the body region (between the title and the
+# <!-- metadata block) empty? 1 = empty (-> populate it), 0 = has content (-> leave).
+EDIT_BODY_EMPTY_LUA = (
+    "(function() for _, b in ipairs(vim.fn.getbufinfo()) do "
+    'local n = b.name or "" '
+    'if n:sub(-5) == "/edit" and vim.bo[b.bufnr].filetype == "forgecompose" then '
+    "local lines = vim.api.nvim_buf_get_lines(b.bufnr, 0, -1, false) "
+    "local cut = #lines "
+    'for i = 1, #lines do if lines[i]:match("^%s*<!%-%-") then cut = i - 1 break end end '
+    'for i = 3, cut do if vim.trim(lines[i]) ~= "" then return 0 end end '
+    "return 1 end end return 0 end)()"
 )
 
 
@@ -51,10 +93,6 @@ def maybe_output(args: Iterable[str]) -> str:
     return proc.stdout.rstrip("\n") if proc.returncode == 0 else ""
 
 
-def tmux(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return run(["tmux", *args], check=check)
-
-
 def tmux_output(*args: str) -> str:
     return maybe_output(["tmux", *args])
 
@@ -78,7 +116,7 @@ def normalize_path(path: str | Path) -> Path:
 
 
 def die(message: str) -> NoReturn:
-    print(f"commit-window: {message}", file=sys.stderr)
+    print(f"pr-window: {message}", file=sys.stderr)
     raise SystemExit(2)
 
 
@@ -283,7 +321,7 @@ def remote_expr(socket: str, expr: str) -> tuple[int, str]:
 
 
 def run_lua(socket: str, lua: str) -> bool:
-    fd, name = tempfile.mkstemp(prefix=f"commit-{os.getuid()}-", suffix=".lua")
+    fd, name = tempfile.mkstemp(prefix=f"pr-{os.getuid()}-", suffix=".lua")
     os.close(fd)
     script = Path(name)
     try:
@@ -298,110 +336,111 @@ def run_lua(socket: str, lua: str) -> bool:
             pass
 
 
-def wait_for_commit_buffer(socket: str, timeout: float = 6.0) -> bool:
-    # Wait until fugitive's async :Git commit buffer exists AND is writable, so
-    # a stale/half-open COMMIT_EDITMSG never gets populated.
-    # bufnr() pattern-matches the short name; bufloaded()/getbufvar() need the
-    # resolved number (a bare 'COMMIT_EDITMSG' string never matches the buffer's
-    # full .git/COMMIT_EDITMSG path).
-    expr = (
-        "bufloaded(bufnr('COMMIT_EDITMSG')) ? "
-        "getbufvar(bufnr('COMMIT_EDITMSG'), '&modifiable') : 0"
-    )
+def poll_compose(socket: str, timeout: float) -> str:
+    expr = f"luaeval('{POLL_LUA}')"
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         rc, out = remote_expr(socket, expr)
-        if rc == 0 and out == "1":
-            return True
-        time.sleep(0.1)
-    return False
+        if rc == 0 and out:
+            return out
+        time.sleep(0.15)
+    return ""
 
 
-def populate_lua(message_lines: list[str]) -> str:
-    msg = json.dumps(json.dumps(message_lines))
+def pr_exists(socket: str) -> bool:
+    rc, out = remote_expr(socket, f"luaeval('{PR_EXISTS_LUA}')")
+    return rc == 0 and out == "1"
+
+
+def edit_body_empty(socket: str) -> bool:
+    rc, out = remote_expr(socket, f"luaeval('{EDIT_BODY_EMPTY_LUA}')")
+    return rc == 0 and out == "1"
+
+
+def surgery_lua(body_lines: list[str], title: str | None = None) -> str:
+    # Writes body into the live PR compose buffer, preserving forge's trailing
+    # <!-- metadata --> block. When `title` is given (create), also replaces the
+    # title line; when omitted (filling an existing PR's empty body), the existing
+    # title is kept.
+    body_lit = json.dumps(json.dumps(body_lines))
+    title_block: list[str] = []
+    if title is not None:
+        title_lit = json.dumps(json.dumps(title))
+        title_block = [
+            f"local title = vim.json.decode({title_lit})",
+            "vim.api.nvim_buf_set_lines(buf, 0, 1, false, { '# ' .. title })",
+        ]
     return "\n".join(
         [
-            f"local msg = vim.json.decode({msg})",
-            "local b = vim.fn.bufnr('COMMIT_EDITMSG')",
-            "if b < 1 then return end",
-            "local lines = vim.api.nvim_buf_get_lines(b, 0, -1, false)",
+            f"local body = vim.json.decode({body_lit})",
+            "local buf = -1",
+            "for _, b in ipairs(vim.fn.getbufinfo()) do",
+            "  local n = b.name or ''",
+            "  if n:find('/pr/', 1, true) and vim.bo[b.bufnr].filetype == 'forgecompose' then",
+            "    buf = b.bufnr break",
+            "  end",
+            "end",
+            "if buf < 0 then return end",
+            "local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)",
             "local cut = #lines",
             "for i = 1, #lines do",
-            "  if lines[i]:sub(1, 1) == '#' then cut = i - 1 break end",
+            "  if lines[i]:match('^%s*<!%-%-') then cut = i - 1 break end",
             "end",
+            *title_block,
             "local head = {}",
-            "for _, line in ipairs(msg) do head[#head + 1] = line end",
+            "for _, l in ipairs(body) do head[#head + 1] = l end",
             "head[#head + 1] = ''",
-            "vim.api.nvim_buf_set_lines(b, 0, cut, false, head)",
-            "for _, w in ipairs(vim.fn.win_findbuf(b)) do",
+            "vim.api.nvim_buf_set_lines(buf, 2, cut, false, head)",
+            "for _, w in ipairs(vim.fn.win_findbuf(buf)) do",
             "  pcall(vim.api.nvim_win_set_cursor, w, { 1, 0 })",
             "end",
+            # forge's open_pr leaves the title in select mode (normal! v$h + <C-G>);
+            # clear it so the buffer is in normal mode when Barrett arrives.
+            "pcall(vim.api.nvim_feedkeys, vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', false)",
         ]
     )
 
 
-def read_message(args: argparse.Namespace) -> list[str]:
+def read_body(args: argparse.Namespace) -> list[str]:
     if args.file:
         text = (
             sys.stdin.read()
             if args.file == "-"
             else Path(args.file).expanduser().read_text(encoding="utf-8")
         )
-    elif args.message:
-        text = "\n".join(args.message)
     elif not sys.stdin.isatty():
         text = sys.stdin.read()
     else:
-        die("no commit message: pass -F <file>, -m <line>, or pipe it on stdin")
-    text = text.rstrip("\n")
-    if not text.strip():
-        die("empty commit message")
-    return text.split("\n")
-
-
-def ensure_staged(
-    root: Path, stage: list[str], dry_run: bool
-) -> tuple[bool, list[str]]:
-    already_staged = git_rc(root, "diff", "--cached", "--quiet") == 1
-    if already_staged:
-        return True, []
-    if not stage:
-        die("nothing staged and no --stage paths given (never use git add -A)")
-    paths = [str(normalize_path(p)) for p in stage]
-    if not dry_run:
-        run(["git", "-C", str(root), "add", "--", *paths], check=False)
-        if git_rc(root, "diff", "--cached", "--quiet") != 1:
-            die("staging produced no changes; check the --stage paths")
-    return False, paths
+        text = ""
+    lines = text.rstrip("\n").split("\n") if text.strip() else []
+    for i, line in enumerate(lines):
+        if re.match(r"^\s*<!--", line):
+            die(
+                f"body line {i + 1} starts with '<!--', which collides with "
+                "forge's metadata block; rephrase it"
+            )
+    return lines
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="commit-window",
+        prog="pr-window",
         description=(
-            "Open a fugitive commit in the mux vcs window, pre-filled with a "
-            "drafted message, without focusing it."
+            "Open forge.nvim's draft PR compose in the mux vcs window, pre-filled "
+            "with a title + template body, without focusing it."
         ),
     )
+    parser.add_argument("--title", required=True, help="PR title (the # line)")
     parser.add_argument(
-        "-F", "--file", default=None, help="read message from file ('-' = stdin)"
-    )
-    parser.add_argument(
-        "-m", "--message", action="append", default=None, help="message line(s)"
-    )
-    parser.add_argument(
-        "--stage",
-        nargs="*",
-        default=[],
-        help="files to stage iff nothing is staged (never git add -A)",
-    )
-    parser.add_argument(
-        "--root", type=Path, default=None, help="base repo (default: current project)"
+        "-F", "--file", default=None, help="read body from file ('-' = stdin)"
     )
     parser.add_argument(
         "--target",
         default=None,
         help="branch or worktree path the changes live in (default: base repo)",
+    )
+    parser.add_argument(
+        "--root", type=Path, default=None, help="base repo (default: current project)"
     )
     parser.add_argument(
         "--session", default=None, help="tmux session (default: current)"
@@ -410,9 +449,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-n",
         "--dry-run",
         action="store_true",
-        help="print the plan; do not stage or touch tmux/nvim",
+        help="print the plan; do not touch tmux/nvim",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if not args.title.strip():
+        parser.error("--title cannot be empty")
+    return args
 
 
 def main(argv: list[str]) -> int:
@@ -422,40 +464,67 @@ def main(argv: list[str]) -> int:
     if git_rc(root, "rev-parse", "--is-inside-work-tree") != 0:
         die(f"not a git repository: {root}")
 
-    message_lines = read_message(args)
-    subject = message_lines[0]
-    if not args.dry_run and not in_tmux() and args.session is None:
-        die("not inside tmux and no --session given")
-    already_staged, staged = ensure_staged(root, args.stage, args.dry_run)
+    # Assume committed + clean; bail on uncommitted tracked changes (untracked
+    # per-machine noise is fine — it is never part of the PR).
+    if (
+        git_rc(root, "diff", "--quiet") != 0
+        or git_rc(root, "diff", "--cached", "--quiet") != 0
+    ):
+        die(
+            "uncommitted changes to tracked files; commit first (nvim-commit), then retry"
+        )
+
+    branch = maybe_output(["git", "-C", str(root), "rev-parse", "--abbrev-ref", "HEAD"])
+    body = read_body(args)
 
     if args.dry_run:
         print(f"root: {root}")
-        print(f"staged-before: {already_staged}")
-        if staged:
-            print("would-stage:")
-            for path in staged:
-                print(f"  {path}")
-        print("message:")
-        for line in message_lines:
+        print(f"branch: {branch}")
+        print(f"title: {args.title}")
+        print("body:")
+        for line in body:
             print(f"  {line}")
         return 0
 
+    if not in_tmux() and args.session is None:
+        die("not inside tmux and no --session given")
     session = args.session or tmux_output("display-message", "-p", "#{session_name}")
     if not session:
         die("could not determine the tmux session")
 
     window, socket = ensure_vcs_window(session, root)
-    if not run_lua(socket, STATUS_LUA):
-        die("failed to open the fugitive commit buffer in the vcs window")
-    if not wait_for_commit_buffer(socket):
-        die("the fugitive commit buffer did not open")
-    if not run_lua(socket, populate_lua(message_lines)):
-        die("failed to write the commit message into the buffer")
 
-    note = "reused staged" if already_staged else f"staged {len(staged)} file(s)"
+    # CREATE_LUA wipes stale PR composes and runs `:Forge pr create draft`, which
+    # loads forge (so the sync existing-PR check below works) and either opens a
+    # draft create compose or aborts because a PR already exists. We decide
+    # create-vs-edit from the authoritative sync check, not the poll timing.
+    run_lua(socket, CREATE_LUA)
+    if pr_exists(socket):
+        run_lua(socket, EDIT_LUA)
+        name = poll_compose(socket, timeout=8.0)
+    else:
+        name = poll_compose(socket, timeout=8.0)
+
+    if name.endswith("/pr/new"):
+        if not run_lua(socket, surgery_lua(body, title=args.title)):
+            die("failed to write the PR compose buffer")
+        note = "draft PR compose"
+    elif name.endswith("/edit"):
+        match = re.search(r"/pr/(\d+)/edit", name)
+        num = match.group(1) if match else "?"
+        if edit_body_empty(socket):
+            run_lua(socket, surgery_lua(body))  # fill empty description; keep title
+            note = f"existing PR #{num} — filled empty description"
+        else:
+            note = f"existing PR #{num} — edit compose (left as-is)"
+    else:
+        die(
+            "no PR compose opened — no forge detected, detached HEAD, "
+            "or no commits/existing PR for this branch"
+        )
+
     print(
-        f"commit-window: {session}:{window.index} ({VCS_WINDOW_NAME}) ready — "
-        f'{note}; drafted "{subject}"'
+        f"pr-window: {session}:{window.index} ({VCS_WINDOW_NAME}) ready — {note} for {branch}"
     )
     return 0
 
