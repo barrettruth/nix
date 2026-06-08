@@ -130,8 +130,13 @@ def resolve_root(base: Path, target: str | None) -> Path:
     if not target:
         return base
     candidate = Path(target).expanduser()
-    if candidate.is_dir() and git_rc(candidate, "rev-parse", "--is-inside-work-tree") == 0:
-        top = maybe_output(["git", "-C", str(candidate), "rev-parse", "--show-toplevel"])
+    if (
+        candidate.is_dir()
+        and git_rc(candidate, "rev-parse", "--is-inside-work-tree") == 0
+    ):
+        top = maybe_output(
+            ["git", "-C", str(candidate), "rev-parse", "--show-toplevel"]
+        )
         return normalize_path(top) if top else candidate.resolve()
     wt = worktree_for_branch(base, target)
     if wt is None:
@@ -296,8 +301,11 @@ def run_lua(socket: str, lua: str) -> bool:
 def wait_for_commit_buffer(socket: str, timeout: float = 6.0) -> bool:
     # Wait until fugitive's async :Git commit buffer exists AND is writable, so
     # a stale/half-open COMMIT_EDITMSG never gets populated.
+    # bufnr() pattern-matches the short name; bufloaded()/getbufvar() need the
+    # resolved number (a bare 'COMMIT_EDITMSG' string never matches the buffer's
+    # full .git/COMMIT_EDITMSG path).
     expr = (
-        "bufloaded('COMMIT_EDITMSG') ? "
+        "bufloaded(bufnr('COMMIT_EDITMSG')) ? "
         "getbufvar(bufnr('COMMIT_EDITMSG'), '&modifiable') : 0"
     )
     deadline = time.monotonic() + timeout
