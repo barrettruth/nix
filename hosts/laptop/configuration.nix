@@ -57,6 +57,7 @@ in
   services.automatic-timezoned.enable = true;
   services.geoclue2.enable = true;
   services.pcscd.enable = true;
+  services.fwupd.enable = true;
   documentation.man = {
     enable = true;
     cache.enable = true;
