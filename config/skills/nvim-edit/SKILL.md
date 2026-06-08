@@ -5,68 +5,42 @@ description: Use when Barrett asks to open, show, or pull up file(s) in his edit
 
 # nvim-edit
 
-This skill is for editor navigation, not implementation.
+Resolve a natural-language file target and populate the mux `edit` window. This
+is editor navigation, not implementation. The helper does the tmux/nvim work
+(remote into a running Neovim, start one in an idle `edit` shell, or create/adopt
+the window); your job is to resolve the target to concrete path(s) and pass them.
 
-Communication:
+## Resolve
 
-- Keep user-facing updates minimal. Do not explain that this skill was selected,
-  narrate resolver steps, or announce that the helper script is being run.
-- Before opening, say only which file(s) are being opened and why, in one or two
-  sentences.
-- After the helper exits successfully, stop. Do not announce verification,
-  inspect tmux state, capture the pane, retry, or reopen the window unless
-  Barrett explicitly reports that it failed or asks for verification.
-- Do not report intermediate failed candidate searches. If a first resolver is
-  too broad or wrong, discard it silently and report only the final path(s).
+- Work inside the current mux project — the helper reads the session's
+  `@mux-project-path`, falling back to the cwd outside tmux.
+- Interpret the request, then call the helper with concrete path(s). Prefer
+  explicit paths the user gives; for natural-language targets find them with
+  `git ls-files`, `rg` (names/content), and git status — for a random file use
+  `git ls-files` directly.
+- Filter before sampling: "a random file containing X" means find files
+  containing X, then pick one.
+- Singular phrasing ("a random file") populates one file unless Barrett asks for
+  more.
+- Compose the resolver and helper in one shell invocation when the request is
+  simple.
 
-Expected behavior:
+## Communication
 
-- Resolve targets inside the current tmux/mux project. The helper reads the
-  current session's `@mux-project-path` and falls back to the current working
-  directory when outside tmux.
-- Prefer explicit paths when the user gives them.
-- Treat the natural-language request that invoked this skill as a command to
-  interpret before invoking the helper.
-- For natural-language targets, use normal repo investigation to decide the
-  concrete file path(s): `rg --files`, `rg` content searches, Git status, path
-  tokens, file names, and surrounding project context.
-- Apply filters before sampling. For example, "a random file containing
-  \"hari\"" means search for files containing the literal string first, then
-  choose one matching file at random.
-- Singular requests such as "a random file" should populate one file unless
-  Barrett explicitly asks for multiple files.
-- Prefer one shell invocation that both resolves and opens the file when the
-  request is simple. For a random file in a Git checkout, use `git ls-files`
-  directly; do not run `rg --files` first and then correct it after seeing
-  `.git` internals.
-- Populate the mux `edit` window.
-- If `edit` already runs Neovim, remote into that instance and replace its
-  arglist/quickfix list with the resolved files.
-- If `edit` is an idle shell, start Neovim there.
-- If no `edit` window exists, create or adopt one using the current mux session.
+- Minimal: before opening, name the file(s) and why in a sentence or two; say
+  nothing about resolver steps or the helper.
+- A zero exit is success — stop. Re-open or inspect tmux/the pane only if Barrett
+  says the editor state is wrong.
 
-Rules:
+## Rules
 
-- Do not edit files, run tests, commit, push, open PRs, or mutate remotes.
-- Do not kill or restart an existing Neovim instance implicitly.
-- Do not send raw keys into a busy non-Neovim `edit` window. Report the blocker.
-- Treat a zero exit from `edit-window.py` as success. Do not perform post-open
-  tmux/window/process checks in normal navigation requests; those checks are
-  only for nonzero helper exits, explicit dry-run/verification requests, or
-  when Barrett says the visible editor state is wrong.
-- Do not pass unresolved natural-language text to the helper. Resolve the
-  target first, then call the helper with concrete path(s).
-- Do not split trivial resolution into multiple visible tool calls. Compose the
-  resolver and helper in one command when doing so is clear and safe.
-- If no file matches the interpreted request, report that directly instead of
-  opening an unrelated fallback file.
-- Do not add explanatory quickfix item text to Neovim. The helper may use the
-  quickfix list to navigate multiple files, but item messages should remain
-  blank.
-- Use `--dry-run` only when Barrett explicitly asks to preview resolution or
-  when you are intentionally reporting ambiguity instead of opening the editor.
+- Navigation only: do not edit, run tests, commit, push, open PRs, mutate
+  remotes, or kill/restart a running Neovim.
+- If no file matches, say so — don't open an unrelated fallback.
+- Don't send keys into a busy non-Neovim `edit` window; report the blocker.
+- `--dry-run` only to preview resolution or report ambiguity instead of opening.
 
-Helper:
+## Helper
 
 ```sh
 python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py --dry-run <path> [<path> ...]
