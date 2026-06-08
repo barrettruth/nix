@@ -108,6 +108,38 @@ class DiscoveryBatchTests(unittest.TestCase):
             "git.example.com/barrettruth/delta",
         )
 
+    def test_canonical_provider_override_pins_repo_to_github(self):
+        forgejo_repo = repo("forgejo", "barrettruth", "diffs.nvim", 10)
+        github_repo = repo("github", "barrettruth", "diffs.nvim", 20)
+        forgejo = FakeAdapter(
+            "forgejo",
+            10,
+            owned=[forgejo_repo],
+            issues=[item(forgejo_repo, "193")],
+        )
+        github = FakeAdapter(
+            "github",
+            20,
+            owned=[github_repo],
+            issues=[item(github_repo, "9")],
+        )
+
+        batches = build_discovery_batches(
+            [forgejo, github],
+            "barrettruth",
+            "Software",
+            {"barrettruth/diffs.nvim": "github"},
+        )
+
+        self.assertEqual(len(batches), 1)
+        self.assertEqual(batches[0].source.provider, "github")
+        self.assertEqual(
+            batches[0].as_delta_batch()["source"]["id"],
+            "github.com/barrettruth/diffs.nvim",
+        )
+        ids = {entry["externalId"] for entry in batches[0].as_delta_batch()["items"]}
+        self.assertEqual(ids, {"9"})
+
     def test_includes_owned_issues_owned_pulls_and_non_owned_authored_pulls(self):
         owned = repo("forgejo", "barrettruth", "delta", 10)
         external = repo("github", "someone", "project", 20)

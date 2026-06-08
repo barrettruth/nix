@@ -639,10 +639,22 @@ class DeltaClient:
 
 def select_canonical_repos(
     adapters: list[ForgeAdapter],
+    canonical_providers: dict[str, str] | None = None,
 ) -> dict[str, tuple[ForgeAdapter, RepoRef]]:
+    # A repo owned on several forges normally resolves to the lowest-priority
+    # forge. canonical_providers pins specific "owner/name" keys to one provider
+    # regardless of priority -- e.g. popular plugins whose issues live on GitHub
+    # even though the code is mirrored to Forgejo.
+    overrides = {
+        key.lower(): provider
+        for key, provider in (canonical_providers or {}).items()
+    }
     canonical: dict[str, tuple[ForgeAdapter, RepoRef]] = {}
     for adapter in sorted(adapters, key=lambda item: item.priority):
         for repo in adapter.list_owned_repos():
+            override = overrides.get(repo.key)
+            if override and override != adapter.provider:
+                continue
             canonical.setdefault(repo.key, (adapter, repo))
     return canonical
 
@@ -669,9 +681,12 @@ def group_batches(items: list[ExternalItem], category: str) -> list[Batch]:
 
 
 def build_discovery_batches(
-    adapters: list[ForgeAdapter], maintainer: str, category: str
+    adapters: list[ForgeAdapter],
+    maintainer: str,
+    category: str,
+    canonical_providers: dict[str, str] | None = None,
 ) -> list[Batch]:
-    canonical = select_canonical_repos(adapters)
+    canonical = select_canonical_repos(adapters, canonical_providers)
     items: list[ExternalItem] = []
 
     for adapter, repo in canonical.values():
@@ -788,7 +803,12 @@ def run(config: JsonObject, mode: str, *, dry_run: bool = False) -> list[JsonObj
 
     if mode in {"discovery", "all"}:
         batches.extend(
-            build_discovery_batches(adapters, config["maintainerUsername"], category)
+            build_discovery_batches(
+                adapters,
+                config["maintainerUsername"],
+                category,
+                config.get("canonicalProviders"),
+            )
         )
 
     if mode in {"active", "all"}:
