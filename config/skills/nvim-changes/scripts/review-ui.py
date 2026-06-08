@@ -159,16 +159,17 @@ def resolve_worktree(repo: Path | None, target: str | None) -> Path:
 
 
 def default_base_ref(wt: Path) -> str:
-    head = git(wt, "rev-parse", "--abbrev-ref", "origin/HEAD")
-    if head:
-        return head
-    for ref in ("origin/main", "origin/master", "main", "master"):
+    # Prefer the real mainline (upstream) over a possibly-stale fork (origin).
+    for ref in ("upstream/HEAD", "upstream/main", "upstream/master",
+                "origin/HEAD", "origin/main", "origin/master", "main", "master"):
         if git_ok(wt, "rev-parse", "--verify", "--quiet", ref):
             return ref
     return "origin/main"
 
 
 def compute_base(wt: Path) -> str:
+    # Refresh tracking refs first so the base is never stale.
+    run(["git", "-C", str(wt), "fetch", "-q", "--all"], check=False)
     base = git(wt, "merge-base", "HEAD", default_base_ref(wt))
     return base or git(wt, "rev-parse", "HEAD")
 
