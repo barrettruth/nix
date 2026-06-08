@@ -29,7 +29,6 @@ follow the dominant recent pattern:
   used at all, and which scope fits the changed paths.
 - casing, tense, subject length, trailing punctuation.
 - whether bodies appear, and for what kind/size of change.
-- issue/PR reference habits.
 
 When the repo is inconsistent, follow the most recent commits on its default
 branch. Do not impose structure the repo does not use; do not drop structure it
@@ -42,18 +41,12 @@ does.
   "comprehensive").
 - Imperative present tense: `add`, `fix`, `remove`, `revamp` — never
   `added`/`adds`.
-- Lowercase by default, including the first word, unless this repo's own
-  history capitalizes. Proper nouns/acronyms keep their case (`PR`, `CI`,
-  `LSP`, `URL`, `Forgejo`).
-- No trailing period on the subject.
 - Concrete over abstract — name the thing (`copy-mode incsearch`, `PR diff
   line numbers`), not the activity (`update logic`, `improve handling`).
 - Keep the subject short; follow the repo's typical length (often ≤50 chars).
 - A body is the exception, not the rule. Add one only when the subject cannot
   carry the change, and only if this repo uses bodies. When you do: explain
   why, not what; wrap ~72.
-- Issue/PR refs only when there is a real referent, in the repo's own style
-  (`fixes #12`, `refs #4`).
 - Never invent scope or structure the repo does not use; infer scope from the
   changed paths and the repo's scope vocabulary when it does.
 - Absolutely no AI/assistant/tool attribution, co-author, or signed-off
