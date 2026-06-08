@@ -140,17 +140,6 @@ def is_git_root(path: str) -> bool:
     return os.path.exists(os.path.join(path, ".git"))
 
 
-def enclosing_git_root(path: str) -> str:
-    current = os.path.realpath(normalize_path(path))
-    while True:
-        if is_git_root(current):
-            return current
-        parent = os.path.dirname(current)
-        if parent == current:
-            return ""
-        current = parent
-
-
 def display_path(path: str) -> str:
     normalized = normalize_path(path)
     if normalized == HOME:
@@ -190,8 +179,7 @@ def zoxide_project_paths() -> list[str]:
         if not directory:
             continue
         normalized = normalize_path(directory)
-        root = enclosing_git_root(normalized)
-        if (root and root != os.path.realpath(normalized)) or normalized in seen:
+        if normalized in seen or not is_git_root(normalized):
             continue
         directories.append(normalized)
         seen.add(normalized)
