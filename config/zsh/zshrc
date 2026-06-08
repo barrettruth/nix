@@ -6,6 +6,8 @@ zmodload zsh/complist
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-za-z}'
 
+(( $+commands[jj] )) && source <(COMPLETE=zsh jj)
+
 export GPG_TTY=$(tty)
 export THEME="${THEME:-midnight}"
 export CODEX_HOME="${CODEX_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/codex}"
