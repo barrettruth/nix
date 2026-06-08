@@ -16,16 +16,20 @@ from typing import Iterable, NoReturn
 SESSION_PROJECT_PATH_OPTION = "@mux-project-path"
 VCS_WINDOW_NAME = "vcs"
 
-# Wipe any stale PR compose buffers, then ask forge.nvim to open a draft create
-# compose. Driving via :Forge (not require) ensures lz.n loads forge + its config.
+# Reset the vcs window to a clean `:Git | only` (same as nvim-commit), wiping any
+# stale PR compose buffers, then ask forge.nvim to open a draft create compose.
+# Driving via :Forge (not require) ensures lz.n loads forge + its config.
 CREATE_LUA = "\n".join(
     [
+        "pcall(vim.cmd, 'silent! only')",
         "for _, b in ipairs(vim.fn.getbufinfo()) do",
         "  local n = b.name or ''",
         "  if n:find('/pr/', 1, true) and vim.bo[b.bufnr].filetype == 'forgecompose' then",
         "    pcall(vim.cmd, 'silent! bwipeout! ' .. b.bufnr)",
         "  end",
         "end",
+        "pcall(vim.cmd, 'silent! Git')",
+        "pcall(vim.cmd, 'silent! only')",
         "pcall(vim.cmd, 'silent! Forge pr create draft')",
     ]
 )
