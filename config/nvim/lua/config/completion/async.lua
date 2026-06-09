@@ -1,9 +1,7 @@
----Async-injection lifecycle for builtin omnifunc-backed providers that
----want `vim.fn.complete()` injection on cache fill. Both `forge_refs` and
----`git_log` register a lifecycle and call `set` when omnifunc returns
----empty (cache miss), `try_inject` when the fetch settles. The lifecycle
----owns the generation counter, mode/buffer/row/cursor re-checks, and the
----`vim.fn.complete()` call.
+---Async-injection lifecycle for omnifunc-backed providers (`forge_refs`,
+---`git_log`): `set` on a cache miss, `try_inject` once the fetch settles.
+---Owns the generation counter and the staleness re-checks (gen/buf/mode/row)
+---guarding the `vim.fn.complete()` call.
 local M = {}
 
 ---@class config.completion.async.Pending

@@ -24,9 +24,8 @@ local TIMEOUT_LOGINS = 1000
 local logins_cache
 
 ---Load configured tea logins once per session. Synchronous because callers
----(`matches_host`, `login_for_host`) run in the omnifunc/aggregator hot
----path and need a definitive answer before forge_refs can dispatch. Cost
----is a single ~50ms shell-out to read a local config file.
+---(`matches_host`, `login_for_host`) run in the omnifunc/aggregator hot path
+---and need a definitive answer before forge_refs can dispatch.
 ---@return config.completion.forge.gitea.Login[]
 local function load_logins()
     local result = vim.system(
