@@ -115,6 +115,7 @@ buildGoModule {
   ];
   postPatch = ''
     substituteInPlace modules/setting/server.go --subst-var data
+    patch -p1 -R <${./revert-pierre-file-view.patch}
   '';
 
   tags = [

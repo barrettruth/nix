@@ -1,0 +1,28 @@
+diff --git a/routers/web/repo/view.go b/routers/web/repo/view.go
+index 287cd1b..f3ab90a 100644
+--- a/routers/web/repo/view.go
++++ b/routers/web/repo/view.go
+@@ -53,6 +53,7 @@ import (
+ 	"forgejo.org/routers/web/feed"
+ 	"forgejo.org/services/context"
+ 	issue_service "forgejo.org/services/issue"
++	"forgejo.org/services/gitdiff"
+ 	repo_service "forgejo.org/services/repository"
+ 	files_service "forgejo.org/services/repository/files"
+ 
+@@ -590,8 +591,14 @@ func renderFile(ctx *context.Context, entry *git.TreeEntry) {
+ 				log.Error("Unable to get file language for %-v:%s. Error: %v", ctx.Repo.Repository, ctx.Repo.TreePath, err)
+ 			}
+ 
+-			fileContent, lexerName, err := highlight.File(blob.Name(), language, buf)
++			fileContent, lexerName, ok := gitdiff.PierreFile(blob.Name(), language, buf)
+ 			ctx.Data["LexerName"] = lexerName
++			if ok {
++				err = nil
++			} else {
++				fileContent, lexerName, err = highlight.File(blob.Name(), language, buf)
++				ctx.Data["LexerName"] = lexerName
++			}
+ 			if err != nil {
+ 				log.Error("highlight.File failed, fallback to plain text: %v", err)
+ 				fileContent = highlight.PlainText(buf)
