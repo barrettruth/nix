@@ -1,0 +1,8 @@
+scripts/ctl linguist-language=Shell
+scripts/hypr linguist-language=Shell
+scripts/mux linguist-language=Shell
+scripts/nvim-inverse-search linguist-language=Shell
+scripts/spark linguist-language=Python
+scripts/theme linguist-language=Shell
+scripts/waybarctl linguist-language=Shell
+scripts/x linguist-language=Shell
