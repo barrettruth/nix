@@ -61,9 +61,7 @@ fzf-config-widget() {
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
-# mux: inside an nvim :terminal ($NVIM set), route editors to the parent server
-# so `git commit` etc. open there instead of spawning a nested nvim. No-op
-# otherwise, where $NVIM is unset.
+# in an nvim :terminal, send editors to the parent server (no nested nvim)
 if [[ -n "$NVIM" ]]; then
   export GIT_EDITOR="nvim --server $NVIM --remote-wait"
   export EDITOR="nvim --server $NVIM --remote-wait"

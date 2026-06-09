@@ -1,7 +1,5 @@
--- mux: in-Neovim "multiplexer" brain. Inert unless `require('mux').setup()` is
--- called (the `mux` launcher does this via `-c` on the per-project server). Each
--- "view" is a tagged tabpage; switching projects is `:connect` to another
--- per-project nvim server (see scripts/mux).
+-- mux: in-Neovim "multiplexer" brain. Each "view" is a tagged tabpage; switching
+-- projects is `:connect` to another per-project nvim server (see scripts/mux).
 
 local M = {}
 

@@ -142,8 +142,7 @@ vim.keymap.set('i', '<c-s>', semantic_completion, {
     desc = 'semantic completion',
 })
 
--- Eagerly load the file provider so its warmup autocmds register and the
--- project index is ready before the first <c-f>.
+-- warm the file index now so the first <c-f> is ready
 vim.schedule(function()
     require('config.completion.files').warmup(0)
 end)
