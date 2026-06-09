@@ -43,6 +43,10 @@ function M.render()
         return ''
     end
 
+    if vim.bo.buftype == 'terminal' then
+        return ''
+    end
+
     local column = '%s%C '
 
     if vim.startswith(vim.api.nvim_buf_get_name(0), review_prefix) then
