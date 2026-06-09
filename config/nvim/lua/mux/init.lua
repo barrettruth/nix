@@ -511,11 +511,11 @@ function M.setup()
         tag(vim.api.nvim_get_current_tabpage(), 'edit')
     end
 
-    -- autosave on the same cadence as tmux-continuum (10 min)
+    -- autosave every 5 min (safety net against a hard kill)
     M._timer = vim.uv.new_timer()
     M._timer:start(
-        600000,
-        600000,
+        300000,
+        300000,
         vim.schedule_wrap(function()
             M.save_session()
         end)
