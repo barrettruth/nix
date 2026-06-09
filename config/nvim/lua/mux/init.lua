@@ -247,7 +247,11 @@ local function show_picker(live_out, zoxide_out)
     local ok, fzf = pcall(require, 'fzf-lua')
     if ok then
         -- enter connects; ctrl-<key> connects AND opens that view on the project
-        -- (mirrors the old tmux picker's prefix + ^a/^e/^v/... bindings).
+        -- (mirrors the old tmux picker's prefix + ^a/^e/^v/... bindings). fzf-lua's
+        -- native action header hardcodes the "<ctrl-x>" form, so we build the
+        -- header ourselves but reuse its highlight groups so the ^X keys stay
+        -- highlighted; plain-function actions keep set_header from overwriting it.
+        local hl = require('fzf-lua.utils').ansi_from_hl
         local actions = {
             ['default'] = function(sel)
                 if sel and sel[1] then
@@ -255,7 +259,7 @@ local function show_picker(live_out, zoxide_out)
                 end
             end,
         }
-        local hints = { 'enter connect' }
+        local parts = {}
         for _, name in ipairs(VIEW_ORDER) do
             local spec = views[name]
             actions['ctrl-' .. spec.key] = function(sel)
@@ -263,11 +267,17 @@ local function show_picker(live_out, zoxide_out)
                     M._connect(meta[sel[1]], name)
                 end
             end
-            hints[#hints + 1] = ('^%s %s'):format(spec.key, name)
+            parts[#parts + 1] = ('%s to %s'):format(
+                hl('FzfLuaHeaderBind', '^' .. spec.key:upper()),
+                hl('FzfLuaHeaderText', name)
+            )
         end
         fzf.fzf_exec(lines, {
             prompt = 'project> ',
-            fzf_opts = { ['--header'] = table.concat(hints, '  ') },
+            fzf_opts = {
+                ['--ansi'] = true,
+                ['--header'] = ':: ' .. table.concat(parts, ' | '),
+            },
             actions = actions,
         })
     else
