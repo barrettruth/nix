@@ -136,12 +136,6 @@ function M.on_attach(client, bufnr)
             fzf_or('lsp_workspace_diagnostics', vim.diagnostic.setqflist),
             'workspace diagnostics',
         },
-        {
-            Methods.workspace_symbol,
-            'gs',
-            fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
-            'workspace symbols',
-        },
     }
 
     for _, m in ipairs(mappings) do
