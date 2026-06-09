@@ -146,10 +146,11 @@ pick() {
     {
       list | cut -f1
       zoxide query -l 2>/dev/null || true
-    } | awk 'NF && $0 != "?" && !seen[$0]++' | fzf --prompt 'project> '
+    } | awk 'NF && $0 != "?" && !seen[$0]++' | sed "s|^$HOME|~|" \
+      | fzf --height=~40% --prompt 'project> '
   )" || return 0
   [ -n "$choice" ] || return 0
-  attach "$choice"
+  attach "${choice/#\~/$HOME}"
 }
 
 usage() {
