@@ -339,6 +339,36 @@ function M.pick_project()
     end)
 end
 
+---@param step integer 1 = next live project, -1 = previous (wraps)
+function M.cycle_project(step)
+    vim.system({ 'mux', 'list' }, { text = true }, function(res)
+        local socks = {}
+        for line in (res.stdout or ''):gmatch('[^\n]+') do
+            local sock = line:match('\t(.+)$')
+            if sock then
+                socks[#socks + 1] = sock
+            end
+        end
+        vim.schedule(function()
+            if #socks < 2 then
+                vim.notify('mux: no other project', vim.log.levels.INFO)
+                return
+            end
+            local cur, idx = vim.v.servername, 1
+            for i, s in ipairs(socks) do
+                if s == cur then
+                    idx = i
+                    break
+                end
+            end
+            local target = socks[((idx - 1 + step) % #socks) + 1]
+            if target and target ~= cur then
+                vim.cmd('connect ' .. vim.fn.fnameescape(target))
+            end
+        end)
+    end)
+end
+
 local function sessions_dir()
     return vim.fn.stdpath('state') .. '/mux/sessions'
 end
@@ -411,6 +441,12 @@ function M.setup()
         M.pick_project,
         { desc = 'mux: switch project' }
     )
+    vim.keymap.set('n', ']m', function()
+        M.cycle_project(1)
+    end, { desc = 'mux: next project' })
+    vim.keymap.set('n', '[m', function()
+        M.cycle_project(-1)
+    end, { desc = 'mux: previous project' })
 
     -- free <leader>b for the build view; keep layout-preserving delete on :bd/:bw
     pcall(vim.keymap.del, 'n', '<leader>bd')

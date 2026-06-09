@@ -39,7 +39,9 @@ socket_for() {
 }
 
 is_live() {
-  "$NVIM" --server "$1" --remote-expr 1 >/dev/null 2>&1
+  # </dev/null: keep the remote client off the tty so it doesn't init a TUI
+  # (alt-screen + terminal queries) and pollute output (see `list`).
+  "$NVIM" --server "$1" --remote-expr 1 </dev/null >/dev/null 2>&1
 }
 
 ensure() {
@@ -79,14 +81,28 @@ attach() {
 }
 
 list() {
-  local sock cwd
+  local sock cwd i w=0
+  local cwds=() socks=()
   [ -d "$RUNTIME_DIR" ] || return 0
   for sock in "$RUNTIME_DIR"/*.sock; do
     [ -e "$sock" ] || continue
     if ! is_live "$sock"; then continue; fi
-    cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' 2>/dev/null || true)"
-    printf '%s\t%s\n' "${cwd:-?}" "$sock"
+    cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
+    cwds+=("${cwd:-?}")
+    socks+=("$sock")
   done
+  # Aligned columns for a terminal; raw cwd<TAB>socket when piped/captured so
+  # the in-nvim picker, the zsh `mux` fn, and `]m`/`[m` can still parse it.
+  if [ -t 1 ]; then
+    for cwd in "${cwds[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
+    for i in "${!cwds[@]}"; do
+      printf '%-*s  %s\n' "$w" "${cwds[$i]}" "${socks[$i]}"
+    done
+  else
+    for i in "${!cwds[@]}"; do
+      printf '%s\t%s\n' "${cwds[$i]}" "${socks[$i]}"
+    done
+  fi
 }
 
 usage() {
@@ -96,7 +112,7 @@ mux — per-project neovim server launcher
   mux [<path>]        attach to the project at <path> (default: cwd), spawning if needed
   mux ensure [<path>] print a live server socket for the project, spawning if needed
   mux list            list running project servers (cwd<TAB>socket)
-  mux kill [<path>]    quit the project's server
+  mux kill [<path>]   quit the project's server
   mux -h | --help     this help
 
 Inside nvim, switch projects with:  :connect <socket>   (see `mux list`)
@@ -107,7 +123,7 @@ kill_server() {
   local sock
   sock="$(socket_for "$(root_for "${1:-$PWD}")")"
   if is_live "$sock"; then
-    "$NVIM" --server "$sock" --remote-expr 'execute("qall!")' >/dev/null 2>&1 || true
+    "$NVIM" --server "$sock" --remote-expr 'execute("qall!")' </dev/null >/dev/null 2>&1 || true
   fi
   rm -f "$sock"
 }
