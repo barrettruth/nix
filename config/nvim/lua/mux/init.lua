@@ -12,7 +12,9 @@ local views = {
         key = 'a',
         kind = 'terminal',
         cmd = { 'devin' },
+        restore_cmd = { 'devin', '--continue' },
         lifecycle = 'ephemeral',
+        restore = true,
     },
     zsh = {
         key = 'z',
@@ -20,7 +22,7 @@ local views = {
         cmd = { vim.o.shell },
         lifecycle = 'ephemeral',
     },
-    vcs = { key = 'v', kind = 'vcs' },
+    vcs = { key = 'v', kind = 'vcs', restore = true },
     run = { key = 'r', kind = 'task', recipe = 'run', lifecycle = 'ephemeral' },
     build = {
         key = 'b',
@@ -108,6 +110,27 @@ local function close_view_tab(tp)
     end)
 end
 
+-- fill the current window/tab with a view's content. `restoring` swaps in a
+-- view's restore_cmd (e.g. ai resumes with `devin --continue` rather than
+-- spawning a fresh session).
+local function materialize(name, restoring)
+    local spec = views[name]
+    local cwd = vim.fn.getcwd()
+    if spec.kind == 'editor' then
+        vim.cmd.edit(cwd)
+    elseif spec.kind == 'vcs' then
+        -- fugitive status, sole window in the tab; closing it closes the tab
+        pcall(vim.cmd, 'Git')
+        pcall(vim.cmd, 'only')
+    elseif spec.kind == 'terminal' or spec.kind == 'task' then
+        local cmd = (restoring and spec.restore_cmd)
+            or spec.cmd
+            or { 'just', spec.recipe }
+        vim.fn.jobstart(cmd, { term = true, cwd = cwd })
+        vim.cmd.startinsert()
+    end
+end
+
 ---@param name string
 function M.open_view(name)
     local spec = views[name]
@@ -130,21 +153,8 @@ function M.open_view(name)
     end
 
     vim.cmd.tabnew()
-    local tp = vim.api.nvim_get_current_tabpage()
-    tag(tp, name)
-
-    if spec.kind == 'editor' then
-        vim.cmd.edit(cwd)
-        return
-    elseif spec.kind == 'vcs' then
-        -- fugitive status, sole window in the tab; closing it closes the tab
-        pcall(vim.cmd, 'Git')
-        pcall(vim.cmd, 'only')
-    elseif spec.kind == 'terminal' or spec.kind == 'task' then
-        local cmd = spec.cmd or { 'just', spec.recipe }
-        vim.fn.jobstart(cmd, { term = true, cwd = cwd })
-        vim.cmd.startinsert()
-    end
+    tag(vim.api.nvim_get_current_tabpage(), name)
+    materialize(name, false)
 end
 
 -- layout-preserving buffer delete (mirrors plugin/bufremove.lua), rebound to
@@ -272,6 +282,14 @@ local function show_picker(live_out, zoxide_out)
         end
         fzf.fzf_exec(lines, {
             prompt = 'project> ',
+            -- ^A is the `ai` view action (views.ai.key). FZF_DEFAULT_OPTS binds
+            -- ctrl-a to select-all and fzf applies fzf_args *after* fzf-lua's
+            -- action binds, so select-all would otherwise mask it. Drop it for
+            -- this picker only; multi-select is meaningless when connecting to a
+            -- single project (mirrors the git branches/worktrees pickers).
+            fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
+                :gsub('%-%-bind=ctrl%-a:select%-all', '')
+                :gsub('--color=[^%s]+', '')),
             fzf_opts = {
                 ['--ansi'] = true,
                 ['--header'] = ':: ' .. table.concat(parts, ' | '),
@@ -429,6 +447,36 @@ function M.load_session()
             end
         end
     end
+
+    -- mksession restored the edit view's real state and left every other view
+    -- tab as an empty skeleton. re-materialize the ones we keep (ai, vcs); drop
+    -- the rest so no blank buffer lingers. preserve the focused tab.
+    local cur = vim.api.nvim_get_current_tabpage()
+    local drop = {}
+    for tp, view in pairs(tab_view) do
+        local spec = views[view]
+        if
+            vim.api.nvim_tabpage_is_valid(tp)
+            and spec
+            and spec.kind ~= 'editor'
+        then
+            if spec.restore then
+                vim.api.nvim_set_current_tabpage(tp)
+                materialize(view, true)
+            else
+                drop[tp] = true
+            end
+        end
+    end
+    if drop[cur] then
+        cur = find_view('edit') or cur
+    end
+    if vim.api.nvim_tabpage_is_valid(cur) then
+        vim.api.nvim_set_current_tabpage(cur)
+    end
+    for tp in pairs(drop) do
+        close_view_tab(tp)
+    end
     return true
 end
 
@@ -438,8 +486,11 @@ function M.setup()
     end
     M._did = true
 
+    -- no 'terminal': mksession must not replay terminal commands (no auto
+    -- rebuild/retest, no fresh devin). load_session re-materializes the views
+    -- we keep and drops the rest, so the registry owns restore policy.
     vim.o.sessionoptions =
-        'buffers,curdir,folds,globals,help,tabpages,terminal,winsize,winpos'
+        'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
 
     for name, spec in pairs(views) do
         vim.keymap.set('n', '<leader>' .. spec.key, function()
