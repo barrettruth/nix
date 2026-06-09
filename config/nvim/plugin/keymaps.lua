@@ -23,13 +23,29 @@ vim.keymap.set(
     { desc = 'shrink window height' }
 )
 
+-- ctrl+shift+hjkl: distinct from <c-hjkl> under the kitty protocol, so it leaves
+-- <c-l> clear / <c-k> kill-line / <bs> / <cr> alone and isn't claimed elsewhere.
+for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
+    vim.keymap.set(
+        'n',
+        '<c-s-' .. key .. '>',
+        '<c-w>' .. key,
+        { desc = 'go to window ' .. key }
+    )
+    vim.keymap.set(
+        't',
+        '<c-s-' .. key .. '>',
+        [[<c-\><c-n><c-w>]] .. key,
+        { desc = 'go to window ' .. key }
+    )
+end
+
 vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'join lines (keep cursor)' })
 
 vim.keymap.set('x', 'p', '"_dp', { desc = 'paste without yanking' })
 vim.keymap.set('x', 'P', '"_dP', { desc = 'paste before without yanking' })
 vim.keymap.set('x', 'x', '"_d', { desc = 'delete selection without yanking' })
 vim.keymap.set('n', 'x', '"_x', { desc = 'delete char without yanking' })
-vim.keymap.set('t', '<esc>', '<c-\\><c-n>', { desc = 'exit terminal mode' })
 
 vim.keymap.set('n', 'n', function()
     return vim.v.searchforward == 1 and 'n' or 'N'
