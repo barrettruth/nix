@@ -19,17 +19,6 @@ let
         };
       }
     )
-    (
-      final: prev:
-      let
-        system = final.stdenv.hostPlatform.system;
-      in
-      {
-        tmuxPlugins = prev.tmuxPlugins // {
-          mosaic = inputs.tmux-mosaic.packages.${system}.default;
-        };
-      }
-    )
   ];
 
   sharedUnfree = [

@@ -29,10 +29,6 @@
       url = "git+file:///home/barrett/dev/delta";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    tmux-mosaic = {
-      url = "git+https://forge.barrettruth.com/barrettruth/tmux-mosaic.git";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     pierrejo = {
       url = "git+https://git.harivan.sh/harivansh-afk/pierrejo.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";

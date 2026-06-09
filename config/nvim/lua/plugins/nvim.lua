@@ -1,5 +1,8 @@
 vim.pack.add({
     'https://github.com/echasnovski/mini.ai',
+    'https://github.com/echasnovski/mini.align',
+    'https://github.com/echasnovski/mini.bracketed',
+    'https://github.com/echasnovski/mini.operators',
     'https://github.com/monaqa/dial.nvim',
     'https://github.com/catgoose/nvim-colorizer.lua',
     'https://github.com/echasnovski/mini.pairs',
@@ -215,5 +218,43 @@ return {
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
         },
+    },
+    {
+        'echasnovski/mini.align',
+        after = function()
+            require('mini.align').setup()
+        end,
+        keys = {
+            { 'ga', mode = { 'n', 'x' } },
+            { 'gA', mode = { 'n', 'x' } },
+        },
+    },
+    {
+        'echasnovski/mini.operators',
+        after = function()
+            require('mini.operators').setup({
+                evaluate = { prefix = '' },
+                exchange = { prefix = '' },
+                multiply = { prefix = '' },
+                replace = { prefix = 'dr' },
+                sort = { prefix = '' },
+            })
+        end,
+        keys = {
+            { 'dr', mode = { 'n', 'x' } },
+        },
+    },
+    {
+        'echasnovski/mini.bracketed',
+        after = function()
+            require('mini.bracketed').setup({
+                comment = { suffix = '' },
+                conflict = { suffix = '' },
+                diagnostic = { suffix = '' },
+                file = { suffix = '' },
+                indent = { suffix = '' },
+            })
+        end,
+        event = 'DeferredUIEnter',
     },
 }

@@ -350,8 +350,8 @@ return {
             { '<leader>cP', '<cmd>CP pick<cr>' },
             { '<leader>cr', '<cmd>CP run all<cr>' },
             { '<leader>cd', '<cmd>CP run --debug<cr>' },
-            { ']c', '<cmd>CP next<cr>' },
-            { '[c', '<cmd>CP prev<cr>' },
+            { ']p', '<cmd>CP next<cr>' },
+            { '[p', '<cmd>CP prev<cr>' },
         },
         before = function()
             vim.g.cp = {

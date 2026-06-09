@@ -30,4 +30,4 @@ Turn the request into the args, then run that single command:
 Report the helper's one-line result and stop. Do not narrate intermediate
 steps, and do not offer a code review or any follow-up. If it prints "no
 reviewable changes", relay that and stop. If it exits nonzero, report the error
-and stop — do not hand-drive tmux/nvim/mux yourself.
+and stop — do not hand-drive nvim/mux yourself.

@@ -9,6 +9,9 @@ local context = require('config.completion.forge.context')
 local notify = require('config.completion.forge.notify')
 local registry = require('config.completion.forge.registry')
 
+local PR_GLYPH = '\239\144\135' -- octicon git-pull-request (U+F407)
+local ISSUE_GLYPH = '\239\144\159' -- octicon comment (U+F41F)
+
 ---@type table<string, true>
 local TRIGGER_CHARS = { ['#'] = true, ['@'] = true, ['!'] = true }
 
@@ -122,19 +125,20 @@ end
 ---@param repo config.completion.forge.Repo
 ---@return config.completion.Item
 local function ref_to_item(item, trigger, repo)
-    local marker
-    if item.kind == 'mr' then
-        marker = item.draft and '◑' or '◆'
-    elseif item.kind == 'pr' then
-        marker = item.draft and '◑' or '●'
-    else
-        marker = '○'
+    local glyph = (item.kind == 'pr' or item.kind == 'mr') and PR_GLYPH
+        or ISSUE_GLYPH
+    local tags = {}
+    if item.draft then
+        tags[#tags + 1] = 'draft'
     end
-    local state = item.state ~= 'open' and (' [' .. item.state .. ']') or ''
+    if item.state == 'closed' or item.state == 'merged' then
+        tags[#tags + 1] = item.state
+    end
+    local state = #tags > 0 and (' [' .. table.concat(tags, ', ') .. ']') or ''
     local abbr = ('%s%d %s %s%s'):format(
         trigger,
         item.number,
-        marker,
+        glyph,
         item.title,
         state
     )
@@ -144,7 +148,7 @@ local function ref_to_item(item, trigger, repo)
     return {
         word = trigger .. tostring(item.number),
         abbr = abbr,
-        kind = item.kind,
+        kind = 'forge',
         info = '',
         user_data = {
             source = M.source,
@@ -168,7 +172,7 @@ local function mention_to_item(item, repo)
     return {
         word = '@' .. item.login,
         abbr = '@' .. item.login,
-        kind = 'mention',
+        kind = 'forge',
         info = '',
         user_data = {
             source = M.source,

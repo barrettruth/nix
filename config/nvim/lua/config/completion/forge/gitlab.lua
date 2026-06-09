@@ -58,7 +58,7 @@ end
 ---@param kind config.completion.forge.RefKind
 ---@param cb fun(items: config.completion.forge.RefItem[]?, err: string?)
 local function fetch_list(repo, scope, kind, cb)
-    local path = ('projects/%s/%s?state=opened&per_page=100&order_by=updated_at'):format(
+    local path = ('projects/%s/%s?state=all&per_page=100&order_by=updated_at'):format(
         project_path(repo),
         scope
     )

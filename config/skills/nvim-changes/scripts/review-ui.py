@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -38,14 +39,6 @@ def out(args: list[str]) -> str:
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
-def tmux(*args: str) -> None:
-    _ = subprocess.run(["tmux", *args], check=True, text=True)
-
-
-def tmux_out(*args: str) -> str:
-    return out(["tmux", *args])
-
-
 def git(repo: Path, *args: str) -> str:
     return out(["git", "-C", str(repo), *args])
 
@@ -75,25 +68,6 @@ def main_repo(start: Path) -> Path | None:
     if not common:
         return None
     return Path(common).resolve().parent
-
-
-def current_session() -> str:
-    # The session of the pane this command runs in, not whichever window is
-    # focused -- otherwise an agent invoking this lands the UI in the user's
-    # focused project. Matches nvim-commit/nvim-edit.
-    session = tmux_out("display-message", "-p", "#{session_name}")
-    if session:
-        return session
-    # Fallback for the rare case of being run outside tmux.
-    for line in out(["tmux", "list-clients", "-F", "#{client_session}"]).splitlines():
-        if line.strip():
-            return line.strip()
-    return ""
-
-
-def session_project(session: str) -> Path | None:
-    path = out(["tmux", "show-options", "-qv", "-t", session, "@mux-project-path"])
-    return Path(path).resolve() if path else None
 
 
 def worktree_for_branch(repo: Path, branch: str) -> Path | None:
@@ -154,14 +128,11 @@ def resolve_worktree(repo: Path | None, target: str | None) -> Path:
         if repo is None:
             die(f"cannot resolve branch '{target}': pass --repo <repo-root>")
         return ensure_branch_worktree(repo, target)  # type: ignore[arg-type]
-    # No target: review the project of the session this command runs in.
-    proj = session_project(current_session())
-    if proj and git_ok(proj, "rev-parse", "--is-inside-work-tree"):
-        return toplevel(proj) or proj
+    # No target: review the current project (the cwd's git worktree).
     here = toplevel(Path.cwd())
     if here:
         return here
-    die("no target given and current session is not in a git worktree")
+    die("no target given and the current directory is not a git worktree")
     raise AssertionError  # unreachable
 
 
@@ -200,100 +171,12 @@ def changed_files(wt: Path, base: str) -> list[Path]:
 # --- live UI (in the attached session) ---------------------------------------
 
 
-def find_vcs_window(session: str, root: Path) -> str | None:
-    fmt = (
-        "#{window_index}\t#{window_name}\t#{pane_current_command}\t#{pane_current_path}"
-    )
-    for row in tmux_out("list-windows", "-t", session, "-F", fmt).splitlines():
-        parts = row.split("\t")
-        if len(parts) < 4:
-            continue
-        index, name, command, path = parts[:4]
-        if name == "vcs" and command == "nvim" and Path(path).resolve() == root:
-            return f"{session}:{index}"
-    return None
-
-
-def wait_for_nvim(target: str) -> None:
-    deadline = time.monotonic() + 5
-    while time.monotonic() < deadline:
-        if (
-            out(
-                [
-                    "tmux",
-                    "display-message",
-                    "-p",
-                    "-t",
-                    target,
-                    "#{pane_current_command}",
-                ]
-            )
-            == "nvim"
-        ):
-            return
-        time.sleep(0.05)
-    raise RuntimeError(f"vcs window nvim did not start: {target}")
-
-
-def open_vcs_review(session: str, root: Path, base: str) -> str:
-    target = find_vcs_window(session, root)
-    if target is None:
-        index = tmux_out(
-            "new-window",
-            "-d",
-            "-t",
-            f"{session}:",
-            "-c",
-            str(root),
-            "-n",
-            "vcs",
-            "-P",
-            "-F",
-            "#{window_index}",
-            "nvim",
-        )
-        target = f"{session}:{index}"
-        wait_for_nvim(target)
-    tmux("send-keys", "-t", target, "Escape")
-    tmux(
-        "send-keys",
-        "-t",
-        target,
-        f":Diff review ++layout=unified {base} | only",
-        "Enter",
-    )
-    return target
-
-
-def populate_edit(session: str, root: Path, files: list[Path]) -> None:
-    run(
-        [
-            "python3",
-            str(EDIT_HELPER),
-            "--session",
-            session,
-            "--root",
-            str(root),
-            "--limit",
-            str(len(files)),
-            *[str(p) for p in files],
-        ],
-        cwd=root,
-    )
-
-
-def focus(target: str) -> None:
-    session = target.split(":", 1)[0]
-    tmux("select-window", "-t", target)
-    for client in out(
-        ["tmux", "list-clients", "-t", session, "-F", "#{client_name}"]
-    ).splitlines():
-        if client.strip():
-            _ = subprocess.run(
-                ["tmux", "switch-client", "-c", client.strip(), "-t", target],
-                check=False,
-            )
-            break
+def populate_edit(session: str | None, root: Path, files: list[Path]) -> None:
+    args = ["python3", str(EDIT_HELPER), "--root", str(root)]
+    if session:
+        args += ["--session", session]
+    args += ["--limit", str(len(files)), *[str(p) for p in files]]
+    run(args, cwd=root)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -313,6 +196,35 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def env_socket_for_root(root: Path) -> str:
+    # The project's nvim server: $NVIM is auto-set in the server's :terminal to
+    # its socket. Returns "" unless that server's cwd is `root` (e.g. a worktree
+    # whose root differs from the server cwd).
+    socket = os.environ.get("NVIM")
+    if not socket or not os.path.exists(socket):
+        return ""
+    proc = subprocess.run(
+        ["nvim", "--server", socket, "--remote-expr", "getcwd()"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode == 0 and Path(proc.stdout.strip()).resolve() == root.resolve():
+        return socket
+    return ""
+
+
+def open_vcs_review_rpc(socket: str, base: str) -> None:
+    keys = f"<C-\\><C-n>:Diff review ++layout=unified {base} | only<CR>"
+    subprocess.run(
+        ["nvim", "--server", socket, "--remote-send", keys],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     if not EDIT_HELPER.exists():
@@ -326,13 +238,14 @@ def main(argv: list[str]) -> int:
         print(f"review-ui: no reviewable changes in {branch} ({wt}) vs {base[:10]}")
         return 0
 
-    session = current_session()
-    vcs_target = open_vcs_review(session, wt, base)
-    populate_edit(session, wt, files)
-    focus(vcs_target)
+    socket = env_socket_for_root(wt)
+    if not socket:
+        die(f"no nvim server for {wt} (is $NVIM set / mux running?)")
+    open_vcs_review_rpc(socket, base)
+    populate_edit(None, wt, files)
     print(
-        f"review-ui: {session} reviewing {branch} ({wt}) vs {base[:10]} — "
-        f"{len(files)} files"
+        f"review-ui: nvim server reviewing {branch} ({wt}) vs "
+        f"{base[:10]} — {len(files)} files"
     )
     return 0
 

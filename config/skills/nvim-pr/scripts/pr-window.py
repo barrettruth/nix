@@ -8,13 +8,8 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections import deque
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, NoReturn
-
-SESSION_PROJECT_PATH_OPTION = "@mux-project-path"
-VCS_WINDOW_NAME = "vcs"
 
 # Reset the vcs window to a clean `:Git | only` (same as nvim-commit), wiping any
 # stale PR compose buffers, then ask forge.nvim to open a draft create compose.
@@ -97,24 +92,6 @@ def maybe_output(args: Iterable[str]) -> str:
     return proc.stdout.rstrip("\n") if proc.returncode == 0 else ""
 
 
-def tmux_output(*args: str) -> str:
-    return maybe_output(["tmux", *args])
-
-
-def in_tmux() -> bool:
-    if not os.environ.get("TMUX"):
-        return False
-    return (
-        subprocess.run(
-            ["tmux", "display-message", "-p", "#{session_name}"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ).returncode
-        == 0
-    )
-
-
 def normalize_path(path: str | Path) -> Path:
     return Path(path).expanduser().resolve()
 
@@ -139,15 +116,6 @@ def git_root(path: Path) -> Path:
 
 
 def current_root() -> Path:
-    if in_tmux():
-        session = tmux_output("display-message", "-p", "#{session_name}")
-        project = tmux_output(
-            "show-options", "-qv", "-t", session, SESSION_PROJECT_PATH_OPTION
-        )
-        if project:
-            return git_root(normalize_path(project))
-        pane = tmux_output("display-message", "-p", "#{pane_current_path}")
-        return git_root(normalize_path(pane))
     return git_root(Path.cwd())
 
 
@@ -184,133 +152,6 @@ def resolve_root(base: Path, target: str | None) -> Path:
     if wt is None:
         die(f"'{target}' is not a worktree path or a branch checked out under {base}")
     return wt
-
-
-@dataclass(frozen=True)
-class Window:
-    name: str
-    index: str
-    command: str
-    pane_pid: str
-    path: Path
-
-
-def list_windows(session: str) -> list[Window]:
-    fmt = (
-        "#{window_name}\t#{window_index}\t#{pane_current_command}"
-        "\t#{pane_pid}\t#{pane_current_path}"
-    )
-    windows: list[Window] = []
-    for line in tmux_output("list-windows", "-t", session, "-F", fmt).splitlines():
-        name, index, command, pane_pid, path = (line.split("\t") + [""] * 5)[:5]
-        windows.append(
-            Window(name, index, command, pane_pid, normalize_path(path or "/"))
-        )
-    return windows
-
-
-def find_vcs_window(session: str, root: Path) -> Window | None:
-    for window in list_windows(session):
-        if window.name == VCS_WINDOW_NAME and window.command == "nvim":
-            if window.path == root:
-                return window
-    return None
-
-
-def pane_command(target: str) -> str:
-    return tmux_output("display-message", "-p", "-t", target, "#{pane_current_command}")
-
-
-def wait_for_nvim(target: str, timeout: float = 6.0) -> bool:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if pane_command(target) == "nvim":
-            return True
-        time.sleep(0.05)
-    return pane_command(target) == "nvim"
-
-
-def process_children(pid: str) -> list[str]:
-    children: list[str] = []
-    queue: deque[str] = deque([pid])
-    while queue:
-        current = queue.popleft()
-        child_file = Path("/proc") / current / "task" / current / "children"
-        try:
-            direct = child_file.read_text(encoding="utf-8").split()
-        except OSError:
-            direct = []
-        for child in direct:
-            children.append(child)
-            queue.append(child)
-    return children
-
-
-def nvim_socket_for_window(window: Window, root: Path) -> str:
-    pids = [window.pane_pid, *process_children(window.pane_pid)]
-    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
-    candidates: list[Path] = []
-    for pid in pids:
-        if not pid:
-            continue
-        candidates.append(runtime / f"nvim.{pid}.0")
-        candidates.append(Path(tempfile.gettempdir()) / f"nvim-{pid}.sock")
-    for socket in candidates:
-        if not socket.exists():
-            continue
-        proc = subprocess.run(
-            ["nvim", "--server", str(socket), "--remote-expr", "getcwd()"],
-            check=False,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        if proc.returncode == 0 and normalize_path(proc.stdout.strip()) == root:
-            return str(socket)
-    return ""
-
-
-def wait_for_socket(
-    session: str, index: str, root: Path, timeout: float = 6.0
-) -> tuple[Window | None, str]:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        window = next((w for w in list_windows(session) if w.index == index), None)
-        if window and window.command == "nvim":
-            socket = nvim_socket_for_window(window, root)
-            if socket:
-                return window, socket
-        time.sleep(0.1)
-    return None, ""
-
-
-def ensure_vcs_window(session: str, root: Path) -> tuple[Window, str]:
-    window = find_vcs_window(session, root)
-    if window is None:
-        index = tmux_output(
-            "new-window",
-            "-d",
-            "-P",
-            "-F",
-            "#{window_index}",
-            "-t",
-            f"{session}:",
-            "-c",
-            str(root),
-            "-n",
-            VCS_WINDOW_NAME,
-            "nvim",
-        )
-        if not index:
-            die("could not create vcs window")
-        if not wait_for_nvim(f"{session}:{index}"):
-            die("nvim did not start in the vcs window")
-    else:
-        index = window.index
-    resolved, socket = wait_for_socket(session, index, root)
-    if resolved is None or not socket:
-        die("could not reach the nvim server in the vcs window")
-    return resolved, socket
 
 
 def remote_expr(socket: str, expr: str) -> tuple[int, str]:
@@ -447,18 +288,33 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--root", type=Path, default=None, help="base repo (default: current project)"
     )
     parser.add_argument(
-        "--session", default=None, help="tmux session (default: current)"
-    )
-    parser.add_argument(
         "-n",
         "--dry-run",
         action="store_true",
-        help="print the plan; do not touch tmux/nvim",
+        help="print the plan; do not touch the nvim server",
     )
     args = parser.parse_args(argv)
     if not args.title.strip():
         parser.error("--title cannot be empty")
     return args
+
+
+def env_socket_for_root(root: Path) -> str:
+    # The project's nvim server: $NVIM is auto-set in the server's :terminal to
+    # its socket. Returns "" unless that server's cwd is `root`.
+    socket = os.environ.get("NVIM")
+    if not socket or not os.path.exists(socket):
+        return ""
+    proc = subprocess.run(
+        ["nvim", "--server", socket, "--remote-expr", "getcwd()"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode == 0 and normalize_path(proc.stdout.strip()) == root:
+        return socket
+    return ""
 
 
 def main(argv: list[str]) -> int:
@@ -490,13 +346,10 @@ def main(argv: list[str]) -> int:
             print(f"  {line}")
         return 0
 
-    if not in_tmux() and args.session is None:
-        die("not inside tmux and no --session given")
-    session = args.session or tmux_output("display-message", "-p", "#{session_name}")
-    if not session:
-        die("could not determine the tmux session")
-
-    window, socket = ensure_vcs_window(session, root)
+    socket = env_socket_for_root(root)
+    if not socket:
+        die(f"no nvim server for {root} (is $NVIM set / mux running?)")
+    where = "nvim server"
 
     # CREATE_LUA wipes stale PR composes and runs `:Forge pr create draft`, which
     # loads forge (so the sync existing-PR check below works) and either opens a
@@ -527,9 +380,7 @@ def main(argv: list[str]) -> int:
             "or no commits/existing PR for this branch"
         )
 
-    print(
-        f"pr-window: {session}:{window.index} ({VCS_WINDOW_NAME}) ready — {note} for {branch}"
-    )
+    print(f"pr-window: {where} ready — {note} for {branch}")
     return 0
 
 

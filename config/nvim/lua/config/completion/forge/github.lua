@@ -17,10 +17,10 @@ local TIMEOUT_EXACT = 3000
 local REFS_QUERY = [[
 query($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
-    issues(first: 100, states: OPEN, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    issues(first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {
       nodes { number title updatedAt url state }
     }
-    pullRequests(first: 100, states: OPEN, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    pullRequests(first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {
       nodes { number title updatedAt url state isDraft }
     }
   }

@@ -120,13 +120,6 @@ Darwin)
   ;;
 esac
 
-if command -v tmux >/dev/null 2>&1 && tmux list-sessions >/dev/null 2>&1; then
-  tmux_themes="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/themes"
-  [ -f "$tmux_themes/$theme.conf" ] && tmux source "$tmux_themes/$theme.conf"
-  tmux setenv -g THEME "$theme"
-  tmux refresh-client -S >/dev/null 2>&1 || true
-fi
-
 (
   for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock; do
     [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf.reload\").reload()')" >/dev/null 2>&1 || true

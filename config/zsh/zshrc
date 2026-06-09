@@ -50,7 +50,6 @@ add-zle-hook-widget zle-keymap-select _cursor_shape
 add-zle-hook-widget zle-line-init _cursor_init
 
 export FZF_COMPLETION_TRIGGER=\;
-export FZF_TMUX=1
 
 fzf-config-widget() {
     local file="$(FZF_CTRL_T_COMMAND="fd --type file --hidden . \"$XDG_CONFIG_HOME\"/nix | sed \"s|$HOME|~|g\"" __fzf_select)"
@@ -62,6 +61,41 @@ fzf-config-widget() {
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
+# mux: inside an nvim :terminal ($NVIM set), route editors to the parent server
+# so `git commit` etc. open there instead of spawning a nested nvim. No-op
+# otherwise, where $NVIM is unset.
+if [[ -n "$NVIM" ]]; then
+  export GIT_EDITOR="nvim --server $NVIM --remote-wait"
+  export EDITOR="nvim --server $NVIM --remote-wait"
+  export VISUAL="nvim --server $NVIM --remote-wait"
+fi
+
+# mux: project launcher. No args -> fzf-pick a project (live servers + zoxide
+# git roots) and attach; with args -> pass through to the `mux` launcher script.
+mux() {
+  emulate -L zsh
+  if (( $# )); then
+    command mux "$@"
+    return
+  fi
+  local proj
+  proj="$(
+    {
+      command mux list 2>/dev/null | cut -f1
+      zoxide query -l 2>/dev/null
+    } | awk 'NF && !seen[$0]++' | fzf --prompt 'project> '
+  )" || return
+  [[ -n "$proj" ]] && command mux "$proj"
+}
+
+# Ctrl-G: run the mux project picker from the line editor.
+fzf-mux-widget() {
+  BUFFER='mux'
+  zle accept-line
+}
+zle -N fzf-mux-widget
+bindkey '^G' fzf-mux-widget
+
 if [[ -f /etc/NIXOS ]]; then
   _nix_profile_gen=$(readlink /etc/profiles/per-user/$USER 2>/dev/null)
   precmd_rehash() {
@@ -72,13 +106,3 @@ if [[ -f /etc/NIXOS ]]; then
 fi
 
 [[ ! -r "$OPAMROOT/opam-init/init.zsh" ]] || source "$OPAMROOT/opam-init/init.zsh" > /dev/null 2> /dev/null
-
-if [[ -n "$TMUX" ]] && [[ -n "$MUX_READY_CHANNEL" ]]; then
-    mux_ready_precmd() {
-        tmux wait-for -S "$MUX_READY_CHANNEL"
-        unset MUX_READY_CHANNEL
-        precmd_functions=(${precmd_functions:#mux_ready_precmd})
-    }
-    precmd_functions=(${precmd_functions:#mux_ready_precmd})
-    precmd_functions+=(mux_ready_precmd)
-fi

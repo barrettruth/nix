@@ -547,8 +547,7 @@
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-whisper": "nixpkgs-whisper",
         "pierrejo": "pierrejo",
-        "sops-nix": "sops-nix",
-        "tmux-mosaic": "tmux-mosaic"
+        "sops-nix": "sops-nix"
       }
     },
     "sops-nix": {
@@ -599,42 +598,6 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
-      }
-    },
-    "systems_3": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    },
-    "tmux-mosaic": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "systems": "systems_3"
-      },
-      "locked": {
-        "lastModified": 1778016470,
-        "narHash": "sha256-mRFEMbCJXIAScjJ+AsGU+BDbGXOez92RVsAZdPLKPKE=",
-        "ref": "refs/heads/main",
-        "rev": "52a4b39369ae2170f0f9022c6b27cc5a5eb7ab7c",
-        "revCount": 132,
-        "type": "git",
-        "url": "https://forge.barrettruth.com/barrettruth/tmux-mosaic.git"
-      },
-      "original": {
-        "type": "git",
-        "url": "https://forge.barrettruth.com/barrettruth/tmux-mosaic.git"
       }
     },
     "treefmt-nix": {

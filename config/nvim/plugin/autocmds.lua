@@ -57,3 +57,22 @@ vim.api.nvim_create_autocmd('WinLeave', {
         vim.wo.cursorline = false
     end,
 })
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = { 'lua', 'vim' },
+    callback = function(ev)
+        vim.keymap.set(
+            'n',
+            '<leader>x',
+            ':.source<cr>',
+            { buffer = ev.buf, desc = 'eval current line' }
+        )
+        vim.keymap.set(
+            'x',
+            '<leader>x',
+            ':source<cr>',
+            { buffer = ev.buf, desc = 'eval selection' }
+        )
+    end,
+    group = aug,
+})

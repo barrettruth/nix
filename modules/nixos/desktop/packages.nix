@@ -118,7 +118,6 @@ in
       fd
       direnv
       nix-direnv
-      tmux
       neovim
       vim
       gh
@@ -128,9 +127,6 @@ in
       ghostty
 
       whisper
-
-      tmuxPlugins.resurrect
-      tmuxPlugins.continuum
 
       zsh-syntax-highlighting
       zsh-autosuggestions

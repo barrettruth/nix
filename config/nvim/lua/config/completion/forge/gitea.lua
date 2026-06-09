@@ -190,7 +190,7 @@ local function fetch_refs(repo, cb)
         cb(nil, lerr)
         return
     end
-    local path = ('repos/%s/%s/issues?state=open&type=all&limit=50'):format(
+    local path = ('repos/%s/%s/issues?state=all&type=all&limit=50'):format(
         repo.owner,
         repo.repo
     )

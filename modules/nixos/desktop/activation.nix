@@ -31,18 +31,6 @@ let
     source ${repo}/config/zsh/zshrc
   '';
 
-  tmuxConf = pkgs.writeText "tmux-wrapper" ''
-    set -g @resurrect-dir '${XDG_STATE_HOME}/tmux/resurrect'
-    set -g @resurrect-capture-pane-contents on
-    run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
-    set -g @continuum-restore 'on'
-    set -g @continuum-save-interval '10'
-    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
-    set -g status-right '#(${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/scripts/continuum_save.sh)#[default]#{E:@bar-content}'
-    run-shell ${pkgs.tmuxPlugins.mosaic}/share/tmux-plugins/mosaic/mosaic.tmux
-    source ${repo}/config/tmux/tmux.conf
-  '';
-
   jjConf = pkgs.writeText "jj-config" ''
     [user]
     name = "${identity.fullName}"
@@ -118,7 +106,6 @@ in
     fi
     ${mkDir "${XDG_CONFIG_HOME}/vim"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
-    ${mkDir "${XDG_CONFIG_HOME}/tmux/themes"}
     ${mkDir "${XDG_STATE_HOME}/zsh"}
     ${mkDir "${XDG_DATA_HOME}/vim"}
     ${mkDir "${XDG_STATE_HOME}/vim"}
@@ -137,7 +124,6 @@ in
     ''}
 
     ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
-    ${mkSymlink "${tmuxConf}" "${XDG_CONFIG_HOME}/tmux/tmux.conf"}
 
     ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
     ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
@@ -179,8 +165,6 @@ in
     done
 
     ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
-    ${mkSymlink "${repo}/config/tmux/themes/midnight.conf" "${XDG_CONFIG_HOME}/tmux/themes/midnight.conf"}
-    ${mkSymlink "${repo}/config/tmux/themes/daylight.conf" "${XDG_CONFIG_HOME}/tmux/themes/daylight.conf"}
 
     if [ -d ${homeDirectory}/.ssh ]; then
       chmod 700 ${homeDirectory}/.ssh

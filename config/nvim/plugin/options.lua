@@ -28,7 +28,11 @@ vim.opt.fillchars = {
     foldinner = ' ',
 }
 
+vim.o.inccommand = 'split'
+
 vim.opt.iskeyword:append('-')
+
+vim.opt.jumpoptions:append('view')
 
 vim.o.laststatus = 3
 
@@ -58,6 +62,8 @@ vim.o.shiftwidth = 2
 
 vim.opt.shortmess:append('acCIs')
 
+vim.o.showtabline = 0
+
 vim.o.spellfile = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))
     .. '/nvim/spell.encoding.add'
 
@@ -65,6 +71,8 @@ vim.o.splitkeep = 'screen'
 
 vim.o.splitbelow = true
 vim.o.splitright = true
+
+vim.o.startofline = false
 
 vim.o.swapfile = false
 
@@ -75,6 +83,8 @@ vim.o.undodir = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))
 vim.o.undofile = true
 
 vim.o.updatetime = 50
+
+vim.opt.wildoptions:append('fuzzy')
 
 vim.o.winborder = 'single'
 

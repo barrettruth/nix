@@ -5,15 +5,15 @@ description: Use when Barrett asks to open, show, or pull up file(s) in his edit
 
 # nvim-edit
 
-Resolve a natural-language file target and populate the mux `edit` window. This
-is editor navigation, not implementation. The helper does the tmux/nvim work
-(remote into a running Neovim, start one in an idle `edit` shell, or create/adopt
-the window); your job is to resolve the target to concrete path(s) and pass them.
+Resolve a natural-language file target and open it in the project's `edit` view.
+This is editor navigation, not implementation. The helper does the nvim work
+(opening the files in the project's Neovim server via `$NVIM`); your job is to
+resolve the target to concrete path(s) and pass them.
 
 ## Resolve
 
-- Work inside the current mux project — the helper reads the session's
-  `@mux-project-path`, falling back to the cwd outside tmux.
+- Work inside the current mux project — the helper targets the project's Neovim
+  server (`$NVIM`), resolving the root from the cwd's git toplevel.
 - Interpret the request, then call the helper with concrete path(s). Prefer
   explicit paths the user gives; for natural-language targets find them with
   `git ls-files`, `rg` (names/content), and git status — for a random file use
@@ -29,7 +29,7 @@ the window); your job is to resolve the target to concrete path(s) and pass them
 
 - Minimal: before opening, name the file(s) and why in a sentence or two; say
   nothing about resolver steps or the helper.
-- A zero exit is success — stop. Re-open or inspect tmux/the pane only if Barrett
+- A zero exit is success — stop. Re-open or inspect the editor only if Barrett
   says the editor state is wrong.
 
 ## Rules
@@ -37,7 +37,6 @@ the window); your job is to resolve the target to concrete path(s) and pass them
 - Navigation only: do not edit, run tests, commit, push, open PRs, mutate
   remotes, or kill/restart a running Neovim.
 - If no file matches, say so — don't open an unrelated fallback.
-- Don't send keys into a busy non-Neovim `edit` window; report the blocker.
 - `--dry-run` only to preview resolution or report ambiguity instead of opening.
 
 ## Helper

@@ -1,6 +1,6 @@
 vim.opt.complete = { 'o', '.', 'w', 'b' }
 vim.o.completefunc = "v:lua.require'config.completion'.complete"
-vim.opt.completeopt = { 'menuone', 'noinsert', 'popup' }
+vim.opt.completeopt = { 'menuone', 'noinsert', 'popup', 'fuzzy' }
 
 vim.o.autocomplete = false
 vim.o.pumborder = 'single'

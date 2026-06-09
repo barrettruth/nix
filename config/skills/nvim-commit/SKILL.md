@@ -5,9 +5,9 @@ description: Use when Barrett asks to commit — "commit this", "make/write a co
 
 # nvim-commit
 
-Draft a commit message into a fugitive commit buffer in the mux `vcs` window,
-left unfocused for Barrett to review and `:wq`. The helper does the tmux/nvim
-work; your job is the message and which files to stage.
+Draft a commit message into a fugitive commit buffer in the mux `vcs` view,
+left unfocused for Barrett to review and `:wq`. The helper does the nvim work;
+your job is the message and which files to stage.
 
 ## Message — mirror the repo, not a fixed convention
 

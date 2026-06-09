@@ -66,20 +66,14 @@ idle_write_state() {
   printf '%s\n' "$1" >"$idle_state_file"
 }
 
-idle_apply_runtime() {
-  command -v tmux >/dev/null 2>&1 && tmux set -g lock-after-time 0 2>/dev/null || true
-}
-
 idle_on() {
   idle_write_state on
   systemctl --user start hypridle.service
-  idle_apply_runtime
 }
 
 idle_off() {
   idle_write_state off
   systemctl --user stop hypridle.service
-  idle_apply_runtime
 }
 
 grayscale_read_state() {

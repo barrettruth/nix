@@ -17,7 +17,6 @@ from typing import Iterable
 
 
 HOME = Path.home()
-SESSION_PROJECT_PATH_OPTION = "@mux-project-path"
 EDIT_WINDOW_NAME = "edit"
 DEFAULT_LIMIT = 8
 
@@ -179,30 +178,6 @@ def maybe_output(args: Iterable[str]) -> str:
     return proc.stdout.rstrip("\n")
 
 
-def tmux(
-    *args: str, check: bool = True, capture: bool = False
-) -> subprocess.CompletedProcess[str]:
-    return run(["tmux", *args], check=check, capture=capture)
-
-
-def tmux_output(*args: str) -> str:
-    return output(["tmux", *args])
-
-
-def in_tmux() -> bool:
-    if not os.environ.get("TMUX"):
-        return False
-    return (
-        subprocess.run(
-            ["tmux", "display-message", "-p", "#{session_name}"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ).returncode
-        == 0
-    )
-
-
 def normalize_path(path: str | Path) -> Path:
     return Path(path).expanduser().resolve()
 
@@ -212,20 +187,7 @@ def git_root(path: Path) -> Path:
     return normalize_path(root) if root else path
 
 
-def current_tmux_root() -> Path:
-    session = tmux_output("display-message", "-p", "#{session_name}")
-    project = maybe_output(
-        ["tmux", "show-options", "-qv", "-t", session, SESSION_PROJECT_PATH_OPTION]
-    )
-    if project:
-        return git_root(normalize_path(project))
-    pane_path = tmux_output("display-message", "-p", "#{pane_current_path}")
-    return git_root(normalize_path(pane_path))
-
-
 def current_root() -> Path:
-    if in_tmux():
-        return current_tmux_root()
     return git_root(Path.cwd())
 
 
@@ -657,119 +619,6 @@ def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
     return script
 
 
-def list_windows(session: str) -> list[Window]:
-    fmt = "#{window_name}\t#{window_index}\t#{pane_current_command}\t#{pane_id}\t#{pane_pid}\t#{window_panes}"
-    lines = maybe_output(["tmux", "list-windows", "-t", session, "-F", fmt])
-    windows: list[Window] = []
-    for line in lines.splitlines():
-        name, index, command, pane_id, pane_pid, panes = (line.split("\t") + [""] * 6)[
-            :6
-        ]
-        windows.append(
-            Window(name, index, command, pane_id, pane_pid, int(panes or "0"))
-        )
-    return windows
-
-
-def current_window() -> Window:
-    fmt = "#{window_name}\t#{window_index}\t#{pane_current_command}\t#{pane_id}\t#{pane_pid}\t#{window_panes}"
-    line = tmux_output("display-message", "-p", fmt)
-    name, index, command, pane_id, pane_pid, panes = (line.split("\t") + [""] * 6)[:6]
-    return Window(name, index, command, pane_id, pane_pid, int(panes or "0"))
-
-
-def window_target(session: str, index: str) -> str:
-    return f"{session}:{index}"
-
-
-def focus_window(session: str, index: str) -> None:
-    target = window_target(session, index)
-    client = maybe_output(["tmux", "display-message", "-p", "#{client_name}"])
-    tmux("select-window", "-t", target)
-    if not client:
-        return
-    args = ["switch-client"]
-    args.extend(["-c", client])
-    args.extend(["-t", target])
-    tmux(*args, check=False)
-
-
-def shell_name() -> str:
-    shell = os.environ.get("SHELL") or maybe_output(
-        ["tmux", "show", "-gqv", "default-shell"]
-    )
-    return Path(shell or "sh").name
-
-
-def send_command(target: str, command: str) -> None:
-    tmux("send-keys", "-t", target, "C-u", "C-l", command, "Enter")
-
-
-def pane_command(target: str) -> str:
-    return maybe_output(
-        ["tmux", "display-message", "-p", "-t", target, "#{pane_current_command}"]
-    )
-
-
-def wait_for_pane_command(target: str, expected: str, timeout: float = 2.0) -> bool:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        command = pane_command(target)
-        if command == expected:
-            return True
-        if not command:
-            return False
-        time.sleep(0.05)
-    return pane_command(target) == expected
-
-
-def report_launch_failure(target: str) -> None:
-    command = pane_command(target) or "closed"
-    tmux(
-        "display-message",
-        f"edit: Neovim did not stay running in edit window ({command})",
-        check=False,
-    )
-
-
-def process_children(pid: str) -> list[str]:
-    children: list[str] = []
-    queue: deque[str] = deque([pid])
-    while queue:
-        current = queue.popleft()
-        child_file = Path("/proc") / current / "task" / current / "children"
-        try:
-            direct = child_file.read_text(encoding="utf-8").split()
-        except OSError:
-            direct = []
-        for child in direct:
-            children.append(child)
-            queue.append(child)
-    return children
-
-
-def nvim_socket_for_pane(window: Window, root: Path) -> str:
-    pids = [window.pane_pid, *process_children(window.pane_pid)]
-    socket_candidates: list[Path] = []
-    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
-    for pid in pids:
-        socket_candidates.append(runtime / f"nvim.{pid}.0")
-        socket_candidates.append(Path(tempfile.gettempdir()) / f"nvim-{pid}.sock")
-    for socket in socket_candidates:
-        if not socket.exists():
-            continue
-        proc = subprocess.run(
-            ["nvim", "--server", str(socket), "--remote-expr", "getcwd()"],
-            check=False,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        if proc.returncode == 0 and normalize_path(proc.stdout.strip()) == root:
-            return str(socket)
-    return ""
-
-
 def remote_into_nvim(
     socket: str, root: Path, query: str, candidates: list[Candidate]
 ) -> bool:
@@ -782,92 +631,6 @@ def remote_into_nvim(
         stderr=subprocess.DEVNULL,
     )
     return proc.returncode == 0
-
-
-def open_in_tmux(
-    root: Path, query: str, candidates: list[Candidate], session: str | None = None
-) -> int:
-    adopt = session is None
-    if session is None:
-        session = tmux_output("display-message", "-p", "#{session_name}")
-    command = nvim_command(root, query, candidates)
-    edit = next(
-        (window for window in list_windows(session) if window.name == EDIT_WINDOW_NAME),
-        None,
-    )
-
-    if edit is not None and not adopt:
-        # With an explicit target session, reuse the edit window only when it is
-        # already an nvim at the requested root; otherwise open a fresh one.
-        if not (edit.command == "nvim" and nvim_socket_for_pane(edit, root)):
-            edit = None
-
-    if edit:
-        focus_window(session, edit.index)
-        target = window_target(session, edit.index)
-        if edit.command == "nvim":
-            socket = nvim_socket_for_pane(edit, root)
-            if socket and remote_into_nvim(socket, root, query, candidates):
-                return 0
-            tmux(
-                "display-message",
-                "edit: could not reach existing edit Neovim server",
-                check=False,
-            )
-            return 1
-        if edit.command == shell_name():
-            send_command(target, command)
-            if not wait_for_pane_command(target, "nvim"):
-                report_launch_failure(target)
-                return 1
-            return 0
-        tmux(
-            "display-message",
-            f"edit: edit window is busy with {edit.command}",
-            check=False,
-        )
-        return 1
-
-    if adopt:
-        current = current_window()
-        if (
-            current.name == shell_name()
-            and current.command == shell_name()
-            and current.panes == 1
-        ):
-            tmux(
-                "rename-window",
-                "-t",
-                window_target(session, current.index),
-                EDIT_WINDOW_NAME,
-            )
-            send_command(window_target(session, current.index), command)
-            focus_window(session, current.index)
-            if not wait_for_pane_command(window_target(session, current.index), "nvim"):
-                report_launch_failure(window_target(session, current.index))
-                return 1
-            return 0
-
-    index = tmux_output(
-        "new-window",
-        "-d",
-        "-P",
-        "-F",
-        "#{window_index}",
-        "-t",
-        f"{session}:",
-        "-c",
-        str(root),
-        "-n",
-        EDIT_WINDOW_NAME,
-        command,
-    )
-    focus_window(session, index)
-    target = window_target(session, index)
-    if not wait_for_pane_command(target, "nvim"):
-        report_launch_failure(target)
-        return 1
-    return 0
 
 
 def print_plan(root: Path, query: str, candidates: list[Candidate]) -> None:
@@ -889,11 +652,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-l", "--limit", type=int, default=None, help="maximum files to populate"
     )
     parser.add_argument(
-        "--session",
-        default=None,
-        help="target tmux session for the edit window (default: current session)",
-    )
-    parser.add_argument(
         "--root",
         type=Path,
         default=None,
@@ -901,6 +659,24 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("query", nargs=argparse.REMAINDER)
     return parser.parse_args(argv)
+
+
+def env_socket_for_root(root: Path) -> str:
+    # The project's nvim server: $NVIM is auto-set in the server's :terminal to
+    # its socket. Returns "" unless that server's cwd is `root`.
+    socket = os.environ.get("NVIM")
+    if not socket or not os.path.exists(socket):
+        return ""
+    proc = subprocess.run(
+        ["nvim", "--server", socket, "--remote-expr", "getcwd()"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode == 0 and normalize_path(proc.stdout.strip()) == root:
+        return socket
+    return ""
 
 
 def main(argv: list[str]) -> int:
@@ -914,12 +690,14 @@ def main(argv: list[str]) -> int:
         print_plan(root, query, candidates)
         return 0
 
-    if not in_tmux():
-        command = nvim_command(root, query, candidates)
-        os.execlp("sh", "sh", "-lc", command)
-        return 127
-
-    return open_in_tmux(root, query, candidates, session=args.session)
+    socket = env_socket_for_root(root)
+    if not socket:
+        print(
+            f"edit: no nvim server for {root} (is $NVIM set / mux running?)",
+            file=sys.stderr,
+        )
+        return 1
+    return 0 if remote_into_nvim(socket, root, query, candidates) else 1
 
 
 if __name__ == "__main__":

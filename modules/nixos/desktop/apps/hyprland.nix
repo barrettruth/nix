@@ -138,8 +138,6 @@ let
   hypridleStart = pkgs.writeShellScript "hypridle-start" ''
     set -eu
 
-    ${pkgs.tmux}/bin/tmux set -g lock-after-time 0 2>/dev/null || true
-
     if [ "$(${repo}/scripts/ctl idle state)" = off ]; then
       exit 0
     fi
