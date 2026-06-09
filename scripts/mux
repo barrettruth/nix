@@ -10,6 +10,8 @@ set -euo pipefail
 APP="${MUX_APPNAME:-}"
 NVIM="${MUX_NVIM:-nvim}"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mux"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nvim/mux"
+LAST_FILE="$STATE_DIR/last"
 
 die() {
   printf 'mux: %s\n' "$1" >&2
@@ -72,12 +74,45 @@ ensure() {
   printf '%s\n' "$sock"
 }
 
+# persist the project we last attached to (state dir, survives reboot); the
+# in-nvim side records the same file on :connect (see mux.lua record_last).
+record_last() {
+  mkdir -p "$STATE_DIR"
+  printf '%s\n' "$1" >"$LAST_FILE"
+}
+
 attach() {
   local root sock
   root="$(root_for "${1:-$PWD}")"
   sock="$(ensure "$root")"
+  record_last "$root"
   cd "$root" || true
   exec env MUX=1 ${APP:+NVIM_APPNAME=$APP} "$NVIM" --remote-ui --server "$sock"
+}
+
+# bare `mux`: re-attach to the last project (spawning if its server died). With
+# no recorded last, attach the sole live server if there's exactly one; else
+# print usage and fail (nothing to resume).
+resume() {
+  local last lines n cwd
+  last=""
+  [ -f "$LAST_FILE" ] && last="$(head -n1 "$LAST_FILE" 2>/dev/null || true)"
+  if [ -n "$last" ] && [ -d "$last" ]; then
+    attach "$last"
+    return
+  fi
+  lines="$(list)"
+  n="$(printf '%s' "$lines" | grep -c . || true)"
+  if [ "$n" -eq 1 ]; then
+    cwd="$(printf '%s\n' "$lines" | head -n1 | cut -f1)"
+    if [ -n "$cwd" ] && [ "$cwd" != '?' ] && [ -d "$cwd" ]; then
+      attach "$cwd"
+      return
+    fi
+  fi
+  printf 'mux: no recent project\n\n' >&2
+  usage >&2
+  exit 1
 }
 
 list() {
@@ -107,7 +142,7 @@ list() {
 
 usage() {
   cat <<'EOF'
-mux — per-project neovim server launcher
+mux: per-project neovim server launcher
 
   mux [<path>]        attach to the project at <path> (default: cwd), spawning if needed
   mux ensure [<path>] print a live server socket for the project, spawning if needed
@@ -148,7 +183,7 @@ attach)
   attach "${1:-$PWD}"
   ;;
 "")
-  attach "$PWD"
+  resume
   ;;
 -*)
   die "unknown option: $1 (try --help)"

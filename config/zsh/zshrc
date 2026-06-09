@@ -70,32 +70,6 @@ if [[ -n "$NVIM" ]]; then
   export VISUAL="nvim --server $NVIM --remote-wait"
 fi
 
-# mux: project launcher. No args -> fzf-pick a project (live servers + zoxide
-# git roots) and attach; with args -> pass through to the `mux` launcher script.
-mux() {
-  emulate -L zsh
-  if (( $# )); then
-    command mux "$@"
-    return
-  fi
-  local proj
-  proj="$(
-    {
-      command mux list 2>/dev/null | cut -f1
-      zoxide query -l 2>/dev/null
-    } | awk 'NF && !seen[$0]++' | fzf --prompt 'project> '
-  )" || return
-  [[ -n "$proj" ]] && command mux "$proj"
-}
-
-# Ctrl-G: run the mux project picker from the line editor.
-fzf-mux-widget() {
-  BUFFER='mux'
-  zle accept-line
-}
-zle -N fzf-mux-widget
-bindkey '^G' fzf-mux-widget
-
 if [[ -f /etc/NIXOS ]]; then
   _nix_profile_gen=$(readlink /etc/profiles/per-user/$USER 2>/dev/null)
   precmd_rehash() {

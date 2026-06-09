@@ -289,6 +289,17 @@ local function show_picker(live_out, zoxide_out)
     end
 end
 
+-- persist the last-attached project root (shared with scripts/mux record_last);
+-- bare `mux` reads this to re-attach. Recorded on every in-nvim :connect.
+local function record_last(root)
+    if not root or root == '' then
+        return
+    end
+    local dir = vim.fn.stdpath('state') .. '/mux'
+    pcall(vim.fn.mkdir, dir, 'p')
+    pcall(vim.fn.writefile, { root }, dir .. '/last')
+end
+
 ---@param entry { path: string, socket: string? }
 ---@param view string? open this view on the target server before attaching
 function M._connect(entry, view)
@@ -307,6 +318,7 @@ function M._connect(entry, view)
             vim.system({ 'nvim', '--server', sock, '--remote-expr', expr })
                 :wait()
         end
+        record_last(entry.path)
         vim.cmd('connect ' .. vim.fn.fnameescape(sock))
     end
     if entry.socket and entry.socket ~= '' then
@@ -342,28 +354,29 @@ end
 ---@param step integer 1 = next live project, -1 = previous (wraps)
 function M.cycle_project(step)
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
-        local socks = {}
+        local entries = {}
         for line in (res.stdout or ''):gmatch('[^\n]+') do
-            local sock = line:match('\t(.+)$')
+            local cwd, sock = line:match('^(.-)\t(.+)$')
             if sock then
-                socks[#socks + 1] = sock
+                entries[#entries + 1] = { cwd = cwd, sock = sock }
             end
         end
         vim.schedule(function()
-            if #socks < 2 then
+            if #entries < 2 then
                 vim.notify('mux: no other project', vim.log.levels.INFO)
                 return
             end
             local cur, idx = vim.v.servername, 1
-            for i, s in ipairs(socks) do
-                if s == cur then
+            for i, e in ipairs(entries) do
+                if e.sock == cur then
                     idx = i
                     break
                 end
             end
-            local target = socks[((idx - 1 + step) % #socks) + 1]
-            if target and target ~= cur then
-                vim.cmd('connect ' .. vim.fn.fnameescape(target))
+            local target = entries[((idx - 1 + step) % #entries) + 1]
+            if target and target.sock ~= cur then
+                record_last(target.cwd)
+                vim.cmd('connect ' .. vim.fn.fnameescape(target.sock))
             end
         end)
     end)
