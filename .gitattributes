@@ -1,0 +1,3 @@
+config/direnv/direnvrc linguist-language=bash
+config/git/config linguist-language=ini
+config/python/pythonrc linguist-language=python
