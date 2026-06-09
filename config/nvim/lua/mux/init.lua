@@ -474,7 +474,6 @@ function M.setup()
         { desc = 'mux: detach to shell' }
     )
 
-    -- free <leader>b for the build view; keep layout-preserving delete on :bd/:bw
     pcall(vim.keymap.del, 'n', '<leader>bd')
     pcall(vim.keymap.del, 'n', '<leader>bw')
     vim.cmd(
