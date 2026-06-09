@@ -25,14 +25,8 @@ vim.keymap.set(
 
 for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
     vim.keymap.set(
-        'n',
-        '<c-s-' .. key .. '>',
-        '<c-w>' .. key,
-        { desc = 'go to window ' .. key }
-    )
-    vim.keymap.set(
-        't',
-        '<c-s-' .. key .. '>',
+        { 'n', 'i', 't' },
+        '<a-x>' .. key,
         '<cmd>wincmd ' .. key .. '<cr>',
         { desc = 'go to window ' .. key }
     )
