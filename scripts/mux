@@ -87,7 +87,8 @@ attach() {
   sock="$(ensure "$root")"
   record_last "$root"
   cd "$root" || true
-  exec env MUX=1 ${APP:+NVIM_APPNAME=$APP} "$NVIM" --remote-ui --server "$sock"
+  env MUX=1 ${APP:+NVIM_APPNAME=$APP} "$NVIM" --remote-ui --server "$sock"
+  exec "${SHELL:-/bin/sh}"
 }
 
 # bare `mux`: re-attach to the last project (spawning if its server died). With
