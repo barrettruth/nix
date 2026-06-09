@@ -23,8 +23,6 @@ vim.keymap.set(
     { desc = 'shrink window height' }
 )
 
--- ctrl+shift+hjkl: distinct from <c-hjkl> under the kitty protocol, so it leaves
--- <c-l> clear / <c-k> kill-line / <bs> / <cr> alone and isn't claimed elsewhere.
 for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
     vim.keymap.set(
         'n',
@@ -35,7 +33,7 @@ for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
     vim.keymap.set(
         't',
         '<c-s-' .. key .. '>',
-        [[<c-\><c-n><c-w>]] .. key,
+        '<cmd>wincmd ' .. key .. '<cr>',
         { desc = 'go to window ' .. key }
     )
 end
