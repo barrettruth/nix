@@ -49,6 +49,10 @@ function M.render()
         return column
     end
 
+    if not vim.wo.number and not vim.wo.relativenumber then
+        return column
+    end
+
     return column .. '%=%{v:relnum?v:relnum:v:lnum} '
 end
 

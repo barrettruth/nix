@@ -8,8 +8,16 @@ vim.api.nvim_create_autocmd('BufEnter', {
 vim.api.nvim_create_autocmd({ 'TermOpen', 'BufWinEnter' }, {
     callback = function(args)
         if vim.bo[args.buf].buftype == 'terminal' then
-            vim.opt_local.number = true
-            vim.opt_local.relativenumber = true
+            vim.opt_local.number = false
+            vim.opt_local.relativenumber = false
+            vim.keymap.set('n', 'G', 'Gi', {
+                buffer = args.buf,
+                desc = 'jump to end, resume terminal',
+            })
+            vim.keymap.set('t', '<c-u>', [[<c-\><c-n><c-u>]], {
+                buffer = args.buf,
+                desc = 'scroll up half-page',
+            })
             vim.cmd.startinsert()
         end
     end,
