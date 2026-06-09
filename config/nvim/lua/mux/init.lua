@@ -440,29 +440,33 @@ function M.setup()
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
 
+    local prefix = '<a-x>'
     for name, spec in pairs(views) do
-        vim.keymap.set('n', '<leader>' .. spec.key, function()
-            M.open_view(name)
-        end, { desc = 'mux: ' .. name })
+        vim.keymap.set(
+            { 'n', 'i', 't' },
+            prefix .. spec.key,
+            ('<cmd>lua require("mux").open_view(%q)<cr>'):format(name),
+            { desc = 'mux: ' .. name }
+        )
     end
     vim.keymap.set(
-        'n',
-        '<leader>m',
-        M.pick_project,
-        { desc = 'mux: switch project' }
-    )
-    vim.keymap.set(
-        { 'n', 't' },
-        '<c-cr>',
+        { 'n', 'i', 't' },
+        prefix .. 'm',
         [[<cmd>lua require('mux').pick_project()<cr>]],
         { desc = 'mux: switch project' }
     )
-    vim.keymap.set('n', ']m', function()
-        M.cycle_project(1)
-    end, { desc = 'mux: next project' })
-    vim.keymap.set('n', '[m', function()
-        M.cycle_project(-1)
-    end, { desc = 'mux: previous project' })
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. ']',
+        [[<cmd>lua require('mux').cycle_project(1)<cr>]],
+        { desc = 'mux: next project' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. '[',
+        [[<cmd>lua require('mux').cycle_project(-1)<cr>]],
+        { desc = 'mux: previous project' }
+    )
 
     -- free <leader>b for the build view; keep layout-preserving delete on :bd/:bw
     pcall(vim.keymap.del, 'n', '<leader>bd')
