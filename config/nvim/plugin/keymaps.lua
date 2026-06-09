@@ -35,7 +35,9 @@ for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
     vim.keymap.set(
         't',
         '<c-s-' .. key .. '>',
-        [[<c-\><c-n><c-w>]] .. key,
+        [[<c-\><c-n><cmd>lua require('config.terminal').nav(']]
+            .. key
+            .. [[')<cr>]],
         { desc = 'go to window ' .. key }
     )
 end
