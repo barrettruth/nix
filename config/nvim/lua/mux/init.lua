@@ -128,6 +128,7 @@ function M.open_view(name)
     tag(tp, name)
 
     if spec.kind == 'editor' then
+        vim.cmd.edit(cwd)
         return
     elseif spec.kind == 'vcs' then
         -- fugitive status, sole window in the tab; closing it closes the tab
@@ -490,6 +491,7 @@ function M.setup()
     })
 
     if not M.load_session() then
+        vim.cmd.edit(vim.fn.getcwd())
         tag(vim.api.nvim_get_current_tabpage(), 'edit')
     end
 
