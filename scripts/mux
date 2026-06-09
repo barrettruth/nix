@@ -93,7 +93,7 @@ attach() {
 
 # bare `mux`: re-attach to the last project (spawning if its server died). With
 # no recorded last, attach the sole live server if there's exactly one; else
-# print usage and fail (nothing to resume).
+# fall back to the `pick` fzf chooser.
 resume() {
   local last lines n cwd
   last=""
@@ -111,9 +111,7 @@ resume() {
       return
     fi
   fi
-  printf 'mux: no recent project\n\n' >&2
-  usage >&2
-  exit 1
+  pick
 }
 
 list() {
@@ -128,7 +126,7 @@ list() {
     socks+=("$sock")
   done
   # Aligned columns for a terminal; raw cwd<TAB>socket when piped/captured so
-  # the in-nvim picker, the zsh `mux` fn, and `]m`/`[m` can still parse it.
+  # `pick`, the in-nvim picker, and project cycling can still parse it.
   if [ -t 1 ]; then
     for cwd in "${cwds[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
     for i in "${!cwds[@]}"; do
@@ -141,6 +139,19 @@ list() {
   fi
 }
 
+# fzf-pick a project (live servers + zoxide history) and attach it
+pick() {
+  local choice
+  choice="$(
+    {
+      list | cut -f1
+      zoxide query -l 2>/dev/null || true
+    } | awk 'NF && $0 != "?" && !seen[$0]++' | fzf --prompt 'project> '
+  )" || return 0
+  [ -n "$choice" ] || return 0
+  attach "$choice"
+}
+
 usage() {
   cat <<'EOF'
 mux: per-project neovim server launcher
@@ -148,6 +159,7 @@ mux: per-project neovim server launcher
   mux [<path>]        attach to the project at <path> (default: cwd), spawning if needed
   mux ensure [<path>] print a live server socket for the project, spawning if needed
   mux list            list running project servers (cwd<TAB>socket)
+  mux pick            fzf-pick a project (live servers + zoxide) and attach
   mux kill [<path>]   quit the project's server
   mux -h | --help     this help
 
@@ -171,6 +183,9 @@ ensure)
   ;;
 list)
   list
+  ;;
+pick)
+  pick
   ;;
 kill)
   shift

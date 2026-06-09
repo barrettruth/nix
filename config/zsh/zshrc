@@ -61,6 +61,13 @@ fzf-config-widget() {
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
+fzf-mux-widget() {
+  BUFFER='mux pick'
+  zle accept-line
+}
+zle -N fzf-mux-widget
+bindkey '^G' fzf-mux-widget
+
 # in an nvim :terminal, send editors to the parent server (no nested nvim)
 if [[ -n "$NVIM" ]]; then
   export GIT_EDITOR="nvim --server $NVIM --remote-wait"
