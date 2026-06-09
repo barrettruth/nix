@@ -139,16 +139,18 @@ list() {
   fi
 }
 
-# fzf-pick a project (live servers + zoxide history) and attach it
+# project candidates for the picker: live servers + zoxide history, ~-abbreviated
+candidates() {
+  {
+    list | cut -f1
+    zoxide query -l 2>/dev/null || true
+  } | awk 'NF && $0 != "?" && !seen[$0]++' | sed "s|^$HOME|~|"
+}
+
+# fzf-pick a project and attach it
 pick() {
   local choice
-  choice="$(
-    {
-      list | cut -f1
-      zoxide query -l 2>/dev/null || true
-    } | awk 'NF && $0 != "?" && !seen[$0]++' | sed "s|^$HOME|~|" \
-      | fzf --height=~40% --prompt 'project> '
-  )" || return 0
+  choice="$(candidates | fzf --height=~40% --prompt 'project> ')" || return 0
   [ -n "$choice" ] || return 0
   attach "${choice/#\~/$HOME}"
 }
@@ -161,6 +163,7 @@ mux: per-project neovim server launcher
   mux ensure [<path>] print a live server socket for the project, spawning if needed
   mux list            list running project servers (cwd<TAB>socket)
   mux pick            fzf-pick a project (live servers + zoxide) and attach
+  mux candidates      print project candidates (live servers + zoxide)
   mux kill [<path>]   quit the project's server
   mux -h | --help     this help
 
@@ -187,6 +190,9 @@ list)
   ;;
 pick)
   pick
+  ;;
+candidates)
+  candidates
   ;;
 kill)
   shift
