@@ -184,7 +184,7 @@ return {
                     winopts = { preview = { hidden = false } },
                 },
                 blame = {
-                    previewer = preview.blame,
+                    previewer = preview.bcommits,
                     preview_pager = false,
                     winopts = { preview = { hidden = false } },
                 },

@@ -137,10 +137,6 @@ local function parse_status(self, entry_str)
     local icons = self._icons
     local nbsp = fzf_utils.nbsp
 
-    local is_deleted = entry_str:match(icons.D .. nbsp) ~= nil
-    local is_modified = entry_str:match(
-        '[' .. icons.M .. icons.R .. icons.A .. icons.T .. ']' .. nbsp
-    ) ~= nil
     local is_untracked = entry_str:match(
         '[' .. icons['?'] .. icons.C .. ']' .. nbsp
     ) ~= nil
@@ -168,12 +164,6 @@ local function parse_status(self, entry_str)
                 '/dev/null',
                 entry.path,
             },
-        }
-    end
-
-    if is_deleted or is_modified then
-        return {
-            argv = { 'git', 'diff', '--no-color', 'HEAD', '--', entry.path },
         }
     end
 
@@ -244,19 +234,6 @@ local function parse_stash(_, entry_str)
     }
 end
 
----@param self fzf.preview.Previewer
----@param entry_str string
----@return fzf.preview.Entry?
-local function parse_blame(self, entry_str)
-    local sha = first_word(entry_str)
-    if not sha or not self._file then
-        return nil
-    end
-    return {
-        argv = { 'git', 'show', '--no-color', sha, '--', self._file },
-    }
-end
-
 local M = {}
 
 M.status = {
@@ -282,11 +259,6 @@ M.diff = {
 M.stash = {
     _ctor = function()
         return make_class(parse_stash)
-    end,
-}
-M.blame = {
-    _ctor = function()
-        return make_class(parse_blame)
     end,
 }
 
