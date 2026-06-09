@@ -496,6 +496,12 @@ function M.setup()
         M.pick_project,
         { desc = 'mux: switch project' }
     )
+    vim.keymap.set(
+        { 'n', 't' },
+        '<c-cr>',
+        [[<cmd>lua require('mux').pick_project()<cr>]],
+        { desc = 'mux: switch project' }
+    )
     vim.keymap.set('n', ']m', function()
         M.cycle_project(1)
     end, { desc = 'mux: next project' })
