@@ -150,7 +150,7 @@ candidates() {
 # fzf-pick a project and attach it
 pick() {
   local choice
-  choice="$(candidates | fzf --height=~40% --prompt 'project> ')" || return 0
+  choice="$(candidates | fzf --prompt 'project> ')" || return 0
   [ -n "$choice" ] || return 0
   attach "${choice/#\~/$HOME}"
 }

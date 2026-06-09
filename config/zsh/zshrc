@@ -62,7 +62,7 @@ zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
 fzf-mux-widget() {
-  local proj="$(command mux candidates | fzf --height=~40% --prompt 'project> ')"
+  local proj="$(command mux candidates | fzf --prompt 'project> ')"
   [ -n "$proj" ] || { zle reset-prompt; return; }
   proj="${proj/#\~/$HOME}"
   BUFFER="mux ${(q)proj}"
