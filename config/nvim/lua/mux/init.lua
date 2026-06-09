@@ -7,14 +7,20 @@ local M = {}
 
 -- view registry. kind: editor | terminal | task | vcs
 local views = {
-    edit = { key = 'e', kind = 'editor', eager = true },
+    edit = { key = 'e', kind = 'editor' },
     ai = {
         key = 'a',
         kind = 'terminal',
         cmd = { 'devin' },
         lifecycle = 'ephemeral',
     },
-    vcs = { key = 'v', kind = 'vcs', lifecycle = 'ephemeral' },
+    zsh = {
+        key = 'z',
+        kind = 'terminal',
+        cmd = { vim.o.shell },
+        lifecycle = 'ephemeral',
+    },
+    vcs = { key = 'v', kind = 'vcs' },
     run = { key = 'r', kind = 'task', recipe = 'run', lifecycle = 'ephemeral' },
     build = {
         key = 'b',
@@ -136,16 +142,7 @@ function M.open_view(name)
         pcall(vim.cmd, 'only')
     elseif spec.kind == 'terminal' or spec.kind == 'task' then
         local cmd = spec.cmd or { 'just', spec.recipe }
-        local ephemeral = spec.lifecycle == 'ephemeral'
-        vim.fn.jobstart(cmd, {
-            term = true,
-            cwd = cwd,
-            on_exit = function()
-                if ephemeral then
-                    close_view_tab(tp)
-                end
-            end,
-        })
+        vim.fn.jobstart(cmd, { term = true, cwd = cwd })
         vim.cmd.startinsert()
     end
 end
@@ -477,6 +474,25 @@ function M.setup()
         'TabClosed',
         { group = group, callback = prune }
     )
+    -- ephemeral views close when their process exits. a global TermClose (rather
+    -- than a per-job on_exit) also catches terminals re-spawned by session
+    -- restore, and keeps the registry's `lifecycle` the single source of truth.
+    vim.api.nvim_create_autocmd('TermClose', {
+        group = group,
+        callback = function(args)
+            for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+                local tp = vim.api.nvim_win_get_tabpage(win)
+                local name = tab_view[tp]
+                if
+                    name
+                    and views[name]
+                    and views[name].lifecycle == 'ephemeral'
+                then
+                    close_view_tab(tp)
+                end
+            end
+        end,
+    })
     vim.api.nvim_create_autocmd('DirChanged', {
         group = group,
         callback = function()
