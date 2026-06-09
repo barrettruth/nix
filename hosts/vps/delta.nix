@@ -25,10 +25,8 @@ let
       };
       maintainerUsername = "barrettruth";
       category = "Software";
-      # Popular plugins whose code is mirrored to Forgejo but whose issues and
-      # community still live on GitHub. Pin their canonical issue source to
-      # GitHub regardless of forge priority. Only meaningful when the GitHub
-      # forge is configured; otherwise these fall back to Forgejo.
+      # popular plugins mirrored to forgejo but with issues still on github;
+      # pin their canonical issue source to github (forgejo fallback if unset).
       canonicalProviders = lib.optionalAttrs hasSoftwareSyncGithubSecret {
         "barrettruth/diffs.nvim" = "github";
         "barrettruth/canola.nvim" = "github";

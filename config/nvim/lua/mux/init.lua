@@ -282,11 +282,6 @@ local function show_picker(live_out, zoxide_out)
         end
         fzf.fzf_exec(lines, {
             prompt = 'project> ',
-            -- ^A is the `ai` view action (views.ai.key). FZF_DEFAULT_OPTS binds
-            -- ctrl-a to select-all and fzf applies fzf_args *after* fzf-lua's
-            -- action binds, so select-all would otherwise mask it. Drop it for
-            -- this picker only; multi-select is meaningless when connecting to a
-            -- single project (mirrors the git branches/worktrees pickers).
             fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
                 :gsub('%-%-bind=ctrl%-a:select%-all', '')
                 :gsub('--color=[^%s]+', '')),

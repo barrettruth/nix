@@ -18,10 +18,8 @@ let
   inherit (forgejo) version vendorHash;
   legacyModesVersion = "6.5.0";
 
-  # FOD: take Forgejo's source, add @codemirror/legacy-modes to package.json,
-  # regenerate package-lock.json against the npm registry, and append additional
-  # language registrations to web_src/js/features/codemirror-lang.ts.
-  # outputHash will need iteration via lib.fakeHash on first build.
+  # FOD: add @codemirror/legacy-modes + extra lang registrations to forgejo's
+  # web source; outputHash needs lib.fakeHash iteration on first build.
   patchedSrc =
     pkgs.runCommand "forgejo-${version}-with-cm6-langs-source"
       {
