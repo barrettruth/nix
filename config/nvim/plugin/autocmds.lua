@@ -5,23 +5,51 @@ vim.api.nvim_create_autocmd('BufEnter', {
     group = aug,
 })
 
-vim.api.nvim_create_autocmd({ 'TermOpen', 'BufWinEnter' }, {
-    callback = function(args)
-        if vim.bo[args.buf].buftype == 'terminal' then
-            vim.opt_local.number = false
-            vim.opt_local.relativenumber = false
-            vim.keymap.set('n', 'G', 'Gi', {
-                buffer = args.buf,
-                desc = 'jump to end, resume terminal',
-            })
-            vim.keymap.set('t', '<c-u>', [[<c-\><c-n><c-u>]], {
-                buffer = args.buf,
-                desc = 'scroll up half-page',
-            })
-            vim.cmd.startinsert()
-        end
-    end,
+-- per-terminal "mode memory": b:term_insert records whether you were typing in
+-- a terminal, so focusing it again (click, <c-w>, nav keys, ...) resumes that
+-- mode; if you'd dropped to normal to read, it stays normal. mirrors vim's
+-- tl_normal_mode. see WinEnter/WinLeave below for the restore + tailing.
+vim.api.nvim_create_autocmd('TermOpen', {
     group = aug,
+    callback = function(args)
+        vim.opt_local.number = false
+        vim.opt_local.relativenumber = false
+        vim.b[args.buf].term_insert = true
+        vim.keymap.set('n', 'G', 'Gi', {
+            buffer = args.buf,
+            desc = 'jump to end, resume terminal',
+        })
+        vim.keymap.set('t', '<c-u>', [[<c-\><c-n><c-u>]], {
+            buffer = args.buf,
+            desc = 'scroll up half-page',
+        })
+        vim.cmd.startinsert()
+    end,
+})
+
+vim.api.nvim_create_autocmd('TermEnter', {
+    group = aug,
+    callback = function()
+        vim.b.term_insert = true
+    end,
+})
+
+vim.api.nvim_create_autocmd('TermLeave', {
+    group = aug,
+    callback = function()
+        local buf = vim.api.nvim_get_current_buf()
+        vim.b[buf].term_insert = false
+        -- transient, true only for this tick: a WinLeave in the same tick
+        -- (clicking/navigating away mid-type) reads it and keeps term_insert
+        -- true; a deliberate <c-\><c-n> to read clears before any later
+        -- WinLeave, so read-then-leave stays in normal mode.
+        vim.b[buf].term_leaving = true
+        vim.schedule(function()
+            if vim.api.nvim_buf_is_valid(buf) then
+                vim.b[buf].term_leaving = false
+            end
+        end)
+    end,
 })
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -56,6 +84,14 @@ vim.api.nvim_create_autocmd('WinEnter', {
     group = aug,
     callback = function()
         vim.wo.cursorline = true
+        if vim.bo.buftype == 'terminal' then
+            vim.wo.number = false
+            vim.wo.relativenumber = false
+            -- resume the mode this terminal was left in
+            if vim.b.term_insert then
+                vim.cmd.startinsert()
+            end
+        end
     end,
 })
 
@@ -63,6 +99,20 @@ vim.api.nvim_create_autocmd('WinLeave', {
     group = aug,
     callback = function()
         vim.wo.cursorline = false
+        if vim.bo.buftype == 'terminal' then
+            if vim.b.term_leaving then
+                vim.b.term_insert = true
+            end
+            -- keep a left-while-typing terminal tailing while it's unfocused
+            -- (nvim only follows output when the cursor is on the last line)
+            if vim.b.term_insert then
+                pcall(
+                    vim.api.nvim_win_set_cursor,
+                    0,
+                    { vim.api.nvim_buf_line_count(0), 0 }
+                )
+            end
+        end
     end,
 })
 
