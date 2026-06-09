@@ -13,6 +13,7 @@
   nodejs,
   cacert,
   python3,
+  frontendPatches ? [ ],
 }:
 let
   inherit (forgejo) version vendorHash;
@@ -67,6 +68,7 @@ let
     inherit version;
     src = patchedSrc;
     npmDepsHash = "sha256-s1D9FgKg3myXIAdF+rFTGlxXd72fAvTAClN9fcO5tU8=";
+    patches = frontendPatches;
 
     buildPhase = ''
       runHook preBuild

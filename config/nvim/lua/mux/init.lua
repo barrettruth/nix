@@ -38,7 +38,7 @@ local views = {
 M.views = views
 
 -- stable order for keymaps, the picker header, and per-view picker actions
-local VIEW_ORDER = { 'edit', 'ai', 'vcs', 'run', 'build', 'test' }
+local VIEW_ORDER = { 'edit', 'ai', 'zsh', 'vcs', 'run', 'build', 'test' }
 
 -- tabpage handle -> view name (handles are stable ids, unlike tab numbers)
 local tab_view = {}
@@ -235,9 +235,14 @@ local function show_picker(live_out, zoxide_out)
         end
         fzf.fzf_exec(lines, {
             prompt = 'project> ',
+            -- ^A and ^Z are our connect+open actions (ai / zsh), but both keys
+            -- are claimed by defaults that would shadow them: ctrl-a:select-all
+            -- arrives via $FZF_DEFAULT_OPTS (strip it from fzf_args) and
+            -- ctrl-z:abort is a fzf-lua keymap.fzf default (disable it here).
             fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
                 :gsub('%-%-bind=ctrl%-a:select%-all', '')
                 :gsub('--color=[^%s]+', '')),
+            keymap = { fzf = { ['ctrl-z'] = false } },
             fzf_opts = {
                 ['--ansi'] = true,
                 ['--header'] = ':: ' .. table.concat(parts, ' | '),

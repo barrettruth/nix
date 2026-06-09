@@ -454,7 +454,13 @@ in
 
   services.forgejo = {
     enable = true;
-    package = pierreForgejo.mkForgejoWithPierre (pkgs.callPackage ../../pkgs/forgejo-cm6-langs { });
+    package = pierreForgejo.mkForgejoWithPierre (
+      pkgs.callPackage ../../pkgs/forgejo-cm6-langs {
+        frontendPatches = builtins.filter (
+          p: lib.hasSuffix "expose-init-globals.patch" (toString p)
+        ) pierreForgejo.patches;
+      }
+    );
     user = "git";
     group = "git";
     dump = {
