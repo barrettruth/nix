@@ -129,6 +129,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--repo", type=Path, default=None, help="repo root for a branch target")
     parser.add_argument(
+        "--layout",
+        choices=["unified", "stacked", "split"],
+        default="unified",
+        help="diff layout for the vcs :Diff review (default: unified)",
+    )
+    parser.add_argument(
         "target", nargs="?", default=None,
         help="branch name, worktree path, or omit to review your current project",
     )
@@ -157,6 +163,7 @@ def main(argv: list[str]) -> int:
                 "files": [str(p) for p in files],
                 "items": items,
                 "root": str(wt),
+                "layout": args.layout,
             },
         )
     except muxlib.MuxError as e:

@@ -249,15 +249,21 @@ function M.edit(p)
     return { ok = true, count = #files }
 end
 
----@param p { base: string, files: string[], items?: table[], root?: string }
+---@param p { base: string, files: string[], items?: table[], root?: string, layout?: "unified"|"stacked"|"split" }
 function M.review(p)
     local base = p.base
     if not base or base == '' then
         return { ok = false, error = 'review: missing base' }
     end
+    local layout = p.layout
+    if layout ~= 'unified' and layout ~= 'stacked' and layout ~= 'split' then
+        layout = 'unified'
+    end
     local _, verr = mux.in_view('vcs', function()
-        pcall(vim.cmd, 'silent! Diff review ++layout=unified ' .. base)
-        pcall(vim.cmd, 'silent! only')
+        pcall(vim.cmd, 'silent! Diff review ++layout=' .. layout .. ' ' .. base)
+        if layout ~= 'split' then
+            pcall(vim.cmd, 'silent! only')
+        end
     end)
     if verr then
         return { ok = false, error = verr }
