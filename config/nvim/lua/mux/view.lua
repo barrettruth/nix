@@ -160,10 +160,6 @@ function M.open_view(name)
 
     local cwd = vim.fn.getcwd()
     if spec.kind == 'task' and not has_recipe(cwd, spec.recipe) then
-        vim.notify(
-            ('mux: no "%s" recipe in justfile'):format(spec.recipe),
-            vim.log.levels.WARN
-        )
         return
     end
 

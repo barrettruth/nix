@@ -89,7 +89,6 @@ local function show_picker(items)
     end
 
     if #entries == 0 then
-        vim.notify('mux: no projects found', vim.log.levels.WARN)
         return
     end
 
@@ -249,11 +248,6 @@ function M._connect(entry, view)
         vim.schedule(function()
             if sock then
                 go(sock)
-            else
-                vim.notify(
-                    'mux: ensure failed for ' .. entry.path,
-                    vim.log.levels.ERROR
-                )
             end
         end)
     end)
@@ -295,7 +289,6 @@ function M.cycle_project(step)
         end
         vim.schedule(function()
             if #entries < 2 then
-                vim.notify('mux: no other project', vim.log.levels.INFO)
                 return
             end
             local cur, idx = vim.v.servername, 1
