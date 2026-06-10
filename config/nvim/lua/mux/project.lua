@@ -7,22 +7,34 @@ local canon = core.canon
 
 local M = {}
 
--- Build and show the project picker from `mux list`
--- Include live sessions, stopped sessions, and zoxide candidates.
+-- Build and show the project picker from `mux list`, mirroring the CLI's
+-- colored output: [live] (green) and [stopped] (amber) rows, each with the
+-- ~-shortened path and socket. Selecting connects to that project.
 ---@param list_out string `mux list` stdout: "cwd<TAB>socket<TAB>status" per line
----@param zoxide_out string `zoxide query -l` stdout: one path per line
-local function show_picker(list_out, zoxide_out)
-    local live, stopped = {}, {} -- canon cwd -> socket; canon cwd -> true
+local function show_picker(list_out)
+    ---@type { path: string, socket: string?, status: string, disp: string }[]
+    local entries = {}
+    local w = 0
     for line in (list_out or ''):gmatch('[^\n]+') do
         local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
-        if cwd then
-            cwd = canon(cwd)
-            if status == 'live' and sock ~= '' then
-                live[cwd] = sock
-            elseif status == 'stopped' then
-                stopped[cwd] = true
+        if cwd and cwd ~= '' and (status == 'live' or status == 'stopped') then
+            local path = canon(cwd)
+            local disp = vim.fn.fnamemodify(path, ':~')
+            if #disp > w then
+                w = #disp
             end
+            entries[#entries + 1] = {
+                path = path,
+                socket = (sock ~= '' and sock) or nil,
+                status = status,
+                disp = disp,
+            }
         end
+    end
+
+    if #entries == 0 then
+        vim.notify('mux: no projects found', vim.log.levels.WARN)
+        return
     end
 
     -- strip SGR codes so meta lookups work whether fzf hands back the colored
@@ -33,49 +45,18 @@ local function show_picker(list_out, zoxide_out)
     local ok, fzf = pcall(require, 'fzf-lua')
     local hl = ok and require('fzf-lua.utils').ansi_from_hl or nil
     -- status tag -> theme highlight group (picker coloring only)
-    local tag_hl =
-        { live = 'DiagnosticOk', stopped = 'DiagnosticWarn', new = 'Comment' }
+    local tag_hl = { live = 'DiagnosticOk', stopped = 'DiagnosticWarn' }
 
-    local here = canon(vim.fn.getcwd())
-    local seen, lines, color_lines, meta = {}, {}, {}, {}
-    local function add(path)
-        if not path or path == '' then
-            return
-        end
-        path = canon(path)
-        if seen[path] then
-            return
-        end
-        local status = (live[path] and 'live')
-            or (stopped[path] and 'stopped')
-            or 'new'
-        -- only list candidates that are git repos
-        if status == 'new' and vim.uv.fs_stat(path .. '/.git') == nil then
-            return
-        end
-        seen[path] = true
-        local tagstr = ('%-9s'):format(('[%s]'):format(status))
-        local mark = (path == here) and '*' or ' '
-        local rest = (' %s %s'):format(mark, vim.fn.fnamemodify(path, ':~'))
-        lines[#lines + 1] = tagstr .. rest
+    local lines, color_lines, meta = {}, {}, {}
+    for _, e in ipairs(entries) do
+        local tag = ('%-9s'):format(('[%s]'):format(e.status))
+        local rest = (' %-' .. w .. 's  %s'):format(e.disp, e.socket or '')
+        rest = (rest:gsub('%s+$', ''))
+        lines[#lines + 1] = tag .. rest
         color_lines[#color_lines + 1] = (
-            hl and hl(tag_hl[status], tagstr) .. rest
-        ) or (tagstr .. rest)
-        meta[tagstr .. rest] = { path = path, socket = live[path] }
-    end
-    for cwd in pairs(live) do
-        add(cwd)
-    end
-    for cwd in pairs(stopped) do
-        add(cwd)
-    end
-    for line in (zoxide_out or ''):gmatch('[^\n]+') do
-        add(line)
-    end
-
-    if #lines == 0 then
-        vim.notify('mux: no projects found', vim.log.levels.WARN)
-        return
+            hl and hl(tag_hl[e.status], tag) .. rest
+        ) or (tag .. rest)
+        meta[tag .. rest] = { path = e.path, socket = e.socket }
     end
 
     if ok then
@@ -136,7 +117,7 @@ local function show_picker(list_out, zoxide_out)
             keymap = { fzf = { ['ctrl-z'] = false } },
             fzf_opts = {
                 ['--ansi'] = true,
-                ['--header'] = ':: ' .. table.concat(parts, '|'),
+                ['--header'] = ':: ' .. table.concat(parts, ' | '),
             },
             actions = actions,
         })
@@ -191,11 +172,9 @@ function M._connect(entry, view)
 end
 
 function M.pick_project()
-    vim.system({ 'mux', 'list' }, { text = true }, function(live_res)
-        vim.system({ 'zoxide', 'query', '-l' }, { text = true }, function(z_res)
-            vim.schedule(function()
-                show_picker(live_res.stdout or '', z_res.stdout or '')
-            end)
+    vim.system({ 'mux', 'list' }, { text = true }, function(res)
+        vim.schedule(function()
+            show_picker(res.stdout or '')
         end)
     end)
 end
