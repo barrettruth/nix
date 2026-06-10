@@ -21,17 +21,48 @@ local function parse_list(out)
     return entries
 end
 
+---@param list_out string `mux list` machine output (cwd<TAB>socket<TAB>status)
+---@param zoxide_out string? `zoxide query -l` output (one path per line)
+---@return { cwd: string, socket: string, status: string }[]
+local function merge_sources(list_out, zoxide_out)
+    local entries = {}
+    local seen = {}
+    for _, item in ipairs(parse_list(list_out)) do
+        local key = canon(item.cwd)
+        if
+            key ~= ''
+            and not seen[key]
+            and (item.status == 'live' or item.status == 'stopped')
+        then
+            seen[key] = true
+            entries[#entries + 1] = item
+        end
+    end
+    for line in (zoxide_out or ''):gmatch('[^\n]+') do
+        local key = canon(line)
+        if key ~= '' and not seen[key] then
+            seen[key] = true
+            entries[#entries + 1] = { cwd = line, socket = '', status = 'dir' }
+        end
+    end
+    return entries
+end
+
 -- Build and show the project picker from `mux list`, mirroring the CLI's
 -- colored output: [live] (green) and [stopped] (amber) rows, each with the
 -- ~-shortened path and socket. Selecting connects to that project.
----@param list_out string `mux list` stdout: "cwd<TAB>socket<TAB>status" per line
-local function show_picker(list_out)
+---@param items { cwd: string, socket: string, status: string }[]
+local function show_picker(items)
     ---@type { path: string, socket: string?, status: string, disp: string }[]
     local entries = {}
     local w = 0
-    for _, item in ipairs(parse_list(list_out)) do
+    for _, item in ipairs(items or {}) do
         local cwd, sock, status = item.cwd, item.socket, item.status
-        if cwd and cwd ~= '' and (status == 'live' or status == 'stopped') then
+        if
+            cwd
+            and cwd ~= ''
+            and (status == 'live' or status == 'stopped' or status == 'dir')
+        then
             local path = canon(cwd)
             local disp = vim.fn.fnamemodify(path, ':~')
             if #disp > w then
@@ -39,7 +70,7 @@ local function show_picker(list_out)
             end
             entries[#entries + 1] = {
                 path = path,
-                socket = (sock ~= '' and sock) or nil,
+                socket = (sock and sock ~= '' and sock) or nil,
                 status = status,
                 disp = disp,
             }
@@ -63,14 +94,22 @@ local function show_picker(list_out)
 
     local lines, color_lines, meta = {}, {}, {}
     for _, e in ipairs(entries) do
-        local tag = ('%-9s'):format(('[%s]'):format(e.status))
+        local tag = e.status == 'dir' and (' '):rep(9)
+            or ('%-9s'):format(('[%s]'):format(e.status))
         local rest = (' %-' .. w .. 's  %s'):format(e.disp, e.socket or '')
         rest = (rest:gsub('%s+$', ''))
         lines[#lines + 1] = tag .. rest
+        local group = tag_hl[e.status]
         color_lines[#color_lines + 1] = (
-            hl and hl(tag_hl[e.status], tag) .. rest
+            hl
+            and group
+            and hl(group, tag) .. rest
         ) or (tag .. rest)
-        meta[tag .. rest] = { path = e.path, socket = e.socket }
+        meta[tag .. rest] = {
+            path = e.path,
+            socket = e.socket,
+            status = e.status,
+        }
     end
 
     if ok then
@@ -96,6 +135,9 @@ local function show_picker(list_out)
         end
         local function lifecycle(verb, sel)
             local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
+            if entry and entry.status == 'dir' then
+                return
+            end
             if entry and entry.path then
                 if canon(entry.path) == canon(vim.fn.getcwd()) then
                     if verb == 'kill' then
@@ -197,10 +239,24 @@ function M._connect(entry, view)
 end
 
 function M.pick_project()
-    vim.system({ 'mux', 'list' }, { text = true }, function(res)
-        vim.schedule(function()
-            show_picker(res.stdout or '')
-        end)
+    vim.system({ 'mux', 'list' }, { text = true }, function(list_res)
+        local list_out = list_res.stdout or ''
+        local function show(zoxide_out)
+            vim.schedule(function()
+                show_picker(merge_sources(list_out, zoxide_out))
+            end)
+        end
+        local ok = pcall(
+            vim.system,
+            { 'zoxide', 'query', '-l' },
+            { text = true },
+            function(z)
+                show((z.code == 0 and z.stdout) or '')
+            end
+        )
+        if not ok then
+            show('')
+        end
     end)
 end
 

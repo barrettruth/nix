@@ -13,9 +13,6 @@ local TOKEN_CHAR = '[%w%-%./_~]'
 ---@field root string
 ---@field is_git boolean
 
----@type table<string, config.completion.files.Root>
-local dir_root = {}
-
 ---@type table<integer, config.completion.files.Root>
 local buf_root = {}
 
@@ -39,22 +36,11 @@ end
 ---@param bufnr integer
 ---@return config.completion.files.Root
 local function resolve_root(bufnr)
-    local dir = buffer_dir(bufnr)
-    local cached = dir_root[dir]
-    if cached then
-        return cached
-    end
-
-    local git = util.git_root(dir)
-    local resolved
+    local git = util.git_root(buffer_dir(bufnr))
     if git ~= '' then
-        resolved = { root = git, is_git = true }
-    else
-        resolved = { root = vim.uv.cwd() or '.', is_git = false }
+        return { root = git, is_git = true }
     end
-
-    dir_root[dir] = resolved
-    return resolved
+    return { root = vim.uv.cwd() or '.', is_git = false }
 end
 
 ---@param info config.completion.files.Root
@@ -199,7 +185,6 @@ function M.warmup(bufnr)
 end
 
 function M.reset()
-    dir_root = {}
     buf_root = {}
     state = {}
     loaders = {}

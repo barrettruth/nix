@@ -33,20 +33,10 @@ local function buffer_dir(bufnr)
     return vim.fn.fnamemodify(name, ':p:h')
 end
 
----@type table<string, string>
-local root_cache = {}
-
 ---@param bufnr integer
 ---@return string
 local function repo_root(bufnr)
-    local dir = buffer_dir(bufnr)
-    local cached = root_cache[dir]
-    if cached ~= nil then
-        return cached
-    end
-    local root = git.git_root(dir)
-    root_cache[dir] = root
-    return root
+    return git.git_root(buffer_dir(bufnr))
 end
 
 ---@param before string

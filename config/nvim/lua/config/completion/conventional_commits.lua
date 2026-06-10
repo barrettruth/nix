@@ -145,7 +145,6 @@ local generic_scopes = {
 
 local scope_cache = {}
 local scope_loading = {}
-local root_cache = {}
 
 ---@class config.completion.conventional_commits.State
 ---@field base string
@@ -164,16 +163,10 @@ local function git_dir(ctx)
     end
 
     path = vim.fn.fnamemodify(path, ':p:h')
-    if root_cache[path] then
-        return root_cache[path]
-    end
-
     local root = util.git_root(path)
     if root == '' then
         root = path
     end
-
-    root_cache[path] = root
     return root
 end
 
