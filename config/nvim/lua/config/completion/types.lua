@@ -48,6 +48,12 @@
 ---@field sync fun(): string
 ---@field async fun(done: fun(output: string))
 
+---@class config.completion.LoaderOpts
+---@field loaded fun(): boolean
+---@field store fun(outputs: string[])
+---@field tasks config.completion.LoaderTask[]
+---@field wait_timeout? integer
+
 ---@class config.completion.Loader
 ---@field ensure_loaded fun()
 ---@field preload fun()

@@ -38,7 +38,7 @@ local function collect_async(tasks, callback)
     end
 end
 
----@param opts { loaded: fun(): boolean, store: fun(outputs: string[]), tasks: config.completion.LoaderTask[], wait_timeout?: integer }
+---@param opts config.completion.LoaderOpts
 ---@return config.completion.Loader
 function M.new(opts)
     local loading = false

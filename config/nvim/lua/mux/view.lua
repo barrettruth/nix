@@ -174,7 +174,7 @@ end
 
 ---@param spec string|{ view?: string, win?: integer, tab?: integer, create?: boolean }
 ---@return integer? win
----@return integer|string tp
+---@return string? err
 function M.resolve_view(spec)
     if type(spec) == 'string' then
         spec = { view = spec }
@@ -186,7 +186,7 @@ function M.resolve_view(spec)
         if not (win and vim.api.nvim_win_is_valid(win)) then
             return nil, 'invalid window: ' .. tostring(spec.win)
         end
-        return win, vim.api.nvim_win_get_tabpage(win)
+        return win
     end
 
     if spec.tab ~= nil then
@@ -194,7 +194,7 @@ function M.resolve_view(spec)
         if not (tp and vim.api.nvim_tabpage_is_valid(tp)) then
             return nil, 'invalid tab: ' .. tostring(spec.tab)
         end
-        return vim.api.nvim_tabpage_get_win(tp), tp
+        return vim.api.nvim_tabpage_get_win(tp)
     end
 
     local name = spec.view
@@ -220,16 +220,16 @@ function M.resolve_view(spec)
         end
         M._alt = saved_alt
     end
-    return vim.api.nvim_tabpage_get_win(tp), tp
+    return vim.api.nvim_tabpage_get_win(tp)
 end
 
 ---@param spec string|table
 ---@param fn fun(): any
 ---@return any result, string? err
 function M.in_view(spec, fn)
-    local win, tp = M.resolve_view(spec)
+    local win, err = M.resolve_view(spec)
     if not win then
-        return nil, tp
+        return nil, err
     end
     return vim.api.nvim_win_call(win, fn), nil
 end
