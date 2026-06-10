@@ -145,7 +145,13 @@ let
         cp $out/avatar.png $out/avatar_default.png
         oxipng -o 4 --strip safe $out/*.png
       '';
-  pierreForgejo = inputs.pierrejo.lib.mkPierreForgejo { inherit pkgs; };
+  pierreForgejo = inputs.pierrejo.lib.mkPierreForgejo {
+    inherit pkgs;
+    theme = {
+      dark = ../../pkgs/forgejo-custom/themes/midnight-dark.json;
+      light = ../../pkgs/forgejo-custom/themes/midnight-light.json;
+    };
+  };
   forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom {
     inherit pierreForgejo;
     barrettWebfonts = inputs.fonts.packages.${pkgs.stdenv.hostPlatform.system}.web;
@@ -557,6 +563,7 @@ in
   };
 
   services.pierre-ssr.enable = true;
+  services.pierre-ssr.package = pierreForgejo.ssrPackage;
 
   systemd.services.forgejo = {
     after = [ "pierre-ssr.service" ];
