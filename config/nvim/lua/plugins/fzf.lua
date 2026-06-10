@@ -240,10 +240,7 @@ return {
             '<c-t>',
             function()
                 local fzf = require('fzf-lua')
-                local git_dir = vim.fn
-                    .system('git rev-parse --git-dir 2>/dev/null')
-                    :gsub('\n', '')
-                if vim.v.shell_error == 0 and git_dir ~= '' then
+                if vim.fs.root(vim.fn.getcwd(), '.git') then
                     fzf.git_files({ cwd_prompt = false })
                 else
                     fzf.files()

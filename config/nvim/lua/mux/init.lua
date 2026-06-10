@@ -14,6 +14,7 @@ M.open_view = view.open_view
 M.resolve_view = view.resolve_view
 M.in_view = view.in_view
 M.state = view.state
+M.last_view = view.last_view
 
 M._connect = project._connect
 M.pick_project = project.pick_project
@@ -58,9 +59,15 @@ function M.setup()
     end
     vim.keymap.set(
         { 'n', 'i', 't' },
-        prefix .. '<bs>',
+        prefix .. '<tab>',
         [[<cmd>lua require('mux').last_session()<cr>]],
-        { desc = 'mux: last project' }
+        { desc = 'mux: last session' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. '<bs>',
+        [[<cmd>lua require('mux').last_view()<cr>]],
+        { desc = 'mux: last view' }
     )
     vim.keymap.set(
         { 'n', 'i', 't' },
@@ -140,12 +147,6 @@ function M.setup()
                     view.close_view_tab(tp)
                 end
             end
-        end,
-    })
-    vim.api.nvim_create_autocmd('DirChanged', {
-        group = group,
-        callback = function()
-            view.reset_recipes()
         end,
     })
     vim.api.nvim_create_autocmd('TabLeave', {

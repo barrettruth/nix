@@ -68,16 +68,22 @@ local function edit_or_create_pr()
         require('forge.logger').warn('no forge detected')
         return
     end
-    local pr, err = forge.current_pr({ forge = detected })
-    if err then
-        require('forge.logger').warn(err.message or 'current PR lookup failed')
-        return
-    end
-    if pr then
-        forge.pr(pr)
-    else
-        forge.create_pr()
-    end
+    require('forge.resolve').current_pr_async(
+        { forge = detected },
+        function(pr, err)
+            if err then
+                require('forge.logger').warn(
+                    err.message or 'current PR lookup failed'
+                )
+                return
+            end
+            if pr then
+                forge.pr(pr)
+            else
+                forge.create_pr()
+            end
+        end
+    )
 end
 
 return {

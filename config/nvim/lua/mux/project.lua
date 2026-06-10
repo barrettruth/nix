@@ -7,6 +7,20 @@ local canon = core.canon
 
 local M = {}
 
+---@param out string? `mux list` stdout: "cwd<TAB>socket<TAB>status" per line
+---@return { cwd: string, socket: string, status: string }[]
+local function parse_list(out)
+    local entries = {}
+    for line in (out or ''):gmatch('[^\n]+') do
+        local cwd, socket, status = line:match('^(.-)\t(.-)\t(.+)$')
+        if cwd then
+            entries[#entries + 1] =
+                { cwd = cwd, socket = socket, status = status }
+        end
+    end
+    return entries
+end
+
 -- Build and show the project picker from `mux list`, mirroring the CLI's
 -- colored output: [live] (green) and [stopped] (amber) rows, each with the
 -- ~-shortened path and socket. Selecting connects to that project.
@@ -15,8 +29,8 @@ local function show_picker(list_out)
     ---@type { path: string, socket: string?, status: string, disp: string }[]
     local entries = {}
     local w = 0
-    for line in (list_out or ''):gmatch('[^\n]+') do
-        local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
+    for _, item in ipairs(parse_list(list_out)) do
+        local cwd, sock, status = item.cwd, item.socket, item.status
         if cwd and cwd ~= '' and (status == 'live' or status == 'stopped') then
             local path = canon(cwd)
             local disp = vim.fn.fnamemodify(path, ':~')
@@ -91,7 +105,10 @@ local function show_picker(list_out)
                     end
                     return
                 end
-                vim.system({ 'mux', verb, entry.path }):wait()
+                vim.system({ 'mux', verb, entry.path }, function()
+                    vim.schedule(M.pick_project)
+                end)
+                return
             end
             vim.schedule(M.pick_project)
         end
@@ -140,16 +157,24 @@ function M._connect(entry, view)
         if not sock or sock == '' then
             return
         end
+        local function finish()
+            session.record_last(entry.path)
+            vim.cmd('connect ' .. vim.fn.fnameescape(sock))
+        end
         if view then
             local expr = (
                 "luaeval('(function() "
                 .. "require([[mux]]).open_view([[%s]]) return 1 end)()')"
             ):format(view)
-            vim.system({ 'nvim', '--server', sock, '--remote-expr', expr })
-                :wait()
+            vim.system(
+                { 'nvim', '--server', sock, '--remote-expr', expr },
+                function()
+                    vim.schedule(finish)
+                end
+            )
+        else
+            finish()
         end
-        session.record_last(entry.path)
-        vim.cmd('connect ' .. vim.fn.fnameescape(sock))
     end
     if entry.socket and entry.socket ~= '' then
         go(entry.socket)
@@ -183,8 +208,8 @@ end
 function M.cycle_project(step)
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
         local entries = {}
-        for line in (res.stdout or ''):gmatch('[^\n]+') do
-            local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
+        for _, item in ipairs(parse_list(res.stdout)) do
+            local cwd, sock, status = item.cwd, item.socket, item.status
             if status == 'live' and sock ~= '' then
                 entries[#entries + 1] = { cwd = cwd, sock = sock }
             end
@@ -214,8 +239,8 @@ end
 local function with_latest_live_other(cb)
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
         local live = {}
-        for line in (res.stdout or ''):gmatch('[^\n]+') do
-            local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
+        for _, item in ipairs(parse_list(res.stdout)) do
+            local cwd, sock, status = item.cwd, item.socket, item.status
             if cwd and status == 'live' and sock ~= '' then
                 live[canon(cwd)] = sock
             end
@@ -242,8 +267,6 @@ function M.last_session()
     with_latest_live_other(function(root, sock)
         if sock then
             M._connect({ path = root, socket = sock })
-        else
-            pcall(vim.cmd, 'detach')
         end
     end)
 end

@@ -23,7 +23,7 @@ end
 ---@param dir string
 ---@return string
 function M.git_root(dir)
-    return util.git_root(dir, TIMEOUT_RESOLVE)
+    return util.git_root(dir)
 end
 
 ---@param root string

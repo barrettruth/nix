@@ -7,21 +7,32 @@ local find_view = core.find_view
 
 local M = {}
 
--- cwd -> set of justfile recipe names (cleared on DirChanged).
+-- justfile path -> { mtime, recipe-name set }; re-read when the justfile changes.
 local recipe_cache = {}
 
-function M.reset_recipes()
-    recipe_cache = {}
+---@param cwd string
+---@return string? path of the justfile `just` resolves from `cwd`, if any
+local function justfile(cwd)
+    return vim.fs.find(
+        { 'justfile', 'Justfile', '.justfile' },
+        { upward = true, path = cwd, type = 'file' }
+    )[1]
 end
 
--- Whether `cwd`'s justfile defines `recipe`, caching `just --summary` per cwd.
+-- Whether `cwd`'s justfile defines `recipe`, caching `just --summary` by mtime.
 ---@param cwd string
 ---@param recipe string
 ---@return boolean
 local function has_recipe(cwd, recipe)
-    local set = recipe_cache[cwd]
-    if not set then
-        set = {}
+    local jf = justfile(cwd)
+    if not jf then
+        return false
+    end
+    local st = vim.uv.fs_stat(jf)
+    local mtime = st and (st.mtime.sec .. ':' .. st.mtime.nsec) or ''
+    local cached = recipe_cache[jf]
+    if not cached or cached.mtime ~= mtime then
+        local set = {}
         local res = vim.system(
             { 'just', '--summary' },
             { text = true, cwd = cwd }
@@ -32,9 +43,10 @@ local function has_recipe(cwd, recipe)
                 set[r] = true
             end
         end
-        recipe_cache[cwd] = set
+        cached = { mtime = mtime, set = set }
+        recipe_cache[jf] = cached
     end
-    return set[recipe] == true
+    return cached.set[recipe] == true
 end
 
 ---@param tp integer
@@ -197,6 +209,17 @@ function M.state()
         }
     end
     return { current_view = tab_view[cur], tabs = tabs }
+end
+
+function M.last_view()
+    local alt = M._alt
+    if
+        alt
+        and vim.api.nvim_tabpage_is_valid(alt)
+        and alt ~= vim.api.nvim_get_current_tabpage()
+    then
+        vim.api.nvim_set_current_tabpage(alt)
+    end
 end
 
 return M

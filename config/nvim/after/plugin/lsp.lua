@@ -78,18 +78,17 @@ end
 -- example: https://github.com/LuaLS/lua-language-server/issues/2451
 local locations_to_items = vim.lsp.util.locations_to_items
 vim.lsp.util.locations_to_items = function(locations, offset_encoding)
-    local lines = {}
-    local loc_i = 1
-    for _, loc in ipairs(vim.deepcopy(locations)) do
+    local seen = {}
+    local deduped = {}
+    for _, loc in ipairs(locations) do
         local uri = loc.uri or loc.targetUri
         local range = loc.range or loc.targetSelectionRange
-        if lines[uri .. range.start.line] then
-            table.remove(locations, loc_i)
-        else
-            loc_i = loc_i + 1
+        local key = uri .. range.start.line
+        if not seen[key] then
+            seen[key] = true
+            deduped[#deduped + 1] = loc
         end
-        lines[uri .. range.start.line] = true
     end
 
-    return locations_to_items(locations, offset_encoding)
+    return locations_to_items(deduped, offset_encoding)
 end
