@@ -23,7 +23,6 @@ let
     gpu = "nvidia";
     backlightDevice = "intel_backlight";
     platform = "x86_64-linux";
-    enableX11 = false;
     enableWayland = true;
     enableDesktop = true;
     enableTexlive = true;
@@ -34,7 +33,6 @@ in
     modules = [
       inputs.determinate.nixosModules.default
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
-      inputs.direnv-instant.nixosModules.direnv-instant
       ../../hosts/laptop/configuration.nix
       ../nixos/common/nix.nix
       ../nixos/common/nix-ld.nix
@@ -44,9 +42,8 @@ in
       ../nixos/desktop/services.nix
       ../nixos/desktop/activation.nix
       ../nixos/desktop/apps
-      ../nixos/desktop/profiles/x11.nix
       {
-        programs.direnv-instant.enable = true;
+        programs.direnv.enable = true;
         programs.direnv.nix-direnv.enable = true;
         programs.direnv.settings.global = {
           hide_env_diff = true;
