@@ -37,11 +37,7 @@ vim.api.nvim_create_autocmd('TermOpen', {
                     local last = vim.api.nvim_buf_line_count(b)
                     for _, w in ipairs(vim.fn.win_findbuf(b)) do
                         if w ~= cur and vim.api.nvim_win_is_valid(w) then
-                            pcall(
-                                vim.api.nvim_win_set_cursor,
-                                w,
-                                { last, 0 }
-                            )
+                            pcall(vim.api.nvim_win_set_cursor, w, { last, 0 })
                         end
                     end
                 end)
