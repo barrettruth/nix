@@ -34,7 +34,11 @@ local function merge_sources(list_out, zoxide_out)
         if
             key ~= ''
             and not seen[key]
-            and (item.status == 'live' or item.status == 'stopped')
+            and (
+                item.status == 'live'
+                or item.status == 'stopped'
+                or item.status == 'dead'
+            )
         then
             seen[key] = true
             entries[#entries + 1] = item
@@ -63,7 +67,12 @@ local function show_picker(items)
         if
             cwd
             and cwd ~= ''
-            and (status == 'live' or status == 'stopped' or status == 'dir')
+            and (
+                status == 'live'
+                or status == 'stopped'
+                or status == 'dead'
+                or status == 'dir'
+            )
         then
             local path = canon(cwd)
             local disp = vim.fn.fnamemodify(path, ':~')
@@ -92,7 +101,11 @@ local function show_picker(items)
     local ok, fzf = pcall(require, 'fzf-lua')
     local hl = ok and require('fzf-lua.utils').ansi_from_hl or nil
     -- status tag -> theme highlight group (picker coloring only)
-    local tag_hl = { live = 'DiagnosticOk', stopped = 'DiagnosticWarn' }
+    local tag_hl = {
+        live = 'DiagnosticOk',
+        stopped = 'DiagnosticWarn',
+        dead = 'DiagnosticError',
+    }
 
     local lines, color_lines, meta = {}, {}, {}
     for _, e in ipairs(entries) do
@@ -117,8 +130,9 @@ local function show_picker(items)
     if ok then
         local actions = {
             ['default'] = function(sel)
-                if sel and sel[1] then
-                    M._connect(meta[strip_ansi(sel[1])])
+                local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
+                if entry and entry.status ~= 'dead' then
+                    M._connect(entry)
                 end
             end,
         }
@@ -126,8 +140,9 @@ local function show_picker(items)
         for _, name in ipairs(VIEW_ORDER) do
             local spec = views[name]
             actions['ctrl-' .. spec.key] = function(sel)
-                if sel and sel[1] then
-                    M._connect(meta[strip_ansi(sel[1])], name)
+                local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
+                if entry and entry.status ~= 'dead' then
+                    M._connect(entry, name)
                 end
             end
             parts[#parts + 1] = ('%s %s'):format(
@@ -138,6 +153,9 @@ local function show_picker(items)
         local function lifecycle(verb, sel)
             local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
             if entry and entry.status == 'dir' then
+                return
+            end
+            if entry and entry.status == 'dead' and verb == 'stop' then
                 return
             end
             if entry and entry.path then

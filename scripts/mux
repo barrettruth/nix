@@ -164,26 +164,43 @@ list() {
   # stopped = snapshot+sidecar present but the project's server isn't live.
   if [ -d "$STATE_DIR/sessions" ]; then
     local rf root
+    local dcwds=() dsocks=() dstats=()
     for rf in "$STATE_DIR"/sessions/*.root; do
       [ -e "$rf" ] || continue
-      [ -f "${rf%.root}.vim" ] || continue
       root="$(head -n1 "$rf" 2>/dev/null || true)"
-      [ -n "$root" ] && [ -d "$root" ] || continue
-      if is_live "$(socket_for "$root")"; then continue; fi
-      cwds+=("$root")
-      socks+=("")
-      stats+=("stopped")
+      [ -n "$root" ] || continue
+      if [ -d "$root" ]; then
+        [ -f "${rf%.root}.vim" ] || continue
+        if is_live "$(socket_for "$root")"; then continue; fi
+        cwds+=("$root")
+        socks+=("")
+        stats+=("stopped")
+      else
+        dcwds+=("$root")
+        dsocks+=("")
+        dstats+=("dead")
+      fi
     done
+    if [ "${#dcwds[@]}" -gt 0 ]; then
+      cwds+=("${dcwds[@]}")
+      socks+=("${dsocks[@]}")
+      stats+=("${dstats[@]}")
+    fi
   fi
   if [ -t 1 ]; then
-    local reset green amber c tag
+    local reset green amber red c tag
     reset=$'\033[0m'
     green=$'\033[32m'
     amber=$'\033[33m'
+    red=$'\033[31m'
     for cwd in "${cwds[@]}"; do disp+=("${cwd/#$HOME/\~}"); done
     for cwd in "${disp[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
     for i in "${!disp[@]}"; do
-      if [ "${stats[$i]}" = live ]; then c="$green"; else c="$amber"; fi
+      case "${stats[$i]}" in
+      live) c="$green" ;;
+      stopped) c="$amber" ;;
+      *) c="$red" ;;
+      esac
       tag="$(printf '%-9s' "[${stats[$i]}]")"
       printf '%s%s%s %-*s  %s\n' "$c" "$tag" "$reset" "$w" "${disp[$i]}" "${socks[$i]}"
     done
@@ -196,7 +213,7 @@ list() {
 
 candidates() {
   {
-    list | cut -f1
+    list | awk -F'\t' '$3 != "dead" { print $1 }'
     zoxide query -l 2>/dev/null || true
   } | awk 'NF && $0 != "?" && !seen[$0]++' | sed "s|^$HOME|~|"
 }
@@ -214,11 +231,12 @@ mux: per-project neovim server launcher
 
   mux [<path>]        attach to the project at <path> (default: cwd), spawning if needed
   mux ensure [<path>] print a live server socket for the project, spawning if needed
-  mux list            list sessions: live + stopped (cwd<TAB>socket<TAB>status)
+  mux list            list sessions: live + stopped + dead (cwd<TAB>socket<TAB>status)
   mux pick            fzf-pick a project (live servers + zoxide) and attach
   mux candidates      print project candidates (live servers + zoxide)
   mux stop [<path>]   stop the project's server (saved session restored next attach)
   mux kill [<path>]   hard-remove the project: stop + delete its saved session
+  mux clean           delete unrevivable session junk (orphan snapshots, stale sockets)
   mux reload [<path>] reload the project in place (apply edited config)
   mux reload --all    reload every live session
   mux save [<path>]   snapshot the project's session now, without quitting
@@ -244,8 +262,10 @@ stop_server() {
 }
 
 kill_server() {
-  local root sock sf i
-  root="$(root_for "${1:-$PWD}")"
+  local target root sock sf i
+  target="${1:-$PWD}"
+  root="$(root_for "$target" 2>/dev/null || true)"
+  [ -n "$root" ] || root="$target"
   sock="$(socket_for "$root")"
   sf="$(session_for "$root")"
   if is_live "$sock"; then
@@ -261,6 +281,46 @@ kill_server() {
   rm -f "$sock" "$sf" "${sf%.vim}.root"
   forget_history "$root"
   clear_last "$root"
+}
+
+clean() {
+  local f slug root vim sock rootval
+  if [ -d "$STATE_DIR/sessions" ]; then
+    local slugs=()
+    for f in "$STATE_DIR"/sessions/*.root "$STATE_DIR"/sessions/*.vim; do
+      [ -e "$f" ] || continue
+      slug="$(basename "$f")"
+      slug="${slug%.root}"
+      slug="${slug%.vim}"
+      case " ${slugs[*]-} " in
+      *" $slug "*) ;;
+      *) slugs+=("$slug") ;;
+      esac
+    done
+    for slug in ${slugs[@]+"${slugs[@]}"}; do
+      if is_live "$RUNTIME_DIR/$slug.sock"; then continue; fi
+      root="$STATE_DIR/sessions/$slug.root"
+      vim="$STATE_DIR/sessions/$slug.vim"
+      rootval=""
+      if [ -f "$root" ]; then
+        rootval="$(head -n1 "$root" 2>/dev/null || true)"
+      fi
+      if [ -f "$vim" ] && [ -n "$rootval" ] && [ -d "$rootval" ]; then
+        continue
+      fi
+      if [ -n "$rootval" ] && [ ! -d "$rootval" ]; then
+        continue
+      fi
+      rm -f "$vim" "$root"
+    done
+  fi
+  if [ -d "$RUNTIME_DIR" ]; then
+    for sock in "$RUNTIME_DIR"/*.sock; do
+      [ -e "$sock" ] || continue
+      if is_live "$sock"; then continue; fi
+      rm -f "$sock"
+    done
+  fi
 }
 
 reload_one() {
@@ -332,6 +392,9 @@ stop)
 kill)
   shift
   kill_server "${1:-$PWD}"
+  ;;
+clean)
+  clean
   ;;
 reload)
   shift
