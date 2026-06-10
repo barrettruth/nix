@@ -8,8 +8,6 @@ vim.api.nvim_create_autocmd('BufEnter', {
 vim.api.nvim_create_autocmd('TermOpen', {
     group = aug,
     callback = function(args)
-        vim.opt_local.number = false
-        vim.opt_local.relativenumber = false
         vim.b[args.buf].term_insert = true
         vim.keymap.set('n', 'G', 'Gi', {
             buffer = args.buf,
@@ -44,15 +42,6 @@ vim.api.nvim_create_autocmd('TermLeave', {
     end,
 })
 
-vim.api.nvim_create_autocmd('FileType', {
-    pattern = { 'fzf', 'TelescopePrompt', 'TelescopeResults' },
-    callback = function()
-        vim.opt_local.number = false
-        vim.opt_local.relativenumber = false
-    end,
-    group = aug,
-})
-
 vim.api.nvim_create_autocmd('BufReadPost', {
     command = 'sil! normal g`"',
     group = aug,
@@ -75,13 +64,9 @@ vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave', 'VimLeave' }, {
 vim.api.nvim_create_autocmd('WinEnter', {
     group = aug,
     callback = function()
-        vim.wo.cursorline = true
-        if vim.bo.buftype == 'terminal' then
-            vim.wo.number = false
-            vim.wo.relativenumber = false
-            if vim.b.term_insert then
-                vim.cmd.startinsert()
-            end
+        vim.wo[0][0].cursorline = true
+        if vim.bo.buftype == 'terminal' and vim.b.term_insert then
+            vim.cmd.startinsert()
         end
     end,
 })
@@ -89,7 +74,7 @@ vim.api.nvim_create_autocmd('WinEnter', {
 vim.api.nvim_create_autocmd('WinLeave', {
     group = aug,
     callback = function()
-        vim.wo.cursorline = false
+        vim.wo[0][0].cursorline = false
         if vim.bo.buftype == 'terminal' then
             if vim.b.term_leaving then
                 vim.b.term_insert = true

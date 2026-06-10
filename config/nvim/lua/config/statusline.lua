@@ -34,14 +34,26 @@ local function forge_prefix()
     return ('[%s] '):format(status.branch)
 end
 
+local function mux_suffix()
+    if vim.env.MUX ~= '1' then
+        return ''
+    end
+    local session = vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
+    if session == '' then
+        return ''
+    end
+    return (' [%s]'):format(session)
+end
+
 function M.render()
     local name = vim.fn.expand('%')
     local path = name ~= '' and ('%s '):format(vim.fn.expand('%:~')) or ''
     local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or vim.bo.buftype
-    return (' %s%s%%h%%m%%r%%=%%c:%%l/%%L %s '):format(
+    return (' %s%s%%h%%m%%r%%=%%c:%%l/%%L %s%s '):format(
         forge_prefix(),
         path,
-        filetype
+        filetype,
+        mux_suffix()
     )
 end
 

@@ -1,41 +1,38 @@
 local M = {}
 
 local review_prefix = 'diffs://review:'
-local window_options = {}
 
-local function is_review_buffer(buf)
-    return vim.startswith(vim.api.nvim_buf_get_name(buf), review_prefix)
+local numberless_ft = {
+    fzf = true,
+    TelescopePrompt = true,
+    TelescopeResults = true,
+}
+
+local function numbers_off(buf)
+    if vim.bo[buf].buftype == 'terminal' then
+        return true
+    end
+    if numberless_ft[vim.bo[buf].filetype] then
+        return true
+    end
+    if vim.startswith(vim.api.nvim_buf_get_name(buf), review_prefix) then
+        return true
+    end
+    return false
 end
 
-local function update_window(win, buf)
-    if is_review_buffer(buf) then
-        if not window_options[win] then
-            window_options[win] = {
-                number = vim.api.nvim_get_option_value('number', { win = win }),
-                relativenumber = vim.api.nvim_get_option_value(
-                    'relativenumber',
-                    { win = win }
-                ),
-            }
-        end
-
-        vim.api.nvim_set_option_value('number', false, { win = win })
-        vim.api.nvim_set_option_value('relativenumber', false, { win = win })
+function M.apply(win)
+    win = win or vim.api.nvim_get_current_win()
+    if not vim.api.nvim_win_is_valid(win) then
         return
     end
-
-    local options = window_options[win]
-    if not options then
+    if vim.api.nvim_win_get_config(win).relative ~= '' then
         return
     end
-
-    vim.api.nvim_set_option_value('number', options.number, { win = win })
-    vim.api.nvim_set_option_value(
-        'relativenumber',
-        options.relativenumber,
-        { win = win }
-    )
-    window_options[win] = nil
+    local buf = vim.api.nvim_win_get_buf(win)
+    local on = not numbers_off(buf)
+    vim.wo[win][0].number = on and vim.go.number
+    vim.wo[win][0].relativenumber = on and vim.go.relativenumber
 end
 
 function M.render()
@@ -49,10 +46,6 @@ function M.render()
 
     local column = '%s%C '
 
-    if vim.startswith(vim.api.nvim_buf_get_name(0), review_prefix) then
-        return column
-    end
-
     if not vim.wo.number and not vim.wo.relativenumber then
         return column
     end
@@ -65,30 +58,21 @@ function M.setup()
 
     local aug = vim.api.nvim_create_augroup('StatusColumn', { clear = true })
 
-    vim.api.nvim_create_autocmd(
-        { 'BufEnter', 'BufFilePost', 'BufWinEnter', 'WinEnter' },
-        {
-            callback = function(args)
-                update_window(
-                    vim.api.nvim_get_current_win(),
-                    args.buf or vim.api.nvim_get_current_buf()
-                )
-            end,
-            group = aug,
-        }
-    )
-
-    vim.api.nvim_create_autocmd('WinClosed', {
-        callback = function(args)
-            window_options[tonumber(args.match)] = nil
-        end,
+    vim.api.nvim_create_autocmd({
+        'BufEnter',
+        'BufFilePost',
+        'BufWinEnter',
+        'WinEnter',
+        'TermOpen',
+        'FileType',
+    }, {
         group = aug,
+        callback = function()
+            M.apply(vim.api.nvim_get_current_win())
+        end,
     })
 
-    update_window(
-        vim.api.nvim_get_current_win(),
-        vim.api.nvim_get_current_buf()
-    )
+    M.apply(vim.api.nvim_get_current_win())
 end
 
 return M

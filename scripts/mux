@@ -12,6 +12,7 @@ NVIM="${MUX_NVIM:-nvim}"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mux"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nvim/mux"
 LAST_FILE="$STATE_DIR/last"
+HISTORY_FILE="$STATE_DIR/history"
 
 die() {
   printf 'mux: %s\n' "$1" >&2
@@ -81,11 +82,24 @@ record_last() {
   printf '%s\n' "$1" >"$LAST_FILE"
 }
 
+push_history() {
+  local root="$1" tmp
+  [ -n "$root" ] || return 0
+  mkdir -p "$STATE_DIR"
+  tmp="$(mktemp "$STATE_DIR/.history.XXXXXX")" || return 0
+  if [ -f "$HISTORY_FILE" ]; then
+    grep -vxF -- "$root" "$HISTORY_FILE" 2>/dev/null | tail -n 49 >>"$tmp" || true
+  fi
+  printf '%s\n' "$root" >>"$tmp"
+  mv -f "$tmp" "$HISTORY_FILE"
+}
+
 attach() {
   local root sock
   root="$(root_for "${1:-$PWD}")"
   sock="$(ensure "$root")"
   record_last "$root"
+  push_history "$root"
   cd "$root" || true
   env MUX=1 ${APP:+NVIM_APPNAME=$APP} "$NVIM" --remote-ui --server "$sock"
   exec "${SHELL:-/bin/sh}"

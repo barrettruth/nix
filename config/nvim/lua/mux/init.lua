@@ -233,12 +233,25 @@ local function show_picker(live_out, zoxide_out)
                 hl('FzfLuaHeaderText', name)
             )
         end
+        actions['ctrl-x'] = function(sel)
+            local entry = sel and sel[1] and meta[sel[1]]
+            if entry and entry.socket and entry.socket ~= '' then
+                vim.system({
+                    'nvim',
+                    '--server',
+                    entry.socket,
+                    '--remote-expr',
+                    "luaeval('(function() require([[mux]]).kill_session() return 1 end)()')",
+                }):wait()
+            end
+            vim.schedule(M.pick_project)
+        end
+        parts[#parts + 1] = ('%s %s'):format(
+            hl('FzfLuaHeaderBind', '^X'),
+            hl('FzfLuaHeaderText', 'kill')
+        )
         fzf.fzf_exec(lines, {
             prompt = 'project> ',
-            -- ^A and ^Z are our connect+open actions (ai / zsh), but both keys
-            -- are claimed by defaults that would shadow them: ctrl-a:select-all
-            -- arrives via $FZF_DEFAULT_OPTS (strip it from fzf_args) and
-            -- ctrl-z:abort is a fzf-lua keymap.fzf default (disable it here).
             fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
                 :gsub('%-%-bind=ctrl%-a:select%-all', '')
                 :gsub('--color=[^%s]+', '')),
@@ -258,14 +271,46 @@ local function show_picker(live_out, zoxide_out)
     end
 end
 
+local function canon(p)
+    if not p or p == '' then
+        return ''
+    end
+    return (vim.fn.fnamemodify(p, ':p'):gsub('/$', ''))
+end
+
+local function push_history(root)
+    root = canon(root)
+    if root == '' then
+        return
+    end
+    local dir = vim.fn.stdpath('state') .. '/mux'
+    pcall(vim.fn.mkdir, dir, 'p')
+    local hf = dir .. '/history'
+    local kept = {}
+    if vim.fn.filereadable(hf) == 1 then
+        for _, line in ipairs(vim.fn.readfile(hf)) do
+            if line ~= '' and canon(line) ~= root then
+                kept[#kept + 1] = line
+            end
+        end
+    end
+    kept[#kept + 1] = root
+    while #kept > 50 do
+        table.remove(kept, 1)
+    end
+    pcall(vim.fn.writefile, kept, hf)
+end
+
 -- persist the last-attached project root (shared with scripts/mux record_last);
 -- bare `mux` reads this to re-attach. Recorded on every in-nvim :connect.
 local function record_last(root)
     if not root or root == '' then
         return
     end
+    root = canon(root)
     local dir = vim.fn.stdpath('state') .. '/mux'
     pcall(vim.fn.mkdir, dir, 'p')
+    push_history(root)
     pcall(vim.fn.writefile, { root }, dir .. '/last')
 end
 
@@ -351,6 +396,35 @@ function M.cycle_project(step)
     end)
 end
 
+function M.last_session()
+    vim.system({ 'mux', 'list' }, { text = true }, function(res)
+        local live = {}
+        for line in (res.stdout or ''):gmatch('[^\n]+') do
+            local cwd, sock = line:match('^(.-)\t(.+)$')
+            if cwd and sock then
+                live[canon(cwd)] = sock
+            end
+        end
+        vim.schedule(function()
+            local cur = canon(vim.fn.getcwd())
+            local hf = vim.fn.stdpath('state') .. '/mux/history'
+            local hist = {}
+            if vim.fn.filereadable(hf) == 1 then
+                hist = vim.fn.readfile(hf)
+            end
+            for i = #hist, 1, -1 do
+                local root = canon(hist[i])
+                local sock = root ~= '' and root ~= cur and live[root]
+                if sock then
+                    M._connect({ path = root, socket = sock })
+                    return
+                end
+            end
+            pcall(vim.cmd, 'detach')
+        end)
+    end)
+end
+
 local function sessions_dir()
     return vim.fn.stdpath('state') .. '/mux/sessions'
 end
@@ -358,6 +432,41 @@ end
 local function session_file()
     local slug = vim.fn.getcwd():gsub('[^%w._-]', '_')
     return sessions_dir() .. '/' .. slug .. '.vim'
+end
+
+function M.kill_session()
+    vim.schedule(function()
+        pcall(vim.cmd, 'qall!')
+    end)
+end
+
+function M.kill_current()
+    if #vim.api.nvim_list_tabpages() <= 1 then
+        return M.kill_session()
+    end
+    vim.cmd('silent! wall')
+    local cur = vim.api.nvim_get_current_tabpage()
+    local target = M._alt
+    if
+        not (target and target ~= cur and vim.api.nvim_tabpage_is_valid(target))
+    then
+        target = nil
+    end
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(cur)) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        if vim.bo[buf].buftype == 'terminal' then
+            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        end
+    end
+    if vim.api.nvim_tabpage_is_valid(cur) then
+        vim.api.nvim_win_call(vim.api.nvim_tabpage_get_win(cur), function()
+            pcall(vim.cmd, 'tabclose!')
+        end)
+    end
+    tab_view[cur] = nil
+    if target and vim.api.nvim_tabpage_is_valid(target) then
+        vim.api.nvim_set_current_tabpage(target)
+    end
 end
 
 function M.save_session()
@@ -456,6 +565,12 @@ function M.setup()
     end
     vim.keymap.set(
         { 'n', 'i', 't' },
+        prefix .. '<bs>',
+        [[<cmd>lua require('mux').last_session()<cr>]],
+        { desc = 'mux: last project' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
         prefix .. 'm',
         [[<cmd>lua require('mux').pick_project()<cr>]],
         { desc = 'mux: switch project' }
@@ -474,9 +589,15 @@ function M.setup()
     )
     vim.keymap.set(
         { 'n', 'i', 't' },
-        prefix .. 'q',
+        prefix .. 'd',
         '<cmd>detach<cr>',
         { desc = 'mux: detach to shell' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. 'x',
+        [[<cmd>lua require('mux').kill_current()<cr>]],
+        { desc = 'mux: kill tab (or session if last)' }
     )
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
@@ -516,6 +637,12 @@ function M.setup()
         group = group,
         callback = function()
             recipe_cache = {}
+        end,
+    })
+    vim.api.nvim_create_autocmd('TabLeave', {
+        group = group,
+        callback = function()
+            M._alt = vim.api.nvim_get_current_tabpage()
         end,
     })
     vim.api.nvim_create_autocmd('VimLeavePre', {
