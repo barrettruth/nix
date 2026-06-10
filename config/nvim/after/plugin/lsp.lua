@@ -34,7 +34,7 @@ local function compose_on_attach(server)
     })
 end
 
-for _, server in ipairs({
+local enabled = {
     'bashls',
     'basedpyright',
     'clangd',
@@ -45,19 +45,32 @@ for _, server in ipairs({
     'nixd',
     'mdx_analyzer',
     'jsonls',
-    'vtsls',
     'pytest_lsp',
     'lua_ls',
     'ruff',
     'tinymist',
     'vimdoc_ls',
-}) do
+}
+
+local disabled = {
+    'vtsls',
+    'tailwindcss',
+}
+
+for _, server in ipairs(enabled) do
     local ok, config = pcall(require, 'lsp.' .. server)
     if ok and config then
         vim.lsp.config(server, config)
     end
     compose_on_attach(server)
     vim.lsp.enable(server)
+end
+
+for _, server in ipairs(disabled) do
+    local ok, config = pcall(require, 'lsp.' .. server)
+    if ok and config then
+        vim.lsp.config(server, config)
+    end
 end
 
 -- remove duplicate entries from goto defintion list
