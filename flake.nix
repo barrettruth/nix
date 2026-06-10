@@ -11,7 +11,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
-    direnv-instant.url = "github:Mic92/direnv-instant";
     codex.url = "github:sadjow/codex-cli-nix";
     devin = {
       url = "github:charliemeyer2000/devin-cli-overlay";
