@@ -15,11 +15,13 @@ M.resolve_view = view.resolve_view
 M.in_view = view.in_view
 M.state = view.state
 M.last_view = view.last_view
+M.close_view = view.close_view
 
 M._connect = project._connect
 M.pick_project = project.pick_project
 M.cycle_project = project.cycle_project
 M.last_session = project.last_session
+M.exit_to_latest = project.exit_to_latest
 
 M.stop_session = session.stop_session
 M.kill_session = session.kill_session
@@ -96,14 +98,14 @@ function M.setup()
     vim.keymap.set(
         { 'n', 'i', 't' },
         prefix .. 's',
-        [[<cmd>lua require('mux').stop_session()<cr>]],
-        { desc = 'mux: stop session (resumable)' }
+        [[<cmd>lua require('mux').exit_to_latest()<cr>]],
+        { desc = 'mux: stop session (hop to last)' }
     )
     vim.keymap.set(
         { 'n', 'i', 't' },
         prefix .. 'x',
-        [[<cmd>lua require('mux').kill_session()<cr>]],
-        { desc = 'mux: kill session (hard)' }
+        [[<cmd>lua require('mux').close_view()<cr>]],
+        { desc = 'mux: close view' }
     )
     vim.keymap.set(
         { 'n', 'i', 't' },

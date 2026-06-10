@@ -85,12 +85,29 @@ function M.close_view_tab(tp, restoring)
             require('mux.project').exit_to_latest()
             return
         end
+        local bufs = {}
+        for _, w in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+            bufs[#bufs + 1] = vim.api.nvim_win_get_buf(w)
+        end
         local win = vim.api.nvim_tabpage_get_win(tp)
         vim.api.nvim_win_call(win, function()
             pcall(vim.cmd, 'tabclose')
         end)
         tab_view[tp] = nil
+        for _, b in ipairs(bufs) do
+            if
+                vim.api.nvim_buf_is_valid(b)
+                and vim.bo[b].buftype == 'terminal'
+                and #vim.fn.win_findbuf(b) == 0
+            then
+                pcall(vim.api.nvim_buf_delete, b, { force = true })
+            end
+        end
     end)
+end
+
+function M.close_view()
+    M.close_view_tab(vim.api.nvim_get_current_tabpage())
 end
 
 ---@param win integer window of a dead ephemeral terminal
