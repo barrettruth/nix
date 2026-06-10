@@ -125,6 +125,26 @@ function M.reload()
     pcall(vim.cmd, 'restart +qall!')
 end
 
+---@return string? dir local directory the edit view's launcher is showing, if any
+local function editor_dir()
+    for tp, view in pairs(tab_view) do
+        if view == 'edit' and vim.api.nvim_tabpage_is_valid(tp) then
+            local buf =
+                vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_get_win(tp))
+            local name = vim.api.nvim_buf_get_name(buf)
+            if vim.bo[buf].filetype == 'canola' then
+                name = name:match('^%w+://(.*)$') or ''
+            end
+            name = (name:gsub('/$', ''))
+            if name ~= '' and vim.fn.isdirectory(name) == 1 then
+                return name
+            end
+            return nil
+        end
+    end
+    return nil
+end
+
 function M.save_session()
     if M._killing then
         return
@@ -136,6 +156,7 @@ function M.save_session()
         end
     end
     vim.g.MuxViews = vim.json.encode(map)
+    vim.g.MuxEditDir = editor_dir() or ''
     local f = session_file()
     vim.fn.mkdir(vim.fn.fnamemodify(f, ':h'), 'p')
     pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(f))
@@ -175,12 +196,28 @@ function M.load_session()
     local drop = {}
     for tp, view in pairs(tab_view) do
         local spec = views[view]
-        if
-            vim.api.nvim_tabpage_is_valid(tp)
-            and spec
-            and spec.kind ~= 'editor'
-        then
-            if spec.restore then
+        if vim.api.nvim_tabpage_is_valid(tp) and spec then
+            if spec.kind == 'editor' then
+                local win = vim.api.nvim_tabpage_get_win(tp)
+                local buf = vim.api.nvim_win_get_buf(win)
+                local name = vim.api.nvim_buf_get_name(buf)
+                local is_file = vim.bo[buf].buftype == ''
+                    and name ~= ''
+                    and vim.fn.filereadable(name) == 1
+                if not is_file then
+                    local dir = vim.g.MuxEditDir
+                    if
+                        type(dir) ~= 'string'
+                        or dir == ''
+                        or vim.fn.isdirectory(dir) == 0
+                    then
+                        dir = vim.fn.getcwd()
+                    end
+                    vim.api.nvim_win_call(win, function()
+                        pcall(vim.cmd.edit, dir)
+                    end)
+                end
+            elseif spec.restore then
                 vim.api.nvim_set_current_tabpage(tp)
                 engine.materialize(view, true)
             else
