@@ -104,12 +104,8 @@ in
     if [ -e "${homeDirectory}/.codex" ] || [ -L "${homeDirectory}/.codex" ]; then
       rm -rf "${homeDirectory}/.codex"
     fi
-    ${mkDir "${XDG_CONFIG_HOME}/vim"}
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
     ${mkDir "${XDG_STATE_HOME}/zsh"}
-    ${mkDir "${XDG_DATA_HOME}/vim"}
-    ${mkDir "${XDG_STATE_HOME}/vim"}
-    ${mkDir "${XDG_CACHE_HOME}/vim"}
     ${mkDir "${homeDirectory}/.ssh"}
     ${mkDir "${homeDirectory}/.gnupg"}
 
@@ -146,7 +142,7 @@ in
     ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
     ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
     ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
-    ${mkSymlink "${repo}/config/devin/agent.yaml" "${XDG_CONFIG_HOME}/devin/agent.yaml"}
+    ${mkSymlink "${repo}/config/devin/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
     ${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}
     ${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
 
@@ -163,8 +159,6 @@ in
         chown -h ${username}:users "$agentdir/$name"
       done
     done
-
-    ${mkSymlink "${repo}/config/vim/vimrc" "${XDG_CONFIG_HOME}/vim/vimrc"}
 
     if [ -d ${homeDirectory}/.ssh ]; then
       chmod 700 ${homeDirectory}/.ssh

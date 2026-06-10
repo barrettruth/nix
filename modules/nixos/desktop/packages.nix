@@ -119,7 +119,6 @@ in
       direnv
       nix-direnv
       neovim
-      vim
       gh
       jujutsu
       gnupg
