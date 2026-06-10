@@ -1,5 +1,7 @@
 local aug = vim.api.nvim_create_augroup('AAugs', { clear = true })
 
+local tail_pending = {}
+
 vim.api.nvim_create_autocmd('BufEnter', {
     command = 'setl formatoptions-=cro spelloptions=camel,noplainbuffer',
     group = aug,
@@ -17,6 +19,34 @@ vim.api.nvim_create_autocmd('TermOpen', {
             buffer = args.buf,
             desc = 'scroll up half-page',
         })
+        vim.api.nvim_buf_attach(args.buf, false, {
+            on_lines = function(_, b)
+                if not vim.api.nvim_buf_is_valid(b) then
+                    return true
+                end
+                if tail_pending[b] then
+                    return
+                end
+                tail_pending[b] = true
+                vim.schedule(function()
+                    tail_pending[b] = nil
+                    if not vim.api.nvim_buf_is_valid(b) then
+                        return
+                    end
+                    local cur = vim.api.nvim_get_current_win()
+                    local last = vim.api.nvim_buf_line_count(b)
+                    for _, w in ipairs(vim.fn.win_findbuf(b)) do
+                        if w ~= cur and vim.api.nvim_win_is_valid(w) then
+                            pcall(
+                                vim.api.nvim_win_set_cursor,
+                                w,
+                                { last, 0 }
+                            )
+                        end
+                    end
+                end)
+            end,
+        })
         vim.cmd.startinsert()
     end,
 })
@@ -32,6 +62,10 @@ vim.api.nvim_create_autocmd('TermLeave', {
     group = aug,
     callback = function()
         local buf = vim.api.nvim_get_current_buf()
+        if vim.b[buf].term_programmatic then
+            vim.b[buf].term_programmatic = false
+            return
+        end
         vim.b[buf].term_insert = false
         vim.b[buf].term_leaving = true
         vim.schedule(function()
@@ -67,6 +101,23 @@ vim.api.nvim_create_autocmd('WinEnter', {
         vim.wo[0][0].cursorline = true
         if vim.bo.buftype == 'terminal' and vim.b.term_insert then
             vim.cmd.startinsert()
+        end
+    end,
+})
+
+vim.api.nvim_create_autocmd('UIEnter', {
+    group = aug,
+    callback = function()
+        local buf = vim.api.nvim_get_current_buf()
+        if vim.bo[buf].buftype == 'terminal' and vim.b[buf].term_insert then
+            vim.schedule(function()
+                if
+                    vim.api.nvim_get_current_buf() == buf
+                    and vim.b[buf].term_insert
+                then
+                    vim.cmd.startinsert()
+                end
+            end)
         end
     end,
 })

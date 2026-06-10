@@ -108,6 +108,7 @@ end
 -- Leave terminal-mode so a stray <c-c> hits Normal mode, not the terminal.
 function M.leave_terminal()
     if vim.fn.mode() == 't' then
+        vim.b.term_programmatic = true
         vim.cmd.stopinsert()
     end
 end
