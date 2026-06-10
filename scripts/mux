@@ -3,11 +3,9 @@
 # Each project (git root) gets one `nvim --headless --listen <socket>` server
 # (running the real config, with mux.lua activated via -c + MUX=1). Clients
 # attach via `--remote-ui`; switch projects from inside nvim with `:connect`.
-# Set MUX_APPNAME=mux for an isolated clean-room config instead.
 
 set -euo pipefail
 
-APP="${MUX_APPNAME:-}"
 NVIM="${MUX_NVIM:-nvim}"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mux"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nvim/mux"
@@ -41,9 +39,11 @@ socket_for() {
   printf '%s/%s.sock' "$RUNTIME_DIR" "$(slug "$1")"
 }
 
+session_for() {
+  printf '%s/sessions/%s.vim' "$STATE_DIR" "$(slug "$1")"
+}
+
 is_live() {
-  # </dev/null: keep the remote client off the tty so it doesn't init a TUI
-  # (alt-screen + terminal queries) and pollute output (see `list`).
   "$NVIM" --server "$1" --remote-expr 1 </dev/null >/dev/null 2>&1
 }
 
@@ -54,12 +54,12 @@ ensure() {
   sock="$(socket_for "$root")"
   mkdir -p "$RUNTIME_DIR"
   if [ -e "$sock" ] && ! is_live "$sock"; then
-    rm -f "$sock" # stale socket left by a dead server (neovim#30123)
+    rm -f "$sock"
   fi
   if ! is_live "$sock"; then
     (
       cd "$root" || exit 1
-      exec setsid env MUX=1 ${APP:+NVIM_APPNAME=$APP} "$NVIM" \
+      exec setsid env MUX=1 MUX_SESSION_FILE="$(session_for "$root")" "$NVIM" \
         --headless --listen "$sock" \
         -c "lua pcall(function() require('mux').setup() end)" \
         </dev/null >/dev/null 2>&1
@@ -75,8 +75,6 @@ ensure() {
   printf '%s\n' "$sock"
 }
 
-# persist the project we last attached to (state dir, survives reboot); the
-# in-nvim side records the same file on :connect (see mux.lua record_last).
 record_last() {
   mkdir -p "$STATE_DIR"
   printf '%s\n' "$1" >"$LAST_FILE"
@@ -94,6 +92,22 @@ push_history() {
   mv -f "$tmp" "$HISTORY_FILE"
 }
 
+forget_history() {
+  local root="$1" tmp
+  [ -n "$root" ] || return 0
+  [ -f "$HISTORY_FILE" ] || return 0
+  tmp="$(mktemp "$STATE_DIR/.history.XXXXXX")" || return 0
+  grep -vxF -- "$root" "$HISTORY_FILE" 2>/dev/null >>"$tmp" || true
+  mv -f "$tmp" "$HISTORY_FILE"
+}
+
+clear_last() {
+  local root="$1" cur
+  [ -f "$LAST_FILE" ] || return 0
+  cur="$(head -n1 "$LAST_FILE" 2>/dev/null || true)"
+  [ "$cur" = "$root" ] && rm -f "$LAST_FILE" || true
+}
+
 attach() {
   local root sock
   root="$(root_for "${1:-$PWD}")"
@@ -101,13 +115,10 @@ attach() {
   record_last "$root"
   push_history "$root"
   cd "$root" || true
-  env MUX=1 ${APP:+NVIM_APPNAME=$APP} "$NVIM" --remote-ui --server "$sock"
+  env MUX=1 "$NVIM" --remote-ui --server "$sock"
   exec "${SHELL:-/bin/sh}"
 }
 
-# bare `mux`: re-attach to the last project (spawning if its server died). With
-# no recorded last, attach the sole live server if there's exactly one; else
-# fall back to the `pick` fzf chooser.
 resume() {
   local last lines n cwd
   last=""
@@ -128,32 +139,56 @@ resume() {
   pick
 }
 
+# List sessions: live servers (running) plus stopped ones (a saved snapshot
+# exists, recovered from its `.root` sidecar). Machine output is one
+# `cwd<TAB>socket<TAB>status` row per session (socket empty when stopped); a TTY
+# gets a colored [live]/[stopped] tag, the ~-shortened path, and the socket.
 list() {
   local sock cwd i w=0
-  local cwds=() socks=()
-  [ -d "$RUNTIME_DIR" ] || return 0
-  for sock in "$RUNTIME_DIR"/*.sock; do
-    [ -e "$sock" ] || continue
-    if ! is_live "$sock"; then continue; fi
-    cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
-    cwds+=("${cwd:-?}")
-    socks+=("$sock")
-  done
-  # Aligned columns for a terminal; raw cwd<TAB>socket when piped/captured so
-  # `pick`, the in-nvim picker, and project cycling can still parse it.
+  local cwds=() socks=() stats=() disp=()
+  if [ -d "$RUNTIME_DIR" ]; then
+    for sock in "$RUNTIME_DIR"/*.sock; do
+      [ -e "$sock" ] || continue
+      if ! is_live "$sock"; then continue; fi
+      cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
+      cwds+=("${cwd:-?}")
+      socks+=("$sock")
+      stats+=("live")
+    done
+  fi
+  # stopped = snapshot+sidecar present but the project's server isn't live.
+  if [ -d "$STATE_DIR/sessions" ]; then
+    local rf root
+    for rf in "$STATE_DIR"/sessions/*.root; do
+      [ -e "$rf" ] || continue
+      [ -f "${rf%.root}.vim" ] || continue
+      root="$(head -n1 "$rf" 2>/dev/null || true)"
+      [ -n "$root" ] && [ -d "$root" ] || continue
+      if is_live "$(socket_for "$root")"; then continue; fi
+      cwds+=("$root")
+      socks+=("")
+      stats+=("stopped")
+    done
+  fi
   if [ -t 1 ]; then
-    for cwd in "${cwds[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
-    for i in "${!cwds[@]}"; do
-      printf '%-*s  %s\n' "$w" "${cwds[$i]}" "${socks[$i]}"
+    local reset green amber c tag
+    reset=$'\033[0m'
+    green=$'\033[32m'
+    amber=$'\033[33m'
+    for cwd in "${cwds[@]}"; do disp+=("${cwd/#$HOME/\~}"); done
+    for cwd in "${disp[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
+    for i in "${!disp[@]}"; do
+      if [ "${stats[$i]}" = live ]; then c="$green"; else c="$amber"; fi
+      tag="$(printf '%-9s' "[${stats[$i]}]")"
+      printf '%s%s%s %-*s  %s\n' "$c" "$tag" "$reset" "$w" "${disp[$i]}" "${socks[$i]}"
     done
   else
     for i in "${!cwds[@]}"; do
-      printf '%s\t%s\n' "${cwds[$i]}" "${socks[$i]}"
+      printf '%s\t%s\t%s\n' "${cwds[$i]}" "${socks[$i]}" "${stats[$i]}"
     done
   fi
 }
 
-# project candidates for the picker: live servers + zoxide history, ~-abbreviated
 candidates() {
   {
     list | cut -f1
@@ -161,7 +196,6 @@ candidates() {
   } | awk 'NF && $0 != "?" && !seen[$0]++' | sed "s|^$HOME|~|"
 }
 
-# fzf-pick a project and attach it
 pick() {
   local choice
   choice="$(candidates | fzf --prompt 'project> ')" || return 0
@@ -175,23 +209,46 @@ mux: per-project neovim server launcher
 
   mux [<path>]        attach to the project at <path> (default: cwd), spawning if needed
   mux ensure [<path>] print a live server socket for the project, spawning if needed
-  mux list            list running project servers (cwd<TAB>socket)
+  mux list            list sessions: live + stopped (cwd<TAB>socket<TAB>status)
   mux pick            fzf-pick a project (live servers + zoxide) and attach
   mux candidates      print project candidates (live servers + zoxide)
-  mux kill [<path>]   quit the project's server
-  mux -h | --help     this help
+  mux stop [<path>]   stop the project's server (saved session restored next attach)
+  mux kill [<path>]   hard-remove the project: stop + delete its saved session
+  mux help            this help (also -h | --help)
 
 Inside nvim, switch projects with:  :connect <socket>   (see `mux list`)
 EOF
 }
 
-kill_server() {
+stop_server() {
   local sock
   sock="$(socket_for "$(root_for "${1:-$PWD}")")"
   if is_live "$sock"; then
     "$NVIM" --server "$sock" --remote-expr 'execute("qall!")' </dev/null >/dev/null 2>&1 || true
   fi
   rm -f "$sock"
+}
+
+kill_server() {
+  local root sock sf i
+  root="$(root_for "${1:-$PWD}")"
+  sock="$(socket_for "$root")"
+  sf="$(session_for "$root")"
+  if is_live "$sock"; then
+    # hard kill: set the in-Neovim no-save guard and quit, so VimLeavePre can't
+    # re-save the snapshot we're about to delete.
+    "$NVIM" --server "$sock" --remote-expr \
+      "luaeval('(function() require([[mux]]).kill_session() return 1 end)()')" \
+      </dev/null >/dev/null 2>&1 || true
+    i=0
+    while [ "$i" -lt 100 ] && is_live "$sock"; do
+      sleep 0.05
+      i=$((i + 1))
+    done
+  fi
+  rm -f "$sock" "$sf" "${sf%.vim}.root"
+  forget_history "$root"
+  clear_last "$root"
 }
 
 case "${1:-}" in
@@ -208,11 +265,15 @@ pick)
 candidates)
   candidates
   ;;
+stop)
+  shift
+  stop_server "${1:-$PWD}"
+  ;;
 kill)
   shift
   kill_server "${1:-$PWD}"
   ;;
--h | --help)
+help | -h | --help)
   usage
   ;;
 attach)
@@ -226,6 +287,7 @@ attach)
   die "unknown option: $1 (try --help)"
   ;;
 *)
+  [ -d "$1" ] || die "unknown command: $1 (try --help)"
   attach "$1"
   ;;
 esac

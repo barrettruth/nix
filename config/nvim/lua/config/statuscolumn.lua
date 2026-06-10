@@ -1,5 +1,6 @@
 local M = {}
 
+-- diffs.nvim review buffer $refix
 local review_prefix = 'diffs://review:'
 
 local numberless_ft = {
@@ -8,6 +9,8 @@ local numberless_ft = {
     TelescopeResults = true,
 }
 
+---@param buf integer
+---@return boolean
 local function numbers_off(buf)
     if vim.bo[buf].buftype == 'terminal' then
         return true
@@ -21,6 +24,7 @@ local function numbers_off(buf)
     return false
 end
 
+---@param win? integer defaults to the current window
 function M.apply(win)
     win = win or vim.api.nvim_get_current_win()
     if not vim.api.nvim_win_is_valid(win) then
@@ -35,6 +39,7 @@ function M.apply(win)
     vim.wo[win][0].relativenumber = on and vim.go.relativenumber
 end
 
+---@return string
 function M.render()
     if vim.v.virtnum ~= 0 then
         return ''

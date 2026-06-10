@@ -1,4 +1,4 @@
--- https://github.com/echasnovski/mini.bufremove/blob/main/lua/mini/bufremove.lua#L86
+-- https://github.com/echasnovski/mini.bufremove/blob/main/lua/mini/bufremove.lua
 
 ---@param wipeout? boolean
 return function(wipeout)

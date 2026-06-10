@@ -20,6 +20,7 @@ vim.lsp.config('*', {
     on_attach = lsp.on_attach,
 })
 
+---@param server string
 local function compose_on_attach(server)
     local server_on_attach = vim.lsp.config[server].on_attach
     if not server_on_attach or server_on_attach == lsp.on_attach then

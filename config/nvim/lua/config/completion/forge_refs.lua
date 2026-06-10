@@ -9,8 +9,8 @@ local context = require('config.completion.forge.context')
 local notify = require('config.completion.forge.notify')
 local registry = require('config.completion.forge.registry')
 
-local PR_GLYPH = '\239\144\135' -- octicon git-pull-request (U+F407)
-local ISSUE_GLYPH = '\239\144\159' -- octicon comment (U+F41F)
+local PR_GLYPH = '\239\144\135'
+local ISSUE_GLYPH = '\239\144\159'
 
 ---@type table<string, true>
 local TRIGGER_CHARS = { ['#'] = true, ['@'] = true, ['!'] = true }

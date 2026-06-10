@@ -3,6 +3,9 @@ local M = {}
 local CompletionItemKind = vim.lsp.protocol.CompletionItemKind
 local Methods = vim.lsp.protocol.Methods
 
+---@param fzf_cmd string `:FzfLua` subcommand
+---@param fallback fun()
+---@return fun()
 local function fzf_or(fzf_cmd, fallback)
     return function()
         require('config.lz').load('ibhagwan/fzf-lua')
@@ -14,6 +17,9 @@ local function fzf_or(fzf_cmd, fallback)
     end
 end
 
+---@param text string
+---@param max_width integer
+---@return string
 local function ellipsize(text, max_width)
     if text == '' or vim.fn.strdisplaywidth(text) <= max_width then
         return text
@@ -39,18 +45,18 @@ local function completion_menu(item)
     return vim.tbl_get(item, 'labelDetails', 'description') or item.detail or ''
 end
 
-local function completion_widths()
-    local width = vim.api.nvim_win_get_width(0)
-    if width < 100 then
-        return 24, 0
-    end
-    if width < 140 then
-        return 32, 0
-    end
-    return 40, 24
-end
-
 local function completion_convert(item)
+    local function completion_widths()
+        local width = vim.api.nvim_win_get_width(0)
+        if width < 100 then
+            return 24, 0
+        end
+        if width < 140 then
+            return 32, 0
+        end
+        return 40, 24
+    end
+
     local abbr_width, menu_width = completion_widths()
     local menu = completion_menu(item)
     if menu_width > 0 then
@@ -64,6 +70,8 @@ local function completion_convert(item)
     }
 end
 
+---@param client vim.lsp.Client
+---@param bufnr integer
 function M.on_attach(client, bufnr)
     if client:supports_method(Methods.textDocument_completion) then
         vim.lsp.completion.enable(true, client.id, bufnr, {

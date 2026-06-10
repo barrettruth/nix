@@ -3,7 +3,16 @@
 
 local M = {}
 
--- view registry. kind: editor | terminal | task | vcs
+---@class mux.ViewSpec
+---@field key string single char appended to the `<a-x>` prefix to open this view
+---@field kind 'editor'|'vcs'|'terminal'|'task' how the tab's content is built
+---@field cmd? string[] terminal command (terminal kind), defaults to `just <recipe>` for tasks
+---@field restore_cmd? string[] command used instead of `cmd` when restoring a saved session
+---@field recipe? string justfile recipe name (task kind)
+---@field lifecycle? 'ephemeral'|'persistent' ephemeral tabs auto-close when their terminal exits
+---@field restore? boolean re-materialize this view when a saved session is loaded
+
+---@type table<string, mux.ViewSpec>
 local views = {
     edit = { key = 'e', kind = 'editor' },
     ai = {
@@ -37,12 +46,16 @@ local views = {
 }
 M.views = views
 
--- stable order for keymaps, the picker header, and per-view picker actions
-local VIEW_ORDER = { 'edit', 'ai', 'zsh', 'vcs', 'run', 'build', 'test' }
+local VIEW_ORDER = { 'edit', 'vcs', 'ai', 'run', 'build', 'test', 'zsh' }
 
--- tabpage handle -> view name (handles are stable ids, unlike tab numbers)
+local AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000
+
+-- tabpage handle -> view name
+---@type table<integer, string>
 local tab_view = {}
 
+---@param tabpage integer
+---@param name string
 local function tag(tabpage, name)
     tab_view[tabpage] = name
 end
@@ -55,6 +68,8 @@ local function prune()
     end
 end
 
+---@param name string
+---@return integer? tabpage handle of the open view, or nil if none
 local function find_view(name)
     for tp, v in pairs(tab_view) do
         if v == name and vim.api.nvim_tabpage_is_valid(tp) then
@@ -64,9 +79,13 @@ local function find_view(name)
     return nil
 end
 
--- just recipe presence, cached per cwd (invalidated on DirChanged)
+-- cwd -> set of justfile recipe names (cleared on DirChanged).
 local recipe_cache = {}
 
+-- Whether `cwd`'s justfile defines `recipe`, caching `just --summary` per cwd.
+---@param cwd string
+---@param recipe string
+---@return boolean
 local function has_recipe(cwd, recipe)
     local set = recipe_cache[cwd]
     if not set then
@@ -86,18 +105,23 @@ local function has_recipe(cwd, recipe)
     return set[recipe] == true
 end
 
+---@param tp integer
 local function close_view_tab(tp)
     vim.schedule(function()
         if not vim.api.nvim_tabpage_is_valid(tp) then
             return
         end
         if #vim.api.nvim_list_tabpages() <= 1 then
-            -- never close the last tab (E784); reset it to an empty edit view
+            -- Hop to the most-recently-used live project
+            -- TODO: check this Reset this lone tab to a clean edit view first so the server
+            -- we leave behind isn't holding a dead terminal;
+            -- last_session() :detaches only when nothing else is live.
             local win = vim.api.nvim_tabpage_get_win(tp)
             vim.api.nvim_win_call(win, function()
                 pcall(vim.cmd, 'enew')
             end)
             tab_view[tp] = 'edit'
+            M.last_session()
             return
         end
         local win = vim.api.nvim_tabpage_get_win(tp)
@@ -108,18 +132,15 @@ local function close_view_tab(tp)
     end)
 end
 
--- fill the current window/tab with a view's content. `restoring` swaps in a
--- view's restore_cmd (e.g. ai resumes with `devin --continue` rather than
--- spawning a fresh session).
+---@param name string
+---@param restoring boolean true when re-opening from a saved session
 local function materialize(name, restoring)
     local spec = views[name]
     local cwd = vim.fn.getcwd()
     if spec.kind == 'editor' then
         vim.cmd.edit(cwd)
     elseif spec.kind == 'vcs' then
-        -- fugitive status, sole window in the tab; closing it closes the tab
-        pcall(vim.cmd, 'Git')
-        pcall(vim.cmd, 'only')
+        pcall(vim.cmd, 'Git|only')
     elseif spec.kind == 'terminal' or spec.kind == 'task' then
         local cmd = (restoring and spec.restore_cmd)
             or spec.cmd
@@ -155,6 +176,86 @@ function M.open_view(name)
     materialize(name, false)
 end
 
+---@param spec string|{ view?: string, win?: integer, tab?: integer, create?: boolean }
+---@return integer? win
+---@return integer|string tp
+function M.resolve_view(spec)
+    if type(spec) == 'string' then
+        spec = { view = spec }
+    end
+    spec = spec or {}
+
+    if spec.win ~= nil then
+        local win = tonumber(spec.win)
+        if not (win and vim.api.nvim_win_is_valid(win)) then
+            return nil, 'invalid window: ' .. tostring(spec.win)
+        end
+        return win, vim.api.nvim_win_get_tabpage(win)
+    end
+
+    if spec.tab ~= nil then
+        local tp = vim.api.nvim_list_tabpages()[tonumber(spec.tab) or -1]
+        if not (tp and vim.api.nvim_tabpage_is_valid(tp)) then
+            return nil, 'invalid tab: ' .. tostring(spec.tab)
+        end
+        return vim.api.nvim_tabpage_get_win(tp), tp
+    end
+
+    local name = spec.view
+    if not name then
+        return nil, 'resolve_view: need view, win, or tab'
+    end
+    if not views[name] then
+        return nil, 'unknown view: ' .. tostring(name)
+    end
+    local tp = find_view(name)
+    if not tp then
+        if spec.create == false then
+            return nil, 'view not open: ' .. name
+        end
+        local cur = vim.api.nvim_get_current_tabpage()
+        local saved_alt = M._alt
+        vim.cmd.tabnew()
+        tp = vim.api.nvim_get_current_tabpage()
+        tag(tp, name)
+        materialize(name, false)
+        if vim.api.nvim_tabpage_is_valid(cur) then
+            vim.api.nvim_set_current_tabpage(cur)
+        end
+        M._alt = saved_alt
+    end
+    return vim.api.nvim_tabpage_get_win(tp), tp
+end
+
+---@param spec string|table
+---@param fn fun(): any
+---@return any result, string? err
+function M.in_view(spec, fn)
+    local win, tp = M.resolve_view(spec)
+    if not win then
+        return nil, tp
+    end
+    return vim.api.nvim_win_call(win, fn), nil
+end
+
+function M.state()
+    local cur = vim.api.nvim_get_current_tabpage()
+    local tabs = {}
+    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        local win = vim.api.nvim_tabpage_get_win(tp)
+        local buf = vim.api.nvim_win_get_buf(win)
+        tabs[#tabs + 1] = {
+            tab = vim.api.nvim_tabpage_get_number(tp),
+            view = tab_view[tp],
+            win = win,
+            current = tp == cur,
+            buftype = vim.bo[buf].buftype,
+            filetype = vim.bo[buf].filetype,
+        }
+    end
+    return { current_view = tab_view[cur], tabs = tabs }
+end
+
 local bufremove = require('config.bufremove')
 
 function M.bufdelete()
@@ -165,35 +266,75 @@ function M.bufwipe()
     bufremove(true)
 end
 
-local function show_picker(live_out, zoxide_out)
-    local live = {} -- cwd -> socket
-    for line in (live_out or ''):gmatch('[^\n]+') do
-        local cwd, sock = line:match('^(.-)\t(.+)$')
+---@param p string?
+---@return string
+local function canon(p)
+    if not p or p == '' then
+        return ''
+    end
+    return (vim.fn.fnamemodify(p, ':p'):gsub('/$', ''))
+end
+
+-- Build and show the project picker from `mux list`
+-- Include live sessions, stopped sessions, and zoxide candidates.
+---@param list_out string `mux list` stdout: "cwd<TAB>socket<TAB>status" per line
+---@param zoxide_out string `zoxide query -l` stdout: one path per line
+local function show_picker(list_out, zoxide_out)
+    local live, stopped = {}, {} -- canon cwd -> socket; canon cwd -> true
+    for line in (list_out or ''):gmatch('[^\n]+') do
+        local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
         if cwd then
-            live[cwd] = sock
+            cwd = canon(cwd)
+            if status == 'live' and sock ~= '' then
+                live[cwd] = sock
+            elseif status == 'stopped' then
+                stopped[cwd] = true
+            end
         end
     end
 
-    local here = vim.fn.getcwd()
-    local seen, lines, meta = {}, {}, {}
+    -- strip SGR codes so meta lookups work whether fzf hands back the colored
+    -- row or a plain one.
+    local function strip_ansi(s)
+        return (s:gsub('\27%[[%d;]*m', ''))
+    end
+    local ok, fzf = pcall(require, 'fzf-lua')
+    local hl = ok and require('fzf-lua.utils').ansi_from_hl or nil
+    -- status tag -> theme highlight group (picker coloring only)
+    local tag_hl =
+        { live = 'DiagnosticOk', stopped = 'DiagnosticWarn', new = 'Comment' }
+
+    local here = canon(vim.fn.getcwd())
+    local seen, lines, color_lines, meta = {}, {}, {}, {}
     local function add(path)
         if not path or path == '' then
             return
         end
-        path = (vim.fn.fnamemodify(path, ':p'):gsub('/$', ''))
+        path = canon(path)
         if seen[path] then
             return
         end
-        if not live[path] and vim.uv.fs_stat(path .. '/.git') == nil then
+        local status = (live[path] and 'live')
+            or (stopped[path] and 'stopped')
+            or 'new'
+        -- only list candidates that are git repos
+        if status == 'new' and vim.uv.fs_stat(path .. '/.git') == nil then
             return
         end
         seen[path] = true
-        local mark = (path == here) and '*' or (live[path] and 'o' or ' ')
-        local disp = ('%s %s'):format(mark, vim.fn.fnamemodify(path, ':~'))
-        lines[#lines + 1] = disp
-        meta[disp] = { path = path, socket = live[path] }
+        local tagstr = ('%-9s'):format(('[%s]'):format(status))
+        local mark = (path == here) and '*' or ' '
+        local rest = (' %s %s'):format(mark, vim.fn.fnamemodify(path, ':~'))
+        lines[#lines + 1] = tagstr .. rest
+        color_lines[#color_lines + 1] = (
+            hl and hl(tag_hl[status], tagstr) .. rest
+        ) or (tagstr .. rest)
+        meta[tagstr .. rest] = { path = path, socket = live[path] }
     end
     for cwd in pairs(live) do
+        add(cwd)
+    end
+    for cwd in pairs(stopped) do
         add(cwd)
     end
     for line in (zoxide_out or ''):gmatch('[^\n]+') do
@@ -205,18 +346,11 @@ local function show_picker(live_out, zoxide_out)
         return
     end
 
-    local ok, fzf = pcall(require, 'fzf-lua')
     if ok then
-        -- enter connects; ctrl-<key> connects AND opens that view on the project
-        -- (mirrors the old tmux picker's prefix + ^a/^e/^v/... bindings). fzf-lua's
-        -- native action header hardcodes the "<ctrl-x>" form, so we build the
-        -- header ourselves but reuse its highlight groups so the ^X keys stay
-        -- highlighted; plain-function actions keep set_header from overwriting it.
-        local hl = require('fzf-lua.utils').ansi_from_hl
         local actions = {
             ['default'] = function(sel)
                 if sel and sel[1] then
-                    M._connect(meta[sel[1]])
+                    M._connect(meta[strip_ansi(sel[1])])
                 end
             end,
         }
@@ -225,7 +359,7 @@ local function show_picker(live_out, zoxide_out)
             local spec = views[name]
             actions['ctrl-' .. spec.key] = function(sel)
                 if sel and sel[1] then
-                    M._connect(meta[sel[1]], name)
+                    M._connect(meta[strip_ansi(sel[1])], name)
                 end
             end
             parts[#parts + 1] = ('%s to %s'):format(
@@ -233,24 +367,36 @@ local function show_picker(live_out, zoxide_out)
                 hl('FzfLuaHeaderText', name)
             )
         end
-        actions['ctrl-x'] = function(sel)
-            local entry = sel and sel[1] and meta[sel[1]]
-            if entry and entry.socket and entry.socket ~= '' then
-                vim.system({
-                    'nvim',
-                    '--server',
-                    entry.socket,
-                    '--remote-expr',
-                    "luaeval('(function() require([[mux]]).kill_session() return 1 end)()')",
-                }):wait()
+        local function lifecycle(verb, sel)
+            local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
+            if entry and entry.path then
+                if canon(entry.path) == canon(vim.fn.getcwd()) then
+                    if verb == 'kill' then
+                        M.kill_session()
+                    else
+                        M.stop_session()
+                    end
+                    return
+                end
+                vim.system({ 'mux', verb, entry.path }):wait()
             end
             vim.schedule(M.pick_project)
+        end
+        actions['ctrl-s'] = function(sel)
+            lifecycle('stop', sel)
+        end
+        parts[#parts + 1] = ('%s %s'):format(
+            hl('FzfLuaHeaderBind', '^S'),
+            hl('FzfLuaHeaderText', 'stop')
+        )
+        actions['ctrl-x'] = function(sel)
+            lifecycle('kill', sel)
         end
         parts[#parts + 1] = ('%s %s'):format(
             hl('FzfLuaHeaderBind', '^X'),
             hl('FzfLuaHeaderText', 'kill')
         )
-        fzf.fzf_exec(lines, {
+        fzf.fzf_exec(color_lines, {
             prompt = 'project> ',
             fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
                 :gsub('%-%-bind=ctrl%-a:select%-all', '')
@@ -271,13 +417,7 @@ local function show_picker(live_out, zoxide_out)
     end
 end
 
-local function canon(p)
-    if not p or p == '' then
-        return ''
-    end
-    return (vim.fn.fnamemodify(p, ':p'):gsub('/$', ''))
-end
-
+---@param root string project root path
 local function push_history(root)
     root = canon(root)
     if root == '' then
@@ -301,8 +441,7 @@ local function push_history(root)
     pcall(vim.fn.writefile, kept, hf)
 end
 
--- persist the last-attached project root (shared with scripts/mux record_last);
--- bare `mux` reads this to re-attach. Recorded on every in-nvim :connect.
+---@param root string project root path
 local function record_last(root)
     if not root or root == '' then
         return
@@ -314,8 +453,40 @@ local function record_last(root)
     pcall(vim.fn.writefile, { root }, dir .. '/last')
 end
 
+---@param root string project root path
+local function forget_history(root)
+    root = canon(root)
+    if root == '' then
+        return
+    end
+    local hf = vim.fn.stdpath('state') .. '/mux/history'
+    if vim.fn.filereadable(hf) ~= 1 then
+        return
+    end
+    local kept = {}
+    for _, line in ipairs(vim.fn.readfile(hf)) do
+        if line ~= '' and canon(line) ~= root then
+            kept[#kept + 1] = line
+        end
+    end
+    pcall(vim.fn.writefile, kept, hf)
+end
+
+---@param root string project root path
+local function clear_last(root)
+    root = canon(root)
+    local lf = vim.fn.stdpath('state') .. '/mux/last'
+    if vim.fn.filereadable(lf) ~= 1 then
+        return
+    end
+    local cur = vim.fn.readfile(lf)[1]
+    if cur and canon(cur) == root then
+        pcall(vim.fn.delete, lf)
+    end
+end
+
 ---@param entry { path: string, socket: string? }
----@param view string? open this view on the target server before attaching
+---@param view string?
 function M._connect(entry, view)
     if not entry then
         return
@@ -370,8 +541,8 @@ function M.cycle_project(step)
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
         local entries = {}
         for line in (res.stdout or ''):gmatch('[^\n]+') do
-            local cwd, sock = line:match('^(.-)\t(.+)$')
-            if sock then
+            local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
+            if status == 'live' and sock ~= '' then
                 entries[#entries + 1] = { cwd = cwd, sock = sock }
             end
         end
@@ -400,8 +571,8 @@ function M.last_session()
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
         local live = {}
         for line in (res.stdout or ''):gmatch('[^\n]+') do
-            local cwd, sock = line:match('^(.-)\t(.+)$')
-            if cwd and sock then
+            local cwd, sock, status = line:match('^(.-)\t(.-)\t(.+)$')
+            if cwd and status == 'live' and sock ~= '' then
                 live[canon(cwd)] = sock
             end
         end
@@ -425,51 +596,48 @@ function M.last_session()
     end)
 end
 
+---@return string dir
 local function sessions_dir()
     return vim.fn.stdpath('state') .. '/mux/sessions'
 end
 
+---@return string
 local function session_file()
+    local env = vim.env.MUX_SESSION_FILE
+    if env and env ~= '' then
+        return env
+    end
     local slug = vim.fn.getcwd():gsub('[^%w._-]', '_')
     return sessions_dir() .. '/' .. slug .. '.vim'
 end
 
-function M.kill_session()
+-- Soft stop: write all buffers and quit, leaving the saved session
+-- so a next attach may resume the layout.
+function M.stop_session()
+    pcall(vim.cmd, 'silent! wall')
     vim.schedule(function()
         pcall(vim.cmd, 'qall!')
     end)
 end
 
-function M.kill_current()
-    if #vim.api.nvim_list_tabpages() <= 1 then
-        return M.kill_session()
-    end
-    vim.cmd('silent! wall')
-    local cur = vim.api.nvim_get_current_tabpage()
-    local target = M._alt
-    if
-        not (target and target ~= cur and vim.api.nvim_tabpage_is_valid(target))
-    then
-        target = nil
-    end
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(cur)) do
-        local buf = vim.api.nvim_win_get_buf(win)
-        if vim.bo[buf].buftype == 'terminal' then
-            pcall(vim.api.nvim_buf_delete, buf, { force = true })
-        end
-    end
-    if vim.api.nvim_tabpage_is_valid(cur) then
-        vim.api.nvim_win_call(vim.api.nvim_tabpage_get_win(cur), function()
-            pcall(vim.cmd, 'tabclose!')
-        end)
-    end
-    tab_view[cur] = nil
-    if target and vim.api.nvim_tabpage_is_valid(target) then
-        vim.api.nvim_set_current_tabpage(target)
-    end
+-- Hard kill: delete the saved session and history/last entries, then quit.
+function M.kill_session()
+    M._killing = true
+    local f = session_file()
+    pcall(vim.fn.delete, f)
+    pcall(vim.fn.delete, (f:gsub('%.vim$', '.root')))
+    local root = vim.fn.getcwd()
+    forget_history(root)
+    clear_last(root)
+    vim.schedule(function()
+        pcall(vim.cmd, 'qall!')
+    end)
 end
 
 function M.save_session()
+    if M._killing then
+        return
+    end
     local map = {}
     for tp, view in pairs(tab_view) do
         if vim.api.nvim_tabpage_is_valid(tp) then
@@ -477,8 +645,10 @@ function M.save_session()
         end
     end
     vim.g.MuxViews = vim.json.encode(map)
-    vim.fn.mkdir(sessions_dir(), 'p')
-    pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(session_file()))
+    local f = session_file()
+    vim.fn.mkdir(vim.fn.fnamemodify(f, ':h'), 'p')
+    pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(f))
+    pcall(vim.fn.writefile, { vim.fn.getcwd() }, (f:gsub('%.vim$', '.root')))
 end
 
 ---@return boolean restored
@@ -510,9 +680,6 @@ function M.load_session()
         end
     end
 
-    -- mksession restored the edit view's real state and left every other view
-    -- tab as an empty skeleton. re-materialize the ones we keep (ai, vcs); drop
-    -- the rest so no blank buffer lingers. preserve the focused tab.
     local cur = vim.api.nvim_get_current_tabpage()
     local drop = {}
     for tp, view in pairs(tab_view) do
@@ -548,9 +715,6 @@ function M.setup()
     end
     M._did = true
 
-    -- no 'terminal': mksession must not replay terminal commands (no auto
-    -- rebuild/retest, no fresh devin). load_session re-materializes the views
-    -- we keep and drops the rest, so the registry owns restore policy.
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
 
@@ -595,9 +759,15 @@ function M.setup()
     )
     vim.keymap.set(
         { 'n', 'i', 't' },
+        prefix .. 's',
+        [[<cmd>lua require('mux').stop_session()<cr>]],
+        { desc = 'mux: stop session (resumable)' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
         prefix .. 'x',
-        [[<cmd>lua require('mux').kill_current()<cr>]],
-        { desc = 'mux: kill tab (or session if last)' }
+        [[<cmd>lua require('mux').kill_session()<cr>]],
+        { desc = 'mux: kill session (hard)' }
     )
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
@@ -614,9 +784,7 @@ function M.setup()
         'TabClosed',
         { group = group, callback = prune }
     )
-    -- ephemeral views close when their process exits. a global TermClose (rather
-    -- than a per-job on_exit) also catches terminals re-spawned by session
-    -- restore, and keeps the registry's `lifecycle` the single source of truth.
+
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,
         callback = function(args)
@@ -657,11 +825,10 @@ function M.setup()
         tag(vim.api.nvim_get_current_tabpage(), 'edit')
     end
 
-    -- autosave every 5 min (safety net against a hard kill)
     M._timer = vim.uv.new_timer()
     M._timer:start(
-        300000,
-        300000,
+        AUTOSAVE_INTERVAL_MS,
+        AUTOSAVE_INTERVAL_MS,
         vim.schedule_wrap(function()
             M.save_session()
         end)

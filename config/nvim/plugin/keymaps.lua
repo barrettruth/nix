@@ -46,6 +46,7 @@ vim.keymap.set('n', 'N', function()
     return vim.v.searchforward == 1 and 'N' or 'n'
 end, { expr = true, desc = 'prev match (always backward)' })
 
+---@param boundaries boolean
 local function highlight_cword(boundaries)
     local w = vim.fn.escape(vim.fn.expand('<cword>'), '/\\')
     local pat = boundaries and ([[\V\<]] .. w .. [[\>]]) or ([[\V]] .. w)

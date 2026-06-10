@@ -18,6 +18,7 @@ local function load_forge()
     return forge
 end
 
+-- "[branch #pr] " (or "[branch] "), leveraging forge.nvim
 local function forge_prefix()
     local mod = load_forge()
     if not mod then
@@ -34,6 +35,7 @@ local function forge_prefix()
     return ('[%s] '):format(status.branch)
 end
 
+-- " [project]" when inside a mux server
 local function mux_suffix()
     if vim.env.MUX ~= '1' then
         return ''

@@ -13,6 +13,8 @@ local function current_preview_winid()
     return info.preview_winid or 0
 end
 
+---@param direction 'up'|'down'
+---@return boolean scrolled
 local function scroll_preview(direction)
     local winid = current_preview_winid()
     if winid == 0 or not vim.api.nvim_win_is_valid(winid) then
@@ -42,6 +44,8 @@ local function preview_winhighlight()
     return 'Normal:Pmenu,FloatBorder:PmenuBorder,EndOfBuffer:Pmenu'
 end
 
+---@param winid? integer
+---@return boolean styled
 local function set_preview_border(winid)
     if type(winid) ~= 'number' then
         winid = nil
@@ -96,6 +100,7 @@ if vim.api.nvim__complete_set then
     end
 end
 
+---@return string keys
 local function semantic_completion()
     local prefix = vim.fn.pumvisible() == 1 and '<c-e>' or ''
     if vim.bo.omnifunc ~= '' then
@@ -104,6 +109,9 @@ local function semantic_completion()
     return prefix .. '<c-n>'
 end
 
+---@param keys string
+---@param direction 'up'|'down'
+---@return string keys
 local function completion_or_preview(keys, direction)
     set_preview_border()
     if scroll_preview(direction) then
@@ -142,7 +150,6 @@ vim.keymap.set('i', '<c-s>', semantic_completion, {
     desc = 'semantic completion',
 })
 
--- warm the file index now so the first <c-f> is ready
 vim.schedule(function()
     require('config.completion.files').warmup(0)
 end)

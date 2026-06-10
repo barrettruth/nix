@@ -1,14 +1,16 @@
-local M = {}
-M.opts = nil
+-- Keeps fzf-lua's colors in sync with external `theme` script
 
+local M = { opts = nil }
+
+---@param opts table
 function M.setup(opts)
     M.opts = vim.deepcopy(opts)
-    -- allow connections from `theme` script
+    -- socket path for `theme` script
     local socket_path = ('/tmp/nvim-%d.sock'):format(vim.fn.getpid())
     vim.fn.serverstart(socket_path)
 end
 
----@disable_fzf_lua_reload boolean?
+---@param disable_fzf_lua_reload boolean?
 function M.reload(disable_fzf_lua_reload)
     local path = vim.fn.expand('~/.config/fzf/themes/theme')
     if vim.fn.filereadable(path) == 0 then

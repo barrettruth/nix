@@ -6,17 +6,6 @@ local function mark(name, value)
 	io.stderr:flush()
 end
 
-local function capture(label, ok, err)
-	mark(label .. "_ok", ok)
-	if not ok then
-		local message = tostring(err)
-		mark(label .. "_error", message:gsub("\n", "\\n"))
-		if message:find(expected, 1, true) then
-			saw_expected = true
-		end
-	end
-end
-
 -- Issue-specific setup/actions begin.
 mark("scenario_started", true)
 
