@@ -214,6 +214,8 @@ mux: per-project neovim server launcher
   mux candidates      print project candidates (live servers + zoxide)
   mux stop [<path>]   stop the project's server (saved session restored next attach)
   mux kill [<path>]   hard-remove the project: stop + delete its saved session
+  mux reload [<path>] reload the project in place (apply edited config)
+  mux reload --all    reload every live session
   mux help            this help (also -h | --help)
 
 Inside nvim, switch projects with:  :connect <socket>   (see `mux list`)
@@ -251,6 +253,39 @@ kill_server() {
   clear_last "$root"
 }
 
+reload_one() {
+  local root sock uis i
+  root="$(root_for "${1:-$PWD}")"
+  sock="$(socket_for "$root")"
+  is_live "$sock" || return 0
+  uis="$("$NVIM" --server "$sock" --remote-expr 'len(nvim_list_uis())' </dev/null 2>/dev/null || true)"
+  uis="${uis//[^0-9]/}"
+  if [ "${uis:-0}" -gt 0 ]; then
+    "$NVIM" --server "$sock" --remote-expr \
+      "luaeval('(function() require([[mux]]).reload() return 1 end)()')" \
+      </dev/null >/dev/null 2>&1 || true
+  else
+    "$NVIM" --server "$sock" --remote-expr 'execute("silent! wall | qall!")' </dev/null >/dev/null 2>&1 || true
+    i=0
+    while [ "$i" -lt 100 ] && is_live "$sock"; do
+      sleep 0.05
+      i=$((i + 1))
+    done
+    ensure "$root" >/dev/null
+  fi
+}
+
+reload_all() {
+  local sock cwd
+  [ -d "$RUNTIME_DIR" ] || return 0
+  for sock in "$RUNTIME_DIR"/*.sock; do
+    [ -e "$sock" ] || continue
+    is_live "$sock" || continue
+    cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
+    [ -n "$cwd" ] && reload_one "$cwd"
+  done
+}
+
 case "${1:-}" in
 ensure)
   shift
@@ -272,6 +307,14 @@ stop)
 kill)
   shift
   kill_server "${1:-$PWD}"
+  ;;
+reload)
+  shift
+  if [ "${1:-}" = --all ] || [ "${1:-}" = -a ]; then
+    reload_all
+  else
+    reload_one "${1:-$PWD}"
+  fi
   ;;
 help | -h | --help)
   usage

@@ -634,6 +634,17 @@ function M.kill_session()
     end)
 end
 
+-- Reload in place: save the layout, then `:restart +qall!` re-execs the server
+-- with new config and reattaches the UI (setup restores the tabs).
+function M.reload()
+    if #vim.api.nvim_list_uis() == 0 then
+        return -- no UI to reattach; :restart would dangle the new server
+    end
+    M.save_session()
+    pcall(vim.cmd, 'silent! wall')
+    pcall(vim.cmd, 'restart +qall!')
+end
+
 function M.save_session()
     if M._killing then
         return
@@ -768,6 +779,12 @@ function M.setup()
         prefix .. 'x',
         [[<cmd>lua require('mux').kill_session()<cr>]],
         { desc = 'mux: kill session (hard)' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. 'R',
+        [[<cmd>lua require('mux').reload()<cr>]],
+        { desc = 'mux: reload session (restart)' }
     )
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
