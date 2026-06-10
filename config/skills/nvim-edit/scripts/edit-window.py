@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 
 import argparse
-import json
 import os
 import random
 import re
-import shlex
 import subprocess
 import sys
 import tempfile
-import time
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
+import muxlib  # noqa: E402
+
 
 HOME = Path.home()
-EDIT_WINDOW_NAME = "edit"
 DEFAULT_LIMIT = 8
 
 STOPWORDS = {
@@ -132,37 +131,6 @@ class QueryIntent:
     wants_random: bool
     wants_multiple: bool
     wants_singular: bool
-
-
-@dataclass(frozen=True)
-class Window:
-    name: str
-    index: str
-    command: str
-    pane_id: str
-    pane_pid: str
-    panes: int
-
-
-def run(
-    args: Iterable[str],
-    *,
-    check: bool = True,
-    capture: bool = False,
-    input_text: str | None = None,
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        list(args),
-        check=check,
-        text=True,
-        input=input_text,
-        stdout=subprocess.PIPE if capture else None,
-        stderr=subprocess.PIPE if capture else None,
-    )
-
-
-def output(args: Iterable[str]) -> str:
-    return run(args, capture=True).stdout.rstrip("\n")
 
 
 def maybe_output(args: Iterable[str]) -> str:
@@ -549,88 +517,16 @@ def resolve_files(root: Path, query_parts: list[str], limit: int) -> list[Candid
     return candidates[:limit]
 
 
-def nvim_command(root: Path, query: str, candidates: list[Candidate]) -> str:
-    script = remote_script(root, query, candidates)
-    args = ["nvim", f"+luafile {script}"]
-    return f"cd {shlex.quote(str(root))} && exec " + " ".join(
-        shlex.quote(arg) for arg in args
-    )
-
-
-def vim_lua_string(value: str) -> str:
-    return json.dumps(value)
-
-
-def remote_script(root: Path, query: str, candidates: list[Candidate]) -> Path:
-    files = [candidate.path for candidate in candidates if candidate.path != root]
+def resolved_files(
+    root: Path, candidates: list[Candidate]
+) -> tuple[list[str], list[dict]]:
+    files = [c.path for c in candidates if c.path != root]
     items = [
-        {
-            "filename": str(candidate.path),
-            "lnum": 1,
-            "col": 1,
-            "text": "",
-        }
-        for candidate in candidates
-        if candidate.path != root and len(files) > 1
+        {"filename": str(c.path), "lnum": 1, "col": 1, "text": ""}
+        for c in candidates
+        if c.path != root and len(files) > 1
     ]
-    payload = {
-        "title": "edit",
-        "files": [str(p) for p in files],
-        "items": items,
-        "root": str(root),
-    }
-    fd, script_name = tempfile.mkstemp(prefix=f"open-{os.getuid()}-", suffix=".lua")
-    os.close(fd)
-    script = Path(script_name)
-    script.write_text(
-        "\n".join(
-            [
-                f"local payload = vim.json.decode({vim_lua_string(json.dumps(payload))})",
-                "local function reset_editor_state()",
-                "  pcall(vim.fn.setreg, '/', '')",
-                "  pcall(vim.fn.histdel, 'search')",
-                "  pcall(function() vim.v.errmsg = '' end)",
-                "  pcall(vim.cmd, 'silent! nohlsearch')",
-                "  pcall(vim.cmd, 'silent! messages clear')",
-                "  pcall(function() vim.v.errmsg = '' end)",
-                "  pcall(vim.api.nvim_echo, {{ ' ', 'Normal' }}, false, {})",
-                "end",
-                "reset_editor_state()",
-                "pcall(vim.cmd, 'silent! only')",
-                "local files = payload.files or {}",
-                "if #files == 0 then",
-                "  vim.cmd('edit ' .. vim.fn.fnameescape(payload.root))",
-                "else",
-                "  vim.cmd('%argdelete')",
-                "  vim.cmd('args ' .. table.concat(vim.tbl_map(vim.fn.fnameescape, files), ' '))",
-                "  vim.cmd('edit ' .. vim.fn.fnameescape(files[1]))",
-                "  for i = 2, #files do vim.cmd('badd ' .. vim.fn.fnameescape(files[i])) end",
-                "end",
-                "local items = payload.items or {}",
-                "vim.fn.setqflist({}, 'r', { title = payload.title, items = items })",
-                "if #items > 1 then vim.cmd('botright copen') vim.cmd('wincmd p') else vim.cmd('cclose') end",
-                "reset_editor_state()",
-                "vim.cmd('redraw!')",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    return script
-
-
-def remote_into_nvim(
-    socket: str, root: Path, query: str, candidates: list[Candidate]
-) -> bool:
-    script = remote_script(root, query, candidates)
-    expr = f"execute('luafile ' . fnameescape({vim_lua_string(str(script))}))"
-    proc = subprocess.run(
-        ["nvim", "--server", socket, "--remote-expr", expr],
-        check=False,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    return proc.returncode == 0
+    return [str(p) for p in files], items
 
 
 def print_plan(root: Path, query: str, candidates: list[Candidate]) -> None:
@@ -638,6 +534,14 @@ def print_plan(root: Path, query: str, candidates: list[Candidate]) -> None:
     print(f"query: {query}")
     for candidate in candidates:
         print(f"{candidate.score:.1f}\t{rel(root, candidate.path)}\t{candidate.reason}")
+
+
+def view_spec(args: argparse.Namespace):
+    if args.win is not None:
+        return {"win": args.win}
+    if args.tab is not None:
+        return {"tab": args.tab}
+    return args.view
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -652,31 +556,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-l", "--limit", type=int, default=None, help="maximum files to populate"
     )
     parser.add_argument(
-        "--root",
-        type=Path,
-        default=None,
-        help="repository root for the edit window (default: current mux project)",
+        "--root", type=Path, default=None, help="repo root (default: current mux project)"
     )
+    parser.add_argument("--view", default="edit", help="destination view (default: edit)")
+    parser.add_argument("--win", type=int, default=None, help="destination window id")
+    parser.add_argument("--tab", type=int, default=None, help="destination tab number")
     parser.add_argument("query", nargs=argparse.REMAINDER)
     return parser.parse_args(argv)
-
-
-def env_socket_for_root(root: Path) -> str:
-    # The project's nvim server: $NVIM is auto-set in the server's :terminal to
-    # its socket. Returns "" unless that server's cwd is `root`.
-    socket = os.environ.get("NVIM")
-    if not socket or not os.path.exists(socket):
-        return ""
-    proc = subprocess.run(
-        ["nvim", "--server", socket, "--remote-expr", "getcwd()"],
-        check=False,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    if proc.returncode == 0 and normalize_path(proc.stdout.strip()) == root:
-        return socket
-    return ""
 
 
 def main(argv: list[str]) -> int:
@@ -690,14 +576,26 @@ def main(argv: list[str]) -> int:
         print_plan(root, query, candidates)
         return 0
 
-    socket = env_socket_for_root(root)
-    if not socket:
-        print(
-            f"edit: no nvim server for {root} (is $NVIM set / mux running?)",
-            file=sys.stderr,
+    files, items = resolved_files(root, candidates)
+    try:
+        socket = muxlib.socket_for_root(root)
+        res = muxlib.call(
+            socket,
+            {
+                "op": "edit",
+                "files": files,
+                "items": items,
+                "root": str(root),
+                "view": view_spec(args),
+            },
         )
+    except muxlib.MuxError as e:
+        print(f"edit: {e}", file=sys.stderr)
         return 1
-    return 0 if remote_into_nvim(socket, root, query, candidates) else 1
+    if not res.get("ok"):
+        print(f"edit: {res.get('error', 'edit driver failed')}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
