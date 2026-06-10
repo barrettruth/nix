@@ -62,16 +62,22 @@ function M.close_view_tab(tp, restoring)
             -- dead terminal. Otherwise soft-stop this session and hop to the
             -- latest live project (project.exit_to_latest).
             if restoring then
-                local win = vim.api.nvim_tabpage_get_win(tp)
-                local dead = vim.api.nvim_win_get_buf(win)
-                vim.api.nvim_win_call(win, function()
+                local dead = {}
+                for _, w in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+                    local b = vim.api.nvim_win_get_buf(w)
+                    if vim.bo[b].buftype == 'terminal' then
+                        dead[b] = true
+                    end
+                end
+                local keep = vim.api.nvim_tabpage_get_win(tp)
+                vim.api.nvim_win_call(keep, function()
+                    pcall(vim.cmd, 'silent! only')
                     pcall(vim.cmd.edit, vim.fn.getcwd())
                 end)
-                if
-                    vim.api.nvim_buf_is_valid(dead)
-                    and vim.bo[dead].buftype == 'terminal'
-                then
-                    pcall(vim.api.nvim_buf_delete, dead, { force = true })
+                for b in pairs(dead) do
+                    if vim.api.nvim_buf_is_valid(b) then
+                        pcall(vim.api.nvim_buf_delete, b, { force = true })
+                    end
                 end
                 tab_view[tp] = 'edit'
                 return
@@ -84,6 +90,23 @@ function M.close_view_tab(tp, restoring)
             pcall(vim.cmd, 'tabclose')
         end)
         tab_view[tp] = nil
+    end)
+end
+
+---@param win integer window of a dead ephemeral terminal
+---@param buf integer the dead terminal buffer
+function M.on_ephemeral_exit(win, buf)
+    if core.last_window(win) then
+        M.close_view_tab(vim.api.nvim_win_get_tabpage(win))
+        return
+    end
+    vim.schedule(function()
+        if vim.api.nvim_win_is_valid(win) then
+            pcall(vim.api.nvim_win_close, win, true)
+        end
+        if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
+            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        end
     end)
 end
 
@@ -111,6 +134,7 @@ function M.open_view(name)
     if not spec then
         return
     end
+    core.leave_terminal()
     local existing = find_view(name)
     if existing then
         vim.api.nvim_set_current_tabpage(existing)

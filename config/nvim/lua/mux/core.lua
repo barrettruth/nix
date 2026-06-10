@@ -73,6 +73,24 @@ function M.find_view(name)
     return nil
 end
 
+---@param tp integer
+---@return integer count of non-floating windows in the tabpage
+function M.live_window_count(tp)
+    local n = 0
+    for _, w in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+        if vim.api.nvim_win_get_config(w).relative == '' then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+---@param win integer
+---@return boolean true if `win` is the last non-floating window in its tabpage
+function M.last_window(win)
+    return M.live_window_count(vim.api.nvim_win_get_tabpage(win)) <= 1
+end
+
 ---@param p string?
 ---@return string
 function M.canon(p)
@@ -85,6 +103,13 @@ end
 ---@return string
 function M.state_dir()
     return vim.fn.stdpath('state') .. '/mux'
+end
+
+-- Leave terminal-mode so a stray <c-c> hits Normal mode, not the terminal.
+function M.leave_terminal()
+    if vim.fn.mode() == 't' then
+        vim.cmd.stopinsert()
+    end
 end
 
 return M

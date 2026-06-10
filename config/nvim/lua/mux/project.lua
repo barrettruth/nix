@@ -7,6 +7,8 @@ local canon = core.canon
 
 local M = {}
 
+local leave_terminal = core.leave_terminal
+
 ---@param out string? `mux list` stdout: "cwd<TAB>socket<TAB>status" per line
 ---@return { cwd: string, socket: string, status: string }[]
 local function parse_list(out)
@@ -195,6 +197,7 @@ function M._connect(entry, view)
     if not entry then
         return
     end
+    leave_terminal()
     local function go(sock)
         if not sock or sock == '' then
             return
@@ -239,6 +242,7 @@ function M._connect(entry, view)
 end
 
 function M.pick_project()
+    leave_terminal()
     vim.system({ 'mux', 'list' }, { text = true }, function(list_res)
         local list_out = list_res.stdout or ''
         local function show(zoxide_out)
@@ -262,6 +266,7 @@ end
 
 ---@param step integer 1 = next live project, -1 = previous (wraps)
 function M.cycle_project(step)
+    leave_terminal()
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
         local entries = {}
         for _, item in ipairs(parse_list(res.stdout)) do
@@ -320,6 +325,7 @@ local function with_latest_live_other(cb)
 end
 
 function M.last_session()
+    leave_terminal()
     with_latest_live_other(function(root, sock)
         if sock then
             M._connect({ path = root, socket = sock })

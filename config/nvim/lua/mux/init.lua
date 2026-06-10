@@ -144,7 +144,7 @@ function M.setup()
                     and core.views[name]
                     and core.views[name].lifecycle == 'ephemeral'
                 then
-                    view.close_view_tab(tp)
+                    view.on_ephemeral_exit(win, args.buf)
                 end
             end
         end,

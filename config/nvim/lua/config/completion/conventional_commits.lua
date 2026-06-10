@@ -3,7 +3,10 @@ local M = {
     source = 'conventional_commits',
 }
 
+local async = require('config.completion.async')
 local util = require('config.completion.util')
+
+local lifecycle = async.new_lifecycle()
 
 local items = {
     {
@@ -148,9 +151,11 @@ local scope_loading = {}
 
 ---@class config.completion.conventional_commits.State
 ---@field base string
+---@field bufnr integer?
 ---@field dir string
 ---@field kind 'body'|'scope'|'suffix'|'type'
 ---@field prefix string?
+---@field row integer?
 ---@field start integer
 ---@field suffixes string[]?
 
@@ -231,37 +236,9 @@ local function parse_scopes(log_out, status_out)
     return scopes
 end
 
----@param dir string
----@return string[]
-local function load_scopes_sync(dir)
-    local scopes = parse_scopes(
-        util.system_text({ 'git', '-C', dir, 'log', '--format=%s', '-n', '200' }),
-        util.system_text({
-            'git',
-            '-C',
-            dir,
-            'status',
-            '--porcelain',
-            '--untracked-files=all',
-        })
-    )
-
-    scope_cache[dir] = scopes
-    return scopes
-end
-
----@param dir string
----@return string[]
-local function ensure_scopes(dir)
-    if dir == '' then
-        return {}
-    end
-
-    return scope_cache[dir] or load_scopes_sync(dir)
-end
-
-function M.preload()
-    local dir = git_dir(util.context(''))
+---@param dir? string
+function M.preload(dir)
+    dir = dir or git_dir(util.context(''))
     if dir == '' or scope_cache[dir] or scope_loading[dir] then
         return
     end
@@ -280,6 +257,7 @@ function M.preload()
 
         scope_loading[dir] = nil
         scope_cache[dir] = parse_scopes(outputs[1] or '', outputs[2] or '')
+        M._try_inject_pending()
     end
 
     util.system_text_async(
@@ -311,8 +289,10 @@ local function header_state(ctx)
     if type_name and type_names[type_name] then
         return {
             base = scope_base,
+            bufnr = ctx.bufnr,
             dir = git_dir(ctx),
             kind = 'scope',
+            row = ctx.row,
             start = ctx.col - #scope_base,
         }
     end
@@ -410,12 +390,12 @@ local function context(base)
 end
 
 ---@param base string
----@param dir string
+---@param scopes string[]
 ---@return config.completion.Items
-local function complete_scopes(base, dir)
+local function build_scope_items(base, scopes)
     local words = {}
 
-    for _, scope in ipairs(util.filter_strings(ensure_scopes(dir), base, true)) do
+    for _, scope in ipairs(util.filter_strings(scopes, base, true)) do
         words[#words + 1] = {
             word = scope .. ')',
             abbr = scope,
@@ -427,6 +407,42 @@ local function complete_scopes(base, dir)
     end
 
     return words
+end
+
+function M._try_inject_pending()
+    lifecycle.try_inject(function(p)
+        local scopes = scope_cache[p.dir]
+        if not scopes then
+            return nil
+        end
+        local state = context('')
+        if not state or state.kind ~= 'scope' or state.dir ~= p.dir then
+            return nil
+        end
+        return build_scope_items(state.base, scopes)
+    end)
+end
+
+---@param state config.completion.conventional_commits.State
+---@return config.completion.Items
+local function complete_scopes(state)
+    local scopes = state.dir ~= '' and scope_cache[state.dir]
+    if scopes then
+        return build_scope_items(state.base, scopes)
+    end
+    if state.dir == '' then
+        return {}
+    end
+
+    lifecycle.set({
+        bufnr = state.bufnr,
+        row = state.row,
+        start_col = state.start,
+        base = state.base,
+        dir = state.dir,
+    })
+    M.preload(state.dir)
+    return {}
 end
 
 ---@param prefix string?
@@ -469,7 +485,7 @@ function M.complete(findstart, base)
         return util.filter_items(items, ctx.base)
     end
     if ctx.kind == 'scope' then
-        return complete_scopes(ctx.base, ctx.dir)
+        return complete_scopes(ctx)
     end
     if ctx.kind == 'suffix' then
         return complete_suffixes(ctx.prefix, ctx.suffixes or {})
