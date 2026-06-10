@@ -146,18 +146,17 @@ resume() {
 }
 
 # List sessions: live servers (running) plus stopped ones (a saved snapshot
-# exists, recovered from its `.root` sidecar). Machine output is one
-# `cwd<TAB>socket<TAB>status` row per session (socket empty when stopped); a TTY
-# gets a colored [live]/[stopped] tag, the ~-shortened path, and the socket.
+# exists, recovered from its `.root` sidecar)
 list() {
   local sock cwd i w=0
   local cwds=() socks=() stats=() disp=()
   if [ -d "$RUNTIME_DIR" ]; then
     for sock in "$RUNTIME_DIR"/*.sock; do
       [ -e "$sock" ] || continue
-      if ! is_live "$sock"; then continue; fi
+      # getcwd succeeds only on a live server
       cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
-      cwds+=("${cwd:-?}")
+      [ -n "$cwd" ] || continue
+      cwds+=("$cwd")
       socks+=("$sock")
       stats+=("live")
     done
