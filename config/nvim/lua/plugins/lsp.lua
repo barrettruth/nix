@@ -91,12 +91,6 @@ return {
                         while idx <= #result.diagnostics do
                             local entry = result.diagnostics[idx]
 
-                            local formatter =
-                                require('format-ts-errors')[entry.code]
-                            entry.message = formatter
-                                    and formatter(entry.message)
-                                or entry.message
-
                             if
                                 vim.tbl_contains({ 80001, 80006 }, entry.code)
                             then
@@ -114,6 +108,60 @@ return {
                     end,
                 },
             })
+        end,
+    },
+    {
+        'mrcjkb/rustaceanvim',
+        enabled = false,
+        ft = 'rust',
+        before = function()
+            vim.g.rustaceanvim = {
+                server = {
+                    standalone = false,
+                    capabilities = {
+                        general = { positionEncodings = { 'utf-16' } },
+                    },
+                    on_attach = function(client, bufnr)
+                        require('config.lsp').on_attach(client, bufnr)
+                        vim.keymap.set(
+                            'n',
+                            '\\Rc',
+                            '<cmd>RustLsp codeAction<cr>',
+                            { buffer = bufnr, desc = 'rust code action' }
+                        )
+                        vim.keymap.set(
+                            'n',
+                            '\\Rm',
+                            '<cmd>RustLsp expandMacro<cr>',
+                            { buffer = bufnr, desc = 'rust expand macro' }
+                        )
+                        vim.keymap.set(
+                            'n',
+                            '\\Ro',
+                            '<cmd>RustLsp openCargo<cr>',
+                            { buffer = bufnr, desc = 'rust open cargo' }
+                        )
+                    end,
+                    default_settings = {
+                        ['rust-analyzer'] = {
+                            checkOnSave = {
+                                overrideCommand = {
+                                    'cargo',
+                                    'clippy',
+                                    '--message-format=json',
+                                    '--',
+                                    '-W',
+                                    'clippy::expect_used',
+                                    '-W',
+                                    'clippy::pedantic',
+                                    '-W',
+                                    'clippy::unwrap_used',
+                                },
+                            },
+                        },
+                    },
+                },
+            }
         end,
     },
 }

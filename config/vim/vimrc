@@ -1,7 +1,0 @@
-if filereadable($VIMRUNTIME . '/defaults.vim')
-  execute 'source ' . fnameescape($VIMRUNTIME . '/defaults.vim')
-endif
-
-if exists('$XDG_STATE_HOME')
-  execute 'set viminfofile=' . fnameescape($XDG_STATE_HOME . '/vim/viminfo')
-endif
