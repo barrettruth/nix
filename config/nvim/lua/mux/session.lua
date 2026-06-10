@@ -195,7 +195,7 @@ function M.load_session()
         vim.api.nvim_set_current_tabpage(cur)
     end
     for tp in pairs(drop) do
-        engine.close_view_tab(tp)
+        engine.close_view_tab(tp, true)
     end
     return true
 end

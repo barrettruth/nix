@@ -47,6 +47,12 @@ is_live() {
   "$NVIM" --server "$1" --remote-expr 1 </dev/null >/dev/null 2>&1
 }
 
+rpc() {
+  "$NVIM" --server "$1" --remote-expr \
+    "luaeval('(function() require([[mux]]).$2 return 1 end)()')" \
+    </dev/null >/dev/null 2>&1 || true
+}
+
 ensure() {
   local path root sock i
   path="${1:-$PWD}"
@@ -216,6 +222,8 @@ mux: per-project neovim server launcher
   mux kill [<path>]   hard-remove the project: stop + delete its saved session
   mux reload [<path>] reload the project in place (apply edited config)
   mux reload --all    reload every live session
+  mux save [<path>]   snapshot the project's session now, without quitting
+  mux save --all      snapshot every live session
   mux help            this help (also -h | --help)
 
 Inside nvim, switch projects with:  :connect <socket>   (see `mux list`)
@@ -223,10 +231,15 @@ EOF
 }
 
 stop_server() {
-  local sock
+  local sock i
   sock="$(socket_for "$(root_for "${1:-$PWD}")")"
   if is_live "$sock"; then
-    "$NVIM" --server "$sock" --remote-expr 'execute("qall!")' </dev/null >/dev/null 2>&1 || true
+    rpc "$sock" 'stop_session()'
+    i=0
+    while [ "$i" -lt 100 ] && is_live "$sock"; do
+      sleep 0.05
+      i=$((i + 1))
+    done
   fi
   rm -f "$sock"
 }
@@ -239,9 +252,7 @@ kill_server() {
   if is_live "$sock"; then
     # hard kill: set the in-Neovim no-save guard and quit, so VimLeavePre can't
     # re-save the snapshot we're about to delete.
-    "$NVIM" --server "$sock" --remote-expr \
-      "luaeval('(function() require([[mux]]).kill_session() return 1 end)()')" \
-      </dev/null >/dev/null 2>&1 || true
+    rpc "$sock" 'kill_session()'
     i=0
     while [ "$i" -lt 100 ] && is_live "$sock"; do
       sleep 0.05
@@ -261,9 +272,7 @@ reload_one() {
   uis="$("$NVIM" --server "$sock" --remote-expr 'len(nvim_list_uis())' </dev/null 2>/dev/null || true)"
   uis="${uis//[^0-9]/}"
   if [ "${uis:-0}" -gt 0 ]; then
-    "$NVIM" --server "$sock" --remote-expr \
-      "luaeval('(function() require([[mux]]).reload() return 1 end)()')" \
-      </dev/null >/dev/null 2>&1 || true
+    rpc "$sock" 'reload()'
   else
     "$NVIM" --server "$sock" --remote-expr 'execute("silent! wall | qall!")' </dev/null >/dev/null 2>&1 || true
     i=0
@@ -283,6 +292,23 @@ reload_all() {
     is_live "$sock" || continue
     cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
     [ -n "$cwd" ] && reload_one "$cwd"
+  done
+}
+
+save_one() {
+  local sock
+  sock="$(socket_for "$(root_for "${1:-$PWD}")")"
+  is_live "$sock" || return 0
+  rpc "$sock" 'save_session()'
+}
+
+save_all() {
+  local sock
+  [ -d "$RUNTIME_DIR" ] || return 0
+  for sock in "$RUNTIME_DIR"/*.sock; do
+    [ -e "$sock" ] || continue
+    is_live "$sock" || continue
+    rpc "$sock" 'save_session()'
   done
 }
 
@@ -314,6 +340,14 @@ reload)
     reload_all
   else
     reload_one "${1:-$PWD}"
+  fi
+  ;;
+save)
+  shift
+  if [ "${1:-}" = --all ] || [ "${1:-}" = -a ]; then
+    save_all
+  else
+    save_one "${1:-$PWD}"
   fi
   ;;
 help | -h | --help)

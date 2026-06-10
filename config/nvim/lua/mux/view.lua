@@ -38,22 +38,33 @@ local function has_recipe(cwd, recipe)
 end
 
 ---@param tp integer
-function M.close_view_tab(tp)
+---@param restoring? boolean true when pruning a stale tab during session restore
+function M.close_view_tab(tp, restoring)
     vim.schedule(function()
         if not vim.api.nvim_tabpage_is_valid(tp) then
             return
         end
         if #vim.api.nvim_list_tabpages() <= 1 then
-            -- Hop to the most-recently-used live project
-            -- TODO: check this Reset this lone tab to a clean edit view first so the server
-            -- we leave behind isn't holding a dead terminal;
-            -- last_session() :detaches only when nothing else is live.
-            local win = vim.api.nvim_tabpage_get_win(tp)
-            vim.api.nvim_win_call(win, function()
-                pcall(vim.cmd, 'enew')
-            end)
-            tab_view[tp] = 'edit'
-            require('mux.project').last_session()
+            -- The last tabpage can't be closed. During restore, keep the server
+            -- up by resetting this lone tab to a clean edit view and wiping the
+            -- dead terminal. Otherwise soft-stop this session and hop to the
+            -- latest live project (project.exit_to_latest).
+            if restoring then
+                local win = vim.api.nvim_tabpage_get_win(tp)
+                local dead = vim.api.nvim_win_get_buf(win)
+                vim.api.nvim_win_call(win, function()
+                    pcall(vim.cmd.edit, vim.fn.getcwd())
+                end)
+                if
+                    vim.api.nvim_buf_is_valid(dead)
+                    and vim.bo[dead].buftype == 'terminal'
+                then
+                    pcall(vim.api.nvim_buf_delete, dead, { force = true })
+                end
+                tab_view[tp] = 'edit'
+                return
+            end
+            require('mux.project').exit_to_latest()
             return
         end
         local win = vim.api.nvim_tabpage_get_win(tp)

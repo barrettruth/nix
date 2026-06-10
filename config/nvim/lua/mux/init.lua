@@ -104,6 +104,12 @@ function M.setup()
         [[<cmd>lua require('mux').reload()<cr>]],
         { desc = 'mux: reload session (restart)' }
     )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. 'S',
+        [[<cmd>lua require('mux').save_session()<cr>]],
+        { desc = 'mux: save session' }
+    )
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
     pcall(vim.keymap.del, 'n', '<leader>bw')

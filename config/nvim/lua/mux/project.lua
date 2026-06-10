@@ -94,7 +94,7 @@ local function show_picker(list_out, zoxide_out)
                     M._connect(meta[strip_ansi(sel[1])], name)
                 end
             end
-            parts[#parts + 1] = ('%s to %s'):format(
+            parts[#parts + 1] = ('%s %s'):format(
                 hl('FzfLuaHeaderBind', '^' .. spec.key:upper()),
                 hl('FzfLuaHeaderText', name)
             )
@@ -136,7 +136,7 @@ local function show_picker(list_out, zoxide_out)
             keymap = { fzf = { ['ctrl-z'] = false } },
             fzf_opts = {
                 ['--ansi'] = true,
-                ['--header'] = ':: ' .. table.concat(parts, ' | '),
+                ['--header'] = ':: ' .. table.concat(parts, '|'),
             },
             actions = actions,
         })
@@ -231,7 +231,8 @@ function M.cycle_project(step)
     end)
 end
 
-function M.last_session()
+---@param cb fun(root?: string, sock?: string)
+local function with_latest_live_other(cb)
     vim.system({ 'mux', 'list' }, { text = true }, function(res)
         local live = {}
         for line in (res.stdout or ''):gmatch('[^\n]+') do
@@ -243,20 +244,41 @@ function M.last_session()
         vim.schedule(function()
             local cur = canon(vim.fn.getcwd())
             local hf = core.state_dir() .. '/history'
-            local hist = {}
-            if vim.fn.filereadable(hf) == 1 then
-                hist = vim.fn.readfile(hf)
-            end
+            local hist = vim.fn.filereadable(hf) == 1 and vim.fn.readfile(hf)
+                or {}
             for i = #hist, 1, -1 do
                 local root = canon(hist[i])
                 local sock = root ~= '' and root ~= cur and live[root]
                 if sock then
-                    M._connect({ path = root, socket = sock })
+                    cb(root, sock)
                     return
                 end
             end
-            pcall(vim.cmd, 'detach')
+            cb(nil, nil)
         end)
+    end)
+end
+
+function M.last_session()
+    with_latest_live_other(function(root, sock)
+        if sock then
+            M._connect({ path = root, socket = sock })
+        else
+            pcall(vim.cmd, 'detach')
+        end
+    end)
+end
+
+-- Killing the last tabpage: hop the client to the latest live project, then
+-- soft-stop this session so it stays resumable. With no other live project the
+-- stop drops the client to the shell -- like tmux detach-on-destroy=off.
+function M.exit_to_latest()
+    with_latest_live_other(function(root, sock)
+        if sock then
+            session.record_last(root)
+            pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
+        end
+        session.stop_session()
     end)
 end
 
