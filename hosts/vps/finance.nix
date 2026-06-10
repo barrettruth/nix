@@ -202,20 +202,19 @@ in
     requires = [ "authelia-finance.service" ];
     wantedBy = [ "multi-user.target" ];
     unitConfig.ConditionPathExists = "${financeDir}/.next/standalone/server.js";
-    serviceConfig =
-      {
-        Type = "simple";
-        WorkingDirectory = financeDir;
-        ExecStart = "${pkgs.nodejs_22}/bin/node .next/standalone/server.js";
-        Restart = "on-failure";
-        RestartSec = 5;
-        User = "finance";
-        Group = "finance";
-        StateDirectory = "finance";
-      }
-      // lib.optionalAttrs hasFinanceEnvSecret {
-        EnvironmentFile = config.sops.secrets."finance-env".path;
-      };
+    serviceConfig = {
+      Type = "simple";
+      WorkingDirectory = financeDir;
+      ExecStart = "${pkgs.nodejs_22}/bin/node .next/standalone/server.js";
+      Restart = "on-failure";
+      RestartSec = 5;
+      User = "finance";
+      Group = "finance";
+      StateDirectory = "finance";
+    }
+    // lib.optionalAttrs hasFinanceEnvSecret {
+      EnvironmentFile = config.sops.secrets."finance-env".path;
+    };
     environment = {
       NODE_ENV = "production";
       PORT = toString financePort;
