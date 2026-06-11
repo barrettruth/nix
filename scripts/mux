@@ -159,10 +159,9 @@ resume() {
 # List sessions: live servers (running) plus stopped ones (a saved snapshot
 # exists, recovered from its `.root` sidecar)
 list() {
-  local sock cwd i w=0
+  local sock cwd i w=0 slug rootf rf root
   local cwds=() socks=() stats=() disp=()
   if [ -d "$RUNTIME_DIR" ]; then
-    local slug rootf
     for sock in "$RUNTIME_DIR"/*.sock; do
       [ -e "$sock" ] || continue
       is_live "$sock" || continue
@@ -179,19 +178,18 @@ list() {
   fi
   # stopped = snapshot+sidecar present but the project's server isn't live.
   if [ -d "$STATE_DIR/sessions" ]; then
-    local rf root slug2 sock2
     local dcwds=() dsocks=() dstats=()
     for rf in "$STATE_DIR"/sessions/*.root; do
       [ -e "$rf" ] || continue
       root=""
       IFS= read -r root <"$rf" 2>/dev/null || true
       [ -n "$root" ] || continue
-      slug2="${rf##*/}"
-      slug2="${slug2%.root}"
-      sock2="$RUNTIME_DIR/$slug2.sock"
+      slug="${rf##*/}"
+      slug="${slug%.root}"
+      sock="$RUNTIME_DIR/$slug.sock"
       if [ -d "$root" ]; then
         [ -f "${rf%.root}.vim" ] || continue
-        if is_live "$sock2"; then continue; fi
+        if is_live "$sock"; then continue; fi
         cwds+=("$root")
         socks+=("")
         stats+=("stopped")

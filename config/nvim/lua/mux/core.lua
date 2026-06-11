@@ -114,6 +114,11 @@ function M.runtime_dir()
     return base .. '/mux'
 end
 
+---@return string dir
+function M.sessions_dir()
+    return M.state_dir() .. '/sessions'
+end
+
 -- Leave terminal-mode so a stray <c-c> hits Normal mode, not the terminal.
 function M.leave_terminal()
     if vim.fn.mode() == 't' then

@@ -8,10 +8,7 @@ local canon = core.canon
 local M = {}
 
 local leave_terminal = core.leave_terminal
-
-local function sessions_dir()
-    return core.state_dir() .. '/sessions'
-end
+local sessions_dir = core.sessions_dir
 
 ---@param pid integer?
 ---@return boolean
@@ -74,7 +71,7 @@ local function list_entries()
         local root = vim.fn.readfile(rf)[1]
         if root and root ~= '' and not live[slug] then
             if vim.fn.isdirectory(root) == 1 then
-                local vimfile = sessions_dir() .. '/' .. slug .. '.vim'
+                local vimfile = (rf:gsub('%.root$', '.vim'))
                 if vim.fn.filereadable(vimfile) == 1 then
                     stopped[#stopped + 1] =
                         { cwd = root, socket = '', status = 'stopped' }

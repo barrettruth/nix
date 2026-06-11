@@ -5,6 +5,7 @@ local canon = core.canon
 local tab_view = core.tab_view
 local views = core.views
 local find_view = core.find_view
+local sessions_dir = core.sessions_dir
 
 local M = {}
 
@@ -76,11 +77,6 @@ local function clear_last(root)
     end
 end
 
----@return string dir
-local function sessions_dir()
-    return core.state_dir() .. '/sessions'
-end
-
 ---@return string
 local function session_file()
     local env = vim.env.MUX_SESSION_FILE
@@ -89,6 +85,11 @@ local function session_file()
     end
     local slug = vim.fn.getcwd():gsub('[^%w._-]', '_')
     return sessions_dir() .. '/' .. slug .. '.vim'
+end
+
+---@return string
+local function root_file()
+    return (session_file():gsub('%.vim$', '.root'))
 end
 
 -- Soft stop: write all buffers and quit, leaving the saved session
@@ -105,7 +106,7 @@ function M.kill_session()
     M._killing = true
     local f = session_file()
     pcall(vim.fn.delete, f)
-    pcall(vim.fn.delete, (f:gsub('%.vim$', '.root')))
+    pcall(vim.fn.delete, root_file())
     local root = vim.fn.getcwd()
     forget_history(root)
     clear_last(root)
@@ -160,13 +161,13 @@ function M.save_session()
     local f = session_file()
     vim.fn.mkdir(vim.fn.fnamemodify(f, ':h'), 'p')
     pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(f))
-    pcall(vim.fn.writefile, { vim.fn.getcwd() }, (f:gsub('%.vim$', '.root')))
+    pcall(vim.fn.writefile, { vim.fn.getcwd() }, root_file())
 end
 
 function M.record_root()
     local f = session_file()
     pcall(vim.fn.mkdir, vim.fn.fnamemodify(f, ':h'), 'p')
-    pcall(vim.fn.writefile, { vim.fn.getcwd() }, (f:gsub('%.vim$', '.root')))
+    pcall(vim.fn.writefile, { vim.fn.getcwd() }, root_file())
 end
 
 ---@return string?
