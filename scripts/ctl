@@ -9,6 +9,26 @@ require() {
   done
 }
 
+mkbar() {
+  pct="$1"
+  [ "$pct" -lt 0 ] && pct=0
+  [ "$pct" -gt 100 ] && pct=100
+  filled=$((pct * 30 / 100))
+  empty=$((30 - filled))
+  bar="["
+  i=0
+  while [ "$i" -lt "$filled" ]; do
+    bar="${bar}="
+    i=$((i + 1))
+  done
+  i=0
+  while [ "$i" -lt "$empty" ]; do
+    bar="${bar} "
+    i=$((i + 1))
+  done
+  printf '%s]' "$bar"
+}
+
 whisper_idle_cancel() {
   systemctl --user stop whisper-idle.timer whisper-idle.service 2>/dev/null
 }
@@ -256,6 +276,36 @@ audio)
     ;;
   esac
   ;;
+battery)
+  require notify-send
+  case "$2" in
+  notify) ;;
+  *)
+    echo "Usage: ctl battery notify" >&2
+    exit 1
+    ;;
+  esac
+  pct=""
+  for b in /sys/class/power_supply/BAT*; do
+    [ -r "$b/capacity" ] || continue
+    pct=$(cat "$b/capacity")
+    status=$(cat "$b/status" 2>/dev/null)
+    break
+  done
+  [ -n "$pct" ] || exit 0
+  case "$status" in
+  Discharging) ;;
+  *) [ "$pct" -ge 100 ] || exit 0 ;;
+  esac
+  if [ "$status" = Discharging ] && [ "$pct" -le 10 ]; then
+    urgency=critical
+  elif [ "$status" = Discharging ] && [ "$pct" -le 20 ]; then
+    urgency=normal
+  else
+    urgency=low
+  fi
+  notify-send -a ctl -r 5557 -u "$urgency" "Battery $pct%" "$(mkbar "$pct")"
+  ;;
 brightness)
   require brightnessctl notify-send
   BRIGHT_STEP=5
@@ -268,21 +318,7 @@ brightness)
     ;;
   esac
   pct=$(awk -v cur="$(brightnessctl get)" -v max="$(brightnessctl max)" 'BEGIN { printf "%d", cur * 100 / max }')
-  filled=$((pct * 30 / 100))
-  empty=$((30 - filled))
-  bar="["
-  i=0
-  while [ "$i" -lt "$filled" ]; do
-    bar="${bar}="
-    i=$((i + 1))
-  done
-  i=0
-  while [ "$i" -lt "$empty" ]; do
-    bar="${bar} "
-    i=$((i + 1))
-  done
-  bar="${bar}]"
-  notify-send -a ctl -t 2500 -r 5555 "Brightness" "$bar"
+  notify-send -a ctl -t 2500 -r 5555 "Brightness $pct%" "$(mkbar "$pct")"
   ;;
 volume)
   require wpctl notify-send
@@ -302,21 +338,7 @@ volume)
     notify-send -a ctl -t 2500 -r 5556 "Volume" "Muted"
   else
     vol=$(get_vol)
-    filled=$((vol * 30 / 100))
-    empty=$((30 - filled))
-    bar="["
-    i=0
-    while [ "$i" -lt "$filled" ]; do
-      bar="${bar}="
-      i=$((i + 1))
-    done
-    i=0
-    while [ "$i" -lt "$empty" ]; do
-      bar="${bar} "
-      i=$((i + 1))
-    done
-    bar="${bar}]"
-    notify-send -a ctl -t 2500 -r 5556 "Volume" "$bar"
+    notify-send -a ctl -t 2500 -r 5556 "Volume $vol%" "$(mkbar "$vol")"
   fi
   ;;
 wifi)
