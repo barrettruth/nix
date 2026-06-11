@@ -20,6 +20,7 @@ M.close_view = view.close_view
 M._connect = project._connect
 M.pick_project = project.pick_project
 M.cycle_project = project.cycle_project
+M.list_entries = project.list_entries
 M.last_session = project.last_session
 M.exit_to_latest = project.exit_to_latest
 
@@ -161,8 +162,12 @@ function M.setup()
         group = group,
         callback = function()
             session.save_session()
+            session.clear_pid()
         end,
     })
+
+    session.record_root()
+    session.record_pid()
 
     if not session.load_session() then
         vim.cmd.edit(vim.fn.getcwd())

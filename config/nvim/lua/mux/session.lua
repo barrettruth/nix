@@ -163,6 +163,37 @@ function M.save_session()
     pcall(vim.fn.writefile, { vim.fn.getcwd() }, (f:gsub('%.vim$', '.root')))
 end
 
+function M.record_root()
+    local f = session_file()
+    pcall(vim.fn.mkdir, vim.fn.fnamemodify(f, ':h'), 'p')
+    pcall(vim.fn.writefile, { vim.fn.getcwd() }, (f:gsub('%.vim$', '.root')))
+end
+
+---@return string?
+local function pid_file()
+    local sock = vim.v.servername
+    if sock and sock:match('%.sock$') then
+        return (sock:gsub('%.sock$', '.pid'))
+    end
+    return nil
+end
+
+function M.record_pid()
+    local f = pid_file()
+    if not f then
+        return
+    end
+    pcall(vim.fn.mkdir, vim.fn.fnamemodify(f, ':h'), 'p')
+    pcall(vim.fn.writefile, { tostring(vim.fn.getpid()) }, f)
+end
+
+function M.clear_pid()
+    local f = pid_file()
+    if f then
+        pcall(vim.fn.delete, f)
+    end
+end
+
 ---@return boolean restored
 function M.load_session()
     if vim.fn.argc(-1) ~= 0 then

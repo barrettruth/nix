@@ -9,27 +9,99 @@ local M = {}
 
 local leave_terminal = core.leave_terminal
 
----@param out string? `mux list` stdout: "cwd<TAB>socket<TAB>status" per line
----@return { cwd: string, socket: string, status: string }[]
-local function parse_list(out)
-    local entries = {}
-    for line in (out or ''):gmatch('[^\n]+') do
-        local cwd, socket, status = line:match('^(.-)\t(.-)\t(.+)$')
-        if cwd then
-            entries[#entries + 1] =
-                { cwd = cwd, socket = socket, status = status }
+local function sessions_dir()
+    return core.state_dir() .. '/sessions'
+end
+
+---@param pid integer?
+---@return boolean
+local function pid_alive(pid)
+    if not pid then
+        return false
+    end
+    local ok, res = pcall(vim.uv.kill, pid, 0)
+    return ok and res == 0
+end
+
+---@param sock string
+---@return boolean
+local function socket_live(sock)
+    local pidf = (sock:gsub('%.sock$', '.pid'))
+    if vim.fn.filereadable(pidf) == 1 then
+        return pid_alive(tonumber(vim.fn.readfile(pidf)[1]))
+    end
+    local ok, ch = pcall(vim.fn.sockconnect, 'pipe', sock, { rpc = true })
+    if ok and type(ch) == 'number' and ch > 0 then
+        pcall(vim.fn.chanclose, ch)
+        return true
+    end
+    return false
+end
+
+---@param slug string
+---@return string? root
+local function root_for_slug(slug)
+    local f = sessions_dir() .. '/' .. slug .. '.root'
+    if vim.fn.filereadable(f) == 1 then
+        local root = vim.fn.readfile(f)[1]
+        if root and root ~= '' then
+            return root
         end
+    end
+    return nil
+end
+
+---@return { cwd: string, socket: string, status: string }[]
+local function list_entries()
+    local entries = {}
+    local live = {}
+    local socks = vim.fn.glob(core.runtime_dir() .. '/*.sock', true, true)
+    table.sort(socks)
+    for _, sock in ipairs(socks) do
+        if socket_live(sock) then
+            local slug = vim.fn.fnamemodify(sock, ':t:r')
+            local cwd = root_for_slug(slug)
+            if cwd then
+                live[slug] = true
+                entries[#entries + 1] =
+                    { cwd = cwd, socket = sock, status = 'live' }
+            end
+        end
+    end
+    local stopped, dead = {}, {}
+    for _, rf in ipairs(vim.fn.glob(sessions_dir() .. '/*.root', true, true)) do
+        local slug = vim.fn.fnamemodify(rf, ':t:r')
+        local root = vim.fn.readfile(rf)[1]
+        if root and root ~= '' and not live[slug] then
+            if vim.fn.isdirectory(root) == 1 then
+                local vimfile = sessions_dir() .. '/' .. slug .. '.vim'
+                if vim.fn.filereadable(vimfile) == 1 then
+                    stopped[#stopped + 1] =
+                        { cwd = root, socket = '', status = 'stopped' }
+                end
+            else
+                dead[#dead + 1] = { cwd = root, socket = '', status = 'dead' }
+            end
+        end
+    end
+    for _, e in ipairs(stopped) do
+        entries[#entries + 1] = e
+    end
+    for _, e in ipairs(dead) do
+        entries[#entries + 1] = e
     end
     return entries
 end
 
----@param list_out string `mux list` machine output (cwd<TAB>socket<TAB>status)
+M.list_entries = list_entries
+
+---@param items { cwd: string, socket: string, status: string }[]
 ---@param zoxide_out string? `zoxide query -l` output (one path per line)
 ---@return { cwd: string, socket: string, status: string }[]
-local function merge_sources(list_out, zoxide_out)
+local function merge_sources(items, zoxide_out)
     local entries = {}
     local seen = {}
-    for _, item in ipairs(parse_list(list_out)) do
+    for _, item in ipairs(items) do
         local key = canon(item.cwd)
         if
             key ~= ''
@@ -255,83 +327,74 @@ end
 
 function M.pick_project()
     leave_terminal()
-    vim.system({ 'mux', 'list' }, { text = true }, function(list_res)
-        local list_out = list_res.stdout or ''
-        local function show(zoxide_out)
-            vim.schedule(function()
-                show_picker(merge_sources(list_out, zoxide_out))
-            end)
+    local items = list_entries()
+    local function show(zoxide_out)
+        vim.schedule(function()
+            show_picker(merge_sources(items, zoxide_out))
+        end)
+    end
+    local ok = pcall(
+        vim.system,
+        { 'zoxide', 'query', '-l' },
+        { text = true },
+        function(z)
+            show((z.code == 0 and z.stdout) or '')
         end
-        local ok = pcall(
-            vim.system,
-            { 'zoxide', 'query', '-l' },
-            { text = true },
-            function(z)
-                show((z.code == 0 and z.stdout) or '')
-            end
-        )
-        if not ok then
-            show('')
-        end
-    end)
+    )
+    if not ok then
+        show('')
+    end
 end
 
 ---@param step integer 1 = next live project, -1 = previous (wraps)
 function M.cycle_project(step)
     leave_terminal()
-    vim.system({ 'mux', 'list' }, { text = true }, function(res)
-        local entries = {}
-        for _, item in ipairs(parse_list(res.stdout)) do
-            local cwd, sock, status = item.cwd, item.socket, item.status
-            if status == 'live' and sock ~= '' then
-                entries[#entries + 1] = { cwd = cwd, sock = sock }
+    local entries = {}
+    for _, item in ipairs(list_entries()) do
+        if item.status == 'live' and item.socket ~= '' then
+            entries[#entries + 1] = { cwd = item.cwd, sock = item.socket }
+        end
+    end
+    vim.schedule(function()
+        if #entries < 2 then
+            return
+        end
+        local cur, idx = vim.v.servername, 1
+        for i, e in ipairs(entries) do
+            if e.sock == cur then
+                idx = i
+                break
             end
         end
-        vim.schedule(function()
-            if #entries < 2 then
-                return
-            end
-            local cur, idx = vim.v.servername, 1
-            for i, e in ipairs(entries) do
-                if e.sock == cur then
-                    idx = i
-                    break
-                end
-            end
-            local target = entries[((idx - 1 + step) % #entries) + 1]
-            if target and target.sock ~= cur then
-                session.record_last(target.cwd)
-                vim.cmd('connect ' .. vim.fn.fnameescape(target.sock))
-            end
-        end)
+        local target = entries[((idx - 1 + step) % #entries) + 1]
+        if target and target.sock ~= cur then
+            session.record_last(target.cwd)
+            vim.cmd('connect ' .. vim.fn.fnameescape(target.sock))
+        end
     end)
 end
 
 ---@param cb fun(root?: string, sock?: string)
 local function with_latest_live_other(cb)
-    vim.system({ 'mux', 'list' }, { text = true }, function(res)
-        local live = {}
-        for _, item in ipairs(parse_list(res.stdout)) do
-            local cwd, sock, status = item.cwd, item.socket, item.status
-            if cwd and status == 'live' and sock ~= '' then
-                live[canon(cwd)] = sock
+    local live = {}
+    for _, item in ipairs(list_entries()) do
+        if item.cwd and item.status == 'live' and item.socket ~= '' then
+            live[canon(item.cwd)] = item.socket
+        end
+    end
+    vim.schedule(function()
+        local cur = canon(vim.fn.getcwd())
+        local hf = core.state_dir() .. '/history'
+        local hist = vim.fn.filereadable(hf) == 1 and vim.fn.readfile(hf) or {}
+        for i = #hist, 1, -1 do
+            local root = canon(hist[i])
+            local sock = root ~= '' and root ~= cur and live[root]
+            if sock then
+                cb(root, sock)
+                return
             end
         end
-        vim.schedule(function()
-            local cur = canon(vim.fn.getcwd())
-            local hf = core.state_dir() .. '/history'
-            local hist = vim.fn.filereadable(hf) == 1 and vim.fn.readfile(hf)
-                or {}
-            for i = #hist, 1, -1 do
-                local root = canon(hist[i])
-                local sock = root ~= '' and root ~= cur and live[root]
-                if sock then
-                    cb(root, sock)
-                    return
-                end
-            end
-            cb(nil, nil)
-        end)
+        cb(nil, nil)
     end)
 end
 

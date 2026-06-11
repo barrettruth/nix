@@ -105,6 +105,15 @@ function M.state_dir()
     return vim.fn.stdpath('state') .. '/mux'
 end
 
+---@return string
+function M.runtime_dir()
+    local base = vim.env.XDG_RUNTIME_DIR
+    if not base or base == '' then
+        base = '/run/user/' .. vim.uv.getuid()
+    end
+    return base .. '/mux'
+end
+
 -- Leave terminal-mode so a stray <c-c> hits Normal mode, not the terminal.
 function M.leave_terminal()
     if vim.fn.mode() == 't' then

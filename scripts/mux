@@ -44,7 +44,18 @@ session_for() {
 }
 
 is_live() {
-  "$NVIM" --server "$1" --remote-expr 1 </dev/null >/dev/null 2>&1
+  local sock="$1" pidf pid
+  [ -S "$sock" ] || return 1
+  pidf="${sock%.sock}.pid"
+  if [ -f "$pidf" ]; then
+    pid=""
+    IFS= read -r pid <"$pidf" 2>/dev/null || true
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      return 0
+    fi
+    return 1
+  fi
+  "$NVIM" --server "$sock" --remote-expr 1 </dev/null >/dev/null 2>&1
 }
 
 rpc() {
@@ -151,10 +162,15 @@ list() {
   local sock cwd i w=0
   local cwds=() socks=() stats=() disp=()
   if [ -d "$RUNTIME_DIR" ]; then
+    local slug rootf
     for sock in "$RUNTIME_DIR"/*.sock; do
       [ -e "$sock" ] || continue
-      # getcwd succeeds only on a live server
-      cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
+      is_live "$sock" || continue
+      slug="${sock##*/}"
+      slug="${slug%.sock}"
+      rootf="$STATE_DIR/sessions/$slug.root"
+      cwd=""
+      [ -f "$rootf" ] && IFS= read -r cwd <"$rootf" 2>/dev/null || true
       [ -n "$cwd" ] || continue
       cwds+=("$cwd")
       socks+=("$sock")
@@ -163,15 +179,19 @@ list() {
   fi
   # stopped = snapshot+sidecar present but the project's server isn't live.
   if [ -d "$STATE_DIR/sessions" ]; then
-    local rf root
+    local rf root slug2 sock2
     local dcwds=() dsocks=() dstats=()
     for rf in "$STATE_DIR"/sessions/*.root; do
       [ -e "$rf" ] || continue
-      root="$(head -n1 "$rf" 2>/dev/null || true)"
+      root=""
+      IFS= read -r root <"$rf" 2>/dev/null || true
       [ -n "$root" ] || continue
+      slug2="${rf##*/}"
+      slug2="${slug2%.root}"
+      sock2="$RUNTIME_DIR/$slug2.sock"
       if [ -d "$root" ]; then
         [ -f "${rf%.root}.vim" ] || continue
-        if is_live "$(socket_for "$root")"; then continue; fi
+        if is_live "$sock2"; then continue; fi
         cwds+=("$root")
         socks+=("")
         stats+=("stopped")
