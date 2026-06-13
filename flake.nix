@@ -53,6 +53,7 @@
         ./modules/devshells.nix
         ./modules/hosts/laptop.nix
         ./modules/hosts/vps.nix
+        ./modules/hosts/desktop.nix
       ];
     };
 }

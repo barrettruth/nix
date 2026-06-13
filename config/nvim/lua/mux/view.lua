@@ -151,10 +151,16 @@ function M.open_view(name)
     if not spec then
         return
     end
-    core.leave_terminal()
+    local terminal = spec.kind == 'terminal' or spec.kind == 'task'
+    if not terminal then
+        core.leave_terminal()
+    end
     local existing = find_view(name)
     if existing then
         vim.api.nvim_set_current_tabpage(existing)
+        if terminal then
+            vim.cmd.startinsert()
+        end
         return
     end
 

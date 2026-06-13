@@ -79,6 +79,8 @@ vim.o.startofline = false
 
 vim.o.swapfile = false
 
+vim.o.tabclose = 'uselast'
+
 vim.o.termguicolors = true
 
 vim.o.undodir = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share'))

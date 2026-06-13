@@ -2,6 +2,7 @@
   config,
   pkgs,
   hostConfig,
+  mkLaptopSecret,
   ...
 }:
 
@@ -250,6 +251,39 @@ in
       "root"
       username
     ];
+  };
+
+  nix.distributedBuilds = false;
+  nix.settings.builders-use-substitutes = true;
+  nix.buildMachines = [
+    {
+      hostName = "desktop";
+      sshUser = "nixremote";
+      sshKey = config.sops.secrets."desktop-builder-key".path;
+      systems = [ "x86_64-linux" ];
+      maxJobs = 4;
+      speedFactor = 2;
+      supportedFeatures = [
+        "big-parallel"
+        "kvm"
+        "nixos-test"
+        "benchmark"
+      ];
+    }
+  ];
+
+  sops.secrets."desktop-builder-key" = mkLaptopSecret "desktop-builder-key" {
+    mode = "0400";
+  };
+
+  networking.hosts."192.168.1.92" = [ "desktop" ];
+
+  programs.ssh.knownHosts.desktop = {
+    hostNames = [
+      "desktop"
+      "192.168.1.92"
+    ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
   };
 
   nix.gc = {

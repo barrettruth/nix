@@ -14,6 +14,7 @@ in
   _module.args = {
     inherit mkHostSecret;
     mkVpsSecret = mkHostSecret "vps";
+    mkLaptopSecret = mkHostSecret "laptop";
   };
 
   sops.age = {

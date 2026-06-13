@@ -37,6 +37,7 @@ in
       ../nixos/common/nix.nix
       ../nixos/common/nix-ld.nix
       ../nixos/common/ssh.nix
+      ../nixos/common/sops.nix
       ../nixos/desktop/packages.nix
       ../nixos/desktop/environment.nix
       ../nixos/desktop/services.nix
@@ -72,6 +73,7 @@ in
     ];
     specialArgs = {
       inherit (inputs) nixpkgs;
+      inherit inputs;
       inherit
         identity
         palettes

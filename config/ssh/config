@@ -15,6 +15,12 @@ Host vps
     HostName 152.53.168.144
     User root
 
+Host desktop
+    HostName 192.168.1.92
+    User root
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
 Host spark
     HostName spark-1
     User barrett

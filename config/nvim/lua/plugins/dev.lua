@@ -167,7 +167,10 @@ return {
 
             vim.g.diffs = {
                 debug = false,
-                integrations = { fugitive = true },
+                integrations = {
+                    difftastic = false,
+                    fugitive = true,
+                },
                 extra_filetypes = { 'diff' },
                 view = { prefix = false },
                 highlights = {
