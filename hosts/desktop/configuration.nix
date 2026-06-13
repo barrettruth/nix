@@ -1,6 +1,8 @@
 {
+  config,
   identity,
   pkgs,
+  mkDesktopSecret,
   ...
 }:
 {
@@ -74,6 +76,43 @@
   nix.settings.trusted-users = [
     "root"
     "nixremote"
+  ];
+
+  users.groups.forgejo-runner-secrets = { };
+
+  sops.secrets."forgejo-runner-token" = mkDesktopSecret "forgejo-runner-token" {
+    mode = "0440";
+    group = "forgejo-runner-secrets";
+  };
+
+  services.gitea-actions-runner = {
+    package = pkgs.forgejo-runner;
+    instances.desktop = {
+      enable = true;
+      name = "desktop";
+      url = "https://forge.${identity.domain}";
+      tokenFile = config.sops.secrets."forgejo-runner-token".path;
+      labels = [
+        "nix:host"
+        "desktop:host"
+      ];
+      hostPackages = [
+        pkgs.bash
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.gawk
+        pkgs.gitMinimal
+        pkgs.gnused
+        pkgs.nodejs
+        pkgs.wget
+        pkgs.cacert
+        config.nix.package
+      ];
+    };
+  };
+
+  systemd.services.gitea-runner-desktop.serviceConfig.SupplementaryGroups = [
+    "forgejo-runner-secrets"
   ];
 
   system.stateVersion = "24.11";

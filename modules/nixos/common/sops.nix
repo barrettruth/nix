@@ -15,6 +15,7 @@ in
     inherit mkHostSecret;
     mkVpsSecret = mkHostSecret "vps";
     mkLaptopSecret = mkHostSecret "laptop";
+    mkDesktopSecret = mkHostSecret "desktop";
   };
 
   sops.age = {
