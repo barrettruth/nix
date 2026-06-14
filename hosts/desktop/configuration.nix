@@ -77,6 +77,14 @@
     "root"
     "nixremote"
   ];
+  nix.settings.min-free = 21474836480;
+  nix.settings.max-free = 53687091200;
+
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
 
   users.groups.forgejo-runner-secrets = { };
 
@@ -96,6 +104,18 @@
         "nix:host"
         "desktop:host"
       ];
+      settings.runner.envs = {
+        CARGO_HOME = "/var/cache/gitea-runner/cargo";
+        RUSTUP_HOME = "/var/cache/gitea-runner/rustup";
+        npm_config_cache = "/var/cache/gitea-runner/npm";
+        BUN_INSTALL_CACHE_DIR = "/var/cache/gitea-runner/bun";
+        PIP_CACHE_DIR = "/var/cache/gitea-runner/pip";
+        UV_CACHE_DIR = "/var/cache/gitea-runner/uv";
+        GOCACHE = "/var/cache/gitea-runner/go-build";
+        GOMODCACHE = "/var/cache/gitea-runner/go-mod";
+        XDG_CACHE_HOME = "/var/cache/gitea-runner/xdg-cache";
+        XDG_DATA_HOME = "/var/cache/gitea-runner/xdg-data";
+      };
       hostPackages = [
         pkgs.bash
         pkgs.coreutils
@@ -111,9 +131,10 @@
     };
   };
 
-  systemd.services.gitea-runner-desktop.serviceConfig.SupplementaryGroups = [
-    "forgejo-runner-secrets"
-  ];
+  systemd.services.gitea-runner-desktop.serviceConfig = {
+    SupplementaryGroups = [ "forgejo-runner-secrets" ];
+    CacheDirectory = "gitea-runner";
+  };
 
   sops.secrets."headscale-authkey" = mkDesktopSecret "headscale-authkey" {
     mode = "0400";
@@ -126,6 +147,24 @@
       "--login-server"
       "https://headscale.${identity.domain}"
     ];
+  };
+
+  systemd.services.gitea-runner-cache-prune = {
+    description = "Prune stale Forgejo runner build caches";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      if [ -d /var/cache/gitea-runner ]; then
+        ${pkgs.findutils}/bin/find /var/cache/gitea-runner -mindepth 1 -depth -mtime +14 -delete 2>/dev/null || true
+      fi
+    '';
+  };
+
+  systemd.timers.gitea-runner-cache-prune = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
   };
 
   system.stateVersion = "24.11";
