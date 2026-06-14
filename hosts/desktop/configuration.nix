@@ -121,7 +121,7 @@
     instances.desktop = {
       enable = true;
       name = "desktop";
-      url = "http://127.0.0.1:3000";
+      url = "http://127.0.0.1:${toString config.services.forgejo.settings.server.HTTP_PORT}";
       tokenFile = config.sops.secrets."forgejo-runner-token".path;
       labels = [
         "nix:host"
@@ -157,19 +157,6 @@
   systemd.services.gitea-runner-desktop.serviceConfig = {
     SupplementaryGroups = [ "forgejo-runner-secrets" ];
     CacheDirectory = "gitea-runner";
-  };
-
-  sops.secrets."headscale-authkey" = mkDesktopSecret "headscale-authkey" {
-    mode = "0400";
-  };
-
-  services.tailscale = {
-    enable = true;
-    authKeyFile = config.sops.secrets."headscale-authkey".path;
-    extraUpFlags = [
-      "--login-server"
-      "https://headscale.${identity.domain}"
-    ];
   };
 
   systemd.services.gitea-runner-cache-prune = {

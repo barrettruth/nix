@@ -38,6 +38,7 @@ in
       ../nixos/common/nix-ld.nix
       ../nixos/common/ssh.nix
       ../nixos/common/sops.nix
+      ../nixos/common/tailscale.nix
       ../nixos/desktop/packages.nix
       ../nixos/desktop/environment.nix
       ../nixos/desktop/services.nix

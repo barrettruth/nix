@@ -189,15 +189,6 @@ in
     wireplumber.enable = true;
   };
 
-  services.tailscale = {
-    enable = true;
-    authKeyFile = config.sops.secrets."headscale-authkey".path;
-    extraUpFlags = [
-      "--login-server"
-      "https://headscale.${identity.domain}"
-    ];
-  };
-
   virtualisation.docker.enable = true;
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
@@ -281,10 +272,6 @@ in
   ];
 
   sops.secrets."desktop-builder-key" = mkLaptopSecret "desktop-builder-key" {
-    mode = "0400";
-  };
-
-  sops.secrets."headscale-authkey" = mkLaptopSecret "headscale-authkey" {
     mode = "0400";
   };
 

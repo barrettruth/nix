@@ -9,6 +9,7 @@
       ../nixos/common/nix-ld.nix
       ../nixos/common/ssh.nix
       ../nixos/common/sops.nix
+      ../nixos/common/tailscale.nix
       { nixpkgs.hostPlatform = "x86_64-linux"; }
     ];
     specialArgs = { inherit identity inputs; };
