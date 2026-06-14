@@ -121,7 +121,7 @@
     instances.desktop = {
       enable = true;
       name = "desktop";
-      url = "https://forge.${identity.domain}";
+      url = "http://127.0.0.1:3000";
       tokenFile = config.sops.secrets."forgejo-runner-token".path;
       labels = [
         "nix:host"
