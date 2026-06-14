@@ -9,8 +9,8 @@
 let
   financeDir = "/opt/finance";
   financeHost = "finance.${identity.domain}";
-  authHost = "auth.${identity.domain}";
-  cookieDomain = identity.domain;
+  authHost = "auth.finance.${identity.domain}";
+  cookieDomain = "finance.${identity.domain}";
   financePort = 3002;
   hasFinanceEnvSecret = builtins.pathExists ../../secrets/vps/finance-env;
   financeAutheliaSecretNames = [
