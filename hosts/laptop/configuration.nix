@@ -242,6 +242,8 @@ in
         HostName spark-1
         User barrett
         HostKeyAlias spark
+    Host forge.barrettruth.com git.barrettruth.com
+        Port 2222
   '';
 
   nix.settings = {
@@ -277,12 +279,34 @@ in
 
   networking.hosts."192.168.1.92" = [ "desktop" ];
 
+  networking.hosts."100.64.0.1" = [
+    "forge.barrettruth.com"
+    "git.barrettruth.com"
+    "www.barrettruth.com"
+    "barrettruth.com"
+    "www.barrettruth.sh"
+    "barrettruth.sh"
+    "www.philipmruth.com"
+    "philipmruth.com"
+    "www.vimdoc-language-server.com"
+    "vimdoc-language-server.com"
+    "vimdoc-language-server.barrettruth.com"
+  ];
+
   programs.ssh.knownHosts.desktop = {
     hostNames = [
       "desktop"
       "192.168.1.92"
     ];
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
+  };
+
+  programs.ssh.knownHosts."forge-tailnet" = {
+    hostNames = [
+      "[forge.barrettruth.com]:2222"
+      "[git.barrettruth.com]:2222"
+    ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlaElaGlwSxKvtujoAnGWSrZWlxZRdviq3Y9TgZCLZ/";
   };
 
   nix.gc = {

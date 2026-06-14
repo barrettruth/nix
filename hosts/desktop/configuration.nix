@@ -139,6 +139,8 @@
         GOMODCACHE = "/var/cache/gitea-runner/go-mod";
         XDG_CACHE_HOME = "/var/cache/gitea-runner/xdg-cache";
         XDG_DATA_HOME = "/var/cache/gitea-runner/xdg-data";
+        npm_config_manage_package_manager_versions = "false";
+        COREPACK_ENABLE_AUTO_PIN = "0";
       };
       hostPackages = [
         pkgs.bash
