@@ -170,7 +170,7 @@ in
         ];
       };
       session = {
-        name = "finance_authelia_session";
+        name = "authelia_session";
         same_site = "lax";
         expiration = "8h";
         inactivity = "30m";
@@ -179,7 +179,7 @@ in
           {
             domain = cookieDomain;
             authelia_url = "https://${authHost}";
-            default_redirection_url = "https://${financeHost}";
+            default_redirection_url = "https://${identity.domain}";
           }
         ];
       };
@@ -188,12 +188,12 @@ in
         address = "submissions://smtp.resend.com:2465";
         timeout = "10s";
         username = "resend";
-        sender = "finance auth <noreply@${identity.domain}>";
-        subject = "[finance auth] {title}";
+        sender = "barrettruth <noreply@${identity.domain}>";
+        subject = "[barrettruth] {title}";
         startup_check_address = "br@${identity.domain}";
         tls.server_name = "smtp.resend.com";
       };
-      webauthn.display_name = "finance";
+      webauthn.display_name = "barrettruth";
       identity_providers.oidc.clients = [
         {
           client_id = "headscale";
