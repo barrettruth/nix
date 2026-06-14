@@ -11,6 +11,7 @@
     ./disk-config.nix
     ./forgejo.nix
     ./static-sites.nix
+    ./delta.nix
     ./ddns.nix
   ];
 
