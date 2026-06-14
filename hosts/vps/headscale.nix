@@ -24,7 +24,7 @@ in
         ];
       };
       oidc = {
-        issuer = "https://auth.finance.${identity.domain}";
+        issuer = "https://auth.${identity.domain}";
         client_id = "headscale";
         client_secret_path = config.sops.secrets."headscale-oidc-client-secret".path;
         scope = [
