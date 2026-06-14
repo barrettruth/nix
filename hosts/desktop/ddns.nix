@@ -2,17 +2,27 @@
   config,
   pkgs,
   lib,
-  identity,
   mkDesktopSecret,
   ...
 }:
 let
   hasVercelToken = builtins.pathExists ../../secrets/desktop/vercel-dns-token;
-  ddnsNames = lib.pipe (lib.attrNames config.services.nginx.virtualHosts) [
-    (builtins.filter (lib.hasSuffix ".${identity.domain}"))
-    (map (lib.removeSuffix ".${identity.domain}"))
-    lib.unique
-  ];
+  parseHost =
+    host:
+    let
+      parts = lib.splitString "." host;
+      n = lib.length parts;
+    in
+    {
+      domain = lib.concatStringsSep "." (lib.sublist (n - 2) 2 parts);
+      name = lib.concatStringsSep "." (lib.sublist 0 (n - 2) parts);
+    };
+  ddnsTargets = map parseHost (lib.attrNames config.services.nginx.virtualHosts);
+  ddnsDomains = lib.unique (map (t: t.domain) ddnsTargets);
+  ddnsByDomain = map (d: {
+    domain = d;
+    names = lib.unique (map (t: t.name) (lib.filter (t: t.domain == d) ddnsTargets));
+  }) ddnsDomains;
   vercelDdns = pkgs.writeShellApplication {
     name = "vercel-ddns";
     runtimeInputs = [
@@ -22,7 +32,6 @@ let
     ];
     text = ''
       token="$(cat "$CREDENTIALS_DIRECTORY/token")"
-      domain="${identity.domain}"
       authheader="header = \"Authorization: Bearer $token\""
 
       ip=""
@@ -36,35 +45,51 @@ let
         exit 1
       fi
 
-      records="$(printf '%s\n' "$authheader" | curl -fsS --max-time 20 --retry 3 --retry-delay 2 -K - \
-        "https://api.vercel.com/v4/domains/$domain/records")"
-      if ! printf '%s' "$records" | jq -e '.records | type == "array"' >/dev/null 2>&1; then
-        echo "unexpected Vercel API response for $domain records" >&2
-        exit 1
-      fi
-
       rc=0
-      for name in ${lib.concatStringsSep " " ddnsNames}; do
-        row="$(printf '%s' "$records" \
-          | jq -r --arg n "$name" '.records[] | select(.name==$n and .type=="A") | "\(.id)\t\(.value)"' \
-          | head -n1)"
-        id="$(printf '%s' "$row" | cut -f1)"
-        cur="$(printf '%s' "$row" | cut -f2)"
-        if [ -z "$id" ]; then
-          echo "no A record for $name.$domain; skipping" >&2
-          continue
-        fi
-        if [ "$cur" = "$ip" ]; then
-          continue
-        fi
-        echo "updating $name.$domain: $cur -> $ip"
-        if ! printf '%s\n' "$authheader" | curl -fsS --max-time 20 --retry 3 --retry-delay 2 -K - \
-          -X PATCH -H "Content-Type: application/json" -d "{\"value\":\"$ip\"}" \
-          "https://api.vercel.com/v1/domains/records/$id" >/dev/null; then
-          echo "failed to update $name.$domain" >&2
+
+      update_domain() {
+        domain="$1"
+        shift
+        if ! records="$(printf '%s\n' "$authheader" | curl -fsS --max-time 20 --retry 3 --retry-delay 2 -K - "https://api.vercel.com/v4/domains/$domain/records")"; then
+          echo "failed to fetch records for $domain" >&2
           rc=1
+          return 0
         fi
-      done
+        if ! printf '%s' "$records" | jq -e '.records | type == "array"' >/dev/null 2>&1; then
+          echo "unexpected Vercel response for $domain" >&2
+          rc=1
+          return 0
+        fi
+        for name in "$@"; do
+          label="$name.$domain"
+          [ -z "$name" ] && label="$domain"
+          row="$(printf '%s' "$records" \
+            | jq -r --arg n "$name" '.records[] | select(.name==$n and .type=="A") | "\(.id)\t\(.value)"' \
+            | head -n1)"
+          id="$(printf '%s' "$row" | cut -f1)"
+          cur="$(printf '%s' "$row" | cut -f2)"
+          if [ -z "$id" ]; then
+            echo "no A record for $label; skipping" >&2
+            continue
+          fi
+          if [ "$cur" = "$ip" ]; then
+            continue
+          fi
+          echo "updating $label: $cur -> $ip"
+          if ! printf '%s\n' "$authheader" | curl -fsS --max-time 20 --retry 3 --retry-delay 2 -K - \
+            -X PATCH -H "Content-Type: application/json" -d "{\"value\":\"$ip\"}" \
+            "https://api.vercel.com/v1/domains/records/$id" >/dev/null; then
+            echo "failed to update $label" >&2
+            rc=1
+          fi
+        done
+        return 0
+      }
+
+      ${lib.concatMapStringsSep "\n" (
+        g: "update_domain ${lib.escapeShellArg g.domain} ${lib.concatMapStringsSep " " lib.escapeShellArg g.names}"
+      ) ddnsByDomain}
+
       exit "$rc"
     '';
   };
