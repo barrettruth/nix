@@ -117,27 +117,44 @@ function M.pr(p)
         return { ok = false, error = rerr }
     end
 
+    -- forge opens an existing PR's edit compose asynchronously (it fetches the
+    -- PR over the network), so by the time the compose buffer appears the
+    -- synchronous in_view window context has unwound and forge edits it into
+    -- whatever window is focused, often the user's. Snapshot the layout so the
+    -- compose can be parked in the vcs view and any clobbered window restored.
+    local prev_buf = {}
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+        prev_buf[w] = vim.api.nvim_win_get_buf(w)
+    end
+    local home_win = vim.api.nvim_get_current_win()
+
+    -- Show the compose in the vcs view and undo any pre-existing window forge
+    -- replaced with it. Never closes windows or moves focus.
+    local function place_compose(b)
+        if not (b and vim.api.nvim_buf_is_valid(b)) then
+            return
+        end
+        if vim.api.nvim_win_is_valid(vcs_win) then
+            pcall(vim.api.nvim_win_set_buf, vcs_win, b)
+        end
+        for w, pb in pairs(prev_buf) do
+            if
+                w ~= vcs_win
+                and vim.api.nvim_win_is_valid(w)
+                and vim.api.nvim_win_get_buf(w) == b
+                and pb ~= b
+                and vim.api.nvim_buf_is_valid(pb)
+            then
+                pcall(vim.api.nvim_win_set_buf, w, pb)
+            end
+        end
+    end
+
     local au = vim.api.nvim_create_autocmd('FileType', {
         pattern = 'forgecompose',
         callback = function(args)
-            local name = vim.api.nvim_buf_get_name(args.buf)
-            if not name:find('/pr/', 1, true) then
-                return
-            end
-            if not vim.api.nvim_win_is_valid(vcs_win) then
-                return
-            end
-            local stray = vim.api.nvim_get_current_win()
-            vim.api.nvim_win_set_buf(vcs_win, args.buf)
-            if
-                stray ~= vcs_win
-                and vim.api.nvim_win_is_valid(stray)
-                and #vim.api.nvim_tabpage_list_wins(
-                        vim.api.nvim_win_get_tabpage(stray)
-                    )
-                    > 1
-            then
-                pcall(vim.api.nvim_win_close, stray, true)
+            if vim.api.nvim_buf_get_name(args.buf):find('/pr/', 1, true) then
+                place_compose(args.buf)
             end
         end,
     })
@@ -180,6 +197,12 @@ function M.pr(p)
     end
 
     local name, buf = pr_compose_name()
+    -- Final reconciliation if the compose landed (or was re-focused) after the
+    -- autocmd ran, then restore the user's focus.
+    place_compose(buf)
+    if vim.api.nvim_win_is_valid(home_win) then
+        pcall(vim.api.nvim_set_current_win, home_win)
+    end
     if name:match('/pr/new$') then
         if p.title and p.title ~= '' then
             vim.api.nvim_buf_set_lines(buf, 0, 1, false, { '# ' .. p.title })
