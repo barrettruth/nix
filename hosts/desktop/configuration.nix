@@ -73,6 +73,27 @@
     ];
   };
 
+  users.users.barrett = {
+    isNormalUser = true;
+    home = "/home/barrett";
+    shell = pkgs.bashInteractive;
+    linger = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
+    ];
+  };
+
+  systemd.user.slices.rbuild = {
+    description = "rbuild remote build resource pool";
+    sliceConfig = {
+      CPUQuota = "400%";
+      MemoryMax = "24G";
+      TasksMax = 4096;
+    };
+  };
+
+  environment.systemPackages = [ pkgs.rsync ];
+
   nix.settings.trusted-users = [
     "root"
     "nixremote"
