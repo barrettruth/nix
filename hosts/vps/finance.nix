@@ -9,8 +9,8 @@
 let
   financeDir = "/opt/finance";
   financeHost = "finance.${identity.domain}";
-  financeAuthHost = "auth.finance.${identity.domain}";
-  financeCookieDomain = "finance.${identity.domain}";
+  authHost = "auth.${identity.domain}";
+  cookieDomain = identity.domain;
   financePort = 3002;
   hasFinanceEnvSecret = builtins.pathExists ../../secrets/vps/finance-env;
   financeAutheliaSecretNames = [
@@ -74,7 +74,7 @@ in
     )
   ];
 
-  services.nginx.virtualHosts.${financeAuthHost} = lib.mkIf hasFinanceAutheliaSecrets {
+  services.nginx.virtualHosts.${authHost} = lib.mkIf hasFinanceAutheliaSecrets {
     enableACME = true;
     forceSSL = true;
     locations."/".proxyPass = "http://127.0.0.1:9091";
@@ -121,6 +121,18 @@ in
         path = "/run/secrets/finance-authelia-users.yaml";
         restartUnits = [ "authelia-finance.service" ];
       };
+      "finance-authelia-oidc-issuer-key" = mkVpsSecret "finance-authelia-oidc-issuer-key" {
+        owner = "authelia-finance";
+        group = "authelia-finance";
+        mode = "0400";
+        restartUnits = [ "authelia-finance.service" ];
+      };
+      "finance-authelia-oidc-hmac" = mkVpsSecret "finance-authelia-oidc-hmac" {
+        owner = "authelia-finance";
+        group = "authelia-finance";
+        mode = "0400";
+        restartUnits = [ "authelia-finance.service" ];
+      };
     });
 
   services.authelia.instances.finance = lib.mkIf hasFinanceAutheliaSecrets {
@@ -129,6 +141,8 @@ in
       jwtSecretFile = config.sops.secrets."finance-authelia-jwt-secret".path;
       sessionSecretFile = config.sops.secrets."finance-authelia-session-secret".path;
       storageEncryptionKeyFile = config.sops.secrets."finance-authelia-storage-key".path;
+      oidcIssuerPrivateKeyFile = config.sops.secrets."finance-authelia-oidc-issuer-key".path;
+      oidcHmacSecretFile = config.sops.secrets."finance-authelia-oidc-hmac".path;
     };
     environmentVariables = {
       AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE = config.sops.secrets."finance-authelia-smtp-password".path;
@@ -146,7 +160,7 @@ in
         default_policy = "deny";
         rules = [
           {
-            domain = [ financeAuthHost ];
+            domain = [ authHost ];
             policy = "bypass";
           }
           {
@@ -163,8 +177,8 @@ in
         remember_me = "1M";
         cookies = [
           {
-            domain = financeCookieDomain;
-            authelia_url = "https://${financeAuthHost}";
+            domain = cookieDomain;
+            authelia_url = "https://${authHost}";
             default_redirection_url = "https://${financeHost}";
           }
         ];
@@ -180,6 +194,25 @@ in
         tls.server_name = "smtp.resend.com";
       };
       webauthn.display_name = "finance";
+      identity_providers.oidc.clients = [
+        {
+          client_id = "headscale";
+          client_name = "Headscale";
+          client_secret = "$pbkdf2-sha512$310000$qJDvDKtAYGI.gNXjK9DYJQ$5DZkIUxr1W6HN0y4MNWC08SKLfMAVGhXhVjIMHCxqPYyvNStVK7iyXLICFhFviB5isVNx.XAQsOnb1YRzWjZaw";
+          public = false;
+          authorization_policy = "two_factor";
+          consent_mode = "implicit";
+          redirect_uris = [
+            "https://headscale.${identity.domain}/oidc/callback"
+          ];
+          scopes = [
+            "openid"
+            "profile"
+            "email"
+          ];
+          token_endpoint_auth_method = "client_secret_basic";
+        }
+      ];
     };
   };
 

@@ -1,5 +1,7 @@
 {
+  config,
   identity,
+  mkVpsSecret,
   ...
 }:
 let
@@ -21,6 +23,17 @@ in
           "8.8.8.8"
         ];
       };
+      oidc = {
+        issuer = "https://auth.${identity.domain}";
+        client_id = "headscale";
+        client_secret_path = config.sops.secrets."headscale-oidc-client-secret".path;
+        scope = [
+          "openid"
+          "profile"
+          "email"
+        ];
+        allowed_domains = [ identity.domain ];
+      };
     };
   };
 
@@ -31,5 +44,12 @@ in
       proxyPass = "http://127.0.0.1:${toString headscalePort}";
       proxyWebsockets = true;
     };
+  };
+
+  sops.secrets."headscale-oidc-client-secret" = mkVpsSecret "headscale-oidc-client-secret" {
+    owner = "headscale";
+    group = "headscale";
+    mode = "0400";
+    restartUnits = [ "headscale.service" ];
   };
 }
