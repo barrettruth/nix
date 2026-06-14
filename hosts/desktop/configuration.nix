@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   identity,
   pkgs,
   mkDesktopSecret,
@@ -158,9 +159,37 @@
     };
   };
 
+  users.groups.gitea-runner = { };
+  users.users.gitea-runner = {
+    isSystemUser = true;
+    group = "gitea-runner";
+    home = "/var/lib/gitea-runner/desktop";
+  };
+
   systemd.services.gitea-runner-desktop.serviceConfig = {
     SupplementaryGroups = [ "forgejo-runner-secrets" ];
     CacheDirectory = "gitea-runner";
+    DynamicUser = lib.mkForce false;
+    User = lib.mkForce "gitea-runner";
+    Group = lib.mkForce "gitea-runner";
+  };
+
+  networking.hosts."127.0.0.1" = [
+    "forge.barrettruth.com"
+    "git.barrettruth.com"
+  ];
+
+  programs.ssh.extraConfig = ''
+    Host forge.barrettruth.com git.barrettruth.com
+        Port 2222
+  '';
+
+  programs.ssh.knownHosts."forge-self" = {
+    hostNames = [
+      "[forge.barrettruth.com]:2222"
+      "[git.barrettruth.com]:2222"
+    ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlaElaGlwSxKvtujoAnGWSrZWlxZRdviq3Y9TgZCLZ/";
   };
 
   systemd.services.gitea-runner-cache-prune = {
