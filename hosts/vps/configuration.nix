@@ -267,6 +267,7 @@ in
   imports = [
     ./finance.nix
     ./delta.nix
+    ./headscale.nix
     ./disk-config.nix
     ./hardware-configuration.nix
     pierreForgejo.nixosModule

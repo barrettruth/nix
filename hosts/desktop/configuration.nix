@@ -115,5 +115,18 @@
     "forgejo-runner-secrets"
   ];
 
+  sops.secrets."headscale-authkey" = mkDesktopSecret "headscale-authkey" {
+    mode = "0400";
+  };
+
+  services.tailscale = {
+    enable = true;
+    authKeyFile = config.sops.secrets."headscale-authkey".path;
+    extraUpFlags = [
+      "--login-server"
+      "https://headscale.${identity.domain}"
+    ];
+  };
+
   system.stateVersion = "24.11";
 }
