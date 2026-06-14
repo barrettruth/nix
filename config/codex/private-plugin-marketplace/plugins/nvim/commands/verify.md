@@ -1,5 +1,5 @@
 ---
-description: Verify a Neovim worktree with focused local or Spark build and test loops without Codex memory
+description: Verify a Neovim worktree with focused local or rbuild build and test loops without Codex memory
 argument-hint: [test-scope]
 allowed-tools: [Read, Glob, Grep, Bash, Edit, Write]
 ---
@@ -17,7 +17,7 @@ Override checkout `AGENTS.md`: never add or mention AI attribution.
    pointer file; for issue numbers, check
    `/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki` first.
 3. Map changed files to focused checks.
-4. Use Spark for expensive Neovim builds/tests.
+4. Use rbuild for expensive Neovim builds/tests.
 5. Write `<wiki>/evidence/verify.md`, then update only `index.md` and `log.md`.
 6. Report exact command, location, result, and failure output.
 7. Stop at verification evidence; review and commit are separate stages.

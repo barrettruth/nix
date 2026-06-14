@@ -26,7 +26,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 ## Refactor Order
 
 1. Stage map and shared vocabulary.
-2. Reproduction playbooks and Spark proof artifacts.
+2. Reproduction playbooks and rbuild proof artifacts.
 3. Explain and plan/outcome workflows.
 4. Implementation and verification loops.
 5. Review checkpoint before commit.
@@ -50,13 +50,13 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 - Git hooks that reject prohibited attribution and protect pushes.
 - Decide whether plugin-bundled hooks should be enabled at all.
 
-## Spark Build System
+## rbuild Build System
 
-- Exact Spark CLI contract for Neovim builds/tests is initially implemented in
-  `scripts/spark`; revisit after real use.
-- Build out the missing reproducer-facing Spark guidance: how to build, locate
-  the built `nvim`, set runtime paths, run commands under `spark nvim run`, and
-  consume `spark nvim log` output without falling back to expensive local
+- Exact rbuild CLI contract for Neovim builds/tests is initially implemented in
+  `scripts/rbuild`; revisit after real use.
+- Build out the missing reproducer-facing rbuild guidance: how to build, locate
+  the built `nvim`, set runtime paths, run commands under `rbuild nvim run`, and
+  consume `rbuild nvim log` output without falling back to expensive local
   builds.
 - Run one real issue worktree through build/test/clean before changing the
   contract.
@@ -66,7 +66,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 
 ## Verification And CI
 
-- What counts as a cheap local check versus Spark-only validation.
+- What counts as a cheap local check versus rbuild-only validation.
 - How to map changed files to focused Neovim checks.
 - Exact compile/build commands and expected build directories.
 - Targeted functional/unit/oldtest commands and failure interpretation.
@@ -82,7 +82,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 - Headless, UI, TUI, RPC, `--server`, job-control, terminal, LSP, and network
   reproduction patterns.
 - Reproducer agents need concrete examples for shaping minimal scripts, choosing
-  `spark nvim build/test/run`, preserving exact command evidence, and writing
+  `rbuild nvim build/test/run`, preserving exact command evidence, and writing
   `evidence/repro.md`.
 - Repro reports must include a short copy-paste rerun path near the top and
   persist the runnable harness files. Do not leave only a "command shape" that

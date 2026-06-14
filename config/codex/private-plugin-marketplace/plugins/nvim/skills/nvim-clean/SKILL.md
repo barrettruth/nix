@@ -15,8 +15,8 @@ Rules:
 - Show the script's cleanup plan before prompting.
 - Prompt `Hard remove all Neovim issue <issue> cleanup targets? y/N`.
 - Delete only after literal `y`; default is no.
-- Hard cleanup removes the local worktree, local branch, issue wiki, local Spark
-  logs, Spark mirror, and current pointer when it points at the issue.
+- Hard cleanup removes the local worktree, local branch, issue wiki, local rbuild
+  logs, rbuild mirror, and current pointer when it points at the issue.
 - Do not auto-detect, batch, prune, or clean other issue numbers.
 
 Script-owned targets:
@@ -24,8 +24,8 @@ Script-owned targets:
 ```text
 /home/barrett/dev/neovim/.worktrees/<issue>
 /home/barrett/.local/state/codex-nvim/issues/<issue>
-/home/barrett/.local/state/spark/nvim/<issue>
-spark:/home/barrett/dev/neovim/.worktrees/<issue>
+/home/barrett/.local/state/rbuild/nvim/<issue>
+barrett@desktop:/home/barrett/dev/neovim/.worktrees/<issue>
 /home/barrett/dev/neovim/.worktrees/.codex/current
 ```
 

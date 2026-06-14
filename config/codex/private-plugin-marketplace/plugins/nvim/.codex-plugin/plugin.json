@@ -11,14 +11,14 @@
     "worktree",
     "verification",
     "review",
-    "spark",
+    "rbuild",
     "codex"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "nvim",
     "shortDescription": "Neovim issue, repro, planning, verification, review, and edit-window workflows",
-    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded Spark reproduction as a separate stage, choose among realistic outcomes before implementation, verify changes, review local patch state, and populate mux Neovim windows for editing/review.",
+    "longDescription": "Private Neovim workflows for Codex sessions: fetch GitHub issue context with gh, create isolated upstream worktrees, run history investigation, run bounded rbuild reproduction as a separate stage, choose among realistic outcomes before implementation, verify changes, review local patch state, and populate mux Neovim windows for editing/review.",
     "developerName": "Barrett Ruth",
     "category": "Coding",
     "capabilities": [
@@ -30,7 +30,7 @@
     "termsOfServiceURL": "https://forge.barrettruth.com/barrettruth/nix",
     "defaultPrompt": [
       "Investigate Neovim issue #12345 without proposing fixes",
-      "Reproduce Neovim issue #12345 with the configured Spark strategy",
+      "Reproduce Neovim issue #12345 with the configured rbuild strategy",
       "Plan realistic outcomes for Neovim issue #12345 before editing",
       "Verify the implementation work for Neovim issue #12345",
       "Review the implementation patch for Neovim issue #12345",

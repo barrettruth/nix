@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import NoReturn
 
 
-DEFAULT_HOST = "spark"
-DEFAULT_WORK_ROOT = ".cache/spark-builds"
-DEFAULT_SLICE = "spark-build.slice"
+DEFAULT_HOST = "barrett@desktop"
+DEFAULT_WORK_ROOT = ".cache/rbuild"
+DEFAULT_SLICE = "rbuild.slice"
 DEFAULT_CPU_QUOTA = "400%"
 DEFAULT_MEMORY_MAX = "24G"
 DEFAULT_TASKS_MAX = "4096"
@@ -26,7 +26,7 @@ DEFAULT_PING_TIMEOUT = "15"
 LOCAL_STATE_ROOT = Path(
     os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))
 )
-NVIM_LOG_ROOT = LOCAL_STATE_ROOT / "spark" / "nvim"
+NVIM_LOG_ROOT = LOCAL_STATE_ROOT / "rbuild" / "nvim"
 NVIM_LOCAL_ROOT = "/home/barrett/dev/neovim"
 NVIM_REMOTE_ROOT = "dev/neovim"
 NVIM_NIX_PACKAGES = [
@@ -44,59 +44,59 @@ NVIM_NIX_PACKAGES = [
 
 USAGE = """\
 Usage:
-  spark [options] <command> [args...]
-  spark [options] -- <command> [args...]
-  spark [options] --shell
-  spark [options] ping
-  spark [options] status
-  spark [options] prune
-  spark [options] clean
-  spark [options] cleanup
-  spark [options] nvim build <issue> [make-args...]
-  spark [options] nvim deps <issue> [make-args...]
-  spark [options] nvim test <issue> [test-file] [make-args...]
-  spark [options] nvim run <issue> -- <command> [args...]
-  spark [options] nvim log <issue> [--list|--cat]
-  spark [options] nvim shell <issue>
-  spark [options] nvim clean <issue>
+  rbuild [options] <command> [args...]
+  rbuild [options] -- <command> [args...]
+  rbuild [options] --shell
+  rbuild [options] ping
+  rbuild [options] status
+  rbuild [options] prune
+  rbuild [options] clean
+  rbuild [options] cleanup
+  rbuild [options] nvim build <issue> [make-args...]
+  rbuild [options] nvim deps <issue> [make-args...]
+  rbuild [options] nvim test <issue> [test-file] [make-args...]
+  rbuild [options] nvim run <issue> -- <command> [args...]
+  rbuild [options] nvim log <issue> [--list|--cat]
+  rbuild [options] nvim shell <issue>
+  rbuild [options] nvim clean <issue>
 
 Options:
   -C, --repo <path>       Local repo/path to sync. Defaults to the git root.
   --slot <name>           Remote slot. Defaults to the local branch or default.
                           With --cleanup, an unset slot gets a unique suffix.
-  --host <host>           SSH host. Defaults to SPARK_HOST or spark.
-  --work-root <path>      Remote work root. Defaults to ~/.cache/spark-builds.
+  --host <host>           SSH host. Defaults to RBUILD_HOST or barrett@desktop.
+  --work-root <path>      Remote work root. Defaults to ~/.cache/rbuild.
   --cpu-quota <quota>     Shared slice CPU quota. Defaults to 400%.
   --memory-max <size>     Shared slice memory ceiling. Defaults to 24G.
   --tasks-max <count>     Shared slice task ceiling. Defaults to 4096.
   -j, --jobs <count>      Build-tool parallelism. Defaults to 2.
   --no-sync               Reuse the remote copy without syncing first.
   --include-secrets       Do not hard-exclude secrets and .env files.
-  --cleanup               Remove this repo/slot from Spark when the command exits.
+  --cleanup               Remove this repo/slot from Rbuild when the command exits.
   --shell                 Open an interactive shell in the remote copy.
   --prune-days <days>     Age threshold for prune. Defaults to 7.
   -y, --yes               Assume yes for cleanup confirmations.
   -h, --help              Show this help.
 
 Environment:
-  SPARK_PING_TIMEOUT      Seconds before ping gives up. Defaults to 15.
+  RBUILD_PING_TIMEOUT      Seconds before ping gives up. Defaults to 15.
 
 Neovim:
   <issue> is a numeric Neovim issue number.
   The local worktree is /home/barrett/dev/neovim/.worktrees/<issue>.
-  The Spark mirror is ~/dev/neovim/.worktrees/<issue>.
+  The Rbuild mirror is ~/dev/neovim/.worktrees/<issue>.
   The local worktree is the source of truth; build/test/run/shell sync it first.
-  build/deps/test/run write local logs under ~/.local/state/spark/nvim/<issue>/.
+  build/deps/test/run write local logs under ~/.local/state/rbuild/nvim/<issue>/.
   clean and nvim clean prompt y/N unless -y/--yes is passed.
 """
 
 
-class SparkError(Exception):
+class RbuildError(Exception):
     pass
 
 
 def die(message: str) -> NoReturn:
-    raise SparkError(message)
+    raise RbuildError(message)
 
 
 def eprint(message: str) -> None:
@@ -139,30 +139,30 @@ def checked_run(
 
 
 @dataclass
-class Spark:
+class Rbuild:
     host: str = field(
-        default_factory=lambda: os.environ.get("SPARK_HOST", DEFAULT_HOST)
+        default_factory=lambda: os.environ.get("RBUILD_HOST", DEFAULT_HOST)
     )
     work_root: str = field(
-        default_factory=lambda: os.environ.get("SPARK_WORK_ROOT", DEFAULT_WORK_ROOT)
+        default_factory=lambda: os.environ.get("RBUILD_WORK_ROOT", DEFAULT_WORK_ROOT)
     )
     slice_name: str = field(
-        default_factory=lambda: os.environ.get("SPARK_SLICE", DEFAULT_SLICE)
+        default_factory=lambda: os.environ.get("RBUILD_SLICE", DEFAULT_SLICE)
     )
     cpu_quota: str = field(
-        default_factory=lambda: os.environ.get("SPARK_CPU_QUOTA", DEFAULT_CPU_QUOTA)
+        default_factory=lambda: os.environ.get("RBUILD_CPU_QUOTA", DEFAULT_CPU_QUOTA)
     )
     memory_max: str = field(
-        default_factory=lambda: os.environ.get("SPARK_MEMORY_MAX", DEFAULT_MEMORY_MAX)
+        default_factory=lambda: os.environ.get("RBUILD_MEMORY_MAX", DEFAULT_MEMORY_MAX)
     )
     tasks_max: str = field(
-        default_factory=lambda: os.environ.get("SPARK_TASKS_MAX", DEFAULT_TASKS_MAX)
+        default_factory=lambda: os.environ.get("RBUILD_TASKS_MAX", DEFAULT_TASKS_MAX)
     )
     jobs: str = field(
-        default_factory=lambda: os.environ.get("SPARK_JOBS", DEFAULT_JOBS)
+        default_factory=lambda: os.environ.get("RBUILD_JOBS", DEFAULT_JOBS)
     )
     prune_days: str = field(
-        default_factory=lambda: os.environ.get("SPARK_PRUNE_DAYS", DEFAULT_PRUNE_DAYS)
+        default_factory=lambda: os.environ.get("RBUILD_PRUNE_DAYS", DEFAULT_PRUNE_DAYS)
     )
     repo: str = ""
     slot: str = ""
@@ -274,7 +274,7 @@ class Spark:
             case ["nvim", *rest]:
                 if self.cleanup:
                     die(
-                        "nvim commands do not support --cleanup; use spark nvim clean <issue>"
+                        "nvim commands do not support --cleanup; use rbuild nvim clean <issue>"
                     )
                 self.apply_nvim_command(rest)
                 argv = []
@@ -368,7 +368,7 @@ class Spark:
     def latest_nvim_log(self) -> Path:
         logs = self.nvim_log_paths()
         if not logs:
-            die(f"no Spark logs for Neovim issue {self.nvim_issue}")
+            die(f"no Rbuild logs for Neovim issue {self.nvim_issue}")
         return logs[-1]
 
     def new_nvim_log_path(self) -> Path:
@@ -633,7 +633,7 @@ class Spark:
 
     def sync_repo(self) -> None:
         require("rsync", "ssh")
-        eprint(f"spark: syncing {self.repo} -> {self.host}:{self.remote_dir}")
+        eprint(f"rbuild: syncing {self.repo} -> {self.host}:{self.remote_dir}")
         _ = self.ssh(f"mkdir -p {quote(self.remote_dir)}")
 
         rsync_args = [
@@ -641,7 +641,7 @@ class Spark:
             "-az",
             "--delete",
             "--filter=:- .gitignore",
-            "--filter=:- .sparkignore",
+            "--filter=:- .rbuildignore",
             "--filter=P /.deps/***",
             "--filter=H /.deps/***",
             "--filter=P /.direnv/***",
@@ -694,8 +694,8 @@ class Spark:
                 "systemd-run --user --pipe --wait --collect \\",
                 f"  --slice={quote(self.slice_name)} \\",
                 f"  --unit={quote(unit)} \\",
-                f"  -E SPARK_LOCAL_ROOT={quote(self.repo)} \\",
-                f"  -E SPARK_REMOTE_ROOT={quote(self.remote_dir)} \\",
+                f"  -E RBUILD_LOCAL_ROOT={quote(self.repo)} \\",
+                f"  -E RBUILD_REMOTE_ROOT={quote(self.remote_dir)} \\",
                 f"  -E MAKEFLAGS={quote(f'-j{self.jobs}')} \\",
                 f"  -E CMAKE_BUILD_PARALLEL_LEVEL={quote(self.jobs)} \\",
                 f"  -E NIX_BUILD_CORES={quote(self.jobs)} \\",
@@ -706,23 +706,23 @@ class Spark:
                 f"  -E CARGO_HOME={quote(f'{self.remote_dir}/.cache/cargo')} \\",
                 f"  -E npm_config_cache={quote(f'{self.remote_dir}/.cache/npm')} \\",
                 f"  -E PIP_CACHE_DIR={quote(f'{self.remote_dir}/.cache/pip')} \\",
-                f'  -- bash -lc \'cd "$SPARK_REMOTE_ROOT" && exec "$@"\' spark-command {quoted_args}',
+                f'  -- bash -lc \'cd "$RBUILD_REMOTE_ROOT" && exec "$@"\' rbuild-command {quoted_args}',
             ]
         )
 
     def run_remote(self, args: list[str]) -> None:
-        unit = f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        unit = f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
         remote_command = self.remote_run_command(args, unit)
-        eprint(f"spark: running in {self.host}:{self.remote_dir}")
+        eprint(f"rbuild: running in {self.host}:{self.remote_dir}")
         _ = self.ssh(remote_command)
 
     def run_remote_with_log(self, args: list[str]) -> None:
-        unit = f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        unit = f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
         remote_command = self.remote_run_command(args, unit)
         log_path = self.new_nvim_log_path()
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-        eprint(f"spark: running in {self.host}:{self.remote_dir}")
+        eprint(f"rbuild: running in {self.host}:{self.remote_dir}")
         with log_path.open("w") as log:
             _ = log.write(f"issue={self.nvim_issue}\n")
             _ = log.write(f"action={self.nvim_action}\n")
@@ -737,14 +737,14 @@ class Spark:
                 stderr=subprocess.STDOUT,
             )
             if process.stdout is None:
-                die("failed to capture Spark command output")
+                die("failed to capture Rbuild command output")
             for line in process.stdout:
                 print(line, end="")
                 _ = sys.stdout.flush()
                 _ = log.write(line)
             returncode = process.wait()
 
-        eprint(f"spark: log: {log_path}")
+        eprint(f"rbuild: log: {log_path}")
         if returncode != 0:
             raise subprocess.CalledProcessError(
                 returncode,
@@ -765,12 +765,12 @@ class Spark:
         _ = self.ssh(command, check=check)
 
     def confirm_clean_remote_dir(self) -> None:
-        eprint(f"spark: remote path: {self.host}:{self.remote_dir}")
+        eprint(f"rbuild: remote path: {self.host}:{self.remote_dir}")
         remote_command = "".join(
             [
                 f"path={quote(self.remote_dir)}; ",
                 '[ -e "$path" ] || { ',
-                'printf "spark: missing remote path: %s\\n" "$path" >&2; ',
+                'printf "rbuild: missing remote path: %s\\n" "$path" >&2; ',
                 "exit 2; ",
                 "}; ",
                 'du -sh "$path" 2>/dev/null || true',
@@ -778,25 +778,25 @@ class Spark:
         )
         _ = self.ssh(remote_command)
         if self.assume_yes:
-            eprint("spark: cleanup confirmed by --yes")
+            eprint("rbuild: cleanup confirmed by --yes")
             self.clean_remote_dir()
             return
 
         print(
-            f"Remove Spark mirror {self.host}:{self.remote_dir}? y/N ",
+            f"Remove Rbuild mirror {self.host}:{self.remote_dir}? y/N ",
             end="",
             file=sys.stderr,
             flush=True,
         )
         answer = sys.stdin.readline().rstrip("\n")
         if answer != "y":
-            eprint("spark: cleanup cancelled")
+            eprint("rbuild: cleanup cancelled")
             return
         self.clean_remote_dir()
 
     def open_shell(self) -> None:
         unit = (
-            f"spark-{safe_name(self.repo_name)}-{safe_name(self.slot)}-shell-"
+            f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-shell-"
             f"{os.getpid()}"
         )
         nix_config = f"max-jobs = 1\ncores = {self.jobs}\n"
@@ -807,8 +807,8 @@ class Spark:
                 "systemd-run --user --pty --wait --collect \\",
                 f"  --slice={quote(self.slice_name)} \\",
                 f"  --unit={quote(unit)} \\",
-                f"  -E SPARK_LOCAL_ROOT={quote(self.repo)} \\",
-                f"  -E SPARK_REMOTE_ROOT={quote(self.remote_dir)} \\",
+                f"  -E RBUILD_LOCAL_ROOT={quote(self.repo)} \\",
+                f"  -E RBUILD_REMOTE_ROOT={quote(self.remote_dir)} \\",
                 f"  -E MAKEFLAGS={quote(f'-j{self.jobs}')} \\",
                 f"  -E CMAKE_BUILD_PARALLEL_LEVEL={quote(self.jobs)} \\",
                 f"  -E NIX_BUILD_CORES={quote(self.jobs)} \\",
@@ -823,7 +823,7 @@ class Spark:
                 "  -- ${SHELL:-bash} -l",
             ]
         )
-        eprint(f"spark: shell in {self.host}:{self.remote_dir}")
+        eprint(f"rbuild: shell in {self.host}:{self.remote_dir}")
         _ = self.ssh(remote_command, tty=True)
 
     def show_status(self) -> None:
@@ -877,7 +877,7 @@ class Spark:
                 " ".join(
                     [
                         "systemctl --user --no-pager --plain list-units",
-                        "'forgejo-runner-spark-nix-*.service'",
+                        "'forgejo-runner-rbuild-nix-*.service'",
                         "2>/dev/null || true",
                     ]
                 ),
@@ -888,21 +888,21 @@ class Spark:
 
     def ping_host(self) -> None:
         require("ssh")
-        timeout_value = os.environ.get("SPARK_PING_TIMEOUT", DEFAULT_PING_TIMEOUT)
+        timeout_value = os.environ.get("RBUILD_PING_TIMEOUT", DEFAULT_PING_TIMEOUT)
         try:
             timeout_seconds = int(timeout_value)
         except ValueError:
-            die(f"SPARK_PING_TIMEOUT must be an integer, got: {timeout_value}")
+            die(f"RBUILD_PING_TIMEOUT must be an integer, got: {timeout_value}")
 
         remote_command = (
-            'printf "spark: ok host=%s user=%s system=%s nproc=%s\\n" '
+            'printf "rbuild: ok host=%s user=%s system=%s nproc=%s\\n" '
             '"$(hostname)" '
             '"$(id -un)" '
             '"$(nix eval --impure --raw --expr builtins.currentSystem '
             '2>/dev/null || uname -m)" '
             '"$(nproc)"'
         )
-        eprint(f"spark: pinging {self.host}")
+        eprint(f"rbuild: pinging {self.host}")
         _ = checked_run(
             [
                 "ssh",
@@ -917,7 +917,7 @@ class Spark:
         )
 
     def mark_remote_used(self) -> None:
-        meta_dir = f"{self.remote_dir}/.spark-meta"
+        meta_dir = f"{self.remote_dir}/.rbuild-meta"
         last_used = f"{meta_dir}/last-used"
         _ = self.ssh(
             " && ".join(
@@ -931,10 +931,10 @@ class Spark:
 
 
 def main(argv: list[str]) -> int:
-    spark = Spark()
+    rbuild = Rbuild()
     try:
-        remaining = spark.parse(argv)
-        spark.dispatch(remaining)
+        remaining = rbuild.parse(argv)
+        rbuild.dispatch(remaining)
     except SystemExit as exc:
         if exc.code is None:
             return 0
@@ -942,8 +942,8 @@ def main(argv: list[str]) -> int:
             return exc.code
         eprint(str(exc.code))
         return 1
-    except SparkError as exc:
-        eprint(f"spark: {exc}")
+    except RbuildError as exc:
+        eprint(f"rbuild: {exc}")
         return 1
     except subprocess.CalledProcessError as exc:
         return exc.returncode

@@ -74,7 +74,7 @@ files.
 
 Allowed during planning: targeted source reads, `rg`, `git show/log/blame`,
 small read-only scripts, and cheap probes that do not modify the worktree.
-Do not run builds, test suites, Spark verification, or implementation-phase
+Do not run builds, test suites, rbuild verification, or implementation-phase
 checks; defer those to `$nvim-impl`/`$nvim-verify`.
 
 Describe implementation directions at a high level. Link or name relevant

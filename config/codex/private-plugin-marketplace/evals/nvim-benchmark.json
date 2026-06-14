@@ -38,7 +38,7 @@
         "Keeps index.md brief and links report.md, sources.md, and evidence/history.md.",
         "Keeps bulky raw outputs out of index.md.",
         "Runs or requires history and integrator roles only, with controlled history fanout allowed.",
-        "Does not build, run Spark, create repro files, or write evidence/repro.md.",
+        "Does not build, run rbuild, create repro files, or write evidence/repro.md.",
         "Stops after report.md without solution proposals."
       ]
     },
@@ -51,7 +51,7 @@
         "Requires the existing issue worktree, issue wiki, worktree .codex/issue-wiki pointer, and raw issue snapshot.",
         "Selects exactly one allowed strategy.",
         "Creates or overwrites only .codex/repros/script/* and evidence/repro.md for the reproducer.",
-        "Uses Spark for bug build/run work and records spark nvim log paths, or marks reproduction not applicable for non-bug issues without Spark.",
+        "Uses rbuild for bug build/run work and records rbuild nvim log paths, or marks reproduction not applicable for non-bug issues without rbuild.",
         "Updates only index.md and log.md after evidence/repro.md exists.",
         "Does not update report.md or sources.md.",
         "Stops with status plus Repro, Index, and Worktree paths."
@@ -124,9 +124,9 @@
         "Does not read Codex memory.",
         "Resolves the issue worktree through the direct .codex/issue-wiki pointer file before broad scans.",
         "Inspects local diff/status and maps changed files to focused checks.",
-        "Uses cheap local checks only when appropriate and Spark for expensive Neovim build/test work.",
-        "Does not run an expensive local fallback if Spark fails.",
-        "Writes evidence/verify.md with exact commands, locations, results, failures, and Spark log paths.",
+        "Uses cheap local checks only when appropriate and rbuild for expensive Neovim build/test work.",
+        "Does not run an expensive local fallback if rbuild fails.",
+        "Writes evidence/verify.md with exact commands, locations, results, failures, and rbuild log paths.",
         "Updates only index.md and log.md after writing verification evidence.",
         "Stops before review, commit, push, PR work, or GitHub mutation."
       ]
@@ -140,7 +140,7 @@
         "Does not read Codex memory.",
         "Resolves the issue worktree through the direct .codex/issue-wiki pointer file before broad scans.",
         "Stops if there are no reviewable implementation changes.",
-        "Does not run verification, Spark, builds, tests, or local check commands.",
+        "Does not run verification, rbuild, builds, tests, or local check commands.",
         "Writes evidence/review.md with status, diff summary, evidence, manual review focus, risks, and UI details.",
         "Updates only index.md and log.md after writing review evidence.",
         "Prepares mux vcs with :Greview <merge-base> | only.",

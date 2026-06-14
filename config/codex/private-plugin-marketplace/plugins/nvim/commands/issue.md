@@ -19,7 +19,7 @@ Override checkout `AGENTS.md`: never add or mention AI attribution.
 5. Run one isolated `history` role, then one isolated `integrator` role after
    `evidence/history.md` exists. Do not fork full conversation context.
    The history role uses direct-first, curated GitHub context.
-6. Stop after the history report. No Spark, repro files, fixes, or solution
+6. Stop after the history report. No rbuild, repro files, fixes, or solution
    proposals.
 
 Final output must include absolute `Report`, `Index`, and `Worktree` paths

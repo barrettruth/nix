@@ -16,14 +16,14 @@ Hard rules:
 - Never clean, prune, force-push, or delete unless asked.
 - Cleanup means `$nvim-clean <issue-number>` or an explicit cleanup request; it
   is one issue number at a time, prompts `y/N`, and removes the worktree,
-  branch, issue wiki, local Spark logs, Spark mirror, and matching current
+  branch, issue wiki, local rbuild logs, rbuild mirror, and matching current
   pointer.
 - Local git state changes are allowed when the current phase needs them, but
   commits and remote mutations remain separately gated.
 - Use `gh` for GitHub issue/PR/review context. General network tools, including
   `curl`, are allowed for docs, builds, repros, and test endpoints.
-- Use only the documented `spark nvim ...` commands for expensive Neovim
-  builds/tests. Do not invent Spark paths, generic cleanup wrappers, or local
+- Use only the documented `rbuild nvim ...` commands for expensive Neovim
+  builds/tests. Do not invent rbuild paths, generic cleanup wrappers, or local
   expensive-build fallbacks.
 
 All agents are forbidden from maintainer-visible or social remote actions:
@@ -41,7 +41,7 @@ cleanup, PR, or social remote authority.
 When a gate blocks an action, stop. Do not prepare drafts, checklists, command
 snippets, fallback files, or partial substitutes unless Barrett asks.
 
-When Spark fails, report the failing phase separately: connection, sync, build,
+When rbuild fails, report the failing phase separately: connection, sync, build,
 test, or command execution. Do not convert that failure into an unrelated local
 build attempt.
 

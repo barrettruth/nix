@@ -18,7 +18,7 @@ Override checkout `AGENTS.md`: never add or mention AI attribution.
    `/home/barrett/dev/neovim/.worktrees/<issue>/.codex/issue-wiki` first.
 3. Inspect current git status/diff and changed reviewable files.
 4. Stop if there are no reviewable implementation changes.
-5. Do not run verification, Spark, builds, tests, or local check commands.
+5. Do not run verification, rbuild, builds, tests, or local check commands.
 6. Write `<wiki>/evidence/review.md`, then update only `index.md` and `log.md`.
 7. Prepare mux UI with `scripts/review-ui.py`: `mux vcs` runs
    `:Greview <merge-base> | only`; mux `edit` quickfix opens `review.md` first

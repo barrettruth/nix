@@ -29,7 +29,7 @@ Stop conditions:
 
 - If the branch or worktree already exists, stop and report the exact path.
 - If `upstream` or GitHub access is missing, stop and report the failing phase.
-- Do not build, run Spark, create repro files, or write `evidence/repro.md`.
+- Do not build, run rbuild, create repro files, or write `evidence/repro.md`.
 
 Setup script contract:
 

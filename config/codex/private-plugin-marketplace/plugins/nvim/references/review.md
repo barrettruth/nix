@@ -30,7 +30,7 @@ build/
 Do not stage, unstage, clean, revert, or diagnose staged-state weirdness. Use
 the current git file state as-is.
 
-Do not run verification, Spark, builds, tests, or local check commands. Read
+Do not run verification, rbuild, builds, tests, or local check commands. Read
 `evidence/verify.md` if present; otherwise mark verification as missing.
 
 Compute the review base with:

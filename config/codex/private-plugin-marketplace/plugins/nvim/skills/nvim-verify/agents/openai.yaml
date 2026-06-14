@@ -1,4 +1,4 @@
 interface:
   display_name: "Neovim Verify"
-  short_description: "Run focused Neovim checks with Spark."
+  short_description: "Run focused Neovim checks with rbuild."
   default_prompt: "Verify this Neovim worktree with focused tests."

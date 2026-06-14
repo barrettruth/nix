@@ -23,7 +23,7 @@ Required flow:
 6. If no reviewable implementation changes exist, stop. Do not create artifact
    reviews for blocked, resolved-upstream, clarify, more-repro, or no-change
    states, and do not write `evidence/review.md` for them.
-7. Do not run verification, Spark, builds, tests, or local check commands.
+7. Do not run verification, rbuild, builds, tests, or local check commands.
 8. Write `<wiki>/evidence/review.md`, then update only `index.md` and `log.md`.
 9. Call `../../scripts/review-ui.py` with the worktree, merge-base, and
    quickfix files. Put `review.md` first, then changed reviewable files.

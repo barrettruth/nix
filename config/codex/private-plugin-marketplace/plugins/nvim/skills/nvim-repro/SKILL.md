@@ -21,7 +21,7 @@ Required flow:
 2. Run `../../scripts/repro-preflight.py <issue>`. If it fails, stop. Use its
    printed paths; do not rediscover them manually.
 3. If the issue is not a bug claim, write `Status: not applicable` in
-   `evidence/repro.md` and skip Spark. Otherwise select one allowed strategy.
+   `evidence/repro.md` and skip rbuild. Otherwise select one allowed strategy.
    Current allowlist: `script`.
 4. Spawn one isolated reproducer subagent for that strategy. Do not fork full
    conversation context. Keep the prompt short: issue number, paths, references
@@ -32,5 +32,5 @@ Required flow:
 6. Print status plus absolute `Repro`, `Index`, and `Worktree` paths.
 
 Follow `../../references/repro.md` for role isolation, owned paths, stopping
-rules, and coordinator updates. Read `../../references/spark.md` and
+rules, and coordinator updates. Read `../../references/rbuild.md` and
 `../../references/guardrails.md` only as needed.

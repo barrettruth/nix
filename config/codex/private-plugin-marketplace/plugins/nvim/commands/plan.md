@@ -18,5 +18,5 @@ Use when Barrett asks to plan, debate, or choose the next step before editing.
 3. Read linked evidence only as needed.
 4. Run the bounded read-only freshness check from `references/plan.md`.
 5. Write only `evidence/plan.md`, `index.md`, and `log.md`.
-6. Stop before source edits, builds, tests, Spark verification, commits,
+6. Stop before source edits, builds, tests, rbuild verification, commits,
    pushes, PRs, or GitHub mutation.

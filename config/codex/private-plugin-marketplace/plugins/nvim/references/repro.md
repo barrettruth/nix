@@ -16,12 +16,12 @@ Inputs:
   isolated reproducer subagent.
 - If the raw issue is not a bug claim, for example a feature request or
   behavior question with no erroneous runtime behavior to exercise, write
-  `Status: not applicable` in `evidence/repro.md` and stop without Spark.
+  `Status: not applicable` in `evidence/repro.md` and stop without rbuild.
 - Coordinator prompts must be short: issue number, paths, references to read,
   owned write paths, and hard prohibitions. Do not paste this full contract into
   the subagent prompt.
 - The reproducer reads only the raw issue snapshot, worktree, `guardrails.md`,
-  `spark.md`, and this file.
+  `rbuild.md`, and this file.
 - Do not read Codex memory for `$nvim-repro`.
 - Do not read `evidence/history.md`, `report.md`, or coordinator conclusions
   unless Barrett explicitly asks for a history-informed repro pass.
@@ -48,10 +48,10 @@ message scan, and final status shape; replace only the issue-specific section.
 Run shape:
 
 ```sh
-spark nvim build <issue>
-spark nvim log <issue>
-spark nvim run <issue> -- env VIMRUNTIME=runtime build/bin/nvim --clean --headless -n -i NONE -l .codex/repros/script/repro.lua
-spark nvim log <issue>
+rbuild nvim build <issue>
+rbuild nvim log <issue>
+rbuild nvim run <issue> -- env VIMRUNTIME=runtime build/bin/nvim --clean --headless -n -i NONE -l .codex/repros/script/repro.lua
+rbuild nvim log <issue>
 ```
 
 Source-tree Neovim runs must use `VIMRUNTIME=runtime`.
@@ -75,8 +75,8 @@ and record why.
 - `Status`: reproduced, not reproduced, blocked, or not applicable.
 - Repro file path.
 - Exact build/run commands.
-- `spark nvim log <issue>` paths for each build/run/test command.
-- Every Spark log path for every attempt mentioned in prose.
+- `rbuild nvim log <issue>` paths for each build/run/test command.
+- Every rbuild log path for every attempt mentioned in prose.
 - Minimal observed output or error excerpt.
 - What was tried and why the role stopped.
 
@@ -85,7 +85,7 @@ No solutions, patch plans, or fix recommendations.
 After the subagent finishes, the coordinator updates only:
 
 - `index.md`: reproduction status, link to `evidence/repro.md`, and important
-  Spark log links.
+  rbuild log links.
 - `log.md`: one short append-only entry with strategy and status.
 
 Do not update `report.md` or `sources.md` during `$nvim-repro`.

@@ -1,5 +1,5 @@
 ---
-description: Run one bounded Neovim reproduction strategy with Spark; do not read Codex memory
+description: Run one bounded Neovim reproduction strategy with rbuild; do not read Codex memory
 argument-hint: <issue-number>
 allowed-tools: [Read, Glob, Grep, Bash, Edit, Write]
 ---

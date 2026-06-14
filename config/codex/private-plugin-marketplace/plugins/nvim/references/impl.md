@@ -10,7 +10,7 @@ PRs, workflow dispatch/reruns, GraphQL mutations, and AI attribution.
 
 Cheap local checks mean status/diff inspection, targeted text searches, and
 fast formatting or static checks for touched files when already configured. Do
-not run builds, test suites, Spark verification, or broad CI-equivalent checks;
+not run builds, test suites, rbuild verification, or broad CI-equivalent checks;
 stop with a `$nvim-verify` handoff instead.
 
 ## `fix`
@@ -33,7 +33,7 @@ Forbidden:
 
 - Broad adjacent cleanup.
 - Implementing multiple fix outcomes.
-- Builds, test suites, Spark verification, or broad CI-equivalent checks.
+- Builds, test suites, rbuild verification, or broad CI-equivalent checks.
 
 ## `test-or-docs`
 
@@ -55,7 +55,7 @@ Forbidden:
 - Source/runtime behavior changes.
 - Tiny source tweaks to make a test pass.
 - Broad test/doc rewrites.
-- Builds, test suites, Spark verification, or broad CI-equivalent checks.
+- Builds, test suites, rbuild verification, or broad CI-equivalent checks.
 
 ## `no-change`
 
@@ -128,7 +128,7 @@ uncertainty, or an untested strategy such as TUI/RPC/timing behavior.
 
 If Barrett explicitly selects `more-repro`, stop with the missing reproduction
 fact and the recommended next reproduction step from `evidence/plan.md`. Do not
-create repro files, run Spark, edit source/tests/docs, or improvise a new repro
+create repro files, run rbuild, edit source/tests/docs, or improvise a new repro
 strategy from `$nvim-impl`; route back to `$nvim-repro` or future repro-strategy
 work.
 

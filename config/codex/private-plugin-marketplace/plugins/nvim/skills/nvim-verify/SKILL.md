@@ -1,6 +1,6 @@
 ---
 name: nvim-verify
-description: Verify Neovim implementation work without Codex memory. Use when running focused local or Spark build/test loops after code changes, including exact command evidence and cleanup discipline.
+description: Verify Neovim implementation work without Codex memory. Use when running focused local or rbuild build/test loops after code changes, including exact command evidence and cleanup discipline.
 ---
 
 # nvim-verify
@@ -22,14 +22,14 @@ Workflow:
 4. Inspect the local diff/status and map changed files to focused checks.
 5. If there are no implementation changes to verify, stop and report that.
 6. Prefer focused checks before broad suites.
-7. Use `spark nvim build <issue>` for expensive Neovim builds.
-8. Use `spark nvim test <issue> [test-file]` or
-   `spark nvim run <issue> -- <command> [args...]` for expensive test loops.
+7. Use `rbuild nvim build <issue>` for expensive Neovim builds.
+8. Use `rbuild nvim test <issue> [test-file]` or
+   `rbuild nvim run <issue> -- <command> [args...]` for expensive test loops.
 9. Use `-j4` only when Barrett asks or the agent is known to be alone.
-10. Do not run expensive local fallback if Spark fails.
+10. Do not run expensive local fallback if rbuild fails.
 11. Write verification evidence to `<wiki>/evidence/verify.md`, then update
     only `index.md` and `log.md`.
 12. Report exact commands, locations, results, and failures.
 13. Stop at verification evidence; review and commit are separate stages.
 
-Read `../../references/spark.md` and `../../references/guardrails.md`.
+Read `../../references/rbuild.md` and `../../references/guardrails.md`.

@@ -32,7 +32,7 @@ Required flow:
    directions, precedent, or risk checks only after freshness and blocked-status
    checks do not stop the workflow. Use none for obvious cases.
 7. Use targeted source reads or cheap read-only probes when needed. Do not run
-   builds, test suites, Spark verification, or implementation-phase checks.
+   builds, test suites, rbuild verification, or implementation-phase checks.
 8. If planning is premature, write `Status: blocked` in `evidence/plan.md`,
    name the blocker and next concrete step, then stop.
 9. Otherwise write realistic outcomes and a `Recommendation` section. The

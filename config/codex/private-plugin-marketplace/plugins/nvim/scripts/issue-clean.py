@@ -8,9 +8,9 @@ from pathlib import Path
 REPO = Path("/home/barrett/dev/neovim")
 WORKTREES = REPO / ".worktrees"
 STATE_ROOT = Path("/home/barrett/.local/state/codex-nvim/issues")
-SPARK_LOG_ROOT = Path("/home/barrett/.local/state/spark/nvim")
+RBUILD_LOG_ROOT = Path("/home/barrett/.local/state/rbuild/nvim")
 CURRENT_POINTER = WORKTREES / ".codex" / "current"
-SPARK_REMOTE_WORKTREES = "/home/barrett/dev/neovim/.worktrees"
+RBUILD_REMOTE_WORKTREES = "/home/barrett/dev/neovim/.worktrees"
 
 
 class CleanError(Exception):
@@ -96,10 +96,10 @@ def path_state(path: Path) -> str:
     return "(exists)" if path.exists() else "(missing)"
 
 
-def spark_state(issue: str) -> str:
-    path = f"{SPARK_REMOTE_WORKTREES}/{issue}"
+def rbuild_state(issue: str) -> str:
+    path = f"{RBUILD_REMOTE_WORKTREES}/{issue}"
     command = f"test -e {path} && printf exists || printf missing"
-    result = run_capture(["ssh", "spark", command])
+    result = run_capture(["ssh", "barrett@desktop", command])
     if result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip() or "unknown ssh error"
         return f"(unknown: {detail})"
@@ -109,7 +109,7 @@ def spark_state(issue: str) -> str:
 def print_plan(issue: str) -> None:
     worktree = WORKTREES / issue
     wiki = STATE_ROOT / issue
-    spark_logs = SPARK_LOG_ROOT / issue
+    rbuild_logs = RBUILD_LOG_ROOT / issue
 
     print(f"Neovim issue cleanup: {issue}")
     print(f"worktree: {worktree} {path_state(worktree)}")
@@ -118,9 +118,9 @@ def print_plan(issue: str) -> None:
     print("status:")
     print(worktree_status(worktree))
     print(f"issue wiki: {wiki} {path_state(wiki)}")
-    print(f"local Spark logs: {spark_logs} {path_state(spark_logs)}")
+    print(f"local rbuild logs: {rbuild_logs} {path_state(rbuild_logs)}")
     print(f"current pointer: {CURRENT_POINTER} {current_pointer_state(issue)}")
-    print(f"Spark mirror: spark:{SPARK_REMOTE_WORKTREES}/{issue} {spark_state(issue)}")
+    print(f"rbuild mirror: barrett@desktop:{RBUILD_REMOTE_WORKTREES}/{issue} {rbuild_state(issue)}")
 
 
 def remove_worktree(issue: str) -> None:
@@ -143,21 +143,21 @@ def remove_current_pointer(issue: str) -> None:
         CURRENT_POINTER.unlink()
 
 
-def remove_spark_mirror(issue: str) -> None:
-    path = f"{SPARK_REMOTE_WORKTREES}/{issue}"
-    result = run_capture(["ssh", "spark", f"rm -rf {path}"])
+def remove_rbuild_mirror(issue: str) -> None:
+    path = f"{RBUILD_REMOTE_WORKTREES}/{issue}"
+    result = run_capture(["ssh", "barrett@desktop", f"rm -rf {path}"])
     if result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip() or "unknown ssh error"
-        die(f"failed to remove Spark mirror: {detail}")
+        die(f"failed to remove rbuild mirror: {detail}")
 
 
 def clean(issue: str) -> None:
     remove_worktree(issue)
     remove_branch(issue)
     shutil.rmtree(STATE_ROOT / issue, ignore_errors=True)
-    shutil.rmtree(SPARK_LOG_ROOT / issue, ignore_errors=True)
+    shutil.rmtree(RBUILD_LOG_ROOT / issue, ignore_errors=True)
     remove_current_pointer(issue)
-    remove_spark_mirror(issue)
+    remove_rbuild_mirror(issue)
 
 
 def main(argv: list[str]) -> int:
