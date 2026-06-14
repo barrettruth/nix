@@ -711,13 +711,17 @@ class Rbuild:
         )
 
     def run_remote(self, args: list[str]) -> None:
-        unit = f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        unit = (
+            f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        )
         remote_command = self.remote_run_command(args, unit)
         eprint(f"rbuild: running in {self.host}:{self.remote_dir}")
         _ = self.ssh(remote_command)
 
     def run_remote_with_log(self, args: list[str]) -> None:
-        unit = f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        unit = (
+            f"rbuild-{safe_name(self.repo_name)}-{safe_name(self.slot)}-{os.getpid()}"
+        )
         remote_command = self.remote_run_command(args, unit)
         log_path = self.new_nvim_log_path()
         log_path.parent.mkdir(parents=True, exist_ok=True)
