@@ -9,6 +9,8 @@
   imports = [
     ./hardware-configuration.nix
     ./disk-config.nix
+    ./forgejo.nix
+    ./ddns.nix
   ];
 
   boot.loader.grub = {
