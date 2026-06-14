@@ -3,6 +3,7 @@
   pkgs,
   hostConfig,
   mkLaptopSecret,
+  identity,
   ...
 }:
 
@@ -188,7 +189,18 @@ in
     wireplumber.enable = true;
   };
 
-  services.tailscale.enable = true;
+  sops.secrets."headscale-authkey" = mkLaptopSecret "headscale-authkey" {
+    mode = "0400";
+  };
+
+  services.tailscale = {
+    enable = true;
+    authKeyFile = config.sops.secrets."headscale-authkey".path;
+    extraUpFlags = [
+      "--login-server"
+      "https://headscale.${identity.domain}"
+    ];
+  };
 
   virtualisation.docker.enable = true;
   virtualisation.libvirtd.enable = true;
