@@ -7,6 +7,11 @@
   ...
 }:
 let
+  inherit (import ../../modules/nixos/common/service-helpers.nix { inherit pkgs lib; })
+    mkR2Backup
+    mkNextjsApp
+    mkDeployService
+    ;
   hasDeltaR2BackupSecret = builtins.pathExists ../../secrets/desktop/delta-r2-backup-env;
   softwareSyncSecretNames = [
     "delta-software-sync-delta-api-key"
@@ -25,8 +30,6 @@ let
       };
       maintainerUsername = "barrettruth";
       category = "Software";
-      # popular plugins mirrored to forgejo but with issues still on github;
-      # pin their canonical issue source to github (forgejo fallback if unset).
       canonicalProviders = lib.optionalAttrs hasSoftwareSyncGithubSecret {
         "barrettruth/diffs.nvim" = "github";
         "barrettruth/canola.nvim" = "github";
@@ -79,185 +82,96 @@ let
     };
   };
 in
-{
-  services.nginx.virtualHosts."delta.${identity.domain}" = {
-    enableACME = true;
-    forceSSL = true;
-    locations."/".proxyPass = "http://127.0.0.1:3001";
-  };
-
-  sops.secrets = {
-    "delta-env" = mkDesktopSecret "delta-env" {
-      owner = "delta";
-      group = "delta";
-      mode = "0400";
-      restartUnits = [ "delta.service" ];
-    };
-  }
-  // lib.optionalAttrs hasDeltaR2BackupSecret {
-    "delta-r2-backup-env" = mkDesktopSecret "delta-r2-backup-env" {
-      owner = "root";
-      group = "root";
-      mode = "0400";
-      restartUnits = [ "delta-r2-backup.service" ];
-    };
-  }
-  // lib.optionalAttrs hasSoftwareSyncSecrets {
-    "delta-software-sync-delta-api-key" = mkDesktopSecret "delta-software-sync-delta-api-key" {
-      owner = "delta";
-      group = "delta";
-      mode = "0400";
-      restartUnits = softwareSyncUnits;
-    };
-    "delta-software-sync-forgejo-token" = mkDesktopSecret "delta-software-sync-forgejo-token" {
-      owner = "delta";
-      group = "delta";
-      mode = "0400";
-      restartUnits = softwareSyncUnits;
-    };
-  }
-  // lib.optionalAttrs hasSoftwareSyncGithubSecret {
-    "delta-software-sync-github-token" = mkDesktopSecret "delta-software-sync-github-token" {
-      owner = "delta";
-      group = "delta";
-      mode = "0400";
-      restartUnits = softwareSyncUnits;
-    };
-  };
-
-  users.users.delta = {
-    isSystemUser = true;
-    home = "/opt/delta";
+lib.mkMerge [
+  (mkNextjsApp {
+    name = "delta";
+    dir = "/opt/delta";
+    user = "delta";
     group = "delta";
-  };
-
-  users.groups.delta = { };
-
-  systemd.services.delta = {
+    port = 3001;
     description = "delta - personal todo/productivity platform";
-    after = [ "network.target" ];
-    wantedBy = [ "multi-user.target" ];
-    unitConfig.ConditionPathExists = "/opt/delta/.next/standalone/server.js";
-    serviceConfig = {
-      Type = "simple";
-      WorkingDirectory = "/opt/delta";
-      ExecStart = "${pkgs.nodejs_22}/bin/node .next/standalone/server.js";
-      Restart = "on-failure";
-      RestartSec = 5;
-      User = "delta";
-      Group = "delta";
-      StateDirectory = "delta";
-      EnvironmentFile = config.sops.secrets."delta-env".path;
-    };
+    environmentFile = config.sops.secrets."delta-env".path;
     environment = {
-      NODE_ENV = "production";
-      PORT = "3001";
-      HOSTNAME = "127.0.0.1";
       DATABASE_URL = "/var/lib/delta/data.db";
       DELTA_PUBLIC_ORIGIN = "https://delta.${identity.domain}";
       OAUTH_REDIRECT_BASE_URL = "https://delta.${identity.domain}";
       WEBAUTHN_RP_ID = "delta.${identity.domain}";
       WEBAUTHN_ORIGIN = "https://delta.${identity.domain}";
     };
-  };
-
-  systemd.services.delta-deploy = {
-    description = "Build and release delta from /opt/delta";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    path = [
-      pkgs.bash
-      pkgs.coreutils
-      pkgs.gitMinimal
-      pkgs.nodejs_22
-      pkgs.pnpm
-    ];
+  })
+  (mkDeployService {
+    name = "delta";
+    dir = "/opt/delta";
+    user = "delta";
+    group = "delta";
     environment = {
-      HOME = "/opt/delta";
-      NODE_ENV = "production";
       DATABASE_URL = "/var/lib/delta/data.db";
-      npm_config_manage_package_manager_versions = "false";
-      COREPACK_ENABLE_AUTO_PIN = "0";
     };
-    serviceConfig = {
-      Type = "oneshot";
-      User = "delta";
-      Group = "delta";
-      WorkingDirectory = "/opt/delta";
-      ExecStart = "${pkgs.bash}/bin/bash /opt/delta/scripts/deploy.sh";
+    restartUnit = "delta.service";
+  })
+  (lib.optionalAttrs hasDeltaR2BackupSecret (mkR2Backup {
+    name = "delta";
+    source = "/var/lib/delta/data.db";
+    bucket = "delta";
+    environmentFile = config.sops.secrets."delta-r2-backup-env".path;
+  }))
+  {
+    services.nginx.virtualHosts."delta.${identity.domain}" = {
+      enableACME = true;
+      forceSSL = true;
+      locations."/".proxyPass = "http://127.0.0.1:3001";
     };
-  };
 
-  security.polkit.enable = true;
-  security.polkit.extraConfig = ''
-    polkit.addRule(function(action, subject) {
-      if (action.id == "org.freedesktop.systemd1.manage-units") {
-        var unit = action.lookup("unit");
-        if (subject.user == "delta" && unit == "delta.service") {
-          return polkit.Result.YES;
-        }
-        if (subject.user == "gitea-runner" && unit == "delta-deploy.service") {
-          return polkit.Result.YES;
-        }
-      }
-    });
-  '';
-
-  systemd.services.delta-r2-backup = {
-    description = "Backup delta SQLite to Cloudflare R2";
-    serviceConfig = {
-      Type = "oneshot";
+    sops.secrets = {
+      "delta-env" = mkDesktopSecret "delta-env" {
+        owner = "delta";
+        group = "delta";
+        mode = "0400";
+        restartUnits = [ "delta.service" ];
+      };
     }
     // lib.optionalAttrs hasDeltaR2BackupSecret {
-      EnvironmentFile = config.sops.secrets."delta-r2-backup-env".path;
+      "delta-r2-backup-env" = mkDesktopSecret "delta-r2-backup-env" {
+        owner = "root";
+        group = "root";
+        mode = "0400";
+        restartUnits = [ "delta-r2-backup.service" ];
+      };
+    }
+    // lib.optionalAttrs hasSoftwareSyncSecrets {
+      "delta-software-sync-delta-api-key" = mkDesktopSecret "delta-software-sync-delta-api-key" {
+        owner = "delta";
+        group = "delta";
+        mode = "0400";
+        restartUnits = softwareSyncUnits;
+      };
+      "delta-software-sync-forgejo-token" = mkDesktopSecret "delta-software-sync-forgejo-token" {
+        owner = "delta";
+        group = "delta";
+        mode = "0400";
+        restartUnits = softwareSyncUnits;
+      };
+    }
+    // lib.optionalAttrs hasSoftwareSyncGithubSecret {
+      "delta-software-sync-github-token" = mkDesktopSecret "delta-software-sync-github-token" {
+        owner = "delta";
+        group = "delta";
+        mode = "0400";
+        restartUnits = softwareSyncUnits;
+      };
     };
-    path = [
-      pkgs.awscli2
-      pkgs.gawk
-    ];
-    script = ''
-      : "''${R2_ACCESS_KEY_ID:?delta R2 backup secret is missing R2_ACCESS_KEY_ID}"
-      : "''${R2_SECRET_ACCESS_KEY:?delta R2 backup secret is missing R2_SECRET_ACCESS_KEY}"
-      : "''${R2_ENDPOINT:?delta R2 backup secret is missing R2_ENDPOINT}"
 
-      export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-      export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
-      ENDPOINT="$R2_ENDPOINT"
-      DATE=$(date +%Y-%m-%d)
-
-      aws s3 cp /var/lib/delta/data.db \
-        "s3://delta/$DATE/data.db" \
-        --endpoint-url "$ENDPOINT"
-
-      CUTOFF=$(date -d '30 days ago' +%Y-%m-%d)
-      aws s3 ls s3://delta/ --endpoint-url "$ENDPOINT" \
-        | awk '{print $2}' | tr -d '/' \
-        | while read dir; do
-            if [ "$dir" \< "$CUTOFF" ]; then
-              aws s3 rm "s3://delta/$dir" --recursive --endpoint-url "$ENDPOINT"
-            fi
-          done
-    '';
-  };
-
-  systemd.timers.delta-r2-backup = {
-    wantedBy = lib.optionals hasDeltaR2BackupSecret [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
+    systemd.services.delta-software-sync-discovery = mkSoftwareSyncService {
+      mode = "discovery";
+      description = "Discover forge Software tasks for delta";
     };
-  };
 
-  systemd.services.delta-software-sync-discovery = mkSoftwareSyncService {
-    mode = "discovery";
-    description = "Discover forge Software tasks for delta";
-  };
+    systemd.services.delta-software-sync-active = mkSoftwareSyncService {
+      mode = "active";
+      description = "Reconcile tracked forge Software tasks for delta";
+    };
 
-  systemd.services.delta-software-sync-active = mkSoftwareSyncService {
-    mode = "active";
-    description = "Reconcile tracked forge Software tasks for delta";
-  };
-
-  systemd.timers.delta-software-sync-discovery = mkSoftwareSyncTimer "2m";
-  systemd.timers.delta-software-sync-active = mkSoftwareSyncTimer "4m";
-}
+    systemd.timers.delta-software-sync-discovery = mkSoftwareSyncTimer "2m";
+    systemd.timers.delta-software-sync-active = mkSoftwareSyncTimer "4m";
+  }
+]
