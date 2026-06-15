@@ -13,6 +13,7 @@
     ./forgejo.nix
     ./static-sites.nix
     ./delta.nix
+    ./vaultwarden.nix
     ./ddns.nix
   ];
 
