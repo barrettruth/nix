@@ -1,11 +1,37 @@
 { pkgs, lib }:
 let
+  hardening = {
+    ProtectSystem = "strict";
+    ProtectHome = true;
+    PrivateTmp = true;
+    PrivateDevices = true;
+    ProtectKernelTunables = true;
+    ProtectKernelModules = true;
+    ProtectControlGroups = true;
+    NoNewPrivileges = true;
+    RestrictAddressFamilies = [
+      "AF_INET"
+      "AF_INET6"
+      "AF_UNIX"
+    ];
+    RestrictNamespaces = true;
+    LockPersonality = true;
+    RestrictRealtime = true;
+    RestrictSUIDSGID = true;
+    CapabilityBoundingSet = "";
+    SystemCallArchitectures = "native";
+    SystemCallFilter = [ "@system-service" ];
+    UMask = "0077";
+  };
+
   mkR2Backup =
     {
       name,
       source,
       bucket,
       environmentFile,
+      user,
+      group,
       after ? [ ],
     }:
     {
@@ -14,8 +40,11 @@ let
         inherit after;
         serviceConfig = {
           Type = "oneshot";
+          User = user;
+          Group = group;
           EnvironmentFile = environmentFile;
-        };
+        }
+        // hardening;
         path = [
           pkgs.awscli2
           pkgs.gawk
@@ -93,7 +122,8 @@ let
         }
         // lib.optionalAttrs (environmentFile != null) {
           EnvironmentFile = environmentFile;
-        };
+        }
+        // hardening;
         environment = {
           NODE_ENV = "production";
           PORT = toString port;
@@ -112,8 +142,9 @@ let
       after ? [ "network-online.target" ],
       wants ? [ "network-online.target" ],
       environment ? { },
-      safeDirectories ? [ ],
-      postScript ? "",
+      readWritePaths ? [ dir ],
+      loadCredential ? null,
+      preScript ? "",
       restartUnit ? null,
     }:
     {
@@ -126,9 +157,11 @@ let
           pkgs.gitMinimal
           pkgs.nodejs_22
           pkgs.pnpm
+          pkgs.openssh
         ];
         environment = {
-          HOME = if user == "root" then "/root" else dir;
+          HOME = dir;
+          CI = "true";
           NODE_ENV = "production";
           npm_config_manage_package_manager_versions = "false";
           COREPACK_ENABLE_AUTO_PIN = "0";
@@ -141,13 +174,15 @@ let
           WorkingDirectory = dir;
           ExecStart = pkgs.writeShellScript "${name}-deploy" ''
             set -euo pipefail
-            ${lib.concatMapStringsSep "\n" (
-              d: "git config --global --add safe.directory \"${d}\""
-            ) safeDirectories}
+            ${preScript}
             bash ${dir}/scripts/deploy.sh
-            ${postScript}
           '';
-        };
+          ReadWritePaths = readWritePaths;
+        }
+        // lib.optionalAttrs (loadCredential != null) {
+          LoadCredential = [ loadCredential ];
+        }
+        // hardening;
       };
 
       security.polkit.enable = true;
@@ -169,5 +204,10 @@ let
     };
 in
 {
-  inherit mkR2Backup mkNextjsApp mkDeployService;
+  inherit
+    mkR2Backup
+    mkNextjsApp
+    mkDeployService
+    hardening
+    ;
 }

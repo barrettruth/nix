@@ -37,17 +37,15 @@ lib.mkMerge [
   (mkDeployService {
     name = "finance";
     dir = financeDir;
-    user = "root";
-    group = "root";
+    user = "finance";
+    group = "finance";
     after = [
       "network-online.target"
       "forgejo.service"
     ];
-    safeDirectories = [
-      financeDir
-      "/var/lib/forgejo/repositories/barrettruth/finance.git"
-    ];
-    postScript = "chown -R finance:finance ${financeDir}";
+    loadCredential = "deploy-key:${config.sops.secrets."finance-deploy-key".path}";
+    preScript = ''export GIT_SSH_COMMAND="ssh -i $CREDENTIALS_DIRECTORY/deploy-key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"'';
+    restartUnit = "finance.service";
   })
   {
     services.nginx.virtualHosts.${financeHost} = {
@@ -94,6 +92,13 @@ lib.mkMerge [
           '';
         };
       };
+    };
+  }
+  {
+    sops.secrets."finance-deploy-key" = mkDesktopSecret "finance-deploy-key" {
+      owner = "finance";
+      group = "finance";
+      mode = "0400";
     };
   }
   (lib.optionalAttrs hasFinanceEnvSecret {

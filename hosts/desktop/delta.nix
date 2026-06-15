@@ -11,6 +11,7 @@ let
     mkR2Backup
     mkNextjsApp
     mkDeployService
+    hardening
     ;
   hasDeltaR2BackupSecret = builtins.pathExists ../../secrets/desktop/delta-r2-backup-env;
   softwareSyncSecretNames = [
@@ -67,7 +68,8 @@ let
         User = "delta";
         Group = "delta";
         ExecStart = "${deltaSoftwareSync}/bin/delta-software-sync --config ${softwareSyncConfig} --mode ${mode}";
-      };
+      }
+      // hardening;
     };
   softwareSyncUnits = [
     "delta-software-sync-discovery.service"
@@ -107,6 +109,10 @@ lib.mkMerge [
     environment = {
       DATABASE_URL = "/var/lib/delta/data.db";
     };
+    readWritePaths = [
+      "/opt/delta"
+      "/var/lib/delta"
+    ];
     restartUnit = "delta.service";
   })
   (lib.optionalAttrs hasDeltaR2BackupSecret (mkR2Backup {
@@ -114,6 +120,8 @@ lib.mkMerge [
     source = "/var/lib/delta/data.db";
     bucket = "delta";
     environmentFile = config.sops.secrets."delta-r2-backup-env".path;
+    user = "delta";
+    group = "delta";
   }))
   {
     services.nginx.virtualHosts."delta.${identity.domain}" = {

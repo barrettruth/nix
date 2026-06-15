@@ -15,6 +15,8 @@ lib.mkMerge [
     source = "/var/backup/vaultwarden/db.sqlite3";
     bucket = "vaultwarden";
     environmentFile = config.sops.secrets."vaultwarden-r2-backup-env".path;
+    user = "vaultwarden";
+    group = "vaultwarden";
     after = [ "backup-vaultwarden.service" ];
   })
   {
