@@ -176,6 +176,8 @@
     Group = lib.mkForce "gitea-runner";
   };
 
+  systemd.services.nscd.startLimitIntervalSec = 0;
+
   networking.hosts."127.0.0.1" = [
     "forge.barrettruth.com"
     "git.barrettruth.com"
