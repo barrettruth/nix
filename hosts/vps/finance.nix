@@ -7,12 +7,9 @@
   ...
 }:
 let
-  financeDir = "/opt/finance";
   financeHost = "finance.${identity.domain}";
   authHost = "auth.${identity.domain}";
   cookieDomain = identity.domain;
-  financePort = 3002;
-  hasFinanceEnvSecret = builtins.pathExists ../../secrets/vps/finance-env;
   financeAutheliaSecretNames = [
     "finance-authelia-jwt-secret"
     "finance-authelia-session-secret"
@@ -25,115 +22,57 @@ let
   ) financeAutheliaSecretNames;
 in
 {
-  services.nginx.virtualHosts.${financeHost} = lib.mkMerge [
-    {
-      enableACME = true;
-      forceSSL = true;
-    }
-    (
-      if hasFinanceAutheliaSecrets then
-        {
-          locations = {
-            "/" = {
-              proxyPass = "http://127.0.0.1:${toString financePort}";
-              extraConfig = ''
-                auth_request /internal/authelia/authz;
-                auth_request_set $user $upstream_http_remote_user;
-                auth_request_set $groups $upstream_http_remote_groups;
-                auth_request_set $name $upstream_http_remote_name;
-                auth_request_set $email $upstream_http_remote_email;
-                auth_request_set $redirection_url $upstream_http_location;
-                error_page 401 =302 $redirection_url;
-                proxy_set_header Remote-User $user;
-                proxy_set_header Remote-Groups $groups;
-                proxy_set_header Remote-Email $email;
-                proxy_set_header Remote-Name $name;
-              '';
-            };
-            "/internal/authelia/authz" = {
-              proxyPass = "http://127.0.0.1:9091/api/authz/auth-request";
-              extraConfig = ''
-                internal;
-                proxy_pass_request_body off;
-                proxy_set_header Content-Length "";
-                proxy_set_header Connection "";
-                proxy_set_header X-Original-Method $request_method;
-                proxy_set_header X-Original-URL $scheme://$host$request_uri;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_set_header X-Forwarded-Host $host;
-                proxy_set_header X-Forwarded-URI $request_uri;
-                proxy_set_header X-Forwarded-For $remote_addr;
-              '';
-            };
-          };
-        }
-      else
-        {
-          locations."/".return = "503";
-        }
-    )
-  ];
-
   services.nginx.virtualHosts.${authHost} = lib.mkIf hasFinanceAutheliaSecrets {
     enableACME = true;
     forceSSL = true;
     locations."/".proxyPass = "http://127.0.0.1:9091";
   };
 
-  sops.secrets =
-    (lib.optionalAttrs hasFinanceEnvSecret {
-      "finance-env" = mkVpsSecret "finance-env" {
-        owner = "finance";
-        group = "finance";
-        mode = "0400";
-        restartUnits = [ "finance.service" ];
-      };
-    })
-    // (lib.optionalAttrs hasFinanceAutheliaSecrets {
-      "finance-authelia-jwt-secret" = mkVpsSecret "finance-authelia-jwt-secret" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-      "finance-authelia-session-secret" = mkVpsSecret "finance-authelia-session-secret" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-      "finance-authelia-storage-key" = mkVpsSecret "finance-authelia-storage-key" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-      "finance-authelia-smtp-password" = mkVpsSecret "finance-authelia-smtp-password" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-      "finance-authelia-users" = mkVpsSecret "finance-authelia-users" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        path = "/run/secrets/finance-authelia-users.yaml";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-      "finance-authelia-oidc-issuer-key" = mkVpsSecret "finance-authelia-oidc-issuer-key" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-      "finance-authelia-oidc-hmac" = mkVpsSecret "finance-authelia-oidc-hmac" {
-        owner = "authelia-finance";
-        group = "authelia-finance";
-        mode = "0400";
-        restartUnits = [ "authelia-finance.service" ];
-      };
-    });
+  sops.secrets = lib.optionalAttrs hasFinanceAutheliaSecrets {
+    "finance-authelia-jwt-secret" = mkVpsSecret "finance-authelia-jwt-secret" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+    "finance-authelia-session-secret" = mkVpsSecret "finance-authelia-session-secret" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+    "finance-authelia-storage-key" = mkVpsSecret "finance-authelia-storage-key" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+    "finance-authelia-smtp-password" = mkVpsSecret "finance-authelia-smtp-password" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+    "finance-authelia-users" = mkVpsSecret "finance-authelia-users" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      path = "/run/secrets/finance-authelia-users.yaml";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+    "finance-authelia-oidc-issuer-key" = mkVpsSecret "finance-authelia-oidc-issuer-key" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+    "finance-authelia-oidc-hmac" = mkVpsSecret "finance-authelia-oidc-hmac" {
+      owner = "authelia-finance";
+      group = "authelia-finance";
+      mode = "0400";
+      restartUnits = [ "authelia-finance.service" ];
+    };
+  };
 
   services.authelia.instances.finance = lib.mkIf hasFinanceAutheliaSecrets {
     enable = true;
@@ -216,47 +155,4 @@ in
     };
   };
 
-  users.users.finance = {
-    isSystemUser = true;
-    home = financeDir;
-    group = "finance";
-  };
-
-  users.groups.finance = { };
-
-  systemd.tmpfiles.rules = [ "d ${financeDir} 0750 finance finance -" ];
-
-  systemd.services.finance = {
-    description = "finance - private finance shell";
-    after = [
-      "network.target"
-      "authelia-finance.service"
-    ];
-    requires = [ "authelia-finance.service" ];
-    wantedBy = [ "multi-user.target" ];
-    unitConfig.ConditionPathExists = "${financeDir}/.next/standalone/server.js";
-    serviceConfig = {
-      Type = "simple";
-      WorkingDirectory = financeDir;
-      ExecStart = "${pkgs.nodejs_22}/bin/node .next/standalone/server.js";
-      Restart = "on-failure";
-      RestartSec = 5;
-      User = "finance";
-      Group = "finance";
-      StateDirectory = "finance";
-    }
-    // lib.optionalAttrs hasFinanceEnvSecret {
-      EnvironmentFile = config.sops.secrets."finance-env".path;
-    };
-    environment = {
-      NODE_ENV = "production";
-      PORT = toString financePort;
-      HOSTNAME = "127.0.0.1";
-      FINANCE_PUBLIC_ORIGIN = "https://${financeHost}";
-      FINANCE_AUTH_USER_HEADERS = "remote-user,x-auth-request-user,x-forwarded-user";
-      FINANCE_AUTH_NAME_HEADERS = "remote-name,x-auth-request-name,x-forwarded-name";
-      FINANCE_AUTH_EMAIL_HEADERS = "remote-email,x-auth-request-email,x-forwarded-email";
-      FINANCE_AUTH_GROUPS_HEADERS = "remote-groups,x-auth-request-groups,x-forwarded-groups";
-    };
-  };
 }
