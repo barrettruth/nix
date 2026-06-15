@@ -14,6 +14,7 @@
     ./static-sites.nix
     ./delta.nix
     ./vaultwarden.nix
+    ./finance.nix
     ./ddns.nix
   ];
 
