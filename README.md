@@ -12,9 +12,7 @@ My personal nix configuration leveraging:
 - [Dendritic Nix](https://github.com/DeterminateSystems/detsys-ts/wiki/Dendritic-Nix)
 - [flakes](https://wiki.nixos.org/wiki/Flakes) & [flake-parts](https://github.com/hercules-ci/flake-parts)
 
-Hosts a Dell XPS 9500 laptop, a desktop PC, and a NixOS VPS.
-
-The Desktop runs the canonical Forgejo instance at `forge.barrettruth.com`.
+Hosts a Dell XPS 9500 laptop, a NixOS PC, and a NixOS VPS.
 
 ## Configuration Structure
 
@@ -34,6 +32,6 @@ pkgs/                            custom derivations
 
 ## Hosts
 
-- **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com` and [Headscale](https://headscale.net/) at `headscale.barrettruth.com`.
 - **laptop**: Dell XPS 9500 workstation.
 - **desktop**: NixOS workstation, primary self-host. [Forgejo](https://forgejo.org/) at `forge.barrettruth.com`, Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [`delta`](https://forge.barrettruth.com/barrettruth/delta) at `delta.barrettruth.com`, `finance.barrettruth.com`, and static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`).
+- **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com` and [Headscale](https://headscale.net/) at `headscale.barrettruth.com`.
