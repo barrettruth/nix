@@ -291,6 +291,8 @@ in
     "www.vimdoc-language-server.com"
     "vimdoc-language-server.com"
     "vimdoc-language-server.barrettruth.com"
+    "delta.barrettruth.com"
+    "vault.barrettruth.com"
   ];
 
   programs.ssh.knownHosts.desktop = {
