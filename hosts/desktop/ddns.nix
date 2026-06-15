@@ -87,7 +87,10 @@ let
       }
 
       ${lib.concatMapStringsSep "\n" (
-        g: "update_domain ${lib.escapeShellArg g.domain} ${lib.concatMapStringsSep " " lib.escapeShellArg g.names}"
+        g:
+        "update_domain ${lib.escapeShellArg g.domain} ${
+          lib.concatMapStringsSep " " lib.escapeShellArg g.names
+        }"
       ) ddnsByDomain}
 
       exit "$rc"
