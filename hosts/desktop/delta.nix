@@ -161,6 +161,48 @@ in
     };
   };
 
+  systemd.services.delta-deploy = {
+    description = "Build and release delta from /opt/delta";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    path = [
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.gitMinimal
+      pkgs.nodejs_22
+      pkgs.pnpm
+    ];
+    environment = {
+      HOME = "/opt/delta";
+      NODE_ENV = "production";
+      DATABASE_URL = "/var/lib/delta/data.db";
+      npm_config_manage_package_manager_versions = "false";
+      COREPACK_ENABLE_AUTO_PIN = "0";
+    };
+    serviceConfig = {
+      Type = "oneshot";
+      User = "delta";
+      Group = "delta";
+      WorkingDirectory = "/opt/delta";
+      ExecStart = "${pkgs.bash}/bin/bash /opt/delta/scripts/deploy.sh";
+    };
+  };
+
+  security.polkit.enable = true;
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.freedesktop.systemd1.manage-units") {
+        var unit = action.lookup("unit");
+        if (subject.user == "delta" && unit == "delta.service") {
+          return polkit.Result.YES;
+        }
+        if (subject.user == "gitea-runner" && unit == "delta-deploy.service") {
+          return polkit.Result.YES;
+        }
+      }
+    });
+  '';
+
   systemd.services.delta-r2-backup = {
     description = "Backup delta SQLite to Cloudflare R2";
     serviceConfig = {
