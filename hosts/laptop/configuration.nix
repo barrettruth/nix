@@ -293,6 +293,7 @@ in
     "vimdoc-language-server.barrettruth.com"
     "delta.barrettruth.com"
     "vault.barrettruth.com"
+    "finance.barrettruth.com"
   ];
 
   programs.ssh.knownHosts.desktop = {
