@@ -44,7 +44,7 @@ lib.mkMerge [
       "forgejo.service"
     ];
     loadCredential = "deploy-key:${config.sops.secrets."finance-deploy-key".path}";
-    preScript = ''export GIT_SSH_COMMAND="ssh -i $CREDENTIALS_DIRECTORY/deploy-key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"'';
+    preScript = ''export GIT_SSH_COMMAND="ssh -i $CREDENTIALS_DIRECTORY/deploy-key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/ssh_known_hosts"'';
     restartUnit = "finance.service";
   })
   {

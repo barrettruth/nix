@@ -7,7 +7,11 @@ let
     PrivateDevices = true;
     ProtectKernelTunables = true;
     ProtectKernelModules = true;
+    ProtectKernelLogs = true;
     ProtectControlGroups = true;
+    ProtectClock = true;
+    ProtectHostname = true;
+    ProtectProc = "noaccess";
     NoNewPrivileges = true;
     RestrictAddressFamilies = [
       "AF_INET"
@@ -20,7 +24,10 @@ let
     RestrictSUIDSGID = true;
     CapabilityBoundingSet = "";
     SystemCallArchitectures = "native";
-    SystemCallFilter = [ "@system-service" ];
+    SystemCallFilter = [
+      "@system-service"
+      "~@privileged"
+    ];
     UMask = "0077";
   };
 
@@ -182,7 +189,10 @@ let
         // lib.optionalAttrs (loadCredential != null) {
           LoadCredential = [ loadCredential ];
         }
-        // hardening;
+        // hardening
+        // {
+          SystemCallFilter = [ "@system-service" ];
+        };
       };
 
       security.polkit.enable = true;
