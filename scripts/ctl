@@ -344,6 +344,7 @@ volume)
 wifi)
   case "$2" in
   pick)
+    pkill -x fuzzel 2>/dev/null && exit 0
     require fuzzel iwctl
     station=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | awk '/station/{print $1}')
     [ -z "$station" ] && {
