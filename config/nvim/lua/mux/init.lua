@@ -110,6 +110,12 @@ function M.setup()
     )
     vim.keymap.set(
         { 'n', 'i', 't' },
+        prefix .. 'X',
+        [[<cmd>lua require('mux').exit_to_latest()<cr>]],
+        { desc = 'mux: close session (hop to last)' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
         prefix .. 'R',
         [[<cmd>lua require('mux').reload()<cr>]],
         { desc = 'mux: reload session (restart)' }
