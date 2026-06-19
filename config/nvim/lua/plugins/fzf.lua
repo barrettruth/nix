@@ -285,7 +285,7 @@ return {
             '<leader>fs',
             '<cmd>FzfLua files cwd=~/.config/nix/scripts<cr>',
         },
-        { 'gq', '<cmd>FzfLua quickfix<cr>' },
-        { 'gl', '<cmd>FzfLua loclist<cr>' },
+        { 'gQ', '<cmd>FzfLua quickfix<cr>' },
+        { 'gL', '<cmd>FzfLua loclist<cr>' },
     },
 }
