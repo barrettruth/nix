@@ -1,6 +1,7 @@
 { lib, inputs, ... }:
 let
   overlays = [
+    inputs.neovim-nightly.overlays.default
     inputs.codex.overlays.default
     inputs.devin.overlays.default
     (
@@ -48,6 +49,7 @@ in
           barrett-webfonts
           delta-software-sync
           ;
+        neovim-nightly = pkgs.neovim;
       };
     };
 }
