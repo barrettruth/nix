@@ -3,14 +3,77 @@ set -eu
 
 zero_sha=0000000000000000000000000000000000000000
 blocked=0
+own_author_emails=$(
+  {
+    git config --get-all user.email || true
+    git config --get-all hooks.attributionAuthorEmail || true
+    git config --get-all hooks.attribution-author-email || true
+  } | sed '/^[[:space:]]*$/d'
+)
+own_author_name=$(git config user.name || true)
+
+has_ai_tool_value() {
+  if grep -Eiq '(^|[^[:alnum:]_])(anthropic|claude([[:space:]_.-]*code)?|devin([[:space:]_.-]*ai)?([[:space:]_.-]*integration)?|codex|openai|chatgpt|gpt([[:space:]_.-]*[[:alnum:]])?|copilot|github[[:space:]_.-]*copilot|cursor|windsurf|aider|sourcegraph[[:space:]_.-]*cody|cody|tabnine|codeium|qodo|mutable[[:space:]_.-]*ai|replit[[:space:]_.-]*agent|amazon[[:space:]_.-]*q|codewhisperer|gemini|google[[:space:]_.-]*gemini|duet[[:space:]_.-]*ai|ai[[:space:]_.-]*(assistant|agent|bot|model|tool))([^[:alnum:]_]|$)'; then
+    return 0
+  fi
+  return 1
+}
+
+has_ai_trailer_key() {
+  if grep -Eiq '^[[:space:]]*((ai|a\.i\.|artificial[[:space:]_.-]*intelligence)[[:space:]_.-]*(assisted|generated|authored|written|created|implemented)|(assistant|tool)[[:space:]_.-]*(assisted|generated|authored|written|created|implemented)|(generated|created|implemented|written|authored|assisted)[[:space:]_.-]*(by|with|using)[[:space:]_.-]*(ai|a\.i\.|artificial[[:space:]_.-]*intelligence|assistant|tool))[[:space:]]*:'; then
+    return 0
+  fi
+  return 1
+}
+
+has_ai_body_phrase() {
+  message=$1
+
+  if printf '%s\n' "$message" | grep -Eiq '(^|[^[:alnum:]_])((ai|a\.i\.|artificial[[:space:]_.-]*intelligence)[[:space:]_.-]*(assisted|generated|authored|written|created|implemented)|(assistant|tool)[[:space:]_.-]*(assisted|generated|authored|written|created|implemented))([^[:alnum:]_]|$)'; then
+    return 0
+  fi
+
+  if printf '%s\n' "$message" | grep -Eiq '(^|[^[:alnum:]_])(generated|created|implemented|written|authored|assisted)([[:space:]_.-]+(by|with|using))?[[:space:]:]+.*(anthropic|claude([[:space:]_.-]*code)?|devin([[:space:]_.-]*ai)?([[:space:]_.-]*integration)?|codex|openai|chatgpt|gpt|copilot|github[[:space:]_.-]*copilot|cursor|windsurf|aider|sourcegraph[[:space:]_.-]*cody|cody|tabnine|codeium|qodo|mutable[[:space:]_.-]*ai|replit[[:space:]_.-]*agent|amazon[[:space:]_.-]*q|codewhisperer|gemini|google[[:space:]_.-]*gemini|duet[[:space:]_.-]*ai|ai[[:space:]_.-]*(assistant|agent|bot|model|tool))([^[:alnum:]_]|$)'; then
+    return 0
+  fi
+  return 1
+}
 
 has_forbidden_attribution() {
   message=$1
+  trailers=$(printf '%s\n' "$message" | git interpret-trailers --parse)
 
-  printf '%s\n' "$message" | grep -Eiq '^(co-authored-by|signed-off-by|ai-assisted|co-assisted|generated-by|authored-by-ai|assisted-by|written-by-ai):' ||
-    printf '%s\n' "$message" | grep -Eiq '^generated with([: ].*)?$' ||
-    printf '%s\n' "$message" | grep -Eiq '(^|[^[:alnum:]_])(ai[- ]?assisted|ai[- ]?generated|co[- ]?authored|signed[- ]?off)([^[:alnum:]_]|$)' ||
-    printf '%s\n' "$message" | grep -Eiq '^(generated|implemented|written|authored|assisted)( by| with)? .*[^[:alnum:]_](codex|chatgpt|openai|claude|anthropic|copilot|devin|cursor|windsurf|aider)([^[:alnum:]_]|$)'
+  if [ -n "$trailers" ] && printf '%s\n' "$trailers" | has_ai_trailer_key; then
+    return 0
+  fi
+
+  if [ -n "$trailers" ] && printf '%s\n' "$trailers" | sed 's/^[^:]*:[[:space:]]*//' | has_ai_tool_value; then
+    return 0
+  fi
+
+  has_ai_body_phrase "$message"
+}
+
+is_own_commit() {
+  commit=$1
+  author_email=$(git log -1 --format=%ae "$commit")
+
+  if [ -n "$own_author_emails" ]; then
+    if printf '%s\n' "$own_author_emails" | grep -Fxiq "$author_email"; then
+      return 0
+    fi
+    return 1
+  fi
+
+  if [ -n "$own_author_name" ]; then
+    author_name=$(git log -1 --format=%an "$commit")
+    if [ "$author_name" = "$own_author_name" ]; then
+      return 0
+    fi
+    return 1
+  fi
+
+  return 0
 }
 
 while read -r local_ref local_sha remote_ref remote_sha; do
@@ -23,9 +86,13 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
 
   for commit in $commits; do
+    if ! is_own_commit "$commit"; then
+      continue
+    fi
+
     message=$(git log -1 --format=%B "$commit")
     if has_forbidden_attribution "$message"; then
-      printf >&2 '%s\n' "Push blocked: commit $commit contains AI, assistant, co-author, or signed-off attribution."
+      printf >&2 '%s\n' "Push blocked: commit $commit contains prohibited AI/tool attribution."
       blocked=1
     fi
   done
