@@ -108,6 +108,53 @@ local function pr_compose_name()
     return '', nil
 end
 
+local function wrap_compose_openers(win)
+    pcall(function()
+        require('config.lz').load('barrettruth/forge.nvim')
+    end)
+    local ok, compose = pcall(require, 'forge.compose')
+    if not ok then
+        return function() end
+    end
+    local open_pr = compose.open_pr
+    local open_pr_edit = compose.open_pr_edit
+    local open_pr_wrapper
+    local open_pr_edit_wrapper
+    local function call(fn, ...)
+        local argc = select('#', ...)
+        local args = { ... }
+        if vim.api.nvim_win_is_valid(win) then
+            return vim.api.nvim_win_call(win, function()
+                return fn(unpack(args, 1, argc))
+            end)
+        end
+        return fn(unpack(args, 1, argc))
+    end
+    if type(open_pr) == 'function' then
+        open_pr_wrapper = function(...)
+            return call(open_pr, ...)
+        end
+        compose.open_pr = open_pr_wrapper
+    end
+    if type(open_pr_edit) == 'function' then
+        open_pr_edit_wrapper = function(...)
+            return call(open_pr_edit, ...)
+        end
+        compose.open_pr_edit = open_pr_edit_wrapper
+    end
+    return function()
+        if open_pr_wrapper and compose.open_pr == open_pr_wrapper then
+            compose.open_pr = open_pr
+        end
+        if
+            open_pr_edit_wrapper
+            and compose.open_pr_edit == open_pr_edit_wrapper
+        then
+            compose.open_pr_edit = open_pr_edit
+        end
+    end
+end
+
 ---@param p { title?: string, body: string[], view?: any }
 function M.pr(p)
     local body = p.body or {}
@@ -115,6 +162,12 @@ function M.pr(p)
     local vcs_win, rerr = mux.resolve_view(spec)
     if not vcs_win then
         return { ok = false, error = rerr }
+    end
+    local vcs_tab = vim.api.nvim_win_get_tabpage(vcs_win)
+    local restore_compose = wrap_compose_openers(vcs_win)
+    local function done(res)
+        restore_compose()
+        return res
     end
 
     -- forge opens an existing PR's edit compose asynchronously (it fetches the
@@ -134,7 +187,19 @@ function M.pr(p)
         if not (b and vim.api.nvim_buf_is_valid(b)) then
             return
         end
-        if vim.api.nvim_win_is_valid(vcs_win) then
+        local in_vcs = false
+        if vim.api.nvim_tabpage_is_valid(vcs_tab) then
+            for _, w in ipairs(vim.fn.win_findbuf(b)) do
+                if
+                    vim.api.nvim_win_is_valid(w)
+                    and vim.api.nvim_win_get_tabpage(w) == vcs_tab
+                then
+                    in_vcs = true
+                    break
+                end
+            end
+        end
+        if vim.api.nvim_win_is_valid(vcs_win) and not in_vcs then
             pcall(vim.api.nvim_win_set_buf, vcs_win, b)
         end
         for w, pb in pairs(prev_buf) do
@@ -175,7 +240,7 @@ function M.pr(p)
     end)
     if err then
         pcall(vim.api.nvim_del_autocmd, au)
-        return { ok = false, error = err }
+        return done({ ok = false, error = err })
     end
 
     if pr_exists() then
@@ -190,10 +255,10 @@ function M.pr(p)
     end)
     pcall(vim.api.nvim_del_autocmd, au)
     if not ready then
-        return {
+        return done({
             ok = false,
             error = 'no PR compose opened (no forge, detached HEAD, or no commits)',
-        }
+        })
     end
 
     local name, buf = pr_compose_name()
@@ -208,7 +273,7 @@ function M.pr(p)
             vim.api.nvim_buf_set_lines(buf, 0, 1, false, { '# ' .. p.title })
         end
         set_head(buf, body, '^%s*<!%-%-')
-        return { ok = true, mode = 'create' }
+        return done({ ok = true, mode = 'create' })
     end
     local num = name:match('/pr/(%d+)/edit')
     -- existing PR: only fill an empty description
@@ -229,9 +294,9 @@ function M.pr(p)
     end
     if empty then
         set_head(buf, body, '^%s*<!%-%-')
-        return { ok = true, mode = 'edit_filled', num = num }
+        return done({ ok = true, mode = 'edit_filled', num = num })
     end
-    return { ok = true, mode = 'edit_kept', num = num }
+    return done({ ok = true, mode = 'edit_kept', num = num })
 end
 
 ---@param p { files: string[], items?: table[], root?: string, view?: any }
