@@ -36,6 +36,10 @@
       "rev": "addb8d2f40662b8b62d60dd7d18f503beb2332e7",
       "src": "https://github.com/nvimdev/guard.nvim"
     },
+    "guh.nvim": {
+      "rev": "87445e3d8082f456d3481c11757e7de644db4d06",
+      "src": "https://github.com/justinmk/guh.nvim"
+    },
     "lazydev.nvim": {
       "rev": "5231c62aa83c2f8dc8e7ba957aa77098cda1257d",
       "src": "https://github.com/folke/lazydev.nvim"
