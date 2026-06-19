@@ -52,6 +52,16 @@ function M.setup()
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
 
     local prefix = '<a-x>'
+    for mode, rhs in pairs({
+        n = '<c-w>',
+        i = '<c-o><c-w>',
+        t = '<c-\\><c-n><c-w>',
+    }) do
+        vim.keymap.set(mode, prefix, rhs, {
+            remap = true,
+            desc = 'mux: window command prefix',
+        })
+    end
     for name, spec in pairs(core.views) do
         vim.keymap.set(
             { 'n', 'i', 't' },
