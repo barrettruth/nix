@@ -97,6 +97,7 @@ in
       bun
       lua
       tree-sitter
+      ts_query_ls
       nixfmt-tree
 
       tea

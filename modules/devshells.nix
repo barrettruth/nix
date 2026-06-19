@@ -35,6 +35,7 @@
           packages = [
             pkgs.prettier
             pkgs.stylua
+            pkgs.ts_query_ls
             pkgs.selene
             pkgs.lua-language-server
             pkgs.vimdoc-language-server

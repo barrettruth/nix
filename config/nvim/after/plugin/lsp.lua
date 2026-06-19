@@ -50,6 +50,7 @@ local enabled = {
     'lua_ls',
     'ruff',
     'tinymist',
+    'ts_query_ls',
     'vimdoc_ls',
 }
 
