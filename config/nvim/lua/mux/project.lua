@@ -158,6 +158,7 @@ local function show_picker(items)
     end
 
     if #entries == 0 then
+        core.restore_terminal_focus()
         return
     end
 
@@ -266,12 +267,19 @@ local function show_picker(items)
                 ['--ansi'] = true,
                 ['--header'] = ':: ' .. table.concat(parts, ' | '),
             },
+            winopts = {
+                on_close = function()
+                    vim.schedule(core.restore_terminal_focus)
+                end,
+            },
             actions = actions,
         })
     else
         vim.ui.select(lines, { prompt = 'mux project' }, function(choice)
             if choice then
                 M._connect(meta[choice])
+            else
+                core.restore_terminal_focus()
             end
         end)
     end
@@ -283,9 +291,23 @@ function M._connect(entry, view)
     if not entry then
         return
     end
+    if
+        entry.socket
+        and entry.socket ~= ''
+        and entry.socket == vim.v.servername
+    then
+        session.record_last(entry.path)
+        if view then
+            require('mux.view').open_view(view)
+        else
+            core.restore_terminal_focus()
+        end
+        return
+    end
     leave_terminal()
     local function go(sock)
         if not sock or sock == '' then
+            core.restore_terminal_focus()
             return
         end
         local function finish()
@@ -317,6 +339,8 @@ function M._connect(entry, view)
         vim.schedule(function()
             if sock then
                 go(sock)
+            else
+                core.restore_terminal_focus()
             end
         end)
     end)
@@ -345,7 +369,6 @@ end
 
 ---@param step integer 1 = next live project, -1 = previous (wraps)
 function M.cycle_project(step)
-    leave_terminal()
     local entries = {}
     for _, item in ipairs(list_entries()) do
         if item.status == 'live' and item.socket ~= '' then
@@ -364,10 +387,12 @@ function M.cycle_project(step)
             end
         end
         local target = entries[((idx - 1 + step) % #entries) + 1]
-        if target and target.sock ~= cur then
-            session.record_last(target.cwd)
-            vim.cmd('connect ' .. vim.fn.fnameescape(target.sock))
+        if not target or target.sock == cur then
+            return
         end
+        leave_terminal()
+        session.record_last(target.cwd)
+        vim.cmd('connect ' .. vim.fn.fnameescape(target.sock))
     end)
 end
 
@@ -396,7 +421,6 @@ local function with_latest_live_other(cb)
 end
 
 function M.last_session()
-    leave_terminal()
     with_latest_live_other(function(root, sock)
         if sock then
             M._connect({ path = root, socket = sock })

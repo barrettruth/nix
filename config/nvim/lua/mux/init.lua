@@ -151,6 +151,12 @@ function M.setup()
         'TabClosed',
         { group = group, callback = core.prune }
     )
+    vim.api.nvim_create_autocmd('TabEnter', {
+        group = group,
+        callback = function()
+            vim.schedule(core.restore_terminal_focus)
+        end,
+    })
 
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,

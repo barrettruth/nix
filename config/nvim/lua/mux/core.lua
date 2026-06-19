@@ -127,4 +127,21 @@ function M.leave_terminal()
     end
 end
 
+---@return boolean
+function M.restore_terminal_focus()
+    local name = M.tab_view[vim.api.nvim_get_current_tabpage()]
+    local spec = name and M.views[name]
+    local buf = vim.api.nvim_get_current_buf()
+    if
+        not spec
+        or (spec.kind ~= 'terminal' and spec.kind ~= 'task')
+        or vim.bo[buf].buftype ~= 'terminal'
+        or not vim.b[buf].term_insert
+    then
+        return false
+    end
+    pcall(vim.cmd.startinsert)
+    return true
+end
+
 return M

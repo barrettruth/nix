@@ -103,6 +103,7 @@ function M.close_view_tab(tp, restoring)
                 pcall(vim.api.nvim_buf_delete, b, { force = true })
             end
         end
+        core.restore_terminal_focus()
     end)
 end
 
@@ -141,7 +142,7 @@ function M.materialize(name, restoring)
             or spec.cmd
             or { 'just', spec.recipe }
         vim.fn.jobstart(cmd, { term = true, cwd = cwd })
-        vim.cmd.startinsert()
+        core.restore_terminal_focus()
     end
 end
 
@@ -158,14 +159,13 @@ function M.open_view(name)
     local existing = find_view(name)
     if existing then
         vim.api.nvim_set_current_tabpage(existing)
-        if terminal then
-            vim.cmd.startinsert()
-        end
+        core.restore_terminal_focus()
         return
     end
 
     local cwd = vim.fn.getcwd()
     if spec.kind == 'task' and not has_recipe(cwd, spec.recipe) then
+        core.restore_terminal_focus()
         return
     end
 
@@ -219,6 +219,7 @@ function M.resolve_view(spec)
         M.materialize(name, false)
         if vim.api.nvim_tabpage_is_valid(cur) then
             vim.api.nvim_set_current_tabpage(cur)
+            core.restore_terminal_focus()
         end
         M._alt = saved_alt
     end
@@ -262,6 +263,7 @@ function M.last_view()
         and alt ~= vim.api.nvim_get_current_tabpage()
     then
         vim.api.nvim_set_current_tabpage(alt)
+        core.restore_terminal_focus()
     end
 end
 

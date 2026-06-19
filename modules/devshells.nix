@@ -45,6 +45,35 @@
             ]))
           ];
         };
+        neovim-src = pkgs.mkShell {
+          packages = [
+            pkgs.just
+            pkgs.bash
+            pkgs.gnumake
+            pkgs.cmake
+            pkgs.ninja
+            pkgs.gettext
+            pkgs.curl
+            pkgs.git
+            pkgs.gcc
+            pkgs.pkg-config
+            pkgs.unzip
+            pkgs.stylua
+            pkgs.shellcheck
+            pkgs.ts_query_ls
+            pkgs.fish
+            pkgs.gdb
+            pkgs.inotify-tools
+            pkgs.xdg-utils
+            pkgs.nodejs
+            pkgs.attr
+            pkgs.acl
+            pkgs.perlPackages.Appcpanminus
+            (pkgs.python3.withPackages (ps: [
+              ps.pynvim
+            ]))
+          ];
+        };
       };
     };
 }
