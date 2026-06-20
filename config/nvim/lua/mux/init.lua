@@ -5,6 +5,7 @@ local core = require('mux.core')
 local view = require('mux.view')
 local project = require('mux.project')
 local session = require('mux.session')
+local direnv = require('mux.direnv')
 
 local M = {}
 
@@ -29,6 +30,8 @@ M.kill_session = session.kill_session
 M.reload = session.reload
 M.save_session = session.save_session
 M.load_session = session.load_session
+
+M.direnv_watch = direnv.watch
 
 local bufremove = require('config.bufremove')
 
@@ -161,6 +164,23 @@ function M.setup()
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,
         callback = function(args)
+            if vim.b[args.buf].mux_direnv_watch then
+                vim.schedule(function()
+                    for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+                        if vim.api.nvim_win_is_valid(win) then
+                            pcall(vim.api.nvim_win_close, win, true)
+                        end
+                    end
+                    if vim.api.nvim_buf_is_valid(args.buf) then
+                        pcall(
+                            vim.api.nvim_buf_delete,
+                            args.buf,
+                            { force = true }
+                        )
+                    end
+                end)
+                return
+            end
             for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
                 local tp = vim.api.nvim_win_get_tabpage(win)
                 local name = core.tab_view[tp]

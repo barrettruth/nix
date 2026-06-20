@@ -76,6 +76,9 @@ ensure() {
   if ! is_live "$sock"; then
     (
       cd "$root" || exit 1
+      if command -v direnv >/dev/null 2>&1; then
+        direnv_env="$(direnv export bash 2>/dev/null)" && eval "$direnv_env" || true
+      fi
       exec setsid env MUX=1 MUX_SESSION_FILE="$(session_for "$root")" "$NVIM" \
         --headless --listen "$sock" \
         -c "lua pcall(function() require('mux').setup() end)" \

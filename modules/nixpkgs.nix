@@ -14,6 +14,9 @@ let
         barrett-webfonts = inputs.fonts.packages.${system}.web;
         delta-software-sync = final.callPackage ../pkgs/delta-software-sync { };
         delta-cli = inputs.delta.packages.${system}.cli;
+        direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant.overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [ ../pkgs/direnv-instant-mux-nvim.patch ];
+        });
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
         google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
           gws = final.google-workspace-cli;
