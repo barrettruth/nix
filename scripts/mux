@@ -65,7 +65,7 @@ rpc() {
 }
 
 ensure() {
-  local path root sock i
+  local path root sock i direnv_env
   path="${1:-$PWD}"
   root="$(root_for "$path")"
   sock="$(socket_for "$root")"
@@ -77,7 +77,14 @@ ensure() {
     (
       cd "$root" || exit 1
       if command -v direnv >/dev/null 2>&1; then
-        direnv_env="$(direnv export bash 2>/dev/null)" && eval "$direnv_env" || true
+        direnv_env="$({
+          if command -v timeout >/dev/null 2>&1; then
+            timeout "${MUX_DIRENV_TIMEOUT:-120s}" direnv export bash
+          else
+            direnv export bash
+          fi
+        } 2>/dev/null)" && eval "$direnv_env" \
+          || printf 'mux: skipped direnv environment for %s\n' "$root" >&2
       fi
       exec setsid env MUX=1 MUX_SESSION_FILE="$(session_for "$root")" "$NVIM" \
         --headless --listen "$sock" \

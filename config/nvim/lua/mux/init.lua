@@ -167,7 +167,9 @@ function M.setup()
             if not vim.api.nvim_buf_is_valid(args.buf) then
                 return
             end
-            if vim.b[args.buf].mux_direnv_watch then
+            local ok, is_direnv_watch =
+                pcall(vim.api.nvim_buf_get_var, args.buf, 'mux_direnv_watch')
+            if ok and is_direnv_watch then
                 vim.schedule(function()
                     for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
                         if vim.api.nvim_win_is_valid(win) then

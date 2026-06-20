@@ -27,7 +27,7 @@
          };
  
          let mut command = Command::new(mux_bin);
-@@ -82,20 +88,46 @@
+@@ -82,20 +88,58 @@
                  command.args(["@", "--to", kitty_listen_on.as_str()]);
                  command.arg("launch").args(kitty_launch_args());
              }
@@ -69,7 +69,19 @@
  }
  
 +fn escape_lua_string(s: &str) -> String {
-+    s.replace('\\', "\\\\").replace('"', "\\\"")
++    let mut escaped = String::with_capacity(s.len());
++    for c in s.chars() {
++        match c {
++            '\\' => escaped.push_str("\\\\"),
++            '"' => escaped.push_str("\\\""),
++            '\n' => escaped.push_str("\\n"),
++            '\r' => escaped.push_str("\\r"),
++            '\t' => escaped.push_str("\\t"),
++            c if c.is_ascii_control() => escaped.push_str(&format!("\\{:03}", c as u32)),
++            c => escaped.push(c),
++        }
++    }
++    escaped
 +}
 +
 +fn escape_vim_single_string(s: &str) -> String {
