@@ -68,6 +68,7 @@ function M.watch(params)
             vim.cmd('belowright 10split')
             vim.cmd.enew()
             local watcher_win = vim.api.nvim_get_current_win()
+            vim.wo[watcher_win].cursorline = false
             local job = vim.fn.jobstart(
                 { bin, 'watch', log, socket },
                 { term = true, cwd = vim.fn.getcwd() }

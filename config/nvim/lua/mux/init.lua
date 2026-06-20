@@ -164,6 +164,9 @@ function M.setup()
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,
         callback = function(args)
+            if not vim.api.nvim_buf_is_valid(args.buf) then
+                return
+            end
             if vim.b[args.buf].mux_direnv_watch then
                 vim.schedule(function()
                     for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
