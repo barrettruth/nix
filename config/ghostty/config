@@ -11,6 +11,7 @@ font-codepoint-map = U+f101-U+f25c=nonicons
 font-feature = -calt
 font-size = 24
 theme = dark:midnight,light:daylight
+cursor-style = bar
 cursor-style-blink = false
 shell-integration-features = no-cursor
 window-decoration = false
