@@ -84,10 +84,6 @@
       "rev": "ce4ad4a8909d7f4537803c8f09b79e78c49a6cc4",
       "src": "https://github.com/kylechui/nvim-surround"
     },
-    "nvim-treesitter": {
-      "rev": "b9171ede5de41b3f2dfa33fe33ebd585d795f928",
-      "src": "https://github.com/nvim-treesitter/nvim-treesitter"
-    },
     "nvim-treesitter-textobjects": {
       "rev": "a0e182ae21fda68c59d1f36c9ed45600aef50311",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"
