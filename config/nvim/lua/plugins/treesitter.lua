@@ -7,13 +7,43 @@ vim.pack.add({
     'https://github.com/Wansmer/treesj',
 }, { load = function() end })
 
+local group = vim.api.nvim_create_augroup('ATreesitter', { clear = true })
+local available_parsers
+local installing = {}
+
+---@param lang string
+---@return boolean
+local function parser_available(lang)
+    if not available_parsers then
+        available_parsers = {}
+        for _, parser in ipairs(require('nvim-treesitter').get_available()) do
+            available_parsers[parser] = true
+        end
+    end
+    return available_parsers[lang] == true
+end
+
+---@param buf integer
+---@param lang string
+local function start(buf, lang)
+    if
+        vim.api.nvim_buf_is_loaded(buf)
+        and vim.treesitter.language.get_lang(vim.bo[buf].filetype) == lang
+        and not vim.treesitter.highlighter.active[buf]
+    then
+        pcall(vim.treesitter.start, buf, lang)
+    end
+end
+
 vim.api.nvim_create_autocmd('PackChanged', {
+    group = group,
     callback = function(ev)
         local name, kind = ev.data.spec.name, ev.data.kind
         if kind == 'delete' then
             return
         end
         if name == 'nvim-treesitter' then
+            available_parsers = nil
             vim.schedule(function()
                 vim.cmd('TSUpdate all')
             end)
@@ -21,12 +51,59 @@ vim.api.nvim_create_autocmd('PackChanged', {
     end,
 })
 
+vim.api.nvim_create_autocmd('FileType', {
+    group = group,
+    callback = function(ev)
+        local lang = vim.treesitter.language.get_lang(vim.bo[ev.buf].filetype)
+        if not lang then
+            return
+        end
+        if vim.treesitter.language.add(lang) then
+            start(ev.buf, lang)
+            return
+        end
+        if installing[lang] or not parser_available(lang) then
+            return
+        end
+
+        installing[lang] = true
+        local logger =
+            require('nvim-treesitter.log').new('auto-install/' .. lang)
+        logger:info('Installing parser')
+        require('nvim-treesitter')
+            .install(lang, { force = true })
+            :await(function(err, ok)
+                installing[lang] = nil
+                if err then
+                    logger:error('%s', tostring(err))
+                    return
+                end
+                if not ok then
+                    logger:error('Installation failed')
+                    return
+                end
+                vim.schedule(function()
+                    vim.opt.runtimepath = vim.o.runtimepath
+                    local loaded, load_err = vim.treesitter.language.add(lang)
+                    if not loaded then
+                        logger:error(
+                            '%s',
+                            load_err or 'Parser installed but not loadable'
+                        )
+                        return
+                    end
+                    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+                        start(buf, lang)
+                    end
+                    logger:info('Parser ready')
+                end)
+            end)
+    end,
+})
+
 return {
     {
         'nvim-treesitter/nvim-treesitter',
-        after = function()
-            require('nvim-treesitter').setup({ auto_install = true })
-        end,
     },
     {
         'nvim-treesitter/nvim-treesitter-textobjects',
