@@ -67,35 +67,21 @@ vim.api.nvim_create_autocmd('FileType', {
         end
 
         installing[lang] = true
-        local logger = require('nvim-treesitter.log').new('auto-install')
-        logger:info('Installing %s parser', lang)
         require('nvim-treesitter')
             .install(lang, { force = true })
             :await(function(err, ok)
                 installing[lang] = nil
-                if err then
-                    logger:error('%s parser: %s', lang, tostring(err))
-                    return
-                end
-                if not ok then
-                    logger:error('%s parser installation failed', lang)
+                if err or not ok then
                     return
                 end
                 vim.schedule(function()
                     vim.opt.runtimepath = vim.o.runtimepath
-                    local loaded, load_err = vim.treesitter.language.add(lang)
-                    if not loaded then
-                        logger:error(
-                            '%s parser: %s',
-                            lang,
-                            load_err or 'installed but not loadable'
-                        )
+                    if not vim.treesitter.language.add(lang) then
                         return
                     end
                     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
                         start(buf, lang)
                     end
-                    logger:info('%s parser ready', lang)
                 end)
             end)
     end,
