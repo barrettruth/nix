@@ -1,13 +1,22 @@
 { lib, inputs, ... }:
 let
+  neovimChannel = "nightly";
+
   overlays = [
+    (_final: prev: {
+      "neovim-main-unwrapped" = prev.neovim-unwrapped;
+    })
     inputs.neovim-nightly.overlays.default
     inputs.codex.overlays.default
     inputs.devin.overlays.default
     (
-      final: _prev:
+      final: prev:
       let
         system = final.stdenv.hostPlatform.system;
+        neovimPackages = {
+          main = final."neovim-main-unwrapped";
+          nightly = prev.neovim;
+        };
       in
       {
         barrett-fonts = inputs.fonts.packages.${system}.desktop;
@@ -20,6 +29,9 @@ let
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
         google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
           gws = final.google-workspace-cli;
+        };
+        neovim = final.callPackage ../pkgs/neovim {
+          neovimPackage = neovimPackages.${neovimChannel};
         };
       }
     )
@@ -51,8 +63,8 @@ in
           barrett-fonts
           barrett-webfonts
           delta-software-sync
+          neovim
           ;
-        neovim-nightly = pkgs.neovim;
       };
     };
 }

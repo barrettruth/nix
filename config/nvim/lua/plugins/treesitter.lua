@@ -1,5 +1,4 @@
 vim.pack.add({
-    'https://github.com/nvim-treesitter/nvim-treesitter',
     'https://github.com/nvim-treesitter/nvim-treesitter-textobjects',
 })
 
@@ -8,20 +7,6 @@ vim.pack.add({
 }, { load = function() end })
 
 local group = vim.api.nvim_create_augroup('ATreesitter', { clear = true })
-local available_parsers
-local installing = {}
-
----@param lang string
----@return boolean
-local function parser_available(lang)
-    if not available_parsers then
-        available_parsers = {}
-        for _, parser in ipairs(require('nvim-treesitter').get_available()) do
-            available_parsers[parser] = true
-        end
-    end
-    return available_parsers[lang] == true
-end
 
 ---@param buf integer
 ---@param lang string
@@ -35,62 +20,17 @@ local function start(buf, lang)
     end
 end
 
-vim.api.nvim_create_autocmd('PackChanged', {
-    group = group,
-    callback = function(ev)
-        local name, kind = ev.data.spec.name, ev.data.kind
-        if kind == 'delete' then
-            return
-        end
-        if name == 'nvim-treesitter' then
-            available_parsers = nil
-            vim.schedule(function()
-                vim.cmd('TSUpdate all')
-            end)
-        end
-    end,
-})
-
 vim.api.nvim_create_autocmd('FileType', {
     group = group,
     callback = function(ev)
         local lang = vim.treesitter.language.get_lang(vim.bo[ev.buf].filetype)
-        if not lang then
-            return
-        end
-        if vim.treesitter.language.add(lang) then
+        if lang and vim.treesitter.language.add(lang) then
             start(ev.buf, lang)
-            return
         end
-        if installing[lang] or not parser_available(lang) then
-            return
-        end
-
-        installing[lang] = true
-        require('nvim-treesitter')
-            .install(lang, { force = true })
-            :await(function(err, ok)
-                installing[lang] = nil
-                if err or not ok then
-                    return
-                end
-                vim.schedule(function()
-                    vim.opt.runtimepath = vim.o.runtimepath
-                    if not vim.treesitter.language.add(lang) then
-                        return
-                    end
-                    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-                        start(buf, lang)
-                    end
-                end)
-            end)
     end,
 })
 
 return {
-    {
-        'nvim-treesitter/nvim-treesitter',
-    },
     {
         'nvim-treesitter/nvim-treesitter-textobjects',
         before = function()
