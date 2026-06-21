@@ -83,8 +83,8 @@ ensure() {
           else
             direnv export bash
           fi
-        } 2>/dev/null)" && eval "$direnv_env" \
-          || printf 'mux: skipped direnv environment for %s\n' "$root" >&2
+        } 2>/dev/null)" && eval "$direnv_env" ||
+          printf 'mux: skipped direnv environment for %s\n' "$root" >&2
       fi
       exec setsid env MUX=1 MUX_SESSION_FILE="$(session_for "$root")" "$NVIM" \
         --headless --listen "$sock" \
