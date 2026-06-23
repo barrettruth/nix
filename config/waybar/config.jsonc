@@ -80,14 +80,12 @@
     "format-full": "{icon}",
     "format-icons": ["󰂎", "󰁻", "󰁾", "󰂀", "󰁹"],
     "states": {
-      "hi": 30,
-      "mid": 20,
+      "hi": 25,
       "lo": 10,
       "ultralo": 5
     },
     "events": {
       "on-discharging-hi": "ctl battery notify",
-      "on-discharging-mid": "ctl battery notify",
       "on-discharging-lo": "ctl battery notify",
       "on-discharging-ultralo": "ctl battery notify",
       "on-charging-100": "ctl battery notify"
