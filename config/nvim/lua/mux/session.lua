@@ -92,6 +92,36 @@ local function root_file()
     return (session_file():gsub('%.vim$', '.root'))
 end
 
+---@param drop_extra boolean
+---@return table<integer, boolean>
+local function repair_views(drop_extra)
+    local seen = {}
+    local drop = {}
+    for tp, view in pairs(tab_view) do
+        if
+            not vim.api.nvim_tabpage_is_valid(tp)
+            or not views[view]
+            or seen[view]
+        then
+            tab_view[tp] = nil
+        else
+            seen[view] = true
+        end
+    end
+    local have_edit = seen.edit == true
+    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        if not tab_view[tp] then
+            if not have_edit then
+                tab_view[tp] = 'edit'
+                have_edit = true
+            elseif drop_extra then
+                drop[tp] = true
+            end
+        end
+    end
+    return drop
+end
+
 -- Soft stop: write all buffers and quit, leaving the saved session
 -- so a next attach may resume the layout.
 function M.stop_session()
@@ -130,6 +160,7 @@ function M.save_session()
     if M._killing then
         return
     end
+    repair_views(false)
     local map = {}
     for tp, view in pairs(tab_view) do
         if vim.api.nvim_tabpage_is_valid(tp) then
@@ -204,7 +235,7 @@ function M.load_session()
     end
 
     local cur = vim.api.nvim_get_current_tabpage()
-    local drop = {}
+    local drop = repair_views(true)
     for tp, view in pairs(tab_view) do
         local spec = views[view]
         if vim.api.nvim_tabpage_is_valid(tp) and spec then
