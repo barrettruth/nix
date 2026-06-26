@@ -92,32 +92,66 @@ end
 
 M.list_entries = list_entries
 
+---@param status string
+---@return boolean
+local function known_status(status)
+    return status == 'live' or status == 'stopped' or status == 'dead'
+end
+
+---@param path string
+---@param candidates table<string, boolean>
+---@return boolean
+local function parent_has_candidate(path, candidates)
+    local cur = path
+    while cur ~= '' and cur ~= '/' do
+        local parent = cur:match('^(.+)/[^/]+$')
+        if not parent or parent == '' or parent == '/' then
+            return false
+        end
+        if candidates[parent] then
+            return true
+        end
+        cur = parent
+    end
+    return false
+end
+
 ---@param items { cwd: string, socket: string, status: string }[]
 ---@param zoxide_out string? `zoxide query -l` output (one path per line)
 ---@return { cwd: string, socket: string, status: string }[]
 local function merge_sources(items, zoxide_out)
     local entries = {}
     local seen = {}
+    local candidates = {}
+    local dirs = {}
     for _, item in ipairs(items) do
         local key = canon(item.cwd)
-        if
-            key ~= ''
-            and not seen[key]
-            and (
-                item.status == 'live'
-                or item.status == 'stopped'
-                or item.status == 'dead'
-            )
-        then
-            seen[key] = true
-            entries[#entries + 1] = item
+        if key ~= '' and known_status(item.status) then
+            candidates[key] = true
         end
     end
     for line in (zoxide_out or ''):gmatch('[^\n]+') do
         local key = canon(line)
-        if key ~= '' and not seen[key] then
+        if key ~= '' then
+            candidates[key] = true
+            dirs[#dirs + 1] = { cwd = line, key = key }
+        end
+    end
+    for _, item in ipairs(items) do
+        local key = canon(item.cwd)
+        if key ~= '' and not seen[key] and known_status(item.status) then
             seen[key] = true
-            entries[#entries + 1] = { cwd = line, socket = '', status = 'dir' }
+            entries[#entries + 1] = item
+        end
+    end
+    for _, dir in ipairs(dirs) do
+        if
+            not seen[dir.key]
+            and not parent_has_candidate(dir.key, candidates)
+        then
+            seen[dir.key] = true
+            entries[#entries + 1] =
+                { cwd = dir.cwd, socket = '', status = 'dir' }
         end
     end
     return entries

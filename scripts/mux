@@ -241,9 +241,47 @@ list() {
 
 candidates() {
   {
-    list | awk -F'\t' '$3 != "dead" { print $1 }'
-    zoxide query -l 2>/dev/null || true
-  } | awk 'NF && $0 != "?" && !seen[$0]++' | sed "s|^$HOME|~|"
+    list | awk -F'\t' '$3 != "dead" { print "session\t" $1 }'
+    zoxide query -l 2>/dev/null | awk '{ print "dir\t" $0 }' || true
+  } | awk -F'\t' '
+    function norm(p) {
+      gsub(/\/+$/, "", p)
+      return p == "" ? "/" : p
+    }
+    function parent_seen(p, parent) {
+      parent = p
+      while (parent != "" && parent != "/") {
+        sub(/\/[^\/]*$/, "", parent)
+        if (parent == "") {
+          parent = "/"
+        }
+        if (parent != "/" && all[parent]) {
+          return 1
+        }
+      }
+      return 0
+    }
+    NF {
+      type[++n] = $1
+      path[n] = norm($2)
+      if (path[n] != "?" && path[n] != "") {
+        all[path[n]] = 1
+      }
+    }
+    END {
+      for (i = 1; i <= n; i++) {
+        p = path[i]
+        if (p == "" || p == "?" || seen[p]) {
+          continue
+        }
+        if (type[i] == "dir" && parent_seen(p)) {
+          continue
+        }
+        seen[p] = 1
+        print p
+      }
+    }
+  ' | sed "s|^$HOME|~|"
 }
 
 pick() {
