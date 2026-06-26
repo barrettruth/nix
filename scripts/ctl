@@ -71,7 +71,7 @@ idle_state_file="$idle_state_dir/idle-manager"
 grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 grayscale_state_file="$grayscale_state_dir/grayscale"
 grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
-grayscale_shader_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nix/config/hypr/shaders"
+grayscale_shader_dir="${BARRETT_NIX_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nix/config}/hypr/shaders"
 
 idle_read_state() {
   state="$(cat "$idle_state_file" 2>/dev/null || true)"

@@ -9,6 +9,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./hardware.nix
     ./disk-config.nix
     ./forgejo.nix
     ./static-sites.nix
@@ -83,7 +84,7 @@
   users.users.barrett = {
     isNormalUser = true;
     home = "/home/barrett";
-    shell = pkgs.bashInteractive;
+    shell = pkgs.zsh;
     linger = true;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"

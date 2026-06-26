@@ -9,24 +9,7 @@
   ...
 }:
 let
-  username = "barrett";
-  homeDirectory = "/home/${username}";
-  hostConfig = {
-    inherit username homeDirectory;
-    XDG_CONFIG_HOME = "${homeDirectory}/.config";
-    XDG_DATA_HOME = "${homeDirectory}/.local/share";
-    XDG_STATE_HOME = "${homeDirectory}/.local/state";
-    XDG_CACHE_HOME = "${homeDirectory}/.cache";
-    isNixOS = true;
-    isLinux = true;
-    isDarwin = false;
-    gpu = "nvidia";
-    backlightDevice = "intel_backlight";
-    platform = "x86_64-linux";
-    enableWayland = true;
-    enableDesktop = true;
-    enableTexlive = true;
-  };
+  platform = "x86_64-linux";
 in
 {
   flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
@@ -35,19 +18,17 @@ in
       inputs.direnv-instant.nixosModules.direnv-instant
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       ../../hosts/laptop/configuration.nix
+      ../nixos/barrett
       ../nixos/common/nix.nix
       ../nixos/common/nix-ld.nix
       ../nixos/common/ssh.nix
       ../nixos/common/sops.nix
       ../nixos/common/tailscale.nix
-      ../nixos/desktop/packages.nix
-      ../nixos/desktop/environment.nix
-      ../nixos/desktop/services.nix
-      ../nixos/desktop/activation.nix
-      ../nixos/desktop/apps
       (
         { pkgs, ... }:
         {
+          barrett.workstation.enable = true;
+          barrett.ui.gpu = "nvidia";
           programs.direnv.enable = true;
           programs.direnv.enableZshIntegration = false;
           programs.direnv.nix-direnv.enable = true;
@@ -62,7 +43,7 @@ in
             enableFishIntegration = false;
             enableZshIntegration = true;
           };
-          nixpkgs.hostPlatform = hostConfig.platform;
+          nixpkgs.hostPlatform = platform;
           nixpkgs.overlays = overlays;
           nixpkgs.config.allowUnfreePredicate =
             pkg:
@@ -85,16 +66,14 @@ in
       )
     ];
     specialArgs = {
-      inherit (inputs) nixpkgs;
       inherit inputs;
       inherit
         identity
         palettes
         themeGenerators
-        hostConfig
         ;
       whisperPkgs = import inputs.nixpkgs-whisper {
-        system = hostConfig.platform;
+        system = platform;
         config.allowUnfreePredicate =
           pkg:
           builtins.elem (lib.getName pkg) [

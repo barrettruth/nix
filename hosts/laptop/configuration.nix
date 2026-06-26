@@ -2,13 +2,13 @@
   config,
   pkgs,
   identity,
-  hostConfig,
   mkLaptopSecret,
   ...
 }:
 
 let
-  inherit (hostConfig) username homeDirectory;
+  username = config.barrett.user.name;
+  homeDirectory = config.barrett.user.homeDirectory;
 in
 {
   imports = [
@@ -133,21 +133,6 @@ in
     ];
   };
 
-  programs.zsh = {
-    enable = true;
-    shellInit = ''
-      export ZDOTDIR="$HOME/.config/zsh"
-      THEME="$(cat "''${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || THEME="midnight"
-      [ -z "$THEME" ] && THEME="midnight"
-      export THEME
-    '';
-    loginShellInit = ''
-      if [[ -z "$DISPLAY$WAYLAND_DISPLAY" && "$(tty)" == /dev/tty1 ]]; then
-        [ -e /etc/set-environment ] && . /etc/set-environment
-        exec start-hyprland
-      fi
-    '';
-  };
   # programs.hyprland = {
   #   enable = true;
   #   portalPackage = pkgs.xdg-desktop-portal-hyprland;
