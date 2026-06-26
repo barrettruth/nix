@@ -75,6 +75,18 @@ function M.setup()
     end
     vim.keymap.set(
         { 'n', 'i', 't' },
+        prefix .. "'",
+        '<cmd>vsplit | terminal<cr>',
+        { desc = 'mux: vertical terminal' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. '-',
+        '<cmd>split | terminal<cr>',
+        { desc = 'mux: horizontal terminal' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
         prefix .. '<tab>',
         [[<cmd>lua require('mux').last_session()<cr>]],
         { desc = 'mux: last session' }
