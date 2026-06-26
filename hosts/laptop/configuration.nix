@@ -262,9 +262,8 @@ in
     mode = "0400";
   };
 
-  networking.hosts."192.168.1.92" = [ "desktop" ];
-
   networking.hosts."100.64.0.1" = [
+    "desktop"
     "forge.barrettruth.com"
     "git.barrettruth.com"
     "www.barrettruth.com"
@@ -284,7 +283,8 @@ in
   programs.ssh.knownHosts.desktop = {
     hostNames = [
       "desktop"
-      "192.168.1.92"
+      "desktop.ts.barrettruth.com"
+      "100.64.0.1"
     ];
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
   };
