@@ -77,7 +77,7 @@
     createHome = true;
     shell = pkgs.bashInteractive;
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIX/I64qCTMz4854Nms0bDTj4D7Ca7y6TYtCo+U3nC2t nix-remote-builder"
+      "restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIX/I64qCTMz4854Nms0bDTj4D7Ca7y6TYtCo+U3nC2t nix-remote-builder"
     ];
   };
 

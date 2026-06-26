@@ -223,6 +223,12 @@ in
   ];
 
   programs.ssh.extraConfig = ''
+    Host desktop-builder
+        HostName desktop
+        User nixremote
+        IdentityFile /run/secrets/desktop-builder-key
+        IdentitiesOnly yes
+        BatchMode yes
     Host spark
         HostName spark-1
         User barrett
@@ -259,6 +265,8 @@ in
   ];
 
   sops.secrets."desktop-builder-key" = mkLaptopSecret "desktop-builder-key" {
+    owner = username;
+    group = "users";
     mode = "0400";
   };
 
