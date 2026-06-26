@@ -154,6 +154,20 @@ function M.materialize(name, restoring)
 end
 
 ---@param name string
+---@param enter boolean
+---@return integer tabpage
+local function create_view(name, enter)
+    local buf = vim.api.nvim_create_buf(false, true)
+    local tp = vim.api.nvim_open_tabpage(buf, enter, {})
+    tag(tp, name)
+    local win = vim.api.nvim_tabpage_get_win(tp)
+    vim.api.nvim_win_call(win, function()
+        M.materialize(name, false)
+    end)
+    return tp
+end
+
+---@param name string
 function M.open_view(name)
     local spec = views[name]
     if not spec then
@@ -176,9 +190,7 @@ function M.open_view(name)
         return
     end
 
-    vim.cmd.tabnew()
-    tag(vim.api.nvim_get_current_tabpage(), name)
-    M.materialize(name, false)
+    create_view(name, true)
 end
 
 ---@param spec string|{ view?: string, win?: integer, tab?: integer, create?: boolean }
@@ -218,16 +230,9 @@ function M.resolve_view(spec)
         if spec.create == false then
             return nil, 'view not open: ' .. name
         end
-        local cur = vim.api.nvim_get_current_tabpage()
         local saved_alt = M._alt
-        vim.cmd.tabnew()
-        tp = vim.api.nvim_get_current_tabpage()
-        tag(tp, name)
-        M.materialize(name, false)
-        if vim.api.nvim_tabpage_is_valid(cur) then
-            vim.api.nvim_set_current_tabpage(cur)
-            core.restore_terminal_focus()
-        end
+        tp = create_view(name, false)
+        core.restore_terminal_focus()
         M._alt = saved_alt
     end
     return vim.api.nvim_tabpage_get_win(tp)
