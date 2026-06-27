@@ -28,6 +28,7 @@ M.exit_to_latest = project.exit_to_latest
 M.stop_session = session.stop_session
 M.kill_session = session.kill_session
 M.reload = session.reload
+M.reload_all = session.reload_all
 M.save_session = session.save_session
 M.load_session = session.load_session
 
@@ -78,6 +79,12 @@ function M.setup()
             { desc = 'mux: ' .. name }
         )
     end
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. 'r',
+        [[<cmd>lua require('mux').reload()<cr>]],
+        { desc = 'mux: reload session (restart)' }
+    )
     vim.keymap.set(
         { 'n', 'i', 't' },
         prefix .. "'",
@@ -147,8 +154,8 @@ function M.setup()
     vim.keymap.set(
         { 'n', 'i', 't' },
         prefix .. 'R',
-        [[<cmd>lua require('mux').reload()<cr>]],
-        { desc = 'mux: reload session (restart)' }
+        [[<cmd>lua require('mux').reload_all()<cr>]],
+        { desc = 'mux: reload all sessions (restart)' }
     )
     vim.keymap.set(
         { 'n', 'i', 't' },
