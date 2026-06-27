@@ -1,7 +1,7 @@
 local dev_plugins = {
     'midnight.nvim',
-    'canola.nvim',
-    'canola-collection',
+    -- 'canola.nvim',
+    -- 'canola-collection',
     'pending.nvim',
     'cp.nvim',
     'diffs.nvim',
@@ -204,10 +204,10 @@ return {
             vim.cmd.colorscheme('midnight')
         end,
     },
+    --[[
     {
         'barrettruth/canola.nvim',
         branch = 'canola',
-        enabled = true,
         before = function()
             vim.g.canola = {
                 columns = {},
@@ -313,6 +313,7 @@ return {
             { '_', '<cmd>Canola<cr>' },
         },
     },
+    --]]
     {
         'barrettruth/pending.nvim',
         before = function()
