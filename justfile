@@ -2,7 +2,7 @@ default:
     @just --list
 
 _python-scripts:
-    @git ls-files 'scripts/**' | while IFS= read -r file; do \
+   @git ls-files 'scripts/**' | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
         shebang=$(sed -n '1p' "$file"); \
         case "$shebang" in \
