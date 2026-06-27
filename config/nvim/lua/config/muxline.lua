@@ -95,8 +95,8 @@ function M.render()
         return ''
     end
     return (' %s%%=%s '):format(
-        table.concat(view_segments(core), '  '),
-        table.concat(session_segments(core), '  ')
+        table.concat(view_segments(core), ' '),
+        table.concat(session_segments(core), ' ')
     )
 end
 
