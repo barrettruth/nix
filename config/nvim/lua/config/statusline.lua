@@ -35,11 +35,6 @@ local function forge_prefix()
     return ('%%#Comment#%s%%* '):format(status.branch)
 end
 
--- " [project]" when inside a mux server
-local function mux_suffix()
-    return ''
-end
-
 function M.render()
     local name = vim.fn.expand('%')
     local path = name ~= ''
@@ -48,12 +43,11 @@ function M.render()
     local buftype = vim.bo.buftype
     local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
     local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or buftype
-    return (' %s%s%s%%=%%c:%%l/%%L %s%s '):format(
+    return (' %s%s%s%%=%%c:%%l/%%L %s '):format(
         path,
         forge_prefix(),
         flags,
-        filetype,
-        mux_suffix()
+        filetype
     )
 end
 

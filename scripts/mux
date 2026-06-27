@@ -167,7 +167,8 @@ bootstrap_server() {
   fi
   export MUX=1
   export MUX_LOG_FILE="$logf"
-  export MUX_SESSION_FILE="$(session_for "$root")"
+  MUX_SESSION_FILE="$(session_for "$root")"
+  export MUX_SESSION_FILE
   export DIRENV_INSTANT_DEBUG_LOG="${DIRENV_INSTANT_DEBUG_LOG:-$(direnv_log_for "$root")}"
   export NVIM_LOG_FILE="${NVIM_LOG_FILE:-$LOG_DIR/$(slug "$root").nvim.log}"
   log_line "$logf" "nvim: exec --headless --listen $sock"
@@ -198,7 +199,7 @@ ensure() {
     : >>"$logf"
     chmod 600 "$logf" 2>/dev/null || true
     rm -f "$bootpidf"
-    setsid "$SCRIPT_SELF" __bootstrap "$root" "$sock" "$logf" "$bootstrap_direnv" >>"$logf" 2>&1 &
+    setsid "$SCRIPT_SELF" __bootstrap "$root" "$sock" "$logf" "$bootstrap_direnv" >/dev/null 2>&1 &
     pid=$!
     limit=$((start_timeout * 20))
     i=0

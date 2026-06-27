@@ -166,8 +166,8 @@ function M.setup()
     vim.keymap.set(
         { 'n', 'i', 't' },
         prefix .. 'B',
-        [[<cmd>lua require('config.muxline').toggle()<cr>]],
-        { desc = 'mux: toggle statusline' }
+        [[<cmd>lua require('mux.line').toggle()<cr>]],
+        { desc = 'mux: toggle mux bar' }
     )
 
     pcall(vim.keymap.del, 'n', '<leader>bd')

@@ -11,7 +11,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import NoReturn
+from typing import NoReturn, TextIO, cast
 
 
 DEFAULT_HOST = "barrett@desktop"
@@ -734,7 +734,7 @@ class Rbuild:
             _ = log.write(f"remote={self.host}:{self.remote_dir}\n")
             _ = log.write("command=" + " ".join(quote(arg) for arg in args) + "\n\n")
 
-            process = subprocess.Popen(
+            process: subprocess.Popen[str] = subprocess.Popen(
                 self.ssh_args(remote_command),
                 text=True,
                 stdout=subprocess.PIPE,
@@ -742,7 +742,8 @@ class Rbuild:
             )
             if process.stdout is None:
                 die("failed to capture Rbuild command output")
-            for line in process.stdout:
+            stdout = cast(TextIO, process.stdout)
+            for line in stdout:
                 print(line, end="")
                 _ = sys.stdout.flush()
                 _ = log.write(line)
