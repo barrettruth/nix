@@ -56,6 +56,7 @@ vim.o.signcolumn = 'no'
 
 require('config.statuscolumn').setup()
 vim.o.statusline = "%!v:lua.require'config.statusline'.render()"
+vim.o.tabline = "%!v:lua.require'config.muxline'.render()"
 
 vim.opt.path:append('**')
 

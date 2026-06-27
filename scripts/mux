@@ -11,6 +11,8 @@ RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mux"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nvim/mux"
 LAST_FILE="$STATE_DIR/last"
 HISTORY_FILE="$STATE_DIR/history"
+LOG_DIR="$STATE_DIR/logs"
+SCRIPT_SELF="$(command -v -- "${BASH_SOURCE[0]:-$0}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]:-$0}")"
 
 die() {
   printf 'mux: %s\n' "$1" >&2
@@ -43,6 +45,54 @@ session_for() {
   printf '%s/sessions/%s.vim' "$STATE_DIR" "$(slug "$1")"
 }
 
+log_for() {
+  printf '%s/%s.log' "$LOG_DIR" "$(slug "$1")"
+}
+
+direnv_log_for() {
+  printf '%s/%s.direnv-instant.log' "$LOG_DIR" "$(slug "$1")"
+}
+
+timestamp() {
+  date '+%Y-%m-%dT%H:%M:%S%z'
+}
+
+log_line() {
+  local file="$1"
+  shift
+  mkdir -p "$LOG_DIR"
+  : >>"$file"
+  chmod 600 "$file" 2>/dev/null || true
+  printf '[%s] %s\n' "$(timestamp)" "$*" >>"$file"
+}
+
+log_tail() {
+  local file="$1" lines="${MUX_LOG_LINES:-80}"
+  [ -f "$file" ] || return 0
+  printf 'mux: log: %s\n' "$file" >&2
+  tail -n "$lines" "$file" >&2
+}
+
+process_group_for() {
+  ps -o pgid= -p "$1" 2>/dev/null | tr -d '[:space:]'
+}
+
+terminate_process_group() {
+  local pid="$1" logf="$2" pgid
+  pgid="$(process_group_for "$pid")"
+  if [ -n "$pgid" ]; then
+    log_line "$logf" "mux: terminating process group pgid=$pgid pid=$pid"
+    kill -TERM -- "-$pgid" 2>/dev/null || true
+    sleep 0.5
+    kill -KILL -- "-$pgid" 2>/dev/null || true
+  else
+    log_line "$logf" "mux: terminating process pid=$pid"
+    kill -TERM "$pid" 2>/dev/null || true
+    sleep 0.5
+    kill -KILL "$pid" 2>/dev/null || true
+  fi
+}
+
 is_live() {
   local sock="$1" pidf pid
   [ -S "$sock" ] || return 1
@@ -64,40 +114,131 @@ rpc() {
     </dev/null >/dev/null 2>&1 || true
 }
 
+bootstrap_direnv_mode() {
+  case "${MUX_BOOTSTRAP_DIRENV:-1}" in
+  1 | true | yes | on | "")
+    printf '1'
+    ;;
+  0 | false | no | off)
+    printf '0'
+    ;;
+  *)
+    die "unknown MUX_BOOTSTRAP_DIRENV mode: ${MUX_BOOTSTRAP_DIRENV}"
+    ;;
+  esac
+}
+
+bootstrap_server() {
+  local root="$1" sock="$2" logf="$3" bootstrap_direnv="$4"
+  local direnv_env rc start end bootpidf
+  umask 077
+  bootpidf="${sock%.sock}.boot.pid"
+  printf '%s\n' "$$" >"$bootpidf"
+  cd "$root" || exit 1
+  mkdir -p "$LOG_DIR" "$(dirname "$(session_for "$root")")"
+  log_line "$logf" "== mux start =="
+  log_line "$logf" "root=$root"
+  log_line "$logf" "socket=$sock"
+  log_line "$logf" "nvim=$NVIM"
+  log_line "$logf" "bootstrap_direnv=$bootstrap_direnv"
+  if [ "$bootstrap_direnv" = 1 ] && command -v direnv >/dev/null 2>&1; then
+    log_line "$logf" "direnv: export bash timeout=${MUX_DIRENV_TIMEOUT:-120s}"
+    start="$(date +%s)"
+    set +e
+    if command -v timeout >/dev/null 2>&1; then
+      direnv_env="$(timeout --foreground "${MUX_DIRENV_TIMEOUT:-120s}" direnv export bash 2>>"$logf")"
+      rc=$?
+    else
+      direnv_env="$(direnv export bash 2>>"$logf")"
+      rc=$?
+    fi
+    set -e
+    end="$(date +%s)"
+    if [ "$rc" -eq 0 ]; then
+      [ -n "$direnv_env" ] && eval "$direnv_env"
+      log_line "$logf" "direnv: ok duration=$((end - start))s"
+    else
+      log_line "$logf" "direnv: failed rc=$rc duration=$((end - start))s; continuing without bootstrap environment"
+    fi
+  elif [ "$bootstrap_direnv" = 0 ]; then
+    log_line "$logf" "direnv: bootstrap disabled"
+  else
+    log_line "$logf" "direnv: not found"
+  fi
+  export MUX=1
+  export MUX_LOG_FILE="$logf"
+  export MUX_SESSION_FILE="$(session_for "$root")"
+  export DIRENV_INSTANT_DEBUG_LOG="${DIRENV_INSTANT_DEBUG_LOG:-$(direnv_log_for "$root")}"
+  export NVIM_LOG_FILE="${NVIM_LOG_FILE:-$LOG_DIR/$(slug "$root").nvim.log}"
+  log_line "$logf" "nvim: exec --headless --listen $sock"
+  exec "$NVIM" --headless --listen "$sock" \
+    -c "lua pcall(function() require('mux').setup() end)" \
+    </dev/null >/dev/null 2>/dev/null
+}
+
 ensure() {
-  local path root sock i direnv_env
+  local path root sock logf bootstrap_direnv start_timeout limit i pid rc bootpidf bootpid monitor_pid
   path="${1:-$PWD}"
   root="$(root_for "$path")"
   sock="$(socket_for "$root")"
-  mkdir -p "$RUNTIME_DIR"
+  logf="$(log_for "$root")"
+  bootpidf="${sock%.sock}.boot.pid"
+  bootstrap_direnv="$(bootstrap_direnv_mode)"
+  start_timeout="${MUX_START_TIMEOUT:-150}"
+  case "$start_timeout" in
+  *[!0-9]* | "")
+    die "MUX_START_TIMEOUT must be an integer number of seconds"
+    ;;
+  esac
+  mkdir -p "$RUNTIME_DIR" "$LOG_DIR"
   if [ -e "$sock" ] && ! is_live "$sock"; then
-    rm -f "$sock"
+    rm -f "$sock" "$bootpidf"
   fi
   if ! is_live "$sock"; then
-    (
-      cd "$root" || exit 1
-      if command -v direnv >/dev/null 2>&1; then
-        direnv_env="$({
-          if command -v timeout >/dev/null 2>&1; then
-            timeout "${MUX_DIRENV_TIMEOUT:-120s}" direnv export bash
-          else
-            direnv export bash
-          fi
-        } 2>/dev/null)" && eval "$direnv_env" ||
-          printf 'mux: skipped direnv environment for %s\n' "$root" >&2
-      fi
-      exec setsid env MUX=1 MUX_SESSION_FILE="$(session_for "$root")" "$NVIM" \
-        --headless --listen "$sock" \
-        -c "lua pcall(function() require('mux').setup() end)" \
-        </dev/null >/dev/null 2>&1
-    ) &
+    : >>"$logf"
+    chmod 600 "$logf" 2>/dev/null || true
+    rm -f "$bootpidf"
+    setsid "$SCRIPT_SELF" __bootstrap "$root" "$sock" "$logf" "$bootstrap_direnv" >>"$logf" 2>&1 &
+    pid=$!
+    limit=$((start_timeout * 20))
     i=0
-    while [ "$i" -lt 100 ]; do
-      if is_live "$sock"; then break; fi
+    while [ "$i" -lt "$limit" ]; do
+      if [ -z "${bootpid:-}" ] && [ -f "$bootpidf" ]; then
+        IFS= read -r bootpid <"$bootpidf" 2>/dev/null || true
+      fi
+      monitor_pid="${bootpid:-$pid}"
+      if is_live "$sock"; then
+        log_line "$logf" "mux: socket live after $i polls"
+        printf '%s\n' "$sock"
+        return 0
+      fi
+      if ! kill -0 "$monitor_pid" 2>/dev/null; then
+        set +e
+        wait "$pid" 2>/dev/null
+        rc=$?
+        set -e
+        if is_live "$sock"; then
+          log_line "$logf" "mux: socket live after bootstrap exit rc=$rc"
+          printf '%s\n' "$sock"
+          return 0
+        fi
+        log_line "$logf" "mux: bootstrap exited before socket rc=$rc"
+        log_tail "$logf"
+        die "server did not start at $sock"
+      fi
       sleep 0.05
       i=$((i + 1))
     done
-    is_live "$sock" || die "server did not start at $sock"
+    if [ -z "${bootpid:-}" ] && [ -f "$bootpidf" ]; then
+      IFS= read -r bootpid <"$bootpidf" 2>/dev/null || true
+    fi
+    monitor_pid="${bootpid:-$pid}"
+    log_line "$logf" "mux: startup timeout after ${start_timeout}s"
+    terminate_process_group "$monitor_pid" "$logf"
+    wait "$pid" 2>/dev/null || true
+    rm -f "$sock" "$bootpidf"
+    log_tail "$logf"
+    die "server did not start at $sock"
   fi
   printf '%s\n' "$sock"
 }
@@ -291,6 +432,25 @@ pick() {
   attach "${choice/#\~/$HOME}"
 }
 
+show_log() {
+  local follow=0 root logf lines
+  case "${1:-}" in
+  -f | --follow)
+    follow=1
+    shift
+    ;;
+  esac
+  root="$(root_for "${1:-$PWD}")"
+  logf="$(log_for "$root")"
+  lines="${MUX_LOG_LINES:-120}"
+  [ -f "$logf" ] || die "no log for $root"
+  if [ "$follow" -eq 1 ]; then
+    tail -n "$lines" -f "$logf"
+  else
+    tail -n "$lines" "$logf"
+  fi
+}
+
 usage() {
   cat <<'EOF'
 mux: per-project neovim server launcher
@@ -307,7 +467,15 @@ mux: per-project neovim server launcher
   mux reload --all    reload every live session
   mux save [<path>]   snapshot the project's session now, without quitting
   mux save --all      snapshot every live session
+  mux log [<path>]    show the project's recent startup/server log
+  mux log -f [<path>] follow the project's startup/server log
   mux help            this help (also -h | --help)
+
+Environment:
+  MUX_START_TIMEOUT       seconds to wait for cold startup (default: 150)
+  MUX_DIRENV_TIMEOUT      timeout passed to direnv export (default: 120s)
+  MUX_BOOTSTRAP_DIRENV    1/0, run direnv before starting nvim (default: 1)
+  MUX_LOG_LINES           lines shown by mux log and failure tails
 
 Inside nvim, switch projects with:  :connect <socket>   (see `mux list`)
 EOF
@@ -324,7 +492,7 @@ stop_server() {
       i=$((i + 1))
     done
   fi
-  rm -f "$sock"
+  rm -f "$sock" "${sock%.sock}.boot.pid"
 }
 
 kill_server() {
@@ -344,7 +512,7 @@ kill_server() {
       i=$((i + 1))
     done
   fi
-  rm -f "$sock" "$sf" "${sf%.vim}.root"
+  rm -f "$sock" "${sock%.sock}.boot.pid" "$sf" "${sf%.vim}.root"
   forget_history "$root"
   clear_last "$root"
 }
@@ -384,7 +552,7 @@ clean() {
     for sock in "$RUNTIME_DIR"/*.sock; do
       [ -e "$sock" ] || continue
       if is_live "$sock"; then continue; fi
-      rm -f "$sock"
+      rm -f "$sock" "${sock%.sock}.boot.pid"
     done
   fi
 }
@@ -438,6 +606,10 @@ save_all() {
 }
 
 case "${1:-}" in
+__bootstrap)
+  shift
+  bootstrap_server "$@"
+  ;;
 ensure)
   shift
   ensure "${1:-$PWD}"
@@ -477,6 +649,10 @@ save)
   else
     save_one "${1:-$PWD}"
   fi
+  ;;
+log)
+  shift
+  show_log "$@"
   ;;
 help | -h | --help)
   usage

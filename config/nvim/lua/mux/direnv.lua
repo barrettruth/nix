@@ -64,19 +64,33 @@ end
 ---@return boolean
 function M.watch(params)
     if type(params) ~= 'table' then
+        core.log('direnv-watch: rejected non-table params')
         return false
     end
     local log = params.log
     local socket = params.socket
     local shell_pid = tonumber(params.shell_pid)
     if type(log) ~= 'string' or type(socket) ~= 'string' or not shell_pid then
+        core.log('direnv-watch: rejected invalid params')
         return false
     end
     local bin = type(params.bin) == 'string' and params.bin ~= '' and params.bin
         or 'direnv-instant'
+    core.log(
+        ('direnv-watch: requested shell_pid=%s socket=%s log=%s'):format(
+            shell_pid,
+            socket,
+            log
+        )
+    )
 
     vim.schedule(function()
-        if pending[socket] or watcher_exists(socket) then
+        if pending[socket] then
+            core.log('direnv-watch: skipped pending socket=' .. socket)
+            return
+        end
+        if watcher_exists(socket) then
+            core.log('direnv-watch: skipped existing socket=' .. socket)
             return
         end
         pending[socket] = true
@@ -98,7 +112,14 @@ function M.watch(params)
                     vim.b[watcher_buf].mux_direnv_watch = true
                     vim.b[watcher_buf].mux_direnv_socket = socket
                     vim.bo[watcher_buf].buflisted = false
+                    core.log(
+                        ('direnv-watch: opened job=%s buf=%s'):format(
+                            job,
+                            watcher_buf
+                        )
+                    )
                 else
+                    core.log('direnv-watch: jobstart failed')
                     pcall(vim.api.nvim_win_close, watcher_win, true)
                 end
             end)
@@ -109,6 +130,8 @@ function M.watch(params)
                 pcall(vim.api.nvim_set_current_win, saved_win)
                 core.restore_terminal_focus()
             end
+        else
+            core.log('direnv-watch: target window not found')
         end
         pending[socket] = nil
     end)
