@@ -144,4 +144,16 @@ function M.restore_terminal_focus()
     return true
 end
 
+---@param msg string
+function M.log(msg)
+    local file = vim.env.MUX_LOG_FILE
+    if not file or file == '' then
+        return
+    end
+    pcall(vim.fn.mkdir, vim.fn.fnamemodify(file, ':h'), 'p')
+    pcall(vim.fn.writefile, {
+        ('[%s] %s'):format(os.date('%Y-%m-%dT%H:%M:%S%z'), msg),
+    }, file, 'a')
+end
+
 return M

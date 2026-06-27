@@ -37,19 +37,7 @@ end
 
 -- " [project]" when inside a mux server
 local function mux_suffix()
-    if vim.env.MUX ~= '1' then
-        return ''
-    end
-    local session = vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
-    if session == '' then
-        return ''
-    end
-    local ok, core = pcall(require, 'mux.core')
-    local view = ok and core.tab_view[vim.api.nvim_get_current_tabpage()]
-    if view then
-        return (' [%s:%s]'):format(session, view)
-    end
-    return (' [%s]'):format(session)
+    return ''
 end
 
 function M.render()

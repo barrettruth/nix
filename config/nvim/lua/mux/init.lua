@@ -163,6 +163,12 @@ function M.setup()
         [[<cmd>lua require('mux').save_session()<cr>]],
         { desc = 'mux: save session' }
     )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. 'B',
+        [[<cmd>lua require('config.muxline').toggle()<cr>]],
+        { desc = 'mux: toggle statusline' }
+    )
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
     pcall(vim.keymap.del, 'n', '<leader>bw')
