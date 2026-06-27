@@ -18,7 +18,7 @@ local function load_forge()
     return forge
 end
 
--- "[branch #pr] " (or "[branch] "), leveraging forge.nvim
+-- "branch #pr " (or "branch "), leveraging forge.nvim
 local function forge_prefix()
     local mod = load_forge()
     if not mod then
@@ -30,9 +30,9 @@ local function forge_prefix()
     end
     local pr = status.pr
     if pr then
-        return ('[%s #%s] '):format(status.branch, pr.num)
+        return ('%%#Comment#%s%%* #%s '):format(status.branch, pr.num)
     end
-    return ('[%s] '):format(status.branch)
+    return ('%%#Comment#%s%%* '):format(status.branch)
 end
 
 -- " [project]" when inside a mux server
@@ -54,11 +54,16 @@ end
 
 function M.render()
     local name = vim.fn.expand('%')
-    local path = name ~= '' and ('%s '):format(vim.fn.expand('%:~')) or ''
-    local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or vim.bo.buftype
-    return (' %s%s%%h%%m%%r%%=%%c:%%l/%%L %s%s '):format(
-        forge_prefix(),
+    local path = name ~= ''
+            and ('%%#Directory#%s%%* '):format(vim.fn.expand('%:~'))
+        or ''
+    local buftype = vim.bo.buftype
+    local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
+    local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or buftype
+    return (' %s%s%s%%=%%c:%%l/%%L %s%s '):format(
         path,
+        forge_prefix(),
+        flags,
         filetype,
         mux_suffix()
     )
