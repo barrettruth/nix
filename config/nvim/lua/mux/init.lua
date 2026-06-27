@@ -65,6 +65,11 @@ function M.setup()
             desc = 'mux: window command prefix',
         })
     end
+    for _, key in ipairs({ 'H', 'J', 'K', 'L' }) do
+        vim.keymap.set('t', prefix .. key, '<cmd>wincmd ' .. key .. '<cr>', {
+            desc = 'mux: move window ' .. key,
+        })
+    end
     for name, spec in pairs(core.views) do
         vim.keymap.set(
             { 'n', 'i', 't' },
