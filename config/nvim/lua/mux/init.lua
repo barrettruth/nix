@@ -106,6 +106,12 @@ function M.setup()
     vim.keymap.set(
         { 'n', 'i', 't' },
         prefix .. '<bs>',
+        [[<cmd>lua require('mux').last_session()<cr>]],
+        { desc = 'mux: last session' }
+    )
+    vim.keymap.set(
+        { 'n', 'i', 't' },
+        prefix .. '^',
         [[<cmd>lua require('mux').last_view()<cr>]],
         { desc = 'mux: last view' }
     )
