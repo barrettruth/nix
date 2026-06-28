@@ -19,9 +19,8 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 - Verify and review in a loop, including Barrett-requested revisions.
 - Commit only after the review stage. Prefer a visible Fugitive commit-buffer
   workflow in the mux `vcs` window; direct commits remain separately gated.
-- PR workflow comes later and should use Barrett's Neovim tooling, especially
-  `forge.nvim`; remote-visible review replies and PR updates need their own
-  workflow.
+- PR workflow comes later; remote-visible review replies and PR updates need
+  their own workflow.
 
 ## Refactor Order
 
@@ -31,7 +30,7 @@ such as `~/.agents` as part of the workflow setup; use the tracked
 4. Implementation and verification loops.
 5. Review checkpoint before commit.
 6. Fugitive/mux commit preparation.
-7. PR and review-response workflow through `forge.nvim`.
+7. PR and review-response workflow.
 
 ## Commit And PR Gates
 

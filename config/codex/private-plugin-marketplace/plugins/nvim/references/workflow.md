@@ -25,8 +25,7 @@ Target stages:
    commit.
 8. `commit`: prepare or make a commit only after explicit permission; prefer a
    visible Fugitive buffer in the mux `vcs` window.
-9. `pr`: later workflow through `forge.nvim`; remote-visible actions remain
-   separately gated.
+9. `pr`: later workflow; remote-visible actions remain separately gated.
 
 Lower-level skills:
 

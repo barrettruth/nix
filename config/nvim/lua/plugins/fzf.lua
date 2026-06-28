@@ -8,19 +8,12 @@ return {
         local fzf = require('fzf-lua')
         local actions = require('fzf-lua.actions')
         local utils = require('fzf-lua.utils')
-        local preview = require('config.fzf.preview')
-        local has_nonicons = pcall(require, 'nonicons')
 
         local function set_clipboard(text)
             local ok = pcall(vim.fn.setreg, '+', text)
             if not ok then
                 pcall(vim.fn.setreg, '"', text)
             end
-        end
-
-        local function load_forge()
-            require('config.lz').load('barrettruth/forge.nvim')
-            return require('forge')
         end
 
         local function branch_name(selected)
@@ -44,15 +37,6 @@ return {
             return branch
         end
 
-        local function browse_branch(selected)
-            local branch = branch_name(selected)
-            if not branch then
-                utils.warn('cannot browse detached HEAD')
-                return
-            end
-            load_forge().open('browse.branch', { branch = branch })
-        end
-
         local function copy_branch(selected)
             local branch = branch_name(selected)
             if not branch then
@@ -68,23 +52,6 @@ return {
                 return nil
             end
             return line:match('^[^%s]+')
-        end
-
-        local function worktree_branch(selected)
-            local line = selected and selected[1]
-            if type(line) ~= 'string' or line == '' then
-                return nil
-            end
-            return line:match('%[([^%]]+)%]')
-        end
-
-        local function browse_worktree(selected)
-            local branch = worktree_branch(selected)
-            if not branch then
-                utils.warn('cannot browse detached worktree')
-                return
-            end
-            load_forge().open('browse.branch', { branch = branch })
         end
 
         local function copy_worktree(selected)
@@ -158,36 +125,6 @@ return {
                     cmd = 'git ls-files --cached --others --exclude-standard',
                     git_icons = false,
                 },
-                status = {
-                    previewer = preview.status,
-                    preview_pager = false,
-                    winopts = { preview = { hidden = false } },
-                },
-                commits = {
-                    previewer = preview.commits,
-                    preview_pager = false,
-                    winopts = { preview = { hidden = false } },
-                },
-                bcommits = {
-                    previewer = preview.bcommits,
-                    preview_pager = false,
-                    winopts = { preview = { hidden = false } },
-                },
-                diff = {
-                    previewer = preview.diff,
-                    preview_pager = false,
-                    winopts = { preview = { hidden = false } },
-                },
-                stash = {
-                    previewer = preview.stash,
-                    preview_pager = false,
-                    winopts = { preview = { hidden = false } },
-                },
-                blame = {
-                    previewer = preview.bcommits,
-                    preview_pager = false,
-                    winopts = { preview = { hidden = false } },
-                },
                 worktrees = {
                     fzf_args = (
                         (vim.env.FZF_DEFAULT_OPTS or '')
@@ -195,7 +132,6 @@ return {
                             :gsub('--color=[^%s]+', '')
                     ),
                     actions = {
-                        ['ctrl-x'] = browse_worktree,
                         ['ctrl-y'] = copy_worktree,
                         ['ctrl-d'] = {
                             fn = actions.git_worktree_del,
@@ -210,7 +146,6 @@ return {
                             :gsub('--color=[^%s]+', '')
                     ),
                     actions = {
-                        ['ctrl-x'] = browse_branch,
                         ['ctrl-y'] = copy_branch,
                         ['ctrl-d'] = {
                             fn = actions.git_branch_del,
@@ -221,8 +156,8 @@ return {
             },
         }
 
-        opts.files.file_icons = has_nonicons and 'nonicons' or false
-        opts.grep.file_icons = has_nonicons and 'nonicons' or false
+        opts.files.file_icons = false
+        opts.grep.file_icons = false
         opts.grep.rg_opts =
             fzf.defaults.grep.rg_opts:gsub('%-e$', "--glob='!.git/' -e")
 

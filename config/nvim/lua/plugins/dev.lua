@@ -5,8 +5,6 @@ local dev_plugins = {
     'pending.nvim',
     'cp.nvim',
     'diffs.nvim',
-    'forge.nvim',
-    'nonicons.nvim',
     'preview.nvim',
     'nvim-lspconfig',
 }
@@ -19,6 +17,10 @@ for _, name in ipairs(dev_plugins) do
         vim.uv.fs_symlink(vim.fn.expand('~/dev/' .. name), link)
     end
 end
+
+vim.pack.add({
+    'https://github.com/justinmk/guh.nvim',
+}, { load = function() end })
 
 local synctex_pdf = {}
 local synctex_socket = '/tmp/nvim-preview.sock'
@@ -56,107 +58,15 @@ local function forward_search_zathura()
     })
 end
 
-local function load_forge()
-    require('config.lz').load('barrettruth/forge.nvim')
-    return require('forge')
-end
-
-local function edit_or_create_pr()
-    local forge = load_forge()
-    local detected = forge.detect()
-    if not detected then
-        require('forge.logger').warn('no forge detected')
-        return
-    end
-    require('forge.resolve').current_pr_async(
-        { forge = detected },
-        function(pr, err)
-            if err then
-                require('forge.logger').warn(
-                    err.message or 'current PR lookup failed'
-                )
-                return
-            end
-            if pr then
-                forge.pr(pr)
-            else
-                forge.create_pr()
-            end
-        end
-    )
-end
-
 return {
     {
-        'barrettruth/forge.nvim',
-        enabled = true,
-        before = function()
-            vim.g.forge = {
-                sources = {
-                    forgejo = {
-                        hosts = {
-                            'git.barrettruth.com',
-                            'forge.barrettruth.com',
-                        },
-                    },
-                },
-            }
-        end,
-        after = function()
-            require('config.lz').load('ibhagwan/fzf-lua')
-        end,
-        cmd = 'Forge',
+        'justinmk/guh.nvim',
+        cmd = { 'Guh', 'GuhComment' },
         keys = {
-            {
-                '<leader>gg',
-                function()
-                    load_forge().open()
-                end,
-                desc = 'forge menu',
-            },
-            {
-                '<leader>gi',
-                function()
-                    load_forge().open('issues.open')
-                end,
-                desc = 'forge issues',
-            },
-            {
-                '<leader>gx',
-                ':Forge browse<cr>',
-                mode = { 'n', 'x' },
-                desc = 'forge browse',
-            },
-            {
-                '<leader>gy',
-                ':Forge yank<cr>',
-                mode = { 'n', 'x' },
-                desc = 'forge yank source url',
-            },
-            {
-                '<leader>ge',
-                edit_or_create_pr,
-                desc = 'forge edit or create pr',
-            },
-            {
-                '<leader>go',
-                function()
-                    load_forge().open('prs.open')
-                end,
-                desc = 'forge prs',
-            },
-            {
-                '<leader>gt',
-                function()
-                    load_forge().pr_ci()
-                end,
-                desc = 'forge pr checks',
-            },
-            {
-                '<leader>gr',
-                '<cmd>Forge review adapter=browse<cr>',
-                desc = 'forge browse pr',
-            },
+            { '<leader>gg', '<cmd>Guh<cr>', desc = 'guh repo' },
+            { '<leader>go', '<cmd>Guh .<cr>', desc = 'guh open target' },
+            { '<leader>gr', '<Plug>(guh-review)', desc = 'guh review pr' },
+            { '<leader>gt', '<Plug>(guh-logs)', desc = 'guh pr logs' },
         },
     },
     {
