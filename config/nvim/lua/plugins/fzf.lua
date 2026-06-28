@@ -7,67 +7,13 @@ return {
     after = function()
         local fzf = require('fzf-lua')
         local actions = require('fzf-lua.actions')
-        local utils = require('fzf-lua.utils')
-
-        local function set_clipboard(text)
-            local ok = pcall(vim.fn.setreg, '+', text)
-            if not ok then
-                pcall(vim.fn.setreg, '"', text)
-            end
-        end
-
-        local function branch_name(selected)
-            local line = selected and selected[1]
-            if type(line) ~= 'string' or line == '' then
-                return nil
-            end
-            if line:match('%(HEAD detached') or line:match('%(no branch') then
-                return nil
-            end
-            local _, branch = line:match('%s-([%+%*]?)%s+([^ ]+)')
-            if not branch then
-                return nil
-            end
-            if branch:find('^remotes/') then
-                branch = branch:match('remotes/.-/(.-)$') or branch
-            end
-            if branch == 'HEAD' or branch == '' then
-                return nil
-            end
-            return branch
-        end
-
-        local function copy_branch(selected)
-            local branch = branch_name(selected)
-            if not branch then
-                return
-            end
-            set_clipboard(branch)
-            utils.info("Copied branch '%s'.", branch)
-        end
-
-        local function worktree_path(selected)
-            local line = selected and selected[1]
-            if type(line) ~= 'string' or line == '' then
-                return nil
-            end
-            return line:match('^[^%s]+')
-        end
-
-        local function copy_worktree(selected)
-            local path = worktree_path(selected)
-            if not path then
-                return
-            end
-            set_clipboard(path)
-            utils.info("Copied worktree path '%s'.", path)
-        end
 
         local opts = {
             file_icon_padding = ' ',
             files = {
                 cmd = vim.env.FZF_CTRL_T_COMMAND,
                 no_header_i = true,
+                file_icons = false,
             },
             fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
                 '%-%-color=[^%s]+',
@@ -76,6 +22,11 @@ return {
             grep = {
                 no_header_i = true,
                 RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
+                file_icons = false,
+                rg_opts = fzf.defaults.grep.rg_opts:gsub(
+                    '%-e$',
+                    "--glob='!.git/' -e"
+                ),
             },
             lsp = {
                 includeDeclaration = false,
@@ -132,7 +83,6 @@ return {
                             :gsub('--color=[^%s]+', '')
                     ),
                     actions = {
-                        ['ctrl-y'] = copy_worktree,
                         ['ctrl-d'] = {
                             fn = actions.git_worktree_del,
                             reload = true,
@@ -146,7 +96,6 @@ return {
                             :gsub('--color=[^%s]+', '')
                     ),
                     actions = {
-                        ['ctrl-y'] = copy_branch,
                         ['ctrl-d'] = {
                             fn = actions.git_branch_del,
                             reload = true,
@@ -155,11 +104,6 @@ return {
                 },
             },
         }
-
-        opts.files.file_icons = false
-        opts.grep.file_icons = false
-        opts.grep.rg_opts =
-            fzf.defaults.grep.rg_opts:gsub('%-e$', "--glob='!.git/' -e")
 
         fzf.setup(opts)
 
