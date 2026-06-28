@@ -201,8 +201,9 @@ local function show_picker(items)
     local function strip_ansi(s)
         return (s:gsub('\27%[[%d;]*m', ''))
     end
-    local ok, fzf = pcall(require, 'fzf-lua')
-    local hl = ok and require('fzf-lua.utils').ansi_from_hl or nil
+    require('config.lz').load('ibhagwan/fzf-lua')
+    local fzf = require('fzf-lua')
+    local hl = require('fzf-lua.utils').ansi_from_hl
     -- status tag -> theme highlight group (picker coloring only)
     local tag_hl = {
         live = 'DiagnosticOk',
@@ -210,13 +211,12 @@ local function show_picker(items)
         dead = 'DiagnosticError',
     }
 
-    local lines, color_lines, meta = {}, {}, {}
+    local color_lines, meta = {}, {}
     for _, e in ipairs(entries) do
         local tag = e.status == 'dir' and (' '):rep(9)
             or ('%-9s'):format(('[%s]'):format(e.status))
         local rest = (' %-' .. w .. 's  %s'):format(e.disp, e.socket or '')
         rest = (rest:gsub('%s+$', ''))
-        lines[#lines + 1] = tag .. rest
         local group = tag_hl[e.status]
         color_lines[#color_lines + 1] = (
             hl
@@ -230,93 +230,83 @@ local function show_picker(items)
         }
     end
 
-    if ok then
-        local actions = {
-            ['default'] = function(sel)
-                local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
-                if entry and entry.status ~= 'dead' then
-                    M._connect(entry)
-                end
-            end,
-        }
-        local parts = {}
-        for _, name in ipairs(VIEW_ORDER) do
-            local spec = views[name]
-            actions['ctrl-' .. spec.key] = function(sel)
-                local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
-                if entry and entry.status ~= 'dead' then
-                    M._connect(entry, name)
-                end
-            end
-            parts[#parts + 1] = ('%s %s'):format(
-                hl('FzfLuaHeaderBind', '^' .. spec.key:upper()),
-                hl('FzfLuaHeaderText', name)
-            )
-        end
-        local function lifecycle(verb, sel)
+    local actions = {
+        ['default'] = function(sel)
             local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
-            if entry and entry.status == 'dir' then
-                return
+            if entry and entry.status ~= 'dead' then
+                M._connect(entry)
             end
-            if entry and entry.status == 'dead' and verb == 'stop' then
-                return
+        end,
+    }
+    local parts = {}
+    for _, name in ipairs(VIEW_ORDER) do
+        local spec = views[name]
+        actions['ctrl-' .. spec.key] = function(sel)
+            local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
+            if entry and entry.status ~= 'dead' then
+                M._connect(entry, name)
             end
-            if entry and entry.path then
-                if canon(entry.path) == canon(vim.fn.getcwd()) then
-                    if verb == 'kill' then
-                        session.kill_session()
-                    else
-                        session.stop_session()
-                    end
-                    return
-                end
-                vim.system({ 'mux', verb, entry.path }, function()
-                    vim.schedule(M.pick_project)
-                end)
-                return
-            end
-            vim.schedule(M.pick_project)
-        end
-        actions['ctrl-s'] = function(sel)
-            lifecycle('stop', sel)
         end
         parts[#parts + 1] = ('%s %s'):format(
-            hl('FzfLuaHeaderBind', '^S'),
-            hl('FzfLuaHeaderText', 'stop')
+            hl('FzfLuaHeaderBind', '^' .. spec.key:upper()),
+            hl('FzfLuaHeaderText', name)
         )
-        actions['ctrl-x'] = function(sel)
-            lifecycle('kill', sel)
-        end
-        parts[#parts + 1] = ('%s %s'):format(
-            hl('FzfLuaHeaderBind', '^X'),
-            hl('FzfLuaHeaderText', 'kill')
-        )
-        fzf.fzf_exec(color_lines, {
-            prompt = 'project> ',
-            fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
-                :gsub('%-%-bind=ctrl%-a:select%-all', '')
-                :gsub('--color=[^%s]+', '')),
-            keymap = { fzf = { ['ctrl-z'] = false } },
-            fzf_opts = {
-                ['--ansi'] = true,
-                ['--header'] = ':: ' .. table.concat(parts, ' | '),
-            },
-            winopts = {
-                on_close = function()
-                    vim.schedule(core.restore_terminal_focus)
-                end,
-            },
-            actions = actions,
-        })
-    else
-        vim.ui.select(lines, { prompt = 'mux project' }, function(choice)
-            if choice then
-                M._connect(meta[choice])
-            else
-                core.restore_terminal_focus()
-            end
-        end)
     end
+    local function lifecycle(verb, sel)
+        local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
+        if entry and entry.status == 'dir' then
+            return
+        end
+        if entry and entry.status == 'dead' and verb == 'stop' then
+            return
+        end
+        if entry and entry.path then
+            if canon(entry.path) == canon(vim.fn.getcwd()) then
+                if verb == 'kill' then
+                    session.kill_session()
+                else
+                    session.stop_session()
+                end
+                return
+            end
+            vim.system({ 'mux', verb, entry.path }, function()
+                vim.schedule(M.pick_project)
+            end)
+            return
+        end
+        vim.schedule(M.pick_project)
+    end
+    actions['ctrl-s'] = function(sel)
+        lifecycle('stop', sel)
+    end
+    parts[#parts + 1] = ('%s %s'):format(
+        hl('FzfLuaHeaderBind', '^S'),
+        hl('FzfLuaHeaderText', 'stop')
+    )
+    actions['ctrl-x'] = function(sel)
+        lifecycle('kill', sel)
+    end
+    parts[#parts + 1] = ('%s %s'):format(
+        hl('FzfLuaHeaderBind', '^X'),
+        hl('FzfLuaHeaderText', 'kill')
+    )
+    fzf.fzf_exec(color_lines, {
+        prompt = 'project> ',
+        fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
+            :gsub('%-%-bind=ctrl%-a:select%-all', '')
+            :gsub('--color=[^%s]+', '')),
+        keymap = { fzf = { ['ctrl-z'] = false } },
+        fzf_opts = {
+            ['--ansi'] = true,
+            ['--header'] = ':: ' .. table.concat(parts, ' | '),
+        },
+        winopts = {
+            on_close = function()
+                vim.schedule(core.restore_terminal_focus)
+            end,
+        },
+        actions = actions,
+    })
 end
 
 ---@param entry { path: string, socket: string? }
