@@ -2,10 +2,6 @@ vim.pack.add({
     'https://github.com/nvim-treesitter/nvim-treesitter-textobjects',
 })
 
-vim.pack.add({
-    'https://github.com/Wansmer/treesj',
-}, { load = function() end })
-
 local group = vim.api.nvim_create_augroup('ATreesitter', { clear = true })
 
 ---@param buf integer
@@ -165,14 +161,5 @@ return {
                 )
             end
         end,
-    },
-    {
-        'Wansmer/treesj',
-        after = function()
-            require('treesj').setup()
-        end,
-        keys = {
-            { 'gt', '<cmd>lua require("treesj").toggle()<cr>' },
-        },
     },
 }
