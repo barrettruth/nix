@@ -7,7 +7,7 @@
   ...
 }:
 let
-  helpers = import ../helpers.nix { inherit hostConfig; };
+  helpers = import ../helpers.nix { inherit hostConfig pkgs; };
   inherit (helpers)
     XDG_CONFIG_HOME
     repo

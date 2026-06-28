@@ -37,9 +37,10 @@ let
     ;
   waylandGate = mkWaylandGate "hyprland-session.target";
 
+  runUser = "${pkgs.util-linux}/bin/runuser -u ${username} --";
+
   mkSymlink = target: link: ''
-    ln -sfnT "${target}" "${link}"
-    chown -h ${username}:users "${link}"
+    ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
   '';
 
   mkDir = dir: ''
@@ -277,7 +278,7 @@ let
     name = chromiumBase.name;
     paths = [ chromiumBase ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = lib.optionalString (cfg.gpu == "nvidia") ''
+    postBuild = lib.optionalString (cfg.gpu == "nvidia-prime") ''
       wrapProgram "$out/bin/chromium" \
         --set __NV_PRIME_RENDER_OFFLOAD 1 \
         --set __NV_PRIME_RENDER_OFFLOAD_PROVIDER NVIDIA-G0 \
@@ -293,6 +294,7 @@ in
       type = lib.types.enum [
         "generic"
         "nvidia"
+        "nvidia-prime"
       ];
       default = "generic";
     };
@@ -489,12 +491,21 @@ in
 
     systemd.user.services.dconf-setup = {
       description = "Set dconf preferences";
-      wantedBy = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
+      wantedBy = [ "hyprland-session.target" ];
+      before = [ "hyprland-session.target" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "dconf-setup" ''
+          runtime_dir="''${XDG_RUNTIME_DIR:-/run/user/$(${pkgs.coreutils}/bin/id -u)}"
+          export DBUS_SESSION_BUS_ADDRESS="''${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}"
+          theme="$(${pkgs.coreutils}/bin/cat "${XDG_STATE_HOME}/theme" 2>/dev/null || true)"
+          [ -z "$theme" ] && theme="midnight"
+          case "$theme" in
+            daylight) color_scheme="prefer-light" ;;
+            *) color_scheme="prefer-dark" ;;
+          esac
+          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/color-scheme "'$color_scheme'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/font-name "'SF Pro Display 11'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/document-font-name "'SF Pro Display 11'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/monospace-font-name "'Berkeley Mono 11'"
@@ -504,15 +515,32 @@ in
     };
 
     system.activationScripts.barrettUiConfig.text = ''
+      ${mkDir "${XDG_CONFIG_HOME}"}
+      ${mkDir "${XDG_DATA_HOME}"}
+      ${mkDir "${XDG_STATE_HOME}"}
+      ${mkDir "${XDG_CACHE_HOME}"}
       ${mkDir "${XDG_CONFIG_HOME}/zsh"}
       ${mkDir "${XDG_STATE_HOME}/zsh"}
+      if [ ! -s "${XDG_STATE_HOME}/theme" ]; then
+        tmp="$(mktemp)"
+        printf '%s\n' midnight > "$tmp"
+        install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/theme"
+        rm -f "$tmp"
+      fi
       ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
-      [ -d "${XDG_CONFIG_HOME}/ghostty/themes" ] && [ ! -L "${XDG_CONFIG_HOME}/ghostty/themes" ] && rm -rf "${XDG_CONFIG_HOME}/ghostty/themes"
+      if [ -d "${XDG_CONFIG_HOME}/ghostty/themes" ] && [ ! -L "${XDG_CONFIG_HOME}/ghostty/themes" ]; then
+        rmdir "${XDG_CONFIG_HOME}/ghostty/themes" 2>/dev/null || true
+      fi
+      ${mkDir "${XDG_CONFIG_HOME}/fzf"}
       ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/hypr"}
       ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
       ${mkDir "${XDG_STATE_HOME}/hypr"}
+      ${mkDir "${XDG_CONFIG_HOME}/waybar"}
       ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/fuzzel"}
       ${mkDir "${XDG_CONFIG_HOME}/fuzzel/themes"}
+      ${mkDir "${XDG_CONFIG_HOME}/dunst"}
       ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
       ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
       ${mkDir "${homeDirectory}/Pictures/Screensavers"}
@@ -520,8 +548,7 @@ in
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
       ${lib.optionalString (!cfg.useHomeRepo) ''
         if [ ! -e "${repo}" ] && [ ! -L "${repo}" ]; then
-          ln -sfnT "${sourceRoot}" "${repo}"
-          chown -h ${username}:users "${repo}"
+          ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${sourceRoot}" "${repo}"
         fi
       ''}
 
@@ -575,34 +602,34 @@ in
         for f in "$src"/*; do
           [ -f "$f" ] || continue
           name=$(basename "$f")
-          [ -L "$dest/$name" ] || ln -sf "$f" "$dest/$name"
+          [ -L "$dest/$name" ] || ${runUser} ${pkgs.coreutils}/bin/ln -sf "$f" "$dest/$name"
         done
-        chown -h ${username}:users "$dest"/* 2>/dev/null || true
       fi
 
+      if [ ! -s "${XDG_STATE_HOME}/hypr/grayscale" ]; then
+        tmp="$(mktemp)"
+        printf '%s\n' off > "$tmp"
+        install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/hypr/grayscale"
+        rm -f "$tmp"
+      fi
       grayscale="$(cat "${XDG_STATE_HOME}/hypr/grayscale" 2>/dev/null)" || grayscale="off"
       case "$grayscale" in
         on) screen_shader="${configRoot}/hypr/shaders/grayscale.frag" ;;
         *) screen_shader="${configRoot}/hypr/shaders/pass-through.frag" ;;
       esac
-      ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
-      chown -h ${username}:users "${XDG_STATE_HOME}/hypr/screen-shader.frag"
+      ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
 
       wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
       wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
-      [ -f "$wp_themed" ] && {
-        ln -sf "$wp_themed" "$wp_link"
-        chown -h ${username}:users "$wp_link"
-      }
+      [ -f "$wp_themed" ] && ${runUser} ${pkgs.coreutils}/bin/ln -sf "$wp_themed" "$wp_link"
 
       for profile in "${XDG_CONFIG_HOME}"/chromium/Default "${XDG_CONFIG_HOME}"/chromium/Profile\ *; do
         prefs="$profile/Preferences"
         [ -f "$prefs" ] || continue
-        ${pkgs.python3}/bin/python "${configRoot}/chromium/seed_shortcuts.py" "$prefs"
-        chown ${username}:users "$prefs"
+        ${runUser} ${pkgs.python3}/bin/python "${configRoot}/chromium/seed_shortcuts.py" "$prefs"
       done
 
-      [ -L ${homeDirectory}/.zshenv ] && rm ${homeDirectory}/.zshenv || true
+      [ -L ${homeDirectory}/.zshenv ] && ${runUser} ${pkgs.coreutils}/bin/rm ${homeDirectory}/.zshenv || true
     '';
   };
 }

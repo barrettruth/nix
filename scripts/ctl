@@ -554,7 +554,26 @@ TILE_SIZE: int = 256
 ZOOM: int = 11
 CONTOUR_LEVELS: int = 20
 
-FONT: str = os.path.join(HOME, ".local", "share", "fonts", "berkeley-mono", "BerkeleyMono-Regular.ttf")
+def font_path() -> str:
+    candidates = [
+        os.path.join(HOME, ".local", "share", "fonts", "berkeley-mono", "BerkeleyMono-Regular.ttf"),
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    try:
+        matched = subprocess.check_output(
+            ["fc-match", "-f", "%{file}\n", "Berkeley Mono:style=Regular"],
+            text=True,
+        ).splitlines()[0]
+        if matched:
+            return matched
+    except Exception:
+        pass
+    return candidates[0]
+
+
+FONT: str = font_path()
 
 THEMES: dict[str, dict[str, Rgb]] = {
     "midnight": {"bg": (0x12, 0x12, 0x12), "line": (0x2a, 0x2a, 0x2a), "label": (0x55, 0x55, 0x55)},

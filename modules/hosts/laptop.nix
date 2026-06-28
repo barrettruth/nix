@@ -28,7 +28,7 @@ in
         { pkgs, ... }:
         {
           barrett.workstation.enable = true;
-          barrett.ui.gpu = "nvidia";
+          barrett.ui.gpu = "nvidia-prime";
           programs.direnv.enable = true;
           programs.direnv.enableZshIntegration = false;
           programs.direnv.nix-direnv.enable = true;

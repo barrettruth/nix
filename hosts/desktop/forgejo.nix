@@ -529,7 +529,11 @@ in
       output="$stats_dir/github-repo-stats.json"
       pages_dir="$(mktemp -d)"
       tmp="$(mktemp "$stats_dir/github-repo-stats.json.tmp.XXXXXX")"
-      trap 'rm -rf "$pages_dir" "$tmp"' EXIT
+      cleanup() {
+        [ -d "$pages_dir" ] && ${pkgs.findutils}/bin/find "$pages_dir" -mindepth 1 -delete && rmdir "$pages_dir"
+        rm -f "$tmp"
+      }
+      trap cleanup EXIT
 
       page=1
       while [ "$page" -le 10 ]; do
@@ -592,8 +596,7 @@ in
             }
         ' "$pages_dir"/page-*.json > "$tmp"
 
-      chmod 0644 "$tmp"
-      mv "$tmp" "$output"
+      install -m 0644 "$tmp" "$output"
     '';
   };
 

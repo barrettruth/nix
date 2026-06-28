@@ -59,7 +59,6 @@ let
         path.write_text(text)
         "
 
-        rm -rf "$HOME"
         cp -r --no-preserve=mode . $out
       '';
 

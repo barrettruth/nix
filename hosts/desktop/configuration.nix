@@ -6,6 +6,10 @@
   mkDesktopSecret,
   ...
 }:
+let
+  username = config.barrett.user.name;
+  homeDirectory = config.barrett.user.homeDirectory;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -64,10 +68,34 @@
 
   i18n.defaultLocale = "en_US.UTF-8";
 
+  security.doas = {
+    enable = true;
+    extraRules = [
+      {
+        groups = [ "wheel" ];
+        persist = true;
+        keepEnv = true;
+      }
+    ];
+  };
+
+  security.sudo.enable = true;
+
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    jack.enable = true;
+    pulse.enable = true;
+    wireplumber.enable = true;
+  };
+
+  virtualisation.docker.enable = true;
+  virtualisation.libvirtd.enable = true;
+  programs.virt-manager.enable = true;
+
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
   ];
-  users.users.root.initialPassword = "root";
 
   users.groups.nixremote = { };
   users.users.nixremote = {
@@ -81,11 +109,17 @@
     ];
   };
 
-  users.users.barrett = {
+  users.users.${username} = {
     isNormalUser = true;
-    home = "/home/barrett";
+    home = homeDirectory;
     shell = pkgs.zsh;
-    extraGroups = [ "wheel" ];
+    extraGroups = [
+      "wheel"
+      "docker"
+      "libvirt"
+      "storage"
+      "power"
+    ];
     linger = true;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"

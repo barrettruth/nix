@@ -8,7 +8,7 @@
 }:
 let
   wayland = import ../wayland.nix { inherit pkgs hostConfig; };
-  helpers = import ../helpers.nix { inherit hostConfig; };
+  helpers = import ../helpers.nix { inherit hostConfig pkgs; };
   inherit (wayland)
     hyprSessionEnv
     mkWaylandGate
@@ -20,6 +20,7 @@ let
     XDG_CONFIG_HOME
     XDG_STATE_HOME
     repo
+    runUser
     mkSymlink
     mkDir
     readTheme
@@ -187,28 +188,29 @@ in
         for f in "$src"/*; do
           [ -f "$f" ] || continue
           name=$(basename "$f")
-          [ -L "$dest/$name" ] || ln -sf "$f" "$dest/$name"
+          [ -L "$dest/$name" ] || ${runUser} ${pkgs.coreutils}/bin/ln -sf "$f" "$dest/$name"
         done
-        chown -h ${username}:users "$dest"/* 2>/dev/null || true
       fi
 
       ${readTheme}
       ${mkSymlink "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"}
 
+      if [ ! -s "${XDG_STATE_HOME}/hypr/grayscale" ]; then
+        tmp="$(mktemp)"
+        printf '%s\n' off > "$tmp"
+        install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/hypr/grayscale"
+        rm -f "$tmp"
+      fi
       grayscale="$(cat "${XDG_STATE_HOME}/hypr/grayscale" 2>/dev/null)" || grayscale="off"
       case "$grayscale" in
         on) screen_shader="${repo}/config/hypr/shaders/grayscale.frag" ;;
         *) screen_shader="${repo}/config/hypr/shaders/pass-through.frag" ;;
       esac
-      ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
-      chown -h ${username}:users "${XDG_STATE_HOME}/hypr/screen-shader.frag"
+      ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
 
       wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
       wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
-      [ -f "$wp_themed" ] && {
-        ln -sf "$wp_themed" "$wp_link"
-        chown -h ${username}:users "$wp_link"
-      }
+      [ -f "$wp_themed" ] && ${runUser} ${pkgs.coreutils}/bin/ln -sf "$wp_themed" "$wp_link"
     '';
   };
 }

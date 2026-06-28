@@ -20,9 +20,10 @@ let
   XDG_CACHE_HOME = "${homeDirectory}/.cache";
   repo = "${XDG_CONFIG_HOME}/nix";
 
+  runUser = "${pkgs.util-linux}/bin/runuser -u ${username} --";
+
   mkSymlink = target: link: ''
-    ln -sfnT "${target}" "${link}"
-    chown -h ${username}:users "${link}"
+    ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
   '';
 
   mkDir = dir: ''
@@ -47,7 +48,7 @@ let
   ];
 
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
-  whisper = whisperPkgs.whisper-cpp.override { cudaSupport = ui.gpu == "nvidia"; };
+  whisper = whisperPkgs.whisper-cpp.override { cudaSupport = ui.gpu != "generic"; };
   gpgCacheTtlSeconds = 2147483647;
 
   jjConf = pkgs.writeText "jj-config" ''
@@ -93,6 +94,13 @@ let
     text/plain=nvim.desktop
     application/pdf=org.pwmt.zathura.desktop
     x-scheme-handler/discord=vesktop.desktop
+  '';
+
+  awsConf = pkgs.writeText "aws-config" ''
+    [default]
+    [profile barrett]
+    region = us-east-2
+    output = json
   '';
 
   zathuraThemes = pkgs.runCommand "zathura-theme-files" { } ''
@@ -324,7 +332,10 @@ in
                   fi
 
                   ${pkgs.coreutils}/bin/rm -f -- "$cache"/flake-profile* "$cache"/nix-profile* "$cache"/*.rc
-                  ${pkgs.coreutils}/bin/rm -rf -- "$cache/flake-inputs"
+                  if [ -d "$cache/flake-inputs" ]; then
+                    ${pkgs.findutils}/bin/find "$cache/flake-inputs" -mindepth 1 -delete
+                    ${pkgs.coreutils}/bin/rmdir "$cache/flake-inputs" 2>/dev/null || true
+                  fi
                   ${pkgs.findutils}/bin/find "$cache" -type d -empty -delete
                 done
           done
@@ -343,6 +354,7 @@ in
 
     systemd.user.services.whisper-dictation = {
       description = "Whisper dictation server";
+      unitConfig.ConditionPathExists = "${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin";
       serviceConfig = {
         Type = "simple";
         ExecStart = "${whisper}/bin/whisper-server --model ${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
@@ -352,6 +364,10 @@ in
     system.activationScripts.barrettWorkstationConfig = {
       deps = [ "barrettUiConfig" ];
       text = ''
+        ${mkDir "${XDG_CONFIG_HOME}"}
+        ${mkDir "${XDG_DATA_HOME}"}
+        ${mkDir "${XDG_STATE_HOME}"}
+        ${mkDir "${XDG_CACHE_HOME}"}
         ${mkDir "${XDG_CONFIG_HOME}/git"}
         ${mkDir "${XDG_CONFIG_HOME}/gh"}
         ${mkDir "${XDG_CONFIG_HOME}/jj"}
@@ -364,11 +380,12 @@ in
         ${mkDir "${XDG_CONFIG_HOME}/direnv"}
         ${mkDir "${XDG_CONFIG_HOME}/devin"}
         ${mkDir "${XDG_CONFIG_HOME}/codex"}
+        ${mkDir "${XDG_CONFIG_HOME}/zathura"}
         ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
         ${mkDir "${homeDirectory}/.ssh"}
         ${mkDir "${homeDirectory}/.gnupg"}
-        if [ -e "${homeDirectory}/.codex" ] || [ -L "${homeDirectory}/.codex" ]; then
-          rm -rf "${homeDirectory}/.codex"
+        if [ -L "${homeDirectory}/.codex" ]; then
+          ${runUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
         fi
 
         ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
@@ -376,10 +393,8 @@ in
         ${mkSymlink "${gitConf}" "${XDG_CONFIG_HOME}/git/config"}
         ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
         ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
-        ${mkSymlink "/etc/gnupg/gpg-agent.conf" "${homeDirectory}/.gnupg/gpg-agent.conf"}
         ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
-        cp -f "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"
-        chown ${username}:users "${XDG_CONFIG_HOME}/gh/config.yml"
+        ${mkSymlink "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"}
         ${mkSymlink "${jjConf}" "${XDG_CONFIG_HOME}/jj/config.toml"}
         ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
         ${mkSymlink "${repo}/config/fd/ignore" "${XDG_CONFIG_HOME}/fd/ignore"}
@@ -412,54 +427,20 @@ in
           [ -f "$skill/SKILL.md" ] || continue
           name="$(basename "$skill")"
           for agentdir in "${XDG_CONFIG_HOME}/codex/skills" "${XDG_CONFIG_HOME}/devin/skills"; do
-            ln -sfnT "$skill" "$agentdir/$name"
-            chown -h ${username}:users "$agentdir/$name"
+            ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "$skill" "$agentdir/$name"
           done
         done
 
-        if [ -d ${homeDirectory}/.ssh ]; then
-          chmod 700 ${homeDirectory}/.ssh
-          for f in ${homeDirectory}/.ssh/*; do
-            [ -f "$f" ] || continue
-            [ -L "$f" ] && continue
-            case "$f" in
-              *.pub|*/known_hosts|*/known_hosts.old) chmod 644 "$f" ;;
-              *) chmod 600 "$f" ;;
-            esac
-          done
-        fi
-        if [ -d ${homeDirectory}/.gnupg ]; then
-          find ${homeDirectory}/.gnupg -type d -exec chmod 700 {} +
-          find ${homeDirectory}/.gnupg -type f -exec chmod 600 {} +
-        fi
-
-        dir="${XDG_CONFIG_HOME}/aws"
-        mkdir -p "$dir"
-        if [ ! -f "$dir/config" ]; then
-          cat > "$dir/config" << 'AWSEOF'
-        [default]
-        [profile barrett]
-        region = us-east-2
-        output = json
-        AWSEOF
-          chown ${username}:users "$dir/config"
-        fi
-        chown ${username}:users "$dir"
-
-        model_dir="${XDG_DATA_HOME}/whisper-models"
-        model="ggml-large-v3-turbo-q5_0.bin"
-        if [ ! -f "$model_dir/$model" ]; then
-          mkdir -p "$model_dir"
-          ${pkgs.curl}/bin/curl -L -o "$model_dir/$model" "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$model"
-          chown -R ${username}:users "$model_dir"
-        fi
+        ${mkDir "${XDG_CONFIG_HOME}/aws"}
+        ${mkSymlink "${awsConf}" "${XDG_CONFIG_HOME}/aws/config"}
+        ${mkDir "${XDG_DATA_HOME}/whisper-models"}
 
         for link in ${homeDirectory}/.nix-profile ${homeDirectory}/.nix-defexpr; do
-          [ -L "$link" ] && [ ! -e "$link" ] && rm "$link"
+          [ -L "$link" ] && [ ! -e "$link" ] && ${runUser} ${pkgs.coreutils}/bin/rm "$link"
         done
 
         if [ "$(readlink "${XDG_DATA_HOME}/fonts" 2>/dev/null || true)" = "${repo}/fonts" ]; then
-          rm "${XDG_DATA_HOME}/fonts"
+          ${runUser} ${pkgs.coreutils}/bin/rm "${XDG_DATA_HOME}/fonts"
         fi
       '';
     };

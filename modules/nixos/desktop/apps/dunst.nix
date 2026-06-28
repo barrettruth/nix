@@ -8,7 +8,7 @@
 }:
 let
   wayland = import ../wayland.nix { inherit pkgs hostConfig; };
-  helpers = import ../helpers.nix { inherit hostConfig; };
+  helpers = import ../helpers.nix { inherit hostConfig pkgs; };
   inherit (wayland)
     mkWaylandGate
     wrapWaylandExec

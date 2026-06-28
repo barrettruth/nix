@@ -67,7 +67,10 @@ lib.mkMerge [
                   fi
 
                   ${pkgs.coreutils}/bin/rm -f -- "$cache"/flake-profile* "$cache"/nix-profile* "$cache"/*.rc
-                  ${pkgs.coreutils}/bin/rm -rf -- "$cache/flake-inputs"
+                  if [ -d "$cache/flake-inputs" ]; then
+                    ${pkgs.findutils}/bin/find "$cache/flake-inputs" -mindepth 1 -delete
+                    ${pkgs.coreutils}/bin/rmdir "$cache/flake-inputs" 2>/dev/null || true
+                  fi
                   ${pkgs.findutils}/bin/find "$cache" -type d -empty -delete
                 done
           done
@@ -86,7 +89,7 @@ lib.mkMerge [
 
     systemd.user.services.whisper-dictation =
       let
-        whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu == "nvidia"; };
+        whisper = whisperPkgs.whisper-cpp.override { cudaSupport = hostConfig.gpu != "generic"; };
       in
       {
         description = "Whisper dictation server";

@@ -54,8 +54,7 @@ let
         }
 
         mkdir -p $out
-        cp -R ${assetsSrc}/. $out/
-        chmod -R u+w $out
+        cp -R --no-preserve=mode,ownership ${assetsSrc}/. $out/
         cat \
           ${assetsSrc}/css/barrett-forgejo/00-vars.css \
           ${assetsSrc}/css/barrett-forgejo/10-base.css \
@@ -71,8 +70,7 @@ let
           $out/fonts/stix-two/STIXTwoText-v1.woff2
       '';
   templates = pkgs.runCommand "barrett-forgejo-custom-templates" { } ''
-    cp -R ${templatesSrc}/. $out/
-    chmod -R u+w $out
+    cp -R --no-preserve=mode,ownership ${templatesSrc}/. $out/
 
     version_for() {
       sha256sum "$1" | cut -c1-16

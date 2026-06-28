@@ -6,11 +6,12 @@
   ...
 }:
 let
-  helpers = import ../helpers.nix { inherit hostConfig; };
+  helpers = import ../helpers.nix { inherit hostConfig pkgs; };
   inherit (helpers)
     username
     XDG_CONFIG_HOME
     repo
+    runUser
     mkSymlink
     ;
 
@@ -51,8 +52,7 @@ in
       for profile in "${XDG_CONFIG_HOME}"/chromium/Default "${XDG_CONFIG_HOME}"/chromium/Profile\ *; do
         prefs="$profile/Preferences"
         [ -f "$prefs" ] || continue
-        ${pkgs.python3}/bin/python "${repo}/config/chromium/seed_shortcuts.py" "$prefs"
-        chown ${username}:users "$prefs"
+        ${runUser} ${pkgs.python3}/bin/python "${repo}/config/chromium/seed_shortcuts.py" "$prefs"
       done
     '';
   };

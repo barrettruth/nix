@@ -1,4 +1,4 @@
-{ hostConfig }:
+{ hostConfig, pkgs }:
 let
   inherit (hostConfig)
     username
@@ -8,6 +8,8 @@ let
     XDG_STATE_HOME
     XDG_CACHE_HOME
     ;
+  repo = "${XDG_CONFIG_HOME}/nix";
+  runUser = "${pkgs.util-linux}/bin/runuser -u ${username} --";
 in
 {
   inherit
@@ -17,12 +19,12 @@ in
     XDG_DATA_HOME
     XDG_STATE_HOME
     XDG_CACHE_HOME
+    repo
+    runUser
     ;
-  repo = "${XDG_CONFIG_HOME}/nix";
 
   mkSymlink = target: link: ''
-    ln -sfnT "${target}" "${link}"
-    chown -h ${username}:users "${link}"
+    ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
   '';
 
   mkMutableConfig = source: target: ''
