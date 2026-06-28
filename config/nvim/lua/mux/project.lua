@@ -292,9 +292,10 @@ local function show_picker(items)
     )
     fzf.fzf_exec(color_lines, {
         prompt = 'project> ',
-        fzf_args = ((vim.env.FZF_DEFAULT_OPTS or '')
-            :gsub('%-%-bind=ctrl%-a:select%-all', '')
-            :gsub('--color=[^%s]+', '')),
+        fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
+            '%-%-bind=ctrl%-a:select%-all',
+            ''
+        ),
         keymap = { fzf = { ['ctrl-z'] = false } },
         fzf_opts = {
             ['--ansi'] = true,

@@ -9,20 +9,14 @@ return {
         local actions = require('fzf-lua.actions')
 
         local opts = {
-            file_icon_padding = ' ',
             files = {
                 cmd = vim.env.FZF_CTRL_T_COMMAND,
                 no_header_i = true,
-                file_icons = false,
             },
-            fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
-                '%-%-color=[^%s]+',
-                ''
-            ),
+            fzf_colors = true,
             grep = {
                 no_header_i = true,
                 RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
-                file_icons = false,
                 rg_opts = fzf.defaults.grep.rg_opts:gsub(
                     '%-e$',
                     "--glob='!.git/' -e"
@@ -77,10 +71,9 @@ return {
                     git_icons = false,
                 },
                 worktrees = {
-                    fzf_args = (
-                        (vim.env.FZF_DEFAULT_OPTS or '')
-                            :gsub('%-%-bind=ctrl%-a:select%-all', '')
-                            :gsub('--color=[^%s]+', '')
+                    fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
+                        '%-%-bind=ctrl%-a:select%-all',
+                        ''
                     ),
                     actions = {
                         ['ctrl-d'] = {
@@ -90,10 +83,9 @@ return {
                     },
                 },
                 branches = {
-                    fzf_args = (
-                        (vim.env.FZF_DEFAULT_OPTS or '')
-                            :gsub('%-%-bind=ctrl%-a:select%-all', '')
-                            :gsub('--color=[^%s]+', '')
+                    fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
+                        '%-%-bind=ctrl%-a:select%-all',
+                        ''
                     ),
                     actions = {
                         ['ctrl-d'] = {
@@ -106,12 +98,6 @@ return {
         }
 
         fzf.setup(opts)
-
-        local ok, fzf_reload = pcall(require, 'config.fzf.reload')
-        if ok then
-            fzf_reload.setup(opts)
-            fzf_reload.reload()
-        end
     end,
     cmd = 'FzfLua',
     keys = {
@@ -144,7 +130,7 @@ return {
             end,
         },
         {
-            '<leader>fG',
+            '<leader>fg',
             function()
                 require('fzf-lua').live_grep({ cwd = vim.fn.expand('%:h') })
             end,

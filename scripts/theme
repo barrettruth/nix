@@ -119,9 +119,3 @@ Darwin)
   esac
   ;;
 esac
-
-(
-  for socket in /run/user/"$(id -u)"/nvim.*.0 /tmp/nvim-*.sock "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/mux/*.sock; do
-    [ -S "$socket" ] && nvim --server "$socket" --remote-expr "luaeval('require(\"config.fzf.reload\").reload()')" >/dev/null 2>&1 || true
-  done
-) &
