@@ -35,7 +35,6 @@ Lower-level skills:
 - `$nvim-impl`: implementation after Barrett explicitly chooses an outcome
 - `$nvim-verify`: implementation-phase build/test verification
 - `$nvim-review`: human inspection checkpoint before commit workflow
-- `$nvim-pr`: placeholder until commit and PR policy is researched
 - `$nvim-clean 12345`: manual full cleanup for one issue-number checkout
 
 Plugin command files may also expose `/nvim:*` slash commands when the command
