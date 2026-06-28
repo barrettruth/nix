@@ -3,10 +3,8 @@ local dev_plugins = {
     -- 'canola.nvim',
     -- 'canola-collection',
     'pending.nvim',
-    'cp.nvim',
     'diffs.nvim',
     'preview.nvim',
-    'nvim-lspconfig',
 }
 
 local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
@@ -17,10 +15,6 @@ for _, name in ipairs(dev_plugins) do
         vim.uv.fs_symlink(vim.fn.expand('~/dev/' .. name), link)
     end
 end
-
-vim.pack.add({
-    'https://github.com/justinmk/guh.nvim',
-}, { load = function() end })
 
 local synctex_pdf = {}
 local synctex_socket = '/tmp/nvim-preview.sock'
@@ -59,16 +53,6 @@ local function forward_search_zathura()
 end
 
 return {
-    {
-        'justinmk/guh.nvim',
-        cmd = { 'Guh', 'GuhComment' },
-        keys = {
-            { '<leader>gg', '<cmd>Guh<cr>', desc = 'guh repo' },
-            { '<leader>go', '<cmd>Guh .<cr>', desc = 'guh open target' },
-            { '<leader>gr', '<Plug>(guh-review)', desc = 'guh review pr' },
-            { '<leader>gt', '<Plug>(guh-logs)', desc = 'guh pr logs' },
-        },
-    },
     {
         'barrettruth/diffs.nvim',
         enabled = true,
@@ -260,139 +244,6 @@ return {
         end,
         cmd = 'Pending',
         keys = { { '<leader>P', '<cmd>Pending|only<cr>' } },
-    },
-    {
-        'barrettruth/cp.nvim',
-        cmd = 'CP',
-        keys = {
-            { '<leader>ce', '<cmd>CP edit<cr>' },
-            { '<leader>cp', '<cmd>CP panel<cr>' },
-            { '<leader>cP', '<cmd>CP pick<cr>' },
-            { '<leader>cr', '<cmd>CP run all<cr>' },
-            { '<leader>cd', '<cmd>CP run --debug<cr>' },
-            { ']p', '<cmd>CP next<cr>' },
-            { '[p', '<cmd>CP prev<cr>' },
-        },
-        before = function()
-            vim.g.cp = {
-                debug = false,
-                templates = {
-                    cursor_marker = '<++>',
-                },
-                languages = {
-                    cpp = {
-                        extension = 'cc',
-                        template = '~/.config/nix/config/cp/template_multi.cc',
-                        commands = {
-                            build = {
-                                'g++',
-                                '-std=c++20',
-                                '-O2',
-                                '-Wall',
-                                '-Wextra',
-                                '-Wpedantic',
-                                '-Wshadow',
-                                '-Wconversion',
-                                '-Wformat=2',
-                                '-Wfloat-equal',
-                                '-Wundef',
-                                '-fdiagnostics-color=always',
-                                '-DLOCAL',
-                                '{source}',
-                                '-o',
-                                '{binary}',
-                            },
-                            run = { '{binary}' },
-                            debug = {
-                                'g++',
-                                '-std=c++20',
-                                '-g3',
-                                '-fsanitize=address,undefined',
-                                '-fno-omit-frame-pointer',
-                                '-fstack-protector-all',
-                                '-D_GLIBCXX_DEBUG',
-                                '-DLOCAL',
-                                '{source}',
-                                '-o',
-                                '{binary}',
-                            },
-                        },
-                    },
-                    python = {
-                        extension = 'py',
-                        template = '~/.config/nix/config/cp/template.py',
-                        commands = {
-                            run = { 'python', '{source}' },
-                            debug = { 'python', '{source}' },
-                        },
-                    },
-                },
-                platforms = {
-                    atcoder = {
-                        overrides = {
-                            cpp = {
-                                template = '~/.config/nix/config/cp/template_single.cc',
-                            },
-                        },
-                    },
-                    cses = {
-                        overrides = {
-                            cpp = {
-                                template = '~/.config/nix/config/cp/template_single.cc',
-                            },
-                        },
-                    },
-                },
-                ui = {
-                    picker = 'fzf-lua',
-                    panel = { diff_modes = { 'side-by-side', 'git' } },
-                },
-                hooks = {
-                    setup = {
-                        contest = function(state)
-                            local dir = vim.fn.fnamemodify(
-                                state.get_source_file(state.get_language()),
-                                ':h'
-                            )
-                            local path = dir .. '/.clang-format'
-                            if vim.fn.filereadable(path) == 0 then
-                                vim.fn.system({
-                                    'cp',
-                                    vim.fn.expand(
-                                        '~/.config/nix/config/cp/.clang-format'
-                                    ),
-                                    path,
-                                })
-                            end
-                        end,
-                        code = function(_)
-                            vim.opt_local.foldlevel = 0
-                            vim.opt_local.foldmethod = 'marker'
-                            vim.opt_local.foldmarker = '{{{,}}}'
-                            vim.opt_local.foldtext = ''
-                            vim.diagnostic.enable(false)
-                        end,
-                    },
-                    on = {
-                        enter = function(_)
-                            vim.opt_local.winbar = ''
-                        end,
-                        run = function(_)
-                            require('config.lsp').format()
-                        end,
-                        debug = function(_)
-                            require('config.lsp').format()
-                        end,
-                    },
-                },
-                filename = function(_, _, problem_id)
-                    return problem_id
-                end,
-            }
-        end,
-        after = function()
-            require('config.lz').load('ibhagwan/fzf-lua')
-        end,
     },
     {
         'barrettruth/preview.nvim',
