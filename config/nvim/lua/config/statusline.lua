@@ -18,7 +18,36 @@ local function load_forge()
     return forge
 end
 
--- "branch #pr " (or "branch "), leveraging forge.nvim
+---@param scope? forge.Scope
+---@return string?
+local function scope_name(scope)
+    if not scope then
+        return nil
+    end
+    local owner = scope.owner or scope.namespace
+    if owner and scope.repo then
+        return owner .. '/' .. scope.repo
+    end
+    if scope.slug then
+        local org, repo = scope.slug:match('^([^/]+)/(.+)$')
+        if org and repo then
+            return org .. '/' .. repo
+        end
+    end
+end
+
+---@param pr forge.PRRef
+---@param scope? forge.Scope
+---@return string
+local function pr_name(pr, scope)
+    local repo = scope_name(pr.scope or scope)
+    if repo then
+        return repo .. '#' .. pr.num
+    end
+    return '#' .. pr.num
+end
+
+-- "branch owner/repo#pr " (or "branch "), leveraging forge.nvim
 local function forge_prefix()
     local mod = load_forge()
     if not mod then
@@ -30,7 +59,10 @@ local function forge_prefix()
     end
     local pr = status.pr
     if pr then
-        return ('%%#Comment#%s%%* #%s '):format(status.branch, pr.num)
+        return ('%%#Comment#%s%%* %%#Comment#%s%%* '):format(
+            status.branch,
+            pr_name(pr, status.scope)
+        )
     end
     return ('%%#Comment#%s%%* '):format(status.branch)
 end
