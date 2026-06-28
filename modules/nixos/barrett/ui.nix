@@ -450,6 +450,10 @@ in
       "d ${homeDirectory}/Pictures/wp 0755 ${username} users -"
     ];
 
+    systemd.user.targets.hyprland-session = {
+      description = "Hyprland session";
+    };
+
     systemd.user.services.hyprpaper = waylandGate // {
       description = "Hyprpaper wallpaper daemon";
       serviceConfig = waylandGate.serviceConfig // {
