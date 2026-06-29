@@ -16,7 +16,7 @@ shell_tool = true
 unified_exec = true
 shell_snapshot = true
 apply_patch_freeform = true
-code_mode = true
+code_mode = false
 personality = true
 memories = true
 js_repl = true
@@ -167,6 +167,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/barrett/dev/philipmruth.com"]
+trust_level = "trusted"
+
+[projects."/home/barrett/dev/recruiting"]
 trust_level = "trusted"
 
 [marketplaces.barrett-private]
