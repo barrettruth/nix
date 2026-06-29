@@ -138,12 +138,22 @@ function M.render()
     )
 end
 
+function M.refresh()
+    if vim.env.MUX ~= '1' then
+        return
+    end
+    vim.schedule(function()
+        pcall(vim.cmd.redrawtabline)
+        pcall(vim.cmd.redrawstatus)
+    end)
+end
+
 function M.toggle()
     if vim.env.MUX ~= '1' then
         return
     end
     vim.o.showtabline = vim.o.showtabline == 0 and 2 or 0
-    pcall(vim.cmd.redrawtabline)
+    M.refresh()
 end
 
 return M

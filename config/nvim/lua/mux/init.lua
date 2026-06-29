@@ -6,6 +6,7 @@ local view = require('mux.view')
 local project = require('mux.project')
 local session = require('mux.session')
 local direnv = require('mux.direnv')
+local line = require('mux.line')
 
 local M = {}
 
@@ -56,6 +57,18 @@ function M.setup()
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
 
     local prefix = '<a-x>'
+    local modes = { 'n', 'i', 't' }
+
+    ---@param lhs string
+    ---@param rhs fun()
+    ---@param desc string
+    local function muxmap(lhs, rhs, desc)
+        vim.keymap.set(modes, lhs, function()
+            rhs()
+            line.refresh()
+        end, { desc = desc })
+    end
+
     for mode, rhs in pairs({
         n = '<c-w>',
         i = '<c-o><c-w>',
@@ -67,114 +80,42 @@ function M.setup()
         })
     end
     for _, key in ipairs({ 'H', 'J', 'K', 'L' }) do
-        vim.keymap.set('t', prefix .. key, '<cmd>wincmd ' .. key .. '<cr>', {
-            desc = 'mux: move window ' .. key,
-        })
+        muxmap(prefix .. key, function()
+            vim.cmd('wincmd ' .. key)
+        end, 'mux: move window ' .. key)
     end
     for name, spec in pairs(core.views) do
-        vim.keymap.set(
-            { 'n', 'i', 't' },
-            prefix .. spec.key,
-            ('<cmd>lua require("mux").open_view(%q)<cr>'):format(name),
-            { desc = 'mux: ' .. name }
-        )
+        local view_name = name
+        muxmap(prefix .. spec.key, function()
+            M.open_view(view_name)
+        end, 'mux: ' .. view_name)
     end
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'r',
-        [[<cmd>lua require('mux').reload()<cr>]],
-        { desc = 'mux: reload session (restart)' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. "'",
-        '<cmd>vsplit | terminal<cr>',
-        { desc = 'mux: vertical terminal' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. '-',
-        '<cmd>split | terminal<cr>',
-        { desc = 'mux: horizontal terminal' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. '<tab>',
-        [[<cmd>lua require('mux').last_session()<cr>]],
-        { desc = 'mux: last session' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. '<bs>',
-        [[<cmd>lua require('mux').last_session()<cr>]],
-        { desc = 'mux: last session' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. '^',
-        [[<cmd>lua require('mux').last_view()<cr>]],
-        { desc = 'mux: last view' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'm',
-        [[<cmd>lua require('mux').pick_project()<cr>]],
-        { desc = 'mux: switch project' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. ']',
-        [[<cmd>lua require('mux').cycle_project(1)<cr>]],
-        { desc = 'mux: next project' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. '[',
-        [[<cmd>lua require('mux').cycle_project(-1)<cr>]],
-        { desc = 'mux: previous project' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'd',
-        '<cmd>detach<cr>',
-        { desc = 'mux: detach to shell' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 's',
-        [[<cmd>lua require('mux').exit_to_latest()<cr>]],
-        { desc = 'mux: stop session (hop to last)' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'x',
-        [[<cmd>lua require('mux').close_view()<cr>]],
-        { desc = 'mux: close view' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'X',
-        [[<cmd>lua require('mux').exit_to_latest()<cr>]],
-        { desc = 'mux: close session (hop to last)' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'R',
-        [[<cmd>lua require('mux').reload_all()<cr>]],
-        { desc = 'mux: reload all sessions (restart)' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'S',
-        [[<cmd>lua require('mux').save_session()<cr>]],
-        { desc = 'mux: save session' }
-    )
-    vim.keymap.set(
-        { 'n', 'i', 't' },
-        prefix .. 'B',
-        [[<cmd>lua require('mux.line').toggle()<cr>]],
-        { desc = 'mux: toggle mux bar' }
-    )
+    muxmap(prefix .. 'r', M.reload, 'mux: reload session (restart)')
+    muxmap(prefix .. "'", function()
+        vim.cmd('vsplit | terminal')
+    end, 'mux: vertical terminal')
+    muxmap(prefix .. '-', function()
+        vim.cmd('split | terminal')
+    end, 'mux: horizontal terminal')
+    muxmap(prefix .. '<tab>', M.last_session, 'mux: last session')
+    muxmap(prefix .. '<bs>', M.last_session, 'mux: last session')
+    muxmap(prefix .. '^', M.last_view, 'mux: last view')
+    muxmap(prefix .. 'm', M.pick_project, 'mux: switch project')
+    muxmap(prefix .. ']', function()
+        M.cycle_project(1)
+    end, 'mux: next project')
+    muxmap(prefix .. '[', function()
+        M.cycle_project(-1)
+    end, 'mux: previous project')
+    muxmap(prefix .. 'd', function()
+        vim.cmd('detach')
+    end, 'mux: detach to shell')
+    muxmap(prefix .. 's', M.exit_to_latest, 'mux: stop session (hop to last)')
+    muxmap(prefix .. 'x', M.close_view, 'mux: close view')
+    muxmap(prefix .. 'X', M.exit_to_latest, 'mux: close session (hop to last)')
+    muxmap(prefix .. 'R', M.reload_all, 'mux: reload all sessions (restart)')
+    muxmap(prefix .. 'S', M.save_session, 'mux: save session')
+    muxmap(prefix .. 'B', line.toggle, 'mux: toggle mux bar')
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
     pcall(vim.keymap.del, 'n', '<leader>bw')
@@ -195,6 +136,10 @@ function M.setup()
         callback = function()
             vim.schedule(core.restore_terminal_focus)
         end,
+    })
+    vim.api.nvim_create_autocmd('UIEnter', {
+        group = group,
+        callback = line.refresh,
     })
 
     vim.api.nvim_create_autocmd('TermClose', {
