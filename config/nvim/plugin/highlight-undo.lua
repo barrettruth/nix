@@ -1,5 +1,5 @@
 local ns = vim.api.nvim_create_namespace('highlight_undo')
-local timeout = 500
+local timeout = 300
 
 vim.api.nvim_set_hl(0, 'HighlightUndo', { link = 'IncSearch', default = true })
 
