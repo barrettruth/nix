@@ -89,7 +89,7 @@ vim.api.nvim_create_autocmd('BufReadPost', {
 })
 vim.api.nvim_create_autocmd('TextYankPost', {
     callback = function()
-        vim.hl.hl_op({ higroup = 'Visual', timeout = 300 })
+        vim.hl.hl_op({ higroup = 'HighlightUndo', timeout = 500 })
     end,
     group = aug,
 })
