@@ -1,6 +1,6 @@
 local M = {}
 
-M.root = vim.fn.expand('~/dev/cp')
+M.root = vim.fs.normalize('~/dev/cp')
 M.root_pattern = '^' .. vim.pesc(M.root) .. '/'
 
 M.cxx_flags = {
@@ -21,23 +21,7 @@ M.cxx_flags = {
 ---@param path string?
 ---@return boolean
 function M.is_cp_path(path)
-    if not path or path == '' then
-        return false
-    end
-    path = vim.fn.fnamemodify(path, ':p'):gsub('/$', '')
-    return path == M.root or path:sub(1, #M.root + 1) == M.root .. '/'
-end
-
----@param source string
----@return string
-local function binary_path(source)
-    return vim.fn.fnamemodify(source, ':r') .. '.run'
-end
-
----@param source string
----@return string
-local function input_path(source)
-    return vim.fn.fnamemodify(source, ':r') .. '.in'
+    return path ~= nil and path ~= '' and vim.fs.relpath(M.root, path) ~= nil
 end
 
 ---@class cp.Command
@@ -58,7 +42,9 @@ local function commands(source, bin, input)
     local input_name = vim.fn.fnamemodify(input, ':t')
     local tmp_name = ('%s.tmp.%d'):format(bin_name, vim.fn.getpid())
     local compile = vim.list_extend({ 'g++' }, vim.deepcopy(M.cxx_flags))
+
     vim.list_extend(compile, { source_name, '-o', tmp_name })
+
     return {
         compile_args = compile,
         compile_text = table.concat(compile, ' '),
@@ -76,14 +62,9 @@ local function term_send(chan, data)
         return
     end
     data = data:gsub('\n', '\r\n')
-    local send = function()
+    vim.schedule(function()
         pcall(vim.api.nvim_chan_send, chan, data)
-    end
-    if vim.in_fast_event() then
-        vim.schedule(send)
-    else
-        send()
-    end
+    end)
 end
 
 ---@param chan integer
@@ -101,28 +82,13 @@ end
 ---@param cmd cp.Command
 local function run_program(dir, chan, cmd)
     term_send(chan, '\n> ' .. cmd.run_text .. '\n')
-    local input_path_abs = vim.fs.joinpath(dir, cmd.input_name)
-    if vim.fn.filereadable(input_path_abs) ~= 1 then
-        term_send(chan, 'cp: missing input ' .. cmd.input_name .. '\n')
-        return
-    end
-    local job = vim.fn.jobstart({ vim.fs.joinpath(dir, cmd.bin_name) }, {
+    vim.fn.jobstart({ 'sh', '-c', cmd.run_text }, {
         cwd = dir,
-        stdin = 'pipe',
         stdout_buffered = false,
         stderr_buffered = false,
         on_stdout = output_handler(chan),
         on_stderr = output_handler(chan),
     })
-    if job <= 0 then
-        term_send(chan, 'cp: failed to run ' .. cmd.bin_name .. '\n')
-        return
-    end
-    local input = table.concat(vim.fn.readfile(input_path_abs, 'b'), '\n')
-    if input ~= '' then
-        vim.fn.chansend(job, input .. '\n')
-    end
-    vim.fn.chanclose(job, 'stdin')
 end
 
 ---@param dir string
@@ -140,10 +106,12 @@ local function run_compile(dir, chan, cmd)
             vim.schedule(function()
                 local tmp = vim.fs.joinpath(dir, cmd.tmp_name)
                 local bin = vim.fs.joinpath(dir, cmd.bin_name)
+
                 if code ~= 0 then
                     pcall(vim.fn.delete, tmp)
                     return
                 end
+
                 if vim.fn.rename(tmp, bin) ~= 0 then
                     term_send(
                         chan,
@@ -151,6 +119,7 @@ local function run_compile(dir, chan, cmd)
                     )
                     return
                 end
+
                 run_program(dir, chan, cmd)
             end)
         end,
@@ -178,25 +147,32 @@ local function run_terminal(source, dir, cmd)
     local source_win = vim.api.nvim_get_current_win()
     local source_view = vim.fn.winsaveview()
     local win = output_win(source)
+
     if win then
         vim.api.nvim_set_current_win(win)
     else
         vim.cmd('rightbelow vsplit')
     end
+
     local old_buf = vim.api.nvim_get_current_buf()
+
     vim.cmd.enew()
     local buf = vim.api.nvim_get_current_buf()
     vim.b[buf].cp_source = source
     vim.b[buf].term_normal = true
     vim.b[buf].term_insert = false
+
     local chan = vim.api.nvim_open_term(buf, {})
+
     if vim.b[old_buf].cp_source == source then
         pcall(vim.api.nvim_buf_delete, old_buf, { force = true })
     end
+
     if vim.api.nvim_win_is_valid(source_win) then
         vim.api.nvim_set_current_win(source_win)
         vim.fn.winrestview(source_view)
     end
+
     run_compile(dir, chan, cmd)
 end
 
@@ -214,8 +190,8 @@ function M.run()
         vim.cmd.write()
     end
 
-    local bin = binary_path(source)
-    local input = input_path(source)
+    local input = vim.fn.fnamemodify(source, ':r') .. '.in'
+    local bin = vim.fn.fnamemodify(source, ':r') .. '.run'
     run_terminal(
         source,
         vim.fn.fnamemodify(source, ':h'),
