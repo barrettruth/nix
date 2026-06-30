@@ -190,6 +190,27 @@ local function go_to_solve()
 end
 
 ---@param problem string
+---@return string?
+local function normalize_problem(problem)
+    local base = problem:gsub('%.cc$', '')
+    if not base:match('^[%w_-]+$') then
+        notify('invalid problem name: ' .. problem, vim.log.levels.ERROR)
+        return
+    end
+    return base .. '.cc'
+end
+
+local function complete_problem(arg_lead)
+    local items = { 'run', 'debug' }
+    for _, file in ipairs(vim.fn.glob('*.cc', false, true)) do
+        items[#items + 1] = vim.fn.fnamemodify(file, ':r')
+    end
+    return vim.tbl_filter(function(item)
+        return vim.startswith(item, arg_lead)
+    end, items)
+end
+
+---@param problem string
 function M.open_problem(problem)
     local cwd = vim.fn.getcwd()
     if not M.is_cp_path(cwd) then
@@ -197,9 +218,16 @@ function M.open_problem(problem)
         return
     end
 
+    local file = normalize_problem(problem)
+    if not file then
+        return
+    end
+    if vim.bo.modified then
+        vim.cmd.write()
+    end
+
     close_output()
-    problem = problem:gsub('%.cc$', '') .. '.cc'
-    vim.cmd.edit(vim.fn.fnameescape(problem))
+    vim.cmd.edit(vim.fn.fnameescape(file))
     if populate_template_if_empty() then
         vim.cmd.write()
         vim.cmd.edit()
@@ -248,8 +276,8 @@ function M.setup()
         end
     end, {
         nargs = '?',
-        complete = function()
-            return { 'run', 'debug' }
+        complete = function(arg_lead)
+            return complete_problem(arg_lead)
         end,
     })
     vim.keymap.set('n', '<leader>c', function()
