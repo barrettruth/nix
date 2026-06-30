@@ -113,16 +113,7 @@ return {
             end,
         },
         { '<c-l>', '<cmd>FzfLua live_grep<cr>' },
-        { '<c-r>', '<cmd>FzfLua command_history<cr>' },
-        { '<leader>f/', '<cmd>FzfLua search_history<cr>' },
-        { '<leader>f:', '<cmd>FzfLua command_history<cr>' },
-        { '<leader>fa', '<cmd>FzfLua autocmds<cr>' },
         { '<leader>fb', '<cmd>FzfLua buffers<cr>' },
-        { '<leader>fc', '<cmd>FzfLua commands<cr>' },
-        {
-            '<leader>fe',
-            '<cmd>FzfLua files cwd=~/.config<cr>',
-        },
         {
             '<leader>ff',
             function()
@@ -138,13 +129,10 @@ return {
         { '<leader>gb', '<cmd>FzfLua git_branches<cr>' },
         { '<leader>gc', '<cmd>FzfLua git_commits<cr>' },
         { '<leader>gC', '<cmd>FzfLua git_bcommits<cr>' },
-        { '<leader>gs', '<cmd>FzfLua git_stash<cr>' },
         { '<leader>gw', '<cmd>FzfLua git_worktrees<cr>' },
         { '<leader>fH', '<cmd>FzfLua highlights<cr>' },
         { '<leader>fh', '<cmd>FzfLua help_tags<cr>' },
-        { '<leader>fl', '<cmd>FzfLua loclist<cr>' },
         { '<leader>fm', '<cmd>FzfLua man_pages<cr>' },
-        { '<leader>fq', '<cmd>FzfLua quickfix<cr>' },
         { '<leader>fr', '<cmd>FzfLua resume<cr>' },
         {
             '<leader>fs',
