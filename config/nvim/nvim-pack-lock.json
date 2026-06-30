@@ -1,28 +1,8 @@
 {
   "plugins": {
-    "blink-cmp-env": {
-      "rev": "99af62c1f9aa46005e8f50ad4ccee581946546ca",
-      "src": "https://github.com/bydlw98/blink-cmp-env"
-    },
-    "blink-cmp-ghostty": {
-      "rev": "9752af1afc2858ec36da5fd33cdf59d45c6d9029",
-      "src": "https://github.com/barrettruth/blink-cmp-ghostty"
-    },
-    "blink-cmp-git": {
-      "rev": "10783593af764424018a95e75df6ad5a8b66fe07",
-      "src": "https://github.com/Kaiser-Yang/blink-cmp-git"
-    },
-    "blink-cmp-ssh": {
-      "rev": "43ee35376242ee762a91b756da945ddbce0e0ac4",
-      "src": "https://github.com/barrettruth/blink-cmp-ssh"
-    },
     "dial.nvim": {
       "rev": "f2634758455cfa52a8acea6f142dcd6271a1bf57",
       "src": "https://github.com/monaqa/dial.nvim"
-    },
-    "forge.nvim": {
-      "rev": "4e250ad040e869913a29c5823cdc2c3f126cb1ea",
-      "src": "/home/barrett/dev/forge.nvim"
     },
     "fzf-lua": {
       "rev": "1eba927866251bae1b61dffc5b673b8dbd0f3f48",
