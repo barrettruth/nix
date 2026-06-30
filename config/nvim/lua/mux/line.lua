@@ -8,6 +8,27 @@ local canon = core.canon
 local find_view = core.find_view
 local views = core.views
 local VIEW_ORDER = core.VIEW_ORDER
+local refresh_pending = false
+
+local function visibility_file()
+    return core.runtime_dir() .. '/bar'
+end
+
+local function visibility_mode()
+    local file = visibility_file()
+    if vim.fn.filereadable(file) == 1 then
+        local mode = vim.fn.readfile(file)[1]
+        if mode == 'hide' then
+            return 'hide'
+        end
+    end
+    return 'show'
+end
+
+local function write_visibility(mode)
+    pcall(vim.fn.mkdir, core.runtime_dir(), 'p')
+    pcall(vim.fn.writefile, { mode }, visibility_file())
+end
 
 ---@param group string
 ---@param text string
@@ -127,6 +148,13 @@ local function session_segments()
     return parts
 end
 
+function M.apply_visibility()
+    if vim.env.MUX ~= '1' then
+        return
+    end
+    vim.o.showtabline = visibility_mode() == 'hide' and 0 or 2
+end
+
 ---@return string
 function M.render()
     if vim.env.MUX ~= '1' then
@@ -139,10 +167,17 @@ function M.render()
 end
 
 function M.refresh()
-    if vim.env.MUX ~= '1' then
+    if vim.in_fast_event() then
+        vim.schedule(M.refresh)
         return
     end
+    if vim.env.MUX ~= '1' or refresh_pending then
+        return
+    end
+    refresh_pending = true
     vim.schedule(function()
+        refresh_pending = false
+        M.apply_visibility()
         pcall(vim.cmd.redrawtabline)
         pcall(vim.cmd.redrawstatus)
     end)
@@ -152,8 +187,32 @@ function M.toggle()
     if vim.env.MUX ~= '1' then
         return
     end
-    vim.o.showtabline = vim.o.showtabline == 0 and 2 or 0
+    write_visibility(vim.o.showtabline == 0 and 'show' or 'hide')
+    M.apply_visibility()
     M.refresh()
+end
+
+function M.start_watchers()
+    if vim.env.MUX ~= '1' or M._timer then
+        return
+    end
+    M._timer = vim.uv.new_timer()
+    M._timer:start(
+        500,
+        500,
+        vim.schedule_wrap(function()
+            M.refresh()
+        end)
+    )
+end
+
+function M.stop_watchers()
+    local timer = M._timer
+    M._timer = nil
+    if timer then
+        pcall(timer.stop, timer)
+        pcall(timer.close, timer)
+    end
 end
 
 return M

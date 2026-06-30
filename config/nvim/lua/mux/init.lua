@@ -24,7 +24,8 @@ M.pick_project = project.pick_project
 M.cycle_project = project.cycle_project
 M.list_entries = project.list_entries
 M.last_session = project.last_session
-M.exit_to_latest = project.exit_to_latest
+M.stop_to_latest = project.stop_to_latest
+M.kill_to_latest = project.kill_to_latest
 
 M.stop_session = session.stop_session
 M.kill_session = session.kill_session
@@ -110,11 +111,11 @@ function M.setup()
     muxmap(prefix .. 'd', function()
         vim.cmd('detach')
     end, 'mux: detach to shell')
-    muxmap(prefix .. 's', M.exit_to_latest, 'mux: stop session (hop to last)')
+    muxmap(prefix .. 's', M.save_session, 'mux: save session')
     muxmap(prefix .. 'x', M.close_view, 'mux: close view')
-    muxmap(prefix .. 'X', M.exit_to_latest, 'mux: close session (hop to last)')
+    muxmap(prefix .. 'X', M.kill_to_latest, 'mux: kill session (hop to last)')
     muxmap(prefix .. 'R', M.reload_all, 'mux: reload all sessions (restart)')
-    muxmap(prefix .. 'S', M.save_session, 'mux: save session')
+    muxmap(prefix .. 'S', M.exit_to_latest, 'mux: stop session (hop to last)')
     muxmap(prefix .. 'B', line.toggle, 'mux: toggle mux bar')
 
     pcall(vim.keymap.del, 'n', '<leader>bd')
@@ -127,19 +128,31 @@ function M.setup()
     )
 
     local group = vim.api.nvim_create_augroup('mux', { clear = true })
-    vim.api.nvim_create_autocmd(
-        'TabClosed',
-        { group = group, callback = core.prune }
-    )
+    line.apply_visibility()
+    vim.api.nvim_create_autocmd('TabClosed', {
+        group = group,
+        callback = function()
+            core.prune()
+            line.refresh()
+        end,
+    })
+    vim.api.nvim_create_autocmd({ 'TabNew', 'DirChanged' }, {
+        group = group,
+        callback = line.refresh,
+    })
     vim.api.nvim_create_autocmd('TabEnter', {
         group = group,
         callback = function()
             vim.schedule(core.restore_terminal_focus)
+            line.refresh()
         end,
     })
     vim.api.nvim_create_autocmd('UIEnter', {
         group = group,
-        callback = line.refresh,
+        callback = function()
+            line.apply_visibility()
+            line.refresh()
+        end,
     })
 
     vim.api.nvim_create_autocmd('TermClose', {
@@ -184,11 +197,13 @@ function M.setup()
         group = group,
         callback = function()
             view._alt = vim.api.nvim_get_current_tabpage()
+            line.refresh()
         end,
     })
     vim.api.nvim_create_autocmd('VimLeavePre', {
         group = group,
         callback = function()
+            line.stop_watchers()
             session.save_session()
             session.clear_pid()
         end,
@@ -196,11 +211,13 @@ function M.setup()
 
     session.record_root()
     session.record_pid()
+    line.start_watchers()
 
     if not session.load_session() then
         vim.cmd.edit(vim.fn.getcwd())
         core.tag(vim.api.nvim_get_current_tabpage(), 'edit')
     end
+    line.refresh()
 
     M._timer = vim.uv.new_timer()
     M._timer:start(

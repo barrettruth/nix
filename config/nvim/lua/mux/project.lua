@@ -466,4 +466,14 @@ function M.exit_to_latest()
     end)
 end
 
+function M.kill_to_latest()
+    with_latest_live_other(function(root, sock)
+        if sock then
+            session.record_last(root)
+            pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
+        end
+        session.kill_session()
+    end)
+end
+
 return M
