@@ -115,7 +115,7 @@ function M.setup()
     muxmap(prefix .. 'x', M.close_view, 'mux: close view')
     muxmap(prefix .. 'X', M.kill_to_latest, 'mux: kill session (hop to last)')
     muxmap(prefix .. 'R', M.reload_all, 'mux: reload all sessions (restart)')
-    muxmap(prefix .. 'S', M.exit_to_latest, 'mux: stop session (hop to last)')
+    muxmap(prefix .. 'S', M.stop_to_latest, 'mux: stop session (hop to last)')
     muxmap(prefix .. 'B', line.toggle, 'mux: toggle mux bar')
 
     pcall(vim.keymap.del, 'n', '<leader>bd')

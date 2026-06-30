@@ -10,6 +10,21 @@ local M = {}
 local leave_terminal = core.leave_terminal
 local sessions_dir = core.sessions_dir
 
+local function confirm_kill(root, cb)
+    local name = vim.fn.fnamemodify(root, ':~')
+    vim.schedule(function()
+        vim.ui.input(
+            { prompt = 'mux: kill session ' .. name .. '? [y/N] ' },
+            function(input)
+                local answer = (input or ''):lower():match('^%s*(.-)%s*$')
+                if answer == 'y' or answer == 'yes' then
+                    cb()
+                end
+            end
+        )
+    end)
+end
+
 ---@param pid integer?
 ---@return boolean
 local function pid_alive(pid)
@@ -263,15 +278,22 @@ local function show_picker(items)
         if entry and entry.path then
             if canon(entry.path) == canon(vim.fn.getcwd()) then
                 if verb == 'kill' then
-                    session.kill_session()
+                    confirm_kill(entry.path, session.kill_session)
                 else
                     session.stop_session()
                 end
                 return
             end
-            vim.system({ 'mux', verb, entry.path }, function()
-                vim.schedule(M.pick_project)
-            end)
+            local function run()
+                vim.system({ 'mux', verb, entry.path }, function()
+                    vim.schedule(M.pick_project)
+                end)
+            end
+            if verb == 'kill' then
+                confirm_kill(entry.path, run)
+            else
+                run()
+            end
             return
         end
         vim.schedule(M.pick_project)
@@ -456,7 +478,7 @@ end
 -- Killing the last tabpage: hop the client to the latest live project, then
 -- soft-stop this session so it stays resumable. With no other live project the
 -- stop drops the client to the shell -- like tmux detach-on-destroy=off.
-function M.exit_to_latest()
+function M.stop_to_latest()
     with_latest_live_other(function(root, sock)
         if sock then
             session.record_last(root)
@@ -467,12 +489,15 @@ function M.exit_to_latest()
 end
 
 function M.kill_to_latest()
-    with_latest_live_other(function(root, sock)
-        if sock then
-            session.record_last(root)
-            pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
-        end
-        session.kill_session()
+    local current = vim.fn.getcwd()
+    confirm_kill(current, function()
+        with_latest_live_other(function(root, sock)
+            if sock then
+                session.record_last(root)
+                pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
+            end
+            session.kill_session()
+        end)
     end)
 end
 

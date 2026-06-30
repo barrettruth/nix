@@ -82,7 +82,7 @@ function M.close_view_tab(tp, restoring)
                 tab_view[tp] = 'edit'
                 return
             end
-            require('mux.project').exit_to_latest()
+            require('mux.project').stop_to_latest()
             return
         end
         local bufs = {}
