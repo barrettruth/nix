@@ -1,0 +1,19 @@
+If:
+  PathMatch: /home/barrett/dev/cp/.*
+CompileFlags:
+  Add:
+    - -std=c++23
+    - -O2
+    - -Wall
+    - -Wextra
+    - -Wpedantic
+    - -Wshadow
+    - -Wconversion
+    - -Wformat=2
+    - -Wfloat-equal
+    - -Wundef
+    - -fdiagnostics-color=always
+    - -DLOCAL
+Diagnostics:
+  ClangTidy:
+    Remove: '*'

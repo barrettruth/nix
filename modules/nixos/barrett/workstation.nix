@@ -380,6 +380,7 @@ in
         ${mkDir "${XDG_CONFIG_HOME}/direnv"}
         ${mkDir "${XDG_CONFIG_HOME}/devin"}
         ${mkDir "${XDG_CONFIG_HOME}/codex"}
+        ${mkDir "${XDG_CONFIG_HOME}/clangd"}
         ${mkDir "${XDG_CONFIG_HOME}/zathura"}
         ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
         ${mkDir "${homeDirectory}/.ssh"}
@@ -408,6 +409,7 @@ in
         ${mkSymlink "${repo}/config/devin/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
         ${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}
         ${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
+        ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
         ${mkSymlink "${zathuraThemes}/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
         ${mkSymlink "${zathuraThemes}/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
         ${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}

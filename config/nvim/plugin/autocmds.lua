@@ -10,11 +10,14 @@ vim.api.nvim_create_autocmd('BufEnter', {
 vim.api.nvim_create_autocmd('TermOpen', {
     group = aug,
     callback = function(args)
-        vim.b[args.buf].term_insert = true
-        vim.keymap.set('n', 'G', 'Gi', {
-            buffer = args.buf,
-            desc = 'jump to end, resume terminal',
-        })
+        local normal = vim.b[args.buf].term_normal
+        vim.b[args.buf].term_insert = not normal
+        if not normal then
+            vim.keymap.set('n', 'G', 'Gi', {
+                buffer = args.buf,
+                desc = 'jump to end, resume terminal',
+            })
+        end
         vim.keymap.set('t', '<c-u>', [[<c-\><c-n><c-u>]], {
             buffer = args.buf,
             desc = 'scroll up half-page',
@@ -43,14 +46,18 @@ vim.api.nvim_create_autocmd('TermOpen', {
                 end)
             end,
         })
-        vim.cmd.startinsert()
+        if not normal then
+            vim.cmd.startinsert()
+        end
     end,
 })
 
 vim.api.nvim_create_autocmd('TermEnter', {
     group = aug,
     callback = function()
-        vim.b.term_insert = true
+        if not vim.b.term_normal then
+            vim.b.term_insert = true
+        end
     end,
 })
 
@@ -58,6 +65,10 @@ vim.api.nvim_create_autocmd('TermLeave', {
     group = aug,
     callback = function()
         local buf = vim.api.nvim_get_current_buf()
+        if vim.b[buf].term_normal then
+            vim.b[buf].term_insert = false
+            return
+        end
         if vim.b[buf].term_programmatic then
             vim.b[buf].term_programmatic = false
             return
@@ -95,7 +106,11 @@ vim.api.nvim_create_autocmd('WinEnter', {
     group = aug,
     callback = function()
         vim.wo[0][0].cursorline = true
-        if vim.bo.buftype == 'terminal' and vim.b.term_insert then
+        if
+            vim.bo.buftype == 'terminal'
+            and not vim.b.term_normal
+            and vim.b.term_insert
+        then
             vim.cmd.startinsert()
         end
     end,
@@ -105,10 +120,15 @@ vim.api.nvim_create_autocmd('UIEnter', {
     group = aug,
     callback = function()
         local buf = vim.api.nvim_get_current_buf()
-        if vim.bo[buf].buftype == 'terminal' and vim.b[buf].term_insert then
+        if
+            vim.bo[buf].buftype == 'terminal'
+            and not vim.b[buf].term_normal
+            and vim.b[buf].term_insert
+        then
             vim.schedule(function()
                 if
                     vim.api.nvim_get_current_buf() == buf
+                    and not vim.b[buf].term_normal
                     and vim.b[buf].term_insert
                 then
                     vim.cmd.startinsert()
@@ -122,7 +142,7 @@ vim.api.nvim_create_autocmd('WinLeave', {
     group = aug,
     callback = function()
         vim.wo[0][0].cursorline = false
-        if vim.bo.buftype == 'terminal' then
+        if vim.bo.buftype == 'terminal' and not vim.b.term_normal then
             if vim.b.term_leaving then
                 vim.b.term_insert = true
             end

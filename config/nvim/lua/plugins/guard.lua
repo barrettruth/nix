@@ -51,7 +51,9 @@ return {
         ft('typst'):fmt('typstyle')
         ft('cmake'):fmt('cmake-format')
         ft('make'):lint('checkmake')
-        ft('cpp'):lint('cpplint')
+        local cpplint = vim.deepcopy(require('guard-collection.linter.cpplint'))
+        cpplint.ignore_patterns = require('config.cp').root_pattern
+        ft('cpp'):lint(cpplint)
         ft('markdown'):fmt('cbfmt'):fmt('prettierd')
         local lint = require('guard.lint')
 
