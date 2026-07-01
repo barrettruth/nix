@@ -120,8 +120,11 @@ def socket_for_root(root: Path, *, spawn: bool = True) -> str:
 
     listing = maybe_output(["mux", "list"])
     for line in listing.splitlines():
-        cwd, _, sock = line.partition("\t")
-        if sock and normalize_path(cwd) == target:
+        fields = line.split("\t")
+        if len(fields) < 3:
+            continue
+        cwd, sock, status = fields[:3]
+        if status == "live" and sock and normalize_path(cwd) == target:
             if os.path.exists(sock):
                 return sock
 

@@ -310,9 +310,8 @@ resume() {
 
 # List sessions: live servers (running) plus stopped ones (a saved snapshot
 # exists, recovered from its `.root` sidecar)
-list() {
-  local sock cwd i w=0 slug rootf rf root
-  local cwds=() socks=() stats=() disp=()
+list_rows() {
+  local sock cwd slug rootf rf root
   if [ -d "$RUNTIME_DIR" ]; then
     for sock in "$RUNTIME_DIR"/*.sock; do
       [ -e "$sock" ] || continue
@@ -323,14 +322,12 @@ list() {
       cwd=""
       [ -f "$rootf" ] && IFS= read -r cwd <"$rootf" 2>/dev/null || true
       [ -n "$cwd" ] || continue
-      cwds+=("$cwd")
-      socks+=("$sock")
-      stats+=("live")
+      printf '%s\t%s\t%s\n' "$cwd" "$sock" live
     done
   fi
   # stopped = snapshot+sidecar present but the project's server isn't live.
   if [ -d "$STATE_DIR/sessions" ]; then
-    local dcwds=() dsocks=() dstats=()
+    local dcwds=() dsocks=() dstats=() i
     for rf in "$STATE_DIR"/sessions/*.root; do
       [ -e "$rf" ] || continue
       root=""
@@ -342,50 +339,25 @@ list() {
       if [ -d "$root" ]; then
         [ -f "${rf%.root}.vim" ] || continue
         if is_live "$sock"; then continue; fi
-        cwds+=("$root")
-        socks+=("")
-        stats+=("stopped")
+        printf '%s\t\t%s\n' "$root" stopped
       else
         dcwds+=("$root")
         dsocks+=("")
         dstats+=("dead")
       fi
     done
-    if [ "${#dcwds[@]}" -gt 0 ]; then
-      cwds+=("${dcwds[@]}")
-      socks+=("${dsocks[@]}")
-      stats+=("${dstats[@]}")
-    fi
-  fi
-  if [ -t 1 ]; then
-    local reset green amber red c tag
-    reset=$'\033[0m'
-    green=$'\033[32m'
-    amber=$'\033[33m'
-    red=$'\033[31m'
-    for cwd in "${cwds[@]}"; do disp+=("${cwd/#$HOME/\~}"); done
-    for cwd in "${disp[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
-    for i in "${!disp[@]}"; do
-      case "${stats[$i]}" in
-      live) c="$green" ;;
-      stopped) c="$amber" ;;
-      *) c="$red" ;;
-      esac
-      tag="$(printf '%-9s' "[${stats[$i]}]")"
-      printf '%s%s%s %-*s  %s\n' "$c" "$tag" "$reset" "$w" "${disp[$i]}" "${socks[$i]}"
-    done
-  else
-    for i in "${!cwds[@]}"; do
-      printf '%s\t%s\t%s\n' "${cwds[$i]}" "${socks[$i]}" "${stats[$i]}"
+    for i in "${!dcwds[@]}"; do
+      printf '%s\t%s\t%s\n' "${dcwds[$i]}" "${dsocks[$i]}" "${dstats[$i]}"
     done
   fi
+  zoxide query -l 2>/dev/null | while IFS= read -r root; do
+    [ -n "$root" ] || continue
+    printf '%s\t\t%s\n' "$root" dir
+  done || true
 }
 
-candidates() {
-  {
-    list | awk -F'\t' '$3 != "dead" { print "session\t" $1 }'
-    zoxide query -l 2>/dev/null | awk '{ print "dir\t" $0 }' || true
-  } | awk -F'\t' '
+list_projects() {
+  list_rows | awk -F'\t' '
     function norm(p) {
       gsub(/\/+$/, "", p)
       return p == "" ? "/" : p
@@ -404,31 +376,70 @@ candidates() {
       return 0
     }
     NF {
-      type[++n] = $1
-      path[n] = norm($2)
-      if (path[n] != "?" && path[n] != "") {
-        all[path[n]] = 1
+      cwd[++n] = $1
+      sock[n] = $2
+      status[n] = $3
+      key[n] = norm($1)
+      if (key[n] != "?" && key[n] != "") {
+        all[key[n]] = 1
       }
     }
     END {
       for (i = 1; i <= n; i++) {
-        p = path[i]
+        p = key[i]
         if (p == "" || p == "?" || seen[p]) {
           continue
         }
-        if (type[i] == "dir" && parent_seen(p)) {
+        if (status[i] == "dir" && parent_seen(p)) {
           continue
         }
         seen[p] = 1
-        print p
+        print cwd[i] "\t" sock[i] "\t" status[i]
       }
     }
-  ' | sed "s|^$HOME|~|"
+  '
+}
+
+list() {
+  local lines cwd sock status i w=0 c tag
+  local cwds=() socks=() stats=() disp=()
+  lines="$(list_projects)"
+  [ -n "$lines" ] || return 0
+  if [ -t 1 ]; then
+    local reset green amber red
+    reset=$'\033[0m'
+    green=$'\033[32m'
+    amber=$'\033[33m'
+    red=$'\033[31m'
+    while IFS=$'\t' read -r cwd sock status; do
+      cwds+=("$cwd")
+      socks+=("$sock")
+      stats+=("$status")
+      disp+=("${cwd/#$HOME/\~}")
+    done <<<"$lines"
+    for cwd in "${disp[@]}"; do [ "${#cwd}" -gt "$w" ] && w="${#cwd}"; done
+    for i in "${!disp[@]}"; do
+      case "${stats[$i]}" in
+      live) c="$green" ;;
+      stopped) c="$amber" ;;
+      dead) c="$red" ;;
+      *) c="" ;;
+      esac
+      tag="$(printf '%-9s' "[${stats[$i]}]")"
+      if [ -n "$c" ]; then
+        printf '%s%s%s %-*s  %s\n' "$c" "$tag" "$reset" "$w" "${disp[$i]}" "${socks[$i]}"
+      else
+        printf '%s %-*s  %s\n' "$tag" "$w" "${disp[$i]}" "${socks[$i]}"
+      fi
+    done
+  else
+    printf '%s\n' "$lines"
+  fi
 }
 
 pick() {
   local choice
-  choice="$(candidates | fzf --prompt 'project> ')" || return 0
+  choice="$(list | awk -F'\t' '$3 != "dead" { print $1 }' | sed "s|^$HOME|~|" | fzf --prompt 'project> ')" || return 0
   [ -n "$choice" ] || return 0
   open_project "${choice/#\~/$HOME}"
 }
@@ -459,9 +470,8 @@ mux: per-project neovim server launcher
   mux [<path>]        open the project at <path> (default: cwd), spawning if needed
   mux open [<path>]   alias for mux [<path>]
   mux ensure [<path>] print a live server socket for the project, spawning if needed
-  mux list            list sessions: live + stopped + dead (cwd<TAB>socket<TAB>status)
-  mux pick            fzf-pick a project (live servers + zoxide) and open it
-  mux candidates      print project candidates (live servers + zoxide)
+  mux list            list projects: live + stopped + dead + dir (cwd<TAB>socket<TAB>status)
+  mux pick            fzf-pick a project from mux list and open it
   mux stop [<path>]   stop the project's server (saved session restored next open)
   mux kill [<path>]   hard-remove the project: stop + delete its saved session
   mux clean           delete unrevivable session junk (orphan snapshots, stale sockets)
@@ -621,9 +631,6 @@ list)
   ;;
 pick)
   pick
-  ;;
-candidates)
-  candidates
   ;;
 stop)
   shift

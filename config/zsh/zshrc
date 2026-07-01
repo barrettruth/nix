@@ -62,7 +62,8 @@ zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
 fzf-mux-widget() {
-  local proj="$(FZF_CTRL_T_COMMAND='command mux candidates' __fzf_select)"
+  local mux_cmd="command mux list | awk -F'\t' '\$3 != \"dead\" { print \$1 }' | sed 's|^$HOME|~|'"
+  local proj="$(FZF_CTRL_T_COMMAND="$mux_cmd" __fzf_select)"
   [ -n "$proj" ] || { zle reset-prompt; return; }
   proj="${proj/#\\~/~}"
   BUFFER="mux ${proj% }"
