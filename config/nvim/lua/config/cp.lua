@@ -114,7 +114,8 @@ local function run_terminal(mode, source_buf, source, dir)
     local cmd = { 'just', mode, file }
     local action = mode == 'debug' and 'debugging' or 'compiling'
     notify(action .. '...')
-    local job = vim.fn.jobstart(cmd, {
+    local job
+    job = vim.fn.jobstart(cmd, {
         cwd = dir,
         stdout_buffered = false,
         stderr_buffered = false,

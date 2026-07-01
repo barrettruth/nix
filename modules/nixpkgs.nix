@@ -78,9 +78,7 @@ let
                   ;;
               esac
 
-              printf 'nvim: missing local Neovim build under %s\n' "$src" >&2
-              printf 'nvim: build %s or %s\n' "$asan" "$normal" >&2
-              exit 127
+              exec "$base" "$@"
               EOF
               chmod +x $out/bin/nvim
             '';
