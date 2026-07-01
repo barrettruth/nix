@@ -63,6 +63,26 @@ local function root_for_slug(slug)
     return nil
 end
 
+---@param path string?
+---@return string?, string?
+local function validate_dir(path)
+    local root = canon(vim.trim(path or ''))
+    if root == '' then
+        return nil, 'empty path'
+    end
+    if vim.fn.isdirectory(root) ~= 1 then
+        return nil,
+            ('not a directory: %s'):format(vim.fn.fnamemodify(root, ':~'))
+    end
+    return root, nil
+end
+
+---@param err string
+local function notify_path_error(err)
+    vim.notify('mux: ' .. err, vim.log.levels.ERROR)
+    core.restore_terminal_focus()
+end
+
 ---@return { cwd: string, socket: string, status: string }[]
 local function list_entries()
     local entries = {}
@@ -252,6 +272,14 @@ local function show_picker(items)
                 M._connect(entry)
             end
         end,
+        ['ctrl-o'] = function(_, opts)
+            local path, err = validate_dir(opts and opts.last_query or nil)
+            if not path then
+                notify_path_error(err or 'invalid path')
+                return
+            end
+            M._connect({ path = path })
+        end,
     }
     local parts = {}
     for _, name in ipairs(VIEW_ORDER) do
@@ -267,6 +295,10 @@ local function show_picker(items)
             hl('FzfLuaHeaderText', name)
         )
     end
+    parts[#parts + 1] = ('%s %s'):format(
+        hl('FzfLuaHeaderBind', '^O'),
+        hl('FzfLuaHeaderText', 'open')
+    )
     local function lifecycle(verb, sel)
         local entry = sel and sel[1] and meta[strip_ansi(sel[1])]
         if entry and entry.status == 'dir' then
@@ -337,6 +369,14 @@ end
 function M._connect(entry, view)
     if not entry then
         return
+    end
+    if not entry.socket or entry.socket == '' then
+        local path, err = validate_dir(entry.path)
+        if not path then
+            notify_path_error(err)
+            return
+        end
+        entry.path = path
     end
     if
         entry.socket
