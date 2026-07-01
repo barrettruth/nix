@@ -1,12 +1,6 @@
 { lib, inputs, ... }:
 let
-  neovimChannel = "local";
-
   overlays = [
-    (_final: prev: {
-      "neovim-main-unwrapped" = prev.neovim-unwrapped;
-    })
-    inputs.neovim-nightly.overlays.default
     inputs.codex.overlays.default
     inputs.devin.overlays.default
     (
@@ -82,11 +76,6 @@ let
               EOF
               chmod +x $out/bin/nvim
             '';
-        neovimPackages = {
-          local = localNeovim final."neovim-main-unwrapped";
-          main = final."neovim-main-unwrapped";
-          nightly = prev.neovim;
-        };
       in
       {
         barrett-fonts = inputs.fonts.packages.${system}.desktop;
@@ -101,7 +90,7 @@ let
           gws = final.google-workspace-cli;
         };
         neovim = final.callPackage ../pkgs/neovim {
-          neovimPackage = neovimPackages.${neovimChannel};
+          neovimPackage = localNeovim prev.neovim-unwrapped;
         };
       }
     )
