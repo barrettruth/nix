@@ -14,7 +14,7 @@ local function confirm_kill(root, cb)
     local name = vim.fn.fnamemodify(root, ':~')
     vim.schedule(function()
         vim.ui.input(
-            { prompt = 'mux: kill session ' .. name .. '? [y/N] ' },
+            { prompt = 'mux: kill session ' .. name .. '? [y/N]: ' },
             function(input)
                 local answer = (input or ''):lower():match('^%s*(.-)%s*$')
                 if answer == 'y' or answer == 'yes' then
