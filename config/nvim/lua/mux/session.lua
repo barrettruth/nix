@@ -78,12 +78,31 @@ local function clear_last(root)
 end
 
 ---@return string
+function M.root()
+    local env = vim.env.MUX_ROOT
+    if env and env ~= '' then
+        return canon(env)
+    end
+    local lines = vim.fn.systemlist({
+        'git',
+        '-C',
+        vim.fn.getcwd(),
+        'rev-parse',
+        '--show-toplevel',
+    })
+    if vim.v.shell_error == 0 and lines[1] and lines[1] ~= '' then
+        return canon(lines[1])
+    end
+    return canon(vim.fn.getcwd())
+end
+
+---@return string
 local function session_file()
     local env = vim.env.MUX_SESSION_FILE
     if env and env ~= '' then
         return env
     end
-    local slug = vim.fn.getcwd():gsub('[^%w._-]', '_')
+    local slug = M.root():gsub('[^%w._-]', '_')
     return sessions_dir() .. '/' .. slug .. '.vim'
 end
 
@@ -137,7 +156,7 @@ function M.kill_session()
     local f = session_file()
     pcall(vim.fn.delete, f)
     pcall(vim.fn.delete, root_file())
-    local root = vim.fn.getcwd()
+    local root = M.root()
     forget_history(root)
     clear_last(root)
     vim.schedule(function()
@@ -181,13 +200,13 @@ function M.save_session()
     local f = session_file()
     vim.fn.mkdir(vim.fn.fnamemodify(f, ':h'), 'p')
     pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(f))
-    pcall(vim.fn.writefile, { vim.fn.getcwd() }, root_file())
+    pcall(vim.fn.writefile, { M.root() }, root_file())
 end
 
 function M.record_root()
     local f = session_file()
     pcall(vim.fn.mkdir, vim.fn.fnamemodify(f, ':h'), 'p')
-    pcall(vim.fn.writefile, { vim.fn.getcwd() }, root_file())
+    pcall(vim.fn.writefile, { M.root() }, root_file())
 end
 
 ---@return string?

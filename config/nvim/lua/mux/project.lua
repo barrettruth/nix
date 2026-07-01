@@ -269,7 +269,7 @@ local function show_picker(items)
             return
         end
         if entry and entry.path then
-            if canon(entry.path) == canon(vim.fn.getcwd()) then
+            if canon(entry.path) == session.root() then
                 if verb == 'kill' then
                     confirm_kill(entry.path, session.kill_session)
                 else
@@ -453,7 +453,7 @@ local function with_latest_live_other(cb)
         end
     end
     vim.schedule(function()
-        local cur = canon(vim.fn.getcwd())
+        local cur = session.root()
         local hf = core.state_dir() .. '/history'
         local hist = vim.fn.filereadable(hf) == 1 and vim.fn.readfile(hf) or {}
         for i = #hist, 1, -1 do
@@ -490,7 +490,7 @@ function M.stop_to_latest()
 end
 
 function M.kill_to_latest()
-    local current = vim.fn.getcwd()
+    local current = session.root()
     confirm_kill(current, function()
         with_latest_live_other(function(root, sock)
             if sock then

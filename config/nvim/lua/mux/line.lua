@@ -1,5 +1,6 @@
 local core = require('mux.core')
 local project = require('mux.project')
+local session = require('mux.session')
 local view = require('mux.view')
 
 local M = {}
@@ -129,7 +130,7 @@ end
 ---@return string[]
 local function session_segments()
     local entries = project.list_entries()
-    local current = canon(vim.fn.getcwd())
+    local current = session.root()
     local last = last_session(entries, current)
     local parts = {}
     for _, entry in ipairs(entries) do

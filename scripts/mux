@@ -28,13 +28,14 @@ slug() {
   printf '%s-%s' "${base:-project}" "$hash"
 }
 
+git_root_for() {
+  git -C "$1" rev-parse --show-toplevel 2>/dev/null
+}
+
 root_for() {
-  local path="$1"
-  if git -C "$path" rev-parse --show-toplevel >/dev/null 2>&1; then
-    git -C "$path" rev-parse --show-toplevel
-  else
-    realpath "$path"
-  fi
+  local path="$1" root
+  root="$(git_root_for "$path")" || die "not in a git worktree: $path"
+  printf '%s\n' "$root"
 }
 
 socket_for() {
@@ -166,6 +167,7 @@ bootstrap_server() {
     log_line "$logf" "direnv: not found"
   fi
   export MUX=1
+  export MUX_ROOT="$root"
   export MUX_LOG_FILE="$logf"
   MUX_SESSION_FILE="$(session_for "$root")"
   export MUX_SESSION_FILE
@@ -352,6 +354,7 @@ list_rows() {
   fi
   zoxide query -l 2>/dev/null | while IFS= read -r root; do
     [ -n "$root" ] || continue
+    root="$(git_root_for "$root")" || continue
     printf '%s\t\t%s\n' "$root" dir
   done || true
 }
@@ -611,7 +614,8 @@ reload_all() {
   for sock in "$RUNTIME_DIR"/*.sock; do
     [ -e "$sock" ] || continue
     is_live "$sock" || continue
-    cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
+    cwd="$("$NVIM" --server "$sock" --remote-expr 'luaeval("vim.env.MUX_ROOT or \"\"")' </dev/null 2>/dev/null || true)"
+    [ -n "$cwd" ] || cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
     if [ -n "$cwd" ]; then
       count=$((count + 1))
       reload_one "$cwd"
