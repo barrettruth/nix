@@ -578,12 +578,17 @@ clean() {
 }
 
 reload_one() {
-  local root sock uis i
+  local root sock logf uis mode start end i
   root="$(root_for "${1:-$PWD}")"
   sock="$(socket_for "$root")"
+  logf="$(log_for "$root")"
   is_live "$sock" || return 0
   uis="$("$NVIM" --server "$sock" --remote-expr 'len(nvim_list_uis())' </dev/null 2>/dev/null || true)"
   uis="${uis//[^0-9]/}"
+  mode="ui"
+  [ "${uis:-0}" -gt 0 ] || mode="restart"
+  start="$(date +%s)"
+  log_line "$logf" "mux reload: begin mode=$mode uis=${uis:-0}"
   if [ "${uis:-0}" -gt 0 ]; then
     rpc "$sock" 'reload()'
   else
@@ -595,17 +600,25 @@ reload_one() {
     done
     ensure "$root" >/dev/null
   fi
+  end="$(date +%s)"
+  log_line "$logf" "mux reload: end duration=$((end - start))s"
 }
 
 reload_all() {
-  local sock cwd
+  local sock cwd start end count=0
   [ -d "$RUNTIME_DIR" ] || return 0
+  start="$(date +%s)"
   for sock in "$RUNTIME_DIR"/*.sock; do
     [ -e "$sock" ] || continue
     is_live "$sock" || continue
     cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
-    [ -n "$cwd" ] && reload_one "$cwd"
+    if [ -n "$cwd" ]; then
+      count=$((count + 1))
+      reload_one "$cwd"
+    fi
   done
+  end="$(date +%s)"
+  log_line "$LOG_DIR/reload-all.log" "mux reload --all: end count=$count duration=$((end - start))s"
 }
 
 save_one() {
