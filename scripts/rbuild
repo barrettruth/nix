@@ -485,7 +485,11 @@ class Rbuild:
         )
         if result.returncode == 0 and (root := result.stdout.strip()):
             return str(Path(root).resolve())
-        return str(Path.cwd().resolve())
+        cwd = Path.cwd().resolve()
+        for parent in (cwd, *cwd.parents):
+            if (parent / ".git").exists() or (parent / ".jj").exists():
+                return str(parent)
+        return str(cwd)
 
     def branch_slot(self) -> str:
         result = subprocess.run(
@@ -656,6 +660,8 @@ class Rbuild:
             "--filter=H /target/***",
             "--exclude=/.git",
             "--exclude=/.git/",
+            "--exclude=/.jj",
+            "--exclude=/.jj/",
             "--exclude=/result",
             "--exclude=/result-*",
         ]

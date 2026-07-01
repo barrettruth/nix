@@ -7,5 +7,6 @@ return {
         'setup.cfg',
         'pytest.ini',
         '.git',
+        '.jj',
     },
 }

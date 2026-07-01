@@ -14,6 +14,7 @@ import muxlib  # noqa: E402
 
 JUNK_TOP = {
     ".git",
+    ".jj",
     ".codex",
     ".agents",
     ".worktrees",

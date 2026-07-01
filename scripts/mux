@@ -28,13 +28,29 @@ slug() {
   printf '%s-%s' "${base:-project}" "$hash"
 }
 
-git_root_for() {
-  git -C "$1" rev-parse --show-toplevel 2>/dev/null
+workspace_root_for() {
+  local path="$1" root dir parent
+  root="$(git -C "$path" rev-parse --show-toplevel 2>/dev/null)" && {
+    printf '%s\n' "$root"
+    return 0
+  }
+  dir="$(realpath "$path" 2>/dev/null)" || return 1
+  [ -d "$dir" ] || dir="$(dirname "$dir")"
+  while [ -n "$dir" ]; do
+    if [ -e "$dir/.git" ] || [ -e "$dir/.jj" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    parent="$(dirname "$dir")"
+    [ "$parent" != "$dir" ] || break
+    dir="$parent"
+  done
+  return 1
 }
 
 root_for() {
   local path="$1" root
-  root="$(git_root_for "$path")" || die "not in a git worktree: $path"
+  root="$(workspace_root_for "$path")" || die "not in a git or jj workspace: $path"
   printf '%s\n' "$root"
 }
 
@@ -354,7 +370,7 @@ list_rows() {
   fi
   zoxide query -l 2>/dev/null | while IFS= read -r root; do
     [ -n "$root" ] || continue
-    root="$(git_root_for "$root")" || continue
+    root="$(workspace_root_for "$root")" || continue
     printf '%s\t\t%s\n' "$root" dir
   done || true
 }

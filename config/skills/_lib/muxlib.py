@@ -50,9 +50,21 @@ def git_rc(repo: Path, *args: str) -> int:
     ).returncode
 
 
-def git_root(path: Path) -> Path:
+def workspace_root(path: Path) -> Path | None:
     root = maybe_output(["git", "-C", str(path), "rev-parse", "--show-toplevel"])
-    return normalize_path(root) if root else path
+    if root:
+        return normalize_path(root)
+    cur = normalize_path(path)
+    if cur.is_file():
+        cur = cur.parent
+    for parent in (cur, *cur.parents):
+        if (parent / ".git").exists() or (parent / ".jj").exists():
+            return parent
+    return None
+
+
+def git_root(path: Path) -> Path:
+    return workspace_root(path) or path
 
 
 def current_root() -> Path:
@@ -82,9 +94,10 @@ def resolve_target(base: Path, target: str | None) -> Path:
     if not target:
         return base
     candidate = Path(target).expanduser()
-    if candidate.is_dir() and git_rc(candidate, "rev-parse", "--is-inside-work-tree") == 0:
-        top = maybe_output(["git", "-C", str(candidate), "rev-parse", "--show-toplevel"])
-        return normalize_path(top) if top else candidate.resolve()
+    if candidate.is_dir():
+        root = workspace_root(candidate)
+        if root:
+            return root
     wt = worktree_for_branch(base, target)
     if wt is None:
         raise MuxError(f"'{target}' is not a worktree path or a branch checked out under {base}")

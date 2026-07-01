@@ -19,7 +19,7 @@ return {
                 RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
                 rg_opts = fzf.defaults.grep.rg_opts:gsub(
                     '%-e$',
-                    "--glob='!.git/' -e"
+                    "--glob='!.git/' --glob='!.jj/' -e"
                 ),
             },
             lsp = {
@@ -105,8 +105,13 @@ return {
             '<c-t>',
             function()
                 local fzf = require('fzf-lua')
-                if vim.fs.root(vim.fn.getcwd(), '.git') then
+                local cwd = vim.fn.getcwd()
+                local git_root = vim.fs.root(cwd, '.git')
+                local jj_root = vim.fs.root(cwd, '.jj')
+                if git_root then
                     fzf.git_files({ cwd_prompt = false })
+                elseif jj_root then
+                    fzf.files({ cwd = jj_root, cwd_prompt = false })
                 else
                     fzf.files()
                 end

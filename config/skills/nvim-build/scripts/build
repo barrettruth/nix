@@ -8,8 +8,26 @@ die() {
 
 [ "$#" -eq 0 ] || die "takes no arguments"
 
-root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "not inside a git worktree"
-[ "$(git -C "$root" rev-parse --is-inside-work-tree 2>/dev/null)" = true ] || die "not inside a git worktree"
+workspace_root() {
+  local root dir parent
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" && {
+    printf '%s\n' "$root"
+    return 0
+  }
+  dir="$PWD"
+  while [ -n "$dir" ]; do
+    if [ -e "$dir/.git" ] || [ -e "$dir/.jj" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    parent="$(dirname "$dir")"
+    [ "$parent" != "$dir" ] || break
+    dir="$parent"
+  done
+  return 1
+}
+
+root="$(workspace_root)" || die "not inside a git or jj workspace"
 [ -f "$root/Makefile" ] && [ -f "$root/BUILD.md" ] && [ -d "$root/cmake.deps" ] && [ -d "$root/src/nvim" ] || die "not a Neovim source checkout: $root"
 command -v rbuild >/dev/null 2>&1 || die "rbuild is not on PATH"
 

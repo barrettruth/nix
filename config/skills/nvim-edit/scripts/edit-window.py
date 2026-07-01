@@ -150,9 +150,21 @@ def normalize_path(path: str | Path) -> Path:
     return Path(path).expanduser().resolve()
 
 
-def git_root(path: Path) -> Path:
+def workspace_root(path: Path) -> Path | None:
     root = maybe_output(["git", "-C", str(path), "rev-parse", "--show-toplevel"])
-    return normalize_path(root) if root else path
+    if root:
+        return normalize_path(root)
+    cur = normalize_path(path)
+    if cur.is_file():
+        cur = cur.parent
+    for parent in (cur, *cur.parents):
+        if (parent / ".git").exists() or (parent / ".jj").exists():
+            return parent
+    return None
+
+
+def git_root(path: Path) -> Path:
+    return workspace_root(path) or path
 
 
 def current_root() -> Path:
@@ -436,6 +448,8 @@ def content_hits(root: Path, tokens: list[str]) -> dict[Path, int]:
             "--hidden",
             "--glob",
             "!.git",
+            "--glob",
+            "!.jj",
             "--glob",
             "!result",
             "--glob",

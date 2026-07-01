@@ -83,15 +83,9 @@ function M.root()
     if env and env ~= '' then
         return canon(env)
     end
-    local lines = vim.fn.systemlist({
-        'git',
-        '-C',
-        vim.fn.getcwd(),
-        'rev-parse',
-        '--show-toplevel',
-    })
-    if vim.v.shell_error == 0 and lines[1] and lines[1] ~= '' then
-        return canon(lines[1])
+    local root = vim.fs.root(vim.fn.getcwd(), { '.git', '.jj' })
+    if root and root ~= '' then
+        return canon(root)
     end
     return canon(vim.fn.getcwd())
 end
