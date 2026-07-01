@@ -9,12 +9,17 @@ let
   queries = lib.filter (query: query != null) (
     map (grammar: grammar.associatedQuery or null) grammars
   );
+  wrapped = wrapNeovimUnstable neovimPackage {
+    wrapRc = false;
+    wrapperArgs = [
+      "--add-flags"
+      ''--cmd "lua dofile('${vimPlugins.nvim-treesitter}/plugin/filetypes.lua')"''
+    ];
+    plugins = grammars ++ queries;
+  };
 in
-wrapNeovimUnstable neovimPackage {
-  wrapRc = false;
-  wrapperArgs = [
-    "--add-flags"
-    ''--cmd "lua dofile('${vimPlugins.nvim-treesitter}/plugin/filetypes.lua')"''
-  ];
-  plugins = grammars ++ queries;
-}
+wrapped.overrideAttrs (old: {
+  pname = neovimPackage.pname or old.pname;
+  version = neovimPackage.version or old.version;
+  name = "${neovimPackage.pname or old.pname}-${neovimPackage.version or old.version}";
+})
