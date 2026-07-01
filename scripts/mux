@@ -277,7 +277,7 @@ clear_last() {
   [ "$cur" = "$root" ] && rm -f "$LAST_FILE" || true
 }
 
-attach() {
+open_project() {
   local root sock
   root="$(root_for "${1:-$PWD}")"
   sock="$(ensure "$root")"
@@ -293,7 +293,7 @@ resume() {
   last=""
   [ -f "$LAST_FILE" ] && last="$(head -n1 "$LAST_FILE" 2>/dev/null || true)"
   if [ -n "$last" ] && [ -d "$last" ]; then
-    attach "$last"
+    open_project "$last"
     return
   fi
   lines="$(list)"
@@ -301,7 +301,7 @@ resume() {
   if [ "$n" -eq 1 ]; then
     cwd="$(printf '%s\n' "$lines" | head -n1 | cut -f1)"
     if [ -n "$cwd" ] && [ "$cwd" != '?' ] && [ -d "$cwd" ]; then
-      attach "$cwd"
+      open_project "$cwd"
       return
     fi
   fi
@@ -430,7 +430,7 @@ pick() {
   local choice
   choice="$(candidates | fzf --prompt 'project> ')" || return 0
   [ -n "$choice" ] || return 0
-  attach "${choice/#\~/$HOME}"
+  open_project "${choice/#\~/$HOME}"
 }
 
 show_log() {
@@ -456,12 +456,13 @@ usage() {
   cat <<'EOF'
 mux: per-project neovim server launcher
 
-  mux [<path>]        attach to the project at <path> (default: cwd), spawning if needed
+  mux [<path>]        open the project at <path> (default: cwd), spawning if needed
+  mux open [<path>]   alias for mux [<path>]
   mux ensure [<path>] print a live server socket for the project, spawning if needed
   mux list            list sessions: live + stopped + dead (cwd<TAB>socket<TAB>status)
-  mux pick            fzf-pick a project (live servers + zoxide) and attach
+  mux pick            fzf-pick a project (live servers + zoxide) and open it
   mux candidates      print project candidates (live servers + zoxide)
-  mux stop [<path>]   stop the project's server (saved session restored next attach)
+  mux stop [<path>]   stop the project's server (saved session restored next open)
   mux kill [<path>]   hard-remove the project: stop + delete its saved session
   mux clean           delete unrevivable session junk (orphan snapshots, stale sockets)
   mux reload [<path>] reload the project in place (apply edited config)
@@ -658,9 +659,9 @@ log)
 help | -h | --help)
   usage
   ;;
-attach)
+open)
   shift
-  attach "${1:-$PWD}"
+  open_project "${1:-$PWD}"
   ;;
 "")
   resume
@@ -670,6 +671,6 @@ attach)
   ;;
 *)
   [ -d "$1" ] || die "unknown command: $1 (try --help)"
-  attach "$1"
+  open_project "$1"
   ;;
 esac
