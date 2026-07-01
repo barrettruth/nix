@@ -18,8 +18,14 @@ let
     plugins = grammars ++ queries;
   };
 in
-wrapped.overrideAttrs (old: {
-  pname = neovimPackage.pname or old.pname;
-  version = neovimPackage.version or old.version;
-  name = "${neovimPackage.pname or old.pname}-${neovimPackage.version or old.version}";
-})
+wrapped.overrideAttrs (
+  old:
+  let
+    pname = neovimPackage.pname or (old.pname or "neovim");
+    version = neovimPackage.version or (old.version or lib.getVersion neovimPackage);
+  in
+  {
+    inherit pname version;
+    name = "${pname}-${version}";
+  }
+)
