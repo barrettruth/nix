@@ -401,7 +401,7 @@ list_projects() {
 }
 
 list() {
-  local lines cwd sock status i w=0 c tag
+  local lines line rest cwd sock status i w=0 c tag
   local cwds=() socks=() stats=() disp=()
   lines="$(list_projects)"
   [ -n "$lines" ] || return 0
@@ -411,7 +411,11 @@ list() {
     green=$'\033[32m'
     amber=$'\033[33m'
     red=$'\033[31m'
-    while IFS=$'\t' read -r cwd sock status; do
+    while IFS= read -r line; do
+      cwd="${line%%$'\t'*}"
+      rest="${line#*$'\t'}"
+      sock="${rest%%$'\t'*}"
+      status="${rest#*$'\t'}"
       cwds+=("$cwd")
       socks+=("$sock")
       stats+=("$status")
@@ -425,7 +429,11 @@ list() {
       dead) c="$red" ;;
       *) c="" ;;
       esac
-      tag="$(printf '%-9s' "[${stats[$i]}]")"
+      if [ "${stats[$i]}" = dir ]; then
+        tag="$(printf '%-9s' '')"
+      else
+        tag="$(printf '%-9s' "[${stats[$i]}]")"
+      fi
       if [ -n "$c" ]; then
         printf '%s%s%s %-*s  %s\n' "$c" "$tag" "$reset" "$w" "${disp[$i]}" "${socks[$i]}"
       else
