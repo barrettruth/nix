@@ -145,7 +145,7 @@ function M.kill_session()
     end)
 end
 
--- Reload in place: save the layout, then `:restart +qall!` re-execs the server
+-- Reload in place: save the layout, then `:restart! +qall!` re-execs the server
 -- with new config and reattaches the UI (setup restores the tabs).
 function M.reload()
     if #vim.api.nvim_list_uis() == 0 then
@@ -153,7 +153,7 @@ function M.reload()
     end
     M.save_session()
     pcall(vim.cmd, 'silent! wall')
-    pcall(vim.cmd, 'restart +qall!')
+    pcall(vim.cmd, 'restart! +qall!')
 end
 
 function M.reload_all()
