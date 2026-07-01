@@ -276,6 +276,9 @@ function M.load_session()
     if vim.api.nvim_tabpage_is_valid(cur) then
         vim.api.nvim_set_current_tabpage(cur)
     end
+    if vim.bo.buftype ~= 'terminal' then
+        pcall(vim.cmd, 'stopinsert')
+    end
     for tp in pairs(drop) do
         engine.close_view_tab(tp, true)
     end
