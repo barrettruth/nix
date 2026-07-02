@@ -3,6 +3,22 @@ local dev_plugins = {
     'diffs.nvim',
 }
 
+local function current_colorscheme()
+    local state_home = vim.env.XDG_STATE_HOME
+        or (vim.env.HOME and (vim.env.HOME .. '/.local/state'))
+    if not state_home then
+        return 'midnight'
+    end
+    local ok, lines = pcall(vim.fn.readfile, state_home .. '/theme')
+    local theme = ok and lines[1] or nil
+
+    if theme == 'daylight' or theme == 'bright' or theme == 'light' then
+        return 'daylight'
+    end
+
+    return 'midnight'
+end
+
 local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
 vim.fn.mkdir(opt_dir, 'p')
 for _, name in ipairs(dev_plugins) do
@@ -55,7 +71,7 @@ return {
         'barrettruth/midnight.nvim',
         enabled = true,
         after = function()
-            vim.cmd.colorscheme('midnight')
+            vim.cmd.colorscheme(current_colorscheme())
         end,
     },
 }

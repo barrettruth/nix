@@ -76,8 +76,12 @@ local function run_terminal(mode, source_buf, source, dir)
     local source_view = vim.fn.winsaveview()
 
     close_output()
+    local source_width = vim.api.nvim_win_is_valid(source_win)
+            and vim.api.nvim_win_get_width(source_win)
+        or vim.o.columns
     vim.cmd('rightbelow vsplit')
     vim.cmd.enew()
+    vim.api.nvim_win_set_width(0, math.max(1, math.floor(source_width * 0.35)))
 
     local buf = vim.api.nvim_get_current_buf()
     active.source_buf = source_buf
