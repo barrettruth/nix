@@ -1,6 +1,12 @@
 default:
     @just --list
 
+rebuild-desktop:
+    nixos-rebuild switch --flake .#desktop --target-host desktop --build-host desktop
+
+rebuild-laptop:
+    nixos-rebuild switch --flake .#laptop --build-host desktop-builder --elevate run0
+
 _python-scripts:
    @git ls-files 'scripts/**' | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
