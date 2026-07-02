@@ -26,9 +26,13 @@ let
     ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
   '';
 
-  mkDir = dir: ''
-    install -d -o ${username} -g users "${dir}"
+  mkDirMode = mode: dir: ''
+    install -d -m ${mode} -o ${username} -g users "${dir}"
   '';
+
+  mkDir = mkDirMode "0755";
+
+  mkPrivateDir = mkDirMode "0700";
 
   readTheme = ''
     theme="$(cat "${XDG_STATE_HOME}/theme" 2>/dev/null)" || theme="midnight"
@@ -383,8 +387,8 @@ in
         ${mkDir "${XDG_CONFIG_HOME}/clangd"}
         ${mkDir "${XDG_CONFIG_HOME}/zathura"}
         ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
-        ${mkDir "${homeDirectory}/.ssh"}
-        ${mkDir "${homeDirectory}/.gnupg"}
+        ${mkPrivateDir "${homeDirectory}/.ssh"}
+        ${mkPrivateDir "${homeDirectory}/.gnupg"}
         if [ -L "${homeDirectory}/.codex" ]; then
           ${runUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
         fi

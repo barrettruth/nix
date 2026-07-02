@@ -40,9 +40,13 @@ in
     fi
   '';
 
-  mkDir = dir: ''
-    install -d -o ${username} -g users "${dir}"
+  mkDirMode = mode: dir: ''
+    install -d -m ${mode} -o ${username} -g users "${dir}"
   '';
+
+  mkDir = mkDirMode "0755";
+
+  mkPrivateDir = mkDirMode "0700";
 
   readTheme = ''
     theme="$(cat "${XDG_STATE_HOME}/theme" 2>/dev/null)" || theme="midnight"

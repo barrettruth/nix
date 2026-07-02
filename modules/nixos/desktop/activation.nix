@@ -18,6 +18,7 @@ let
     runUser
     mkSymlink
     mkDir
+    mkPrivateDir
     ;
 
   zshInit = pkgs.writeText "zsh-init" ''
@@ -117,8 +118,8 @@ in
     fi
     ${mkDir "${XDG_CONFIG_HOME}/zsh"}
     ${mkDir "${XDG_STATE_HOME}/zsh"}
-    ${mkDir "${homeDirectory}/.ssh"}
-    ${mkDir "${homeDirectory}/.gnupg"}
+    ${mkPrivateDir "${homeDirectory}/.ssh"}
+    ${mkPrivateDir "${homeDirectory}/.gnupg"}
 
     ${lib.optionalString hostConfig.enableDesktop ''
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
