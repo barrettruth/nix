@@ -22,7 +22,11 @@ vim.lsp.config('*', {
 
 ---@param server string
 local function compose_on_attach(server)
-    local server_on_attach = vim.lsp.config[server].on_attach
+    local config = vim.lsp.config[server]
+    if not config then
+        return
+    end
+    local server_on_attach = config.on_attach
     if not server_on_attach or server_on_attach == lsp.on_attach then
         return
     end
@@ -54,26 +58,10 @@ local enabled = {
     'vimdoc_ls',
 }
 
-local disabled = {
-    'vtsls',
-    'tailwindcss',
-}
-
 for _, server in ipairs(enabled) do
-    local ok, config = pcall(require, 'lsp.' .. server)
-    if ok and config then
-        vim.lsp.config(server, config)
-    end
     compose_on_attach(server)
-    vim.lsp.enable(server)
 end
-
-for _, server in ipairs(disabled) do
-    local ok, config = pcall(require, 'lsp.' .. server)
-    if ok and config then
-        vim.lsp.config(server, config)
-    end
-end
+vim.lsp.enable(enabled)
 
 -- remove duplicate entries from goto defintion list
 -- example: https://github.com/LuaLS/lua-language-server/issues/2451

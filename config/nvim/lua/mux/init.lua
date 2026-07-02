@@ -48,6 +48,23 @@ end
 
 local AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000
 
+local function disable_terminal_color_request_handler()
+    local ok, autocmds = pcall(vim.api.nvim_get_autocmds, {
+        group = 'nvim.terminal',
+        event = 'TermRequest',
+    })
+    if not ok then
+        return
+    end
+    for _, autocmd in ipairs(autocmds) do
+        if
+            autocmd.desc == 'Handles OSC foreground/background color requests'
+        then
+            pcall(vim.api.nvim_del_autocmd, autocmd.id)
+        end
+    end
+end
+
 function M.setup()
     if M._did then
         return
@@ -56,6 +73,7 @@ function M.setup()
 
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
+    disable_terminal_color_request_handler()
 
     local prefix = '<a-x>'
     local modes = { 'n', 'i', 't' }
