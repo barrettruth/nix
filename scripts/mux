@@ -62,6 +62,10 @@ session_for() {
   printf '%s/sessions/%s.vim' "$STATE_DIR" "$(slug "$1")"
 }
 
+restore_for() {
+  printf '%s/sessions/%s.restore' "$STATE_DIR" "$(slug "$1")"
+}
+
 log_for() {
   printf '%s/%s.log' "$LOG_DIR" "$(slug "$1")"
 }
@@ -228,6 +232,7 @@ ensure() {
       monitor_pid="${bootpid:-$pid}"
       if is_live "$sock"; then
         log_line "$logf" "mux: socket live after $i polls"
+        mark_restore "$root"
         printf '%s\n' "$sock"
         return 0
       fi
@@ -238,6 +243,7 @@ ensure() {
         set -e
         if is_live "$sock"; then
           log_line "$logf" "mux: socket live after bootstrap exit rc=$rc"
+          mark_restore "$root"
           printf '%s\n' "$sock"
           return 0
         fi
@@ -259,6 +265,7 @@ ensure() {
     log_tail "$logf"
     die "server did not start at $sock"
   fi
+  mark_restore "$root"
   printf '%s\n' "$sock"
 }
 
@@ -295,6 +302,41 @@ clear_last() {
   [ "$cur" = "$root" ] && rm -f "$LAST_FILE" || true
 }
 
+mark_restore() {
+  local root="$1" rf
+  [ -n "$root" ] || return 0
+  mkdir -p "$STATE_DIR/sessions"
+  rf="$(restore_for "$root")"
+  printf '%s\n' "$root" >"$rf"
+  chmod 600 "$rf" 2>/dev/null || true
+}
+
+unmark_restore() {
+  local root="$1"
+  [ -n "$root" ] || return 0
+  rm -f "$(restore_for "$root")"
+}
+
+restore_marked() {
+  local skip="${1:-}" mode="${2:-background}" rf root vimf
+  [ -d "$STATE_DIR/sessions" ] || return 0
+  for rf in "$STATE_DIR"/sessions/*.restore; do
+    [ -e "$rf" ] || continue
+    root=""
+    IFS= read -r root <"$rf" 2>/dev/null || true
+    [ -n "$root" ] || continue
+    [ -z "$skip" ] || [ "$root" != "$skip" ] || continue
+    [ -d "$root" ] || continue
+    vimf="${rf%.restore}.vim"
+    [ -f "$vimf" ] || continue
+    if [ "$mode" = foreground ]; then
+      ensure "$root" >/dev/null || true
+    else
+      "$SCRIPT_SELF" ensure "$root" >/dev/null 2>&1 &
+    fi
+  done
+}
+
 open_project() {
   local root sock
   root="$(root_for "${1:-$PWD}")"
@@ -311,9 +353,11 @@ resume() {
   last=""
   [ -f "$LAST_FILE" ] && last="$(head -n1 "$LAST_FILE" 2>/dev/null || true)"
   if [ -n "$last" ] && [ -d "$last" ]; then
+    restore_marked "$last"
     open_project "$last"
     return
   fi
+  restore_marked ""
   lines="$(list)"
   n="$(printf '%s' "$lines" | grep -c . || true)"
   if [ "$n" -eq 1 ]; then
@@ -502,6 +546,7 @@ mux: per-project neovim server launcher
   mux stop [<path>]   stop the project's server (saved session restored next open)
   mux kill [<path>]   hard-remove the project: stop + delete its saved session
   mux clean           delete unrevivable session junk (orphan snapshots, stale sockets)
+  mux restore         start every session marked for login restore
   mux reload [<path>] reload the project in place (apply edited config)
   mux reload --all    reload every live session
   mux save [<path>]   snapshot the project's session now, without quitting
@@ -521,8 +566,10 @@ EOF
 }
 
 stop_server() {
-  local sock i
-  sock="$(socket_for "$(root_for "${1:-$PWD}")")"
+  local root sock i
+  root="$(root_for "${1:-$PWD}")"
+  sock="$(socket_for "$root")"
+  unmark_restore "$root"
   if is_live "$sock"; then
     rpc "$sock" 'stop_session()'
     i=0
@@ -551,20 +598,21 @@ kill_server() {
       i=$((i + 1))
     done
   fi
-  rm -f "$sock" "${sock%.sock}.boot.pid" "$sf" "${sf%.vim}.root"
+  rm -f "$sock" "${sock%.sock}.boot.pid" "$sf" "${sf%.vim}.root" "${sf%.vim}.restore"
   forget_history "$root"
   clear_last "$root"
 }
 
 clean() {
-  local f slug root vim sock rootval
+  local f slug root vim restore sock rootval
   if [ -d "$STATE_DIR/sessions" ]; then
     local slugs=()
-    for f in "$STATE_DIR"/sessions/*.root "$STATE_DIR"/sessions/*.vim; do
+    for f in "$STATE_DIR"/sessions/*.root "$STATE_DIR"/sessions/*.vim "$STATE_DIR"/sessions/*.restore; do
       [ -e "$f" ] || continue
       slug="$(basename "$f")"
       slug="${slug%.root}"
       slug="${slug%.vim}"
+      slug="${slug%.restore}"
       case " ${slugs[*]-} " in
       *" $slug "*) ;;
       *) slugs+=("$slug") ;;
@@ -574,6 +622,7 @@ clean() {
       if is_live "$RUNTIME_DIR/$slug.sock"; then continue; fi
       root="$STATE_DIR/sessions/$slug.root"
       vim="$STATE_DIR/sessions/$slug.vim"
+      restore="$STATE_DIR/sessions/$slug.restore"
       rootval=""
       if [ -f "$root" ]; then
         rootval="$(head -n1 "$root" 2>/dev/null || true)"
@@ -584,7 +633,7 @@ clean() {
       if [ -n "$rootval" ] && [ ! -d "$rootval" ]; then
         continue
       fi
-      rm -f "$vim" "$root"
+      rm -f "$vim" "$root" "$restore"
     done
   fi
   if [ -d "$RUNTIME_DIR" ]; then
@@ -683,6 +732,9 @@ kill)
   ;;
 clean)
   clean
+  ;;
+restore)
+  restore_marked "" foreground
   ;;
 reload)
   shift

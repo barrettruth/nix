@@ -105,6 +105,19 @@ local function root_file()
     return (session_file():gsub('%.vim$', '.root'))
 end
 
+local function restore_file()
+    return (session_file():gsub('%.vim$', '.restore'))
+end
+
+local function mark_restore()
+    pcall(vim.fn.mkdir, vim.fn.fnamemodify(restore_file(), ':h'), 'p')
+    pcall(vim.fn.writefile, { M.root() }, restore_file())
+end
+
+local function unmark_restore()
+    pcall(vim.fn.delete, restore_file())
+end
+
 ---@param drop_extra boolean
 ---@return table<integer, boolean>
 local function repair_views(drop_extra)
@@ -138,6 +151,7 @@ end
 -- Soft stop: write all buffers and quit, leaving the saved session
 -- so a next attach may resume the layout.
 function M.stop_session()
+    unmark_restore()
     pcall(vim.cmd, 'silent! wall')
     vim.schedule(function()
         pcall(vim.cmd, 'qall!')
@@ -150,6 +164,7 @@ function M.kill_session()
     local f = session_file()
     pcall(vim.fn.delete, f)
     pcall(vim.fn.delete, root_file())
+    unmark_restore()
     local root = M.root()
     forget_history(root)
     clear_last(root)
@@ -201,6 +216,7 @@ function M.record_root()
     local f = session_file()
     pcall(vim.fn.mkdir, vim.fn.fnamemodify(f, ':h'), 'p')
     pcall(vim.fn.writefile, { M.root() }, root_file())
+    mark_restore()
 end
 
 ---@return string?
