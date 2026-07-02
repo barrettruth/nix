@@ -77,11 +77,14 @@ lib.mkMerge [
           '';
         };
         "/internal/authelia/authz" = {
-          proxyPass = "https://${authHost}/api/authz/auth-request";
           recommendedProxySettings = false;
           extraConfig = ''
             internal;
+            resolver 1.1.1.1 8.8.8.8 valid=300s;
+            set $authelia_upstream ${authHost};
+            proxy_pass https://$authelia_upstream/api/authz/auth-request;
             proxy_ssl_server_name on;
+            proxy_ssl_name ${authHost};
             proxy_ssl_verify on;
             proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
             proxy_ssl_verify_depth 3;

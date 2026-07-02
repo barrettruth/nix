@@ -538,7 +538,7 @@ in
       page=1
       while [ "$page" -le 10 ]; do
         body="$pages_dir/page-$page.json"
-        curl -fsSL \
+        if ! curl -fsSL \
           --connect-timeout 10 \
           --max-time 60 \
           --retry 3 \
@@ -547,9 +547,15 @@ in
           --header "User-Agent: barrett-forgejo-github-stats" \
           --header "X-GitHub-Api-Version: 2022-11-28" \
           "https://api.github.com/users/$owner/repos?type=owner&sort=full_name&per_page=100&page=$page" \
-          --output "$body"
+          --output "$body"; then
+          echo "failed to refresh GitHub stats page $page; keeping existing cache" >&2
+          exit 0
+        fi
 
-        jq -e 'type == "array"' "$body" >/dev/null
+        if ! jq -e 'type == "array"' "$body" >/dev/null; then
+          echo "invalid GitHub stats response page $page; keeping existing cache" >&2
+          exit 0
+        fi
         count="$(jq 'length' "$body")"
         if [ "$count" -eq 0 ]; then
           break
