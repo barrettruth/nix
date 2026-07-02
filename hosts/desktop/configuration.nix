@@ -204,12 +204,20 @@ in
     home = "/var/lib/gitea-runner/desktop";
   };
 
-  systemd.services.gitea-runner-desktop.serviceConfig = {
-    SupplementaryGroups = [ "forgejo-runner-secrets" ];
-    CacheDirectory = "gitea-runner";
-    DynamicUser = lib.mkForce false;
-    User = lib.mkForce "gitea-runner";
-    Group = lib.mkForce "gitea-runner";
+  systemd.services.gitea-runner-desktop = {
+    preStart = ''
+      nix_tarball_cache=/var/cache/gitea-runner/xdg-cache/nix/tarball-cache-v2
+      if [ -e "$nix_tarball_cache" ] && ! ${pkgs.gitMinimal}/bin/git -C "$nix_tarball_cache" rev-parse --git-dir >/dev/null 2>&1; then
+        ${pkgs.coreutils}/bin/rm -rf -- "$nix_tarball_cache"
+      fi
+    '';
+    serviceConfig = {
+      SupplementaryGroups = [ "forgejo-runner-secrets" ];
+      CacheDirectory = "gitea-runner";
+      DynamicUser = lib.mkForce false;
+      User = lib.mkForce "gitea-runner";
+      Group = lib.mkForce "gitea-runner";
+    };
   };
 
   systemd.services.nscd.startLimitIntervalSec = 0;
@@ -236,8 +244,11 @@ in
     description = "Prune stale Forgejo runner build caches";
     serviceConfig.Type = "oneshot";
     script = ''
-      if [ -d /var/cache/gitea-runner ]; then
-        ${pkgs.findutils}/bin/find /var/cache/gitea-runner -mindepth 1 -depth -mtime +14 -delete 2>/dev/null || true
+      runner_cache=/var/cache/gitea-runner
+      nix_cache="$runner_cache/xdg-cache/nix"
+      if [ -d "$runner_cache" ]; then
+        ${pkgs.findutils}/bin/find "$runner_cache" -path "$nix_cache" -prune -o -type f -mtime +14 -exec ${pkgs.coreutils}/bin/rm -f -- {} + 2>/dev/null || true
+        ${pkgs.findutils}/bin/find "$runner_cache" -mindepth 1 ! -path "$nix_cache" ! -path "$nix_cache/*" -depth -type d -empty -exec ${pkgs.coreutils}/bin/rmdir -- {} + 2>/dev/null || true
       fi
     '';
   };
