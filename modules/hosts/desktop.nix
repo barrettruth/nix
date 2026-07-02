@@ -10,6 +10,7 @@
 }:
 let
   platform = "x86_64-linux";
+  desktopBuildPool = import ./desktop-build-pool.nix;
 in
 {
   flake.nixosConfigurations.desktop = inputs.nixpkgs.lib.nixosSystem {
@@ -64,6 +65,7 @@ in
     ];
     specialArgs = {
       inherit
+        desktopBuildPool
         identity
         inputs
         palettes

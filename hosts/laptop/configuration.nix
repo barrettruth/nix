@@ -3,6 +3,7 @@
   pkgs,
   identity,
   mkLaptopSecret,
+  desktopBuildPool,
   ...
 }:
 
@@ -253,7 +254,7 @@ in
       sshUser = "nixremote";
       sshKey = config.sops.secrets."desktop-builder-key".path;
       systems = [ "x86_64-linux" ];
-      maxJobs = 4;
+      maxJobs = desktopBuildPool.cpuSlots;
       speedFactor = 2;
       supportedFeatures = [
         "big-parallel"

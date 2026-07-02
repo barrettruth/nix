@@ -10,6 +10,7 @@
 }:
 let
   platform = "x86_64-linux";
+  desktopBuildPool = import ./desktop-build-pool.nix;
 in
 {
   flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
@@ -68,6 +69,7 @@ in
     specialArgs = {
       inherit inputs;
       inherit
+        desktopBuildPool
         identity
         palettes
         themeGenerators

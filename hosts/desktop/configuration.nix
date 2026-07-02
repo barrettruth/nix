@@ -4,11 +4,18 @@
   identity,
   pkgs,
   mkDesktopSecret,
+  desktopBuildPool,
   ...
 }:
 let
   username = config.barrett.user.name;
   homeDirectory = config.barrett.user.homeDirectory;
+  ciRunnerPool = rec {
+    inherit (desktopBuildPool) cpuQuota memoryMax tasksMax;
+    cpusPerSlot = 2;
+    minSlots = 2;
+    capacity = lib.max minSlots (builtins.div desktopBuildPool.cpuSlots cpusPerSlot);
+  };
 in
 {
   imports = [
@@ -129,9 +136,9 @@ in
   systemd.user.slices.rbuild = {
     description = "rbuild remote build resource pool";
     sliceConfig = {
-      CPUQuota = "400%";
-      MemoryMax = "24G";
-      TasksMax = 4096;
+      CPUQuota = desktopBuildPool.cpuQuota;
+      MemoryMax = desktopBuildPool.memoryMax;
+      TasksMax = desktopBuildPool.tasksMax;
     };
   };
 
@@ -168,19 +175,22 @@ in
         "nix:host"
         "desktop:host"
       ];
-      settings.runner.envs = {
-        CARGO_HOME = "/var/cache/gitea-runner/cargo";
-        RUSTUP_HOME = "/var/cache/gitea-runner/rustup";
-        npm_config_cache = "/var/cache/gitea-runner/npm";
-        BUN_INSTALL_CACHE_DIR = "/var/cache/gitea-runner/bun";
-        PIP_CACHE_DIR = "/var/cache/gitea-runner/pip";
-        UV_CACHE_DIR = "/var/cache/gitea-runner/uv";
-        GOCACHE = "/var/cache/gitea-runner/go-build";
-        GOMODCACHE = "/var/cache/gitea-runner/go-mod";
-        XDG_CACHE_HOME = "/var/cache/gitea-runner/xdg-cache";
-        XDG_DATA_HOME = "/var/cache/gitea-runner/xdg-data";
-        npm_config_manage_package_manager_versions = "false";
-        COREPACK_ENABLE_AUTO_PIN = "0";
+      settings.runner = {
+        capacity = ciRunnerPool.capacity;
+        envs = {
+          CARGO_HOME = "/var/cache/gitea-runner/cargo";
+          RUSTUP_HOME = "/var/cache/gitea-runner/rustup";
+          npm_config_cache = "/var/cache/gitea-runner/npm";
+          BUN_INSTALL_CACHE_DIR = "/var/cache/gitea-runner/bun";
+          PIP_CACHE_DIR = "/var/cache/gitea-runner/pip";
+          UV_CACHE_DIR = "/var/cache/gitea-runner/uv";
+          GOCACHE = "/var/cache/gitea-runner/go-build";
+          GOMODCACHE = "/var/cache/gitea-runner/go-mod";
+          XDG_CACHE_HOME = "/var/cache/gitea-runner/xdg-cache";
+          XDG_DATA_HOME = "/var/cache/gitea-runner/xdg-data";
+          npm_config_manage_package_manager_versions = "false";
+          COREPACK_ENABLE_AUTO_PIN = "0";
+        };
       };
       hostPackages = [
         pkgs.bash
@@ -214,6 +224,9 @@ in
     serviceConfig = {
       SupplementaryGroups = [ "forgejo-runner-secrets" ];
       CacheDirectory = "gitea-runner";
+      CPUQuota = ciRunnerPool.cpuQuota;
+      MemoryMax = ciRunnerPool.memoryMax;
+      TasksMax = ciRunnerPool.tasksMax;
       DynamicUser = lib.mkForce false;
       User = lib.mkForce "gitea-runner";
       Group = lib.mkForce "gitea-runner";
