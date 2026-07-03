@@ -5,8 +5,13 @@ vim.api.nvim_set_hl(0, 'HighlightUndo', { link = 'IncSearch', default = true })
 
 for _, key in ipairs({ 'u', '<c-r>', 'U' }) do
     vim.keymap.set('n', key, function()
+        local active = true
         vim.api.nvim_buf_attach(0, false, {
             on_bytes = function(_, buf, _, sr, sc, _, _, _, _, ner, nec)
+                if not active then
+                    return true
+                end
+                active = false
                 local er = sr + ner
                 local ec = ner == 0 and sc + nec or nec
                 if er >= vim.api.nvim_buf_line_count(buf) then
@@ -30,6 +35,8 @@ for _, key in ipairs({ 'u', '<c-r>', 'U' }) do
                 return true
             end,
         })
-        return key
-    end, { expr = true, desc = 'undo/redo with highlight' })
+        local count = vim.v.count == 0 and '' or tostring(vim.v.count)
+        vim.cmd.normal({ args = { count .. vim.keycode(key) }, bang = true })
+        active = false
+    end, { desc = 'undo/redo with highlight' })
 end
