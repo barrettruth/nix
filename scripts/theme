@@ -11,6 +11,25 @@ require() {
 
 require dconf
 
+apply_nvim_theme() {
+  command -v nvim >/dev/null 2>&1 || return 0
+
+  expr="execute('colorscheme $theme')"
+
+  if [ -n "${NVIM:-}" ] && [ -S "$NVIM" ]; then
+    nvim --server "$NVIM" --remote-expr "$expr" </dev/null >/dev/null 2>&1 &
+  fi
+
+  runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mux"
+  [ -d "$runtime_dir" ] || return 0
+
+  for sock in "$runtime_dir"/*.sock; do
+    [ -S "$sock" ] || continue
+    [ "${NVIM:-}" = "$sock" ] && continue
+    nvim --server "$sock" --remote-expr "$expr" </dev/null >/dev/null 2>&1 &
+  done
+}
+
 themes="daylight
 midnight"
 
@@ -31,6 +50,7 @@ state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
 mkdir -p "$state_dir"
 printf '%s\n' "$theme" >"$state_dir/theme"
 export THEME="$theme"
+apply_nvim_theme
 
 case "$(uname)" in
 Linux)
