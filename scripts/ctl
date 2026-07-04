@@ -66,33 +66,24 @@ whisper_idle_timeout() {
   esac
 }
 
-idle_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
-idle_state_file="$idle_state_dir/idle-manager"
 grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 grayscale_state_file="$grayscale_state_dir/grayscale"
 grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
 grayscale_shader_dir="${BARRETT_NIX_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nix/config}/hypr/shaders"
 
 idle_read_state() {
-  state="$(cat "$idle_state_file" 2>/dev/null || true)"
-  case "$state" in
-  off) printf '%s\n' off ;;
-  *) printf '%s\n' on ;;
-  esac
-}
-
-idle_write_state() {
-  mkdir -p "$idle_state_dir"
-  printf '%s\n' "$1" >"$idle_state_file"
+  if systemctl --user is-active --quiet hypridle.service; then
+    printf '%s\n' on
+  else
+    printf '%s\n' off
+  fi
 }
 
 idle_on() {
-  idle_write_state on
   systemctl --user start hypridle.service
 }
 
 idle_off() {
-  idle_write_state off
   systemctl --user stop hypridle.service
 }
 

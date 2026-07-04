@@ -250,17 +250,6 @@ let
     ''}
   '';
 
-  hypridleStart = pkgs.writeShellScript "hypridle-start" ''
-    set -eu
-
-    export BARRETT_NIX_CONFIG_DIR=${configRoot}
-    if [ "$(${scriptsPath}/ctl idle state)" = off ]; then
-      exit 0
-    fi
-
-    exec ${wrapWaylandExec "${pkgs.hypridle}/bin/hypridle"}
-  '';
-
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
@@ -463,8 +452,9 @@ in
 
     systemd.user.services.hypridle = waylandGate // {
       description = "Hypridle idle daemon";
+      wantedBy = lib.mkForce [ ];
       serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = "${hypridleStart}";
+        ExecStart = wrapWaylandExec "${pkgs.hypridle}/bin/hypridle";
       };
     };
 
