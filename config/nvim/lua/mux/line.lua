@@ -9,6 +9,7 @@ local canon = core.canon
 local find_view = core.find_view
 local views = core.views
 local VIEW_ORDER = core.VIEW_ORDER
+local TABLINE_EXPR = "%!v:lua.require'mux.line'.render()"
 local refresh_pending = false
 
 local function visibility_file()
@@ -153,6 +154,9 @@ function M.apply_visibility()
     if vim.env.MUX ~= '1' then
         return
     end
+    if vim.o.tabline ~= TABLINE_EXPR then
+        vim.o.tabline = TABLINE_EXPR
+    end
     vim.o.showtabline = visibility_mode() == 'hide' and 0 or 2
 end
 
@@ -161,10 +165,16 @@ function M.render()
     if vim.env.MUX ~= '1' then
         return ''
     end
-    return (' %s%%=%s '):format(
-        table.concat(view_segments(), ' '),
-        table.concat(session_segments(), ' ')
-    )
+    local ok, rendered = pcall(function()
+        return (' %s%%=%s '):format(
+            table.concat(view_segments(), ' '),
+            table.concat(session_segments(), ' ')
+        )
+    end)
+    if ok then
+        return rendered
+    end
+    return ''
 end
 
 function M.refresh()

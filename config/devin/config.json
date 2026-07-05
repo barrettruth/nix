@@ -1,6 +1,6 @@
 {
   "agent": {
-    "model": "claude-opus-4-8-xhigh-fast"
+    "model": "gpt-5-5-xhigh-priority"
   },
   "read_config_from": {
     "cursor": false,
@@ -10,7 +10,7 @@
   "shell": {
     "setup_complete": true
   },
-  "theme_mode": "dark",
+  "theme_mode": "light",
   "version": 1,
   "devin": {
     "org_id": "org-f27ebacf926a440d96985a94ab9b66bf"

@@ -114,6 +114,10 @@ terminate_process_group() {
   fi
 }
 
+remote_expr() {
+  "$NVIM" --headless --server "$1" --remote-expr "$2" </dev/null
+}
+
 is_live() {
   local sock="$1" pidf pid
   [ -S "$sock" ] || return 1
@@ -126,13 +130,11 @@ is_live() {
     fi
     return 1
   fi
-  "$NVIM" --server "$sock" --remote-expr 1 </dev/null >/dev/null 2>&1
+  remote_expr "$sock" 1 >/dev/null 2>&1
 }
 
 rpc() {
-  "$NVIM" --server "$1" --remote-expr \
-    "luaeval('(function() require([[mux]]).$2 return 1 end)()')" \
-    </dev/null >/dev/null 2>&1 || true
+  remote_expr "$1" "luaeval('(function() require([[mux]]).$2 return 1 end)()')" >/dev/null 2>&1 || true
 }
 
 bootstrap_direnv_mode() {
@@ -651,7 +653,7 @@ reload_one() {
   sock="$(socket_for "$root")"
   logf="$(log_for "$root")"
   is_live "$sock" || return 0
-  uis="$("$NVIM" --server "$sock" --remote-expr 'len(nvim_list_uis())' </dev/null 2>/dev/null || true)"
+  uis="$(remote_expr "$sock" 'len(nvim_list_uis())' 2>/dev/null || true)"
   uis="${uis//[^0-9]/}"
   mode="ui"
   [ "${uis:-0}" -gt 0 ] || mode="restart"
@@ -660,7 +662,7 @@ reload_one() {
   if [ "${uis:-0}" -gt 0 ]; then
     rpc "$sock" 'reload()'
   else
-    "$NVIM" --server "$sock" --remote-expr 'execute("silent! wall | qall!")' </dev/null >/dev/null 2>&1 || true
+    remote_expr "$sock" 'execute("silent! wall | qall!")' >/dev/null 2>&1 || true
     i=0
     while [ "$i" -lt 100 ] && is_live "$sock"; do
       sleep 0.05
@@ -679,8 +681,8 @@ reload_all() {
   for sock in "$RUNTIME_DIR"/*.sock; do
     [ -e "$sock" ] || continue
     is_live "$sock" || continue
-    cwd="$("$NVIM" --server "$sock" --remote-expr 'luaeval("vim.env.MUX_ROOT or \"\"")' </dev/null 2>/dev/null || true)"
-    [ -n "$cwd" ] || cwd="$("$NVIM" --server "$sock" --remote-expr 'getcwd()' </dev/null 2>/dev/null || true)"
+    cwd="$(remote_expr "$sock" 'luaeval("vim.env.MUX_ROOT or \"\"")' 2>/dev/null || true)"
+    [ -n "$cwd" ] || cwd="$(remote_expr "$sock" 'getcwd()' 2>/dev/null || true)"
     if [ -n "$cwd" ]; then
       count=$((count + 1))
       reload_one "$cwd"
