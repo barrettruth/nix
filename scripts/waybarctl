@@ -3,6 +3,7 @@
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}"
 state_file="$state_dir/waybar"
+pid_file="$state_dir/waybar.pid"
 theme_pending_file="$state_dir/waybar-theme-pending"
 theme_link="$cfg/waybar/themes/theme.css"
 
@@ -19,6 +20,11 @@ write_state() {
   printf '%s\n' "$1" >"$state_file"
 }
 
+write_pid() {
+  mkdir -p "$state_dir"
+  printf '%s\n' "$1" >"$pid_file"
+}
+
 read_state() {
   state="$(cat "$state_file" 2>/dev/null || true)"
   case "$state" in
@@ -27,13 +33,49 @@ read_state() {
   esac
 }
 
+pid_is_waybar() {
+  pid="$1"
+  case "$pid" in
+  '' | *[!0-9]*) return 1 ;;
+  esac
+  [ -r "/proc/$pid/comm" ] || return 1
+  IFS= read -r comm <"/proc/$pid/comm" || return 1
+  case "$comm" in
+  waybar | .waybar-wrapped) kill -0 "$pid" 2>/dev/null ;;
+  *) return 1 ;;
+  esac
+}
+
+cached_pid() {
+  IFS= read -r pid <"$pid_file" 2>/dev/null || return 1
+  pid_is_waybar "$pid" || {
+    rm -f "$pid_file"
+    return 1
+  }
+  printf '%s\n' "$pid"
+}
+
+find_waybar_pid() {
+  cached_pid && return 0
+  for pid in $(
+    pgrep -x '[.]waybar-wrapped' 2>/dev/null
+    pgrep -x waybar 2>/dev/null
+  ); do
+    pid_is_waybar "$pid" || continue
+    write_pid "$pid"
+    printf '%s\n' "$pid"
+    return 0
+  done
+  return 1
+}
+
 is_running() {
-  pgrep -x waybar >/dev/null 2>&1 || pgrep -x '[.]waybar-wrapped' >/dev/null 2>&1
+  find_waybar_pid >/dev/null
 }
 
 signal_waybar() {
-  pkill "-$1" -x waybar 2>/dev/null || true
-  pkill "-$1" -x '[.]waybar-wrapped' 2>/dev/null || true
+  pid="$(find_waybar_pid)" || return 0
+  kill "-$1" "$pid" 2>/dev/null || rm -f "$pid_file"
 }
 
 sync_theme() {
@@ -65,6 +107,7 @@ show_bar() {
   else
     rm -f "$theme_pending_file"
     nohup waybar >/dev/null 2>&1 &
+    write_pid "$!"
   fi
   write_state shown
 }
