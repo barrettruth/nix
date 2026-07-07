@@ -429,28 +429,59 @@ wifi)
   esac
   ;;
 media)
-  if pgrep -x wf-recorder >/dev/null 2>&1; then
-    pkill -INT wf-recorder
-    file=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
-    rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-    printf '%s' "$file" | wl-copy
-    notify-send -a ctl -t 2500 "Screen capture" "Recording saved to ~${file#"$HOME"}"
+  recording_state="${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+  recording_alive() {
+    pid="$1"
+    case "$pid" in
+    '' | *[!0-9]*) return 1 ;;
+    esac
+    kill -0 "$pid" 2>/dev/null || return 1
+    comm=$(ps -p "$pid" -o comm= 2>/dev/null | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ "$comm" = wf-recorder ]
+  }
+  recording_load() {
+    rec_pid=""
+    rec_file=""
+    [ -f "$recording_state" ] || return 1
+    {
+      IFS= read -r rec_pid || return 1
+      IFS= read -r rec_file || rec_file=""
+    } <"$recording_state"
+    case "$rec_pid" in
+    '' | *[!0-9]*) return 1 ;;
+    esac
+    [ -n "$rec_file" ]
+  }
+  recording_save() {
+    printf '%s\n%s\n' "$1" "$2" >"$recording_state"
+  }
+  if recording_load && recording_alive "$rec_pid"; then
+    kill -INT "$rec_pid" 2>/dev/null || true
+    rm -f "$recording_state"
+    printf '%s' "$rec_file" | wl-copy
+    notify-send -a ctl -t 2500 "Screen capture" "Recording saved to ~${rec_file#"$HOME"}"
     exit 0
   fi
+  rm -f "$recording_state"
   pkill -x fuzzel 2>/dev/null && exit 0
   require fuzzel grim slurp wl-copy wf-recorder hyprctl jq tesseract
   ss_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   rec_dir="${XDG_VIDEOS_DIR:-$HOME/Videos}"
   mkdir -p "$ss_dir" "$rec_dir"
   rec_watchdog() {
-    (sleep 60 && if pgrep -x wf-recorder >/dev/null 2>&1; then
-      pkill -INT wf-recorder
-      sleep 0.5
-      f=$(cat "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording" 2>/dev/null)
-      rm -f "${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-      [ -n "$f" ] && rm -f "$f"
-      notify-send -a ctl -t 2500 "Screen capture" "Recording cancelled (1m limit)"
-    fi) &
+    target_pid="$1"
+    target_file="$2"
+    (
+      sleep 60
+      recording_load || exit 0
+      if [ "$rec_pid" = "$target_pid" ] && [ "$rec_file" = "$target_file" ] && recording_alive "$target_pid"; then
+        kill -INT "$target_pid" 2>/dev/null || true
+        sleep 0.5
+        rm -f "$recording_state"
+        printf '%s' "$target_file" | wl-copy
+        notify-send -a ctl -t 2500 "Screen capture" "1 minute reached; saved to ~${target_file#"$HOME"}"
+      fi
+    ) &
   }
   cap_desktop="   Capture Screen"
   cap_area="   Capture Area"
@@ -476,25 +507,30 @@ media)
     ;;
   "$rec_desktop")
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
     wf-recorder -f "$file" &
-    rec_watchdog
+    rec_pid="$!"
+    recording_save "$rec_pid" "$file"
+    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
+    rec_watchdog "$rec_pid" "$file"
     ;;
   "$rec_area")
+    region="$(slurp)" || exit 0
+    [ -n "$region" ] || exit 0
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
+    wf-recorder -g "$region" -f "$file" &
+    rec_pid="$!"
+    recording_save "$rec_pid" "$file"
     notify-send -a ctl -t 2500 "Screen capture" "Recording started"
-    wf-recorder -g "$(slurp)" -f "$file" &
-    rec_watchdog
+    rec_watchdog "$rec_pid" "$file"
     ;;
   "$rec_window")
     geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
     file="$rec_dir/$(date +'%Y-%m-%d_%H-%M-%S').mp4"
-    echo "$file" >"${XDG_RUNTIME_DIR:-/tmp}/ctl-recording"
-    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
     wf-recorder -g "$geom" -f "$file" &
-    rec_watchdog
+    rec_pid="$!"
+    recording_save "$rec_pid" "$file"
+    notify-send -a ctl -t 2500 "Screen capture" "Recording started"
+    rec_watchdog "$rec_pid" "$file"
     ;;
   "$ocr_area")
     file="$ss_dir/$(date +'%Y-%m-%d_%H-%M-%S').png"
@@ -966,9 +1002,19 @@ dictate)
   daudio="$dtmp/recording.wav"
   dhistory="$dtmp/history"
   dport=8178
+  dictation_alive() {
+    pid="$1"
+    case "$pid" in
+    '' | *[!0-9]*) return 1 ;;
+    esac
+    kill -0 "$pid" 2>/dev/null || return 1
+    comm=$(ps -p "$pid" -o comm= 2>/dev/null | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ "$comm" = pw-record ]
+  }
+  dictation_pid=$(cat "$dpid" 2>/dev/null || true)
 
-  if [ -f "$dpid" ] && kill -0 "$(cat "$dpid")" 2>/dev/null; then
-    kill "$(cat "$dpid")" 2>/dev/null
+  if dictation_alive "$dictation_pid"; then
+    kill "$dictation_pid" 2>/dev/null
     rm -f "$dpid"
     sleep 0.2
     if [ ! -s "$daudio" ]; then
