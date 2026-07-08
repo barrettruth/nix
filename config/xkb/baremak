@@ -14,16 +14,16 @@ xkb_symbols "basic" {
   key <AD09> { [ y, Y, dollar, dollar ] };
   key <AD10> { [ semicolon, colon, bar, bar ] };
 
-  key <AC01> { [ a, A, bracketleft, bracketleft ] };
-  key <AC02> { [ r, R, braceleft, braceleft ] };
-  key <AC03> { [ s, S, equal, equal ] };
-  key <AC04> { [ t, T, parenleft, parenleft ] };
-  key <AC05> { [ g, G, plus, plus ] };
-  key <AC06> { [ m, M, minus, minus ] };
-  key <AC07> { [ n, N, parenright, parenright ] };
-  key <AC08> { [ e, E, asciitilde, asciitilde ] };
-  key <AC09> { [ i, I, braceright, braceright ] };
-  key <AC10> { [ o, O, bracketright, bracketright ] };
+  key <AC01> { [ a, A, asciitilde, asciitilde ] };
+  key <AC02> { [ r, R, equal, equal ] };
+  key <AC03> { [ s, S, bracketleft, bracketleft ] };
+  key <AC04> { [ t, T, braceleft, braceleft ] };
+  key <AC05> { [ g, G, parenleft, parenleft ] };
+  key <AC06> { [ m, M, parenright, parenright ] };
+  key <AC07> { [ n, N, braceright, braceright ] };
+  key <AC08> { [ e, E, bracketright, bracketright ] };
+  key <AC09> { [ i, I, minus, minus ] };
+  key <AC10> { [ o, O, plus, plus ] };
   key <AC11> { [ apostrophe, quotedbl, grave, grave ] };
 
   key <AB01> { [ z, Z, percent, percent ] };
