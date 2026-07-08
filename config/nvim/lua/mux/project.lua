@@ -10,11 +10,11 @@ local M = {}
 local leave_terminal = core.leave_terminal
 local sessions_dir = core.sessions_dir
 
-local function confirm_kill(root, cb)
+local function confirm_session(action, root, cb)
     local name = vim.fn.fnamemodify(root, ':~')
     vim.schedule(function()
         vim.ui.input(
-            { prompt = 'mux: kill session ' .. name .. '? [y/N]: ' },
+            { prompt = 'mux: ' .. action .. ' session ' .. name .. '? [y/N]: ' },
             function(input)
                 local answer = (input or ''):lower():match('^%s*(.-)%s*$')
                 if answer == 'y' or answer == 'yes' then
@@ -23,6 +23,14 @@ local function confirm_kill(root, cb)
             end
         )
     end)
+end
+
+local function confirm_kill(root, cb)
+    confirm_session('kill', root, cb)
+end
+
+local function confirm_stop(root, cb)
+    confirm_session('stop', root, cb)
 end
 
 ---@param pid integer?
@@ -269,12 +277,11 @@ local function show_picker(items)
             return
         end
         if entry and entry.path then
+            local confirm = verb == 'kill' and confirm_kill or confirm_stop
             if canon(entry.path) == session.root() then
-                if verb == 'kill' then
-                    confirm_kill(entry.path, session.kill_session)
-                else
-                    session.stop_session()
-                end
+                local action = verb == 'kill' and session.kill_session
+                    or session.stop_session
+                confirm(entry.path, action)
                 return
             end
             local function run()
@@ -282,11 +289,7 @@ local function show_picker(items)
                     vim.schedule(M.pick_project)
                 end)
             end
-            if verb == 'kill' then
-                confirm_kill(entry.path, run)
-            else
-                run()
-            end
+            confirm(entry.path, run)
             return
         end
         vim.schedule(M.pick_project)
@@ -480,12 +483,15 @@ end
 -- soft-stop this session so it stays resumable. With no other live project the
 -- stop drops the client to the shell -- like tmux detach-on-destroy=off.
 function M.stop_to_latest()
-    with_latest_live_other(function(root, sock)
-        if sock then
-            session.record_last(root)
-            pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
-        end
-        session.stop_session()
+    local current = session.root()
+    confirm_stop(current, function()
+        with_latest_live_other(function(root, sock)
+            if sock then
+                session.record_last(root)
+                pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
+            end
+            session.stop_session()
+        end)
     end)
 end
 
