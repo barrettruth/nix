@@ -5,7 +5,7 @@
       "src": "https://github.com/monaqa/dial.nvim"
     },
     "fzf-lua": {
-      "rev": "1eba927866251bae1b61dffc5b673b8dbd0f3f48",
+      "rev": "ed4059deb9237f7f4cc8832ffef69779ffe2e265",
       "src": "https://github.com/ibhagwan/fzf-lua"
     },
     "guard-collection": {
@@ -17,67 +17,63 @@
       "src": "https://github.com/nvimdev/guard.nvim"
     },
     "guh.nvim": {
-      "rev": "87445e3d8082f456d3481c11757e7de644db4d06",
+      "rev": "943779f7cdb0acee203985ad531fb53ff95d9c8e",
       "src": "https://github.com/justinmk/guh.nvim"
     },
     "lazydev.nvim": {
-      "rev": "5231c62aa83c2f8dc8e7ba957aa77098cda1257d",
+      "rev": "ff2cbcba459b637ec3fd165a2be59b7bbaeedf0d",
       "src": "https://github.com/folke/lazydev.nvim"
     },
     "live-rename.nvim": {
-      "rev": "3a3cddf23b89a17992f9ca67afc5858077769462",
+      "rev": "205bddec4bf1276c81a03777f8335d4ad034ae03",
       "src": "https://github.com/saecki/live-rename.nvim"
     },
     "lz.n": {
-      "rev": "3a696418821fa8e4963a0a59dd1f8d40fedb6824",
+      "rev": "339b1d35c9999134c91a1067685bc65695afc1c1",
       "src": "https://github.com/lumen-oss/lz.n"
     },
     "mini.ai": {
-      "rev": "4b0a6207341d895b6cfe9bcb1e4d3e8607bfe4f4",
+      "rev": "2f763720771e192bdf9d2e25bfae339930ba4231",
       "src": "https://github.com/echasnovski/mini.ai"
     },
     "mini.align": {
-      "rev": "a7cd9465ac72c65d726f8fdc8b71ceb63ce8c0fd",
+      "rev": "77d7446b9f2452193f13ced9fb73a8b3aa4a4f4d",
       "src": "https://github.com/echasnovski/mini.align"
     },
     "mini.bracketed": {
-      "rev": "d94d51dcee625723aaaf8d38174b48522eaf9131",
+      "rev": "203eb35f386b4fc9abcff1518c84d5537d41c80a",
       "src": "https://github.com/echasnovski/mini.bracketed"
     },
     "mini.operators": {
-      "rev": "d9b2f3892ad177cc141987ccfa8944cf21474f77",
+      "rev": "f94f9184155c7f7f9a8fb069be2a97ce8a48c97f",
       "src": "https://github.com/echasnovski/mini.operators"
     },
     "mini.pairs": {
-      "rev": "b7fde3719340946feb75017ef9d75edebdeb0566",
+      "rev": "b1fd9df3bb4a41c8f45778a3859ee80ef6b367e3",
       "src": "https://github.com/echasnovski/mini.pairs"
     },
     "nvim-colorizer.lua": {
-      "rev": "ae0d66307a5b431c7b633806eb27769334ac5f05",
+      "rev": "664c0b7cea1de71f8b65dfe951b7996fc3e6ccde",
       "src": "https://github.com/catgoose/nvim-colorizer.lua"
     },
     "nvim-lspconfig": {
-      "rev": "1d13d2b0df9a0a02904c76d7ad6810f71d404406",
+      "rev": "d224a1920728ba129880efc700d4a0180ac4ecbb",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-surround": {
-      "rev": "ce4ad4a8909d7f4537803c8f09b79e78c49a6cc4",
+      "rev": "8b47db616ef658b8fc27e61db2896aa2f40134de",
       "src": "https://github.com/kylechui/nvim-surround"
     },
     "nvim-treesitter-textobjects": {
-      "rev": "a0e182ae21fda68c59d1f36c9ed45600aef50311",
+      "rev": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"
-    },
-    "treesj": {
-      "rev": "186084dee5e9c8eec40f6e39481c723dd567cb05",
-      "src": "https://github.com/Wansmer/treesj"
     },
     "vim-abolish": {
       "rev": "dcbfe065297d31823561ba787f51056c147aa682",
       "src": "https://github.com/tpope/vim-abolish"
     },
     "vim-fugitive": {
-      "rev": "61b51c09b7c9ce04e821f6cf76ea4f6f903e3cf4",
+      "rev": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
       "src": "https://github.com/tpope/vim-fugitive"
     },
     "vim-sleuth": {

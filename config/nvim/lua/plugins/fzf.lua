@@ -120,7 +120,7 @@ return {
         { '<c-l>', '<cmd>FzfLua live_grep<cr>' },
         { '<leader>fb', '<cmd>FzfLua buffers<cr>' },
         {
-            '<leader>ff',
+            '<leader>ft',
             function()
                 require('fzf-lua').files({ cwd = vim.fn.expand('%:h') })
             end,
