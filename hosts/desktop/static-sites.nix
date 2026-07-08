@@ -9,12 +9,12 @@ let
   webDeployGroup = "web-deploy";
   webDeployPublicKeys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF4QXLB3ZH77HJwTbcYB/52jg7kAT+E6BwACf1ianOXS forgejo-actions-web-deploy-2026-05-01"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINc5ql/WCnABQZEQmekLW5LT7Ej2u/APFP13PjM3Y9Zs forgejo-actions-type-deploy-2026-07-08"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINc5ql/WCnABQZEQmekLW5LT7Ej2u/APFP13PjM3Y9Zs forgejo-actions-ts-deploy-2026-07-08"
   ];
   staticWebRoots = {
     "barrettruth.com" = "/srv/www/barrettruth.com/current";
     "philipmruth.com" = "/srv/www/philipmruth.com/current";
-    "type.barrettruth.com" = "/srv/www/type.barrettruth.com/current";
+    "ts.barrettruth.com" = "/srv/www/ts.barrettruth.com/current";
     "vimdoc-language-server.com" = "/srv/www/vimdoc-language-server.com/current";
   };
   mkStaticSiteHost = root: {
@@ -67,8 +67,7 @@ in
     virtualHosts."barrettruth.sh" = mkRedirectHost "www.barrettruth.sh";
     virtualHosts."www.philipmruth.com" = mkStaticSiteHost staticWebRoots."philipmruth.com";
     virtualHosts."philipmruth.com" = mkRedirectHost "www.philipmruth.com";
-    virtualHosts."type.barrettruth.com" = mkStaticSiteHost staticWebRoots."type.barrettruth.com";
-    virtualHosts."www.type.barrettruth.com" = mkRedirectHost "type.barrettruth.com";
+    virtualHosts."ts.barrettruth.com" = mkStaticSiteHost staticWebRoots."ts.barrettruth.com";
     virtualHosts."www.vimdoc-language-server.com" =
       mkStaticSiteHost
         staticWebRoots."vimdoc-language-server.com";
@@ -94,8 +93,8 @@ in
     "d /srv/www/barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/philipmruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/philipmruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
-    "d /srv/www/type.barrettruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
-    "d /srv/www/type.barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/ts.barrettruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/ts.barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/vimdoc-language-server.com 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/vimdoc-language-server.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
   ];
