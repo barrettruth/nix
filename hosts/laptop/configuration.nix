@@ -150,7 +150,6 @@ in
           capslock = "overload(control, esc)";
           leftcontrol = "capslock";
           leftmeta = "A-x";
-          rightalt = "f13";
         };
       };
     };

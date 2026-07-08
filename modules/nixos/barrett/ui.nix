@@ -428,6 +428,12 @@ in
       };
     };
 
+    services.xserver.xkb.extraLayouts.baremak = {
+      description = "English (Baremak)";
+      languages = [ "eng" ];
+      symbolsFile = sourceRoot + "/config/xkb/baremak";
+    };
+
     environment.pathsToLink = [
       "/share/applications"
       "/share/xdg-desktop-portal"
@@ -530,6 +536,8 @@ in
       ${mkDir "${XDG_CONFIG_HOME}/hypr"}
       ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
       ${mkDir "${XDG_STATE_HOME}/hypr"}
+      ${mkDir "${XDG_CONFIG_HOME}/xkb"}
+      ${mkDir "${XDG_CONFIG_HOME}/xkb/symbols"}
       ${mkDir "${XDG_CONFIG_HOME}/waybar"}
       ${mkDir "${XDG_CONFIG_HOME}/waybar/themes"}
       ${mkDir "${XDG_CONFIG_HOME}/fuzzel"}
@@ -557,6 +565,7 @@ in
       ${mkSymlink "${hyprThemes}/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
       ${mkSymlink "${hyprThemes}/daylight.conf" "${XDG_CONFIG_HOME}/hypr/themes/daylight.conf"}
       ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.conf"}
+      ${mkSymlink "${configRoot}/xkb/baremak" "${XDG_CONFIG_HOME}/xkb/symbols/baremak"}
       ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
       ${mkSymlink "${hypridleConf}" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
       ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}

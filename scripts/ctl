@@ -153,39 +153,43 @@ keyboard)
         swaymsg input type:keyboard xkb_switch_layout next
       fi
     else
-      current="$(setxkbmap -query | awk '/variant/{print $2}')"
-      case "$current" in
-      "") setxkbmap -layout us -variant dvorak ;;
-      dvorak) setxkbmap -layout us -variant colemak ;;
+      layout="$(setxkbmap -query | awk '/layout/{print $2}')"
+      variant="$(setxkbmap -query | awk '/variant/{print $2}')"
+      case "$layout:$variant" in
+      us:) setxkbmap -layout us -variant dvorak ;;
+      us:dvorak) setxkbmap -layout us -variant colemak_dh ;;
+      us:colemak_dh) setxkbmap -layout baremak ;;
       *) setxkbmap -layout us ;;
       esac
     fi
     ;;
   pick)
-    require fuzzel
-    variant=$(hyprctl getoption input:kb_variant 2>/dev/null | awk '/^str:/{print $2}' | cut -d, -f2)
-    case "$variant" in
-    dvorak) current="Dvorak" ;;
-    colemak) current="Colemak" ;;
+    require fuzzel jq
+    active="$(hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main) | .active_keymap' 2>/dev/null || true)"
+    case "$active" in
+    *Baremak*) current="Baremak" ;;
+    *Dvorak*) current="Dvorak" ;;
+    *Colemak*) current="Colemak" ;;
     *) current="QWERTY" ;;
     esac
-    choice=$(printf 'QWERTY\nDvorak\nColemak' |
+    choice=$(printf 'QWERTY\nDvorak\nColemak\nBaremak' |
       awk -v cur="$current" '{
         prefix = ($0 == cur) ? "  >   " : "      "
         printf "%s%s\t%s\n", prefix, $0, $0
       }' |
-      fuzzel --dmenu --prompt="kbd:  " --no-icons --lines=3 \
-        --with-nth=1 --accept-nth=2 --font="Berkeley Mono:size=12" --width=23)
+      fuzzel --dmenu --prompt="kbd:  " --no-icons --lines=4 \
+        --with-nth=1 --accept-nth=2 --font="Berkeley Mono:size=12" --width=25)
     [ -z "$choice" ] && exit 0
     case "$choice" in
-    QWERTY) variant="" ;;
-    Dvorak) variant="dvorak" ;;
-    Colemak) variant="colemak" ;;
+    QWERTY) index=0 ;;
+    Dvorak) index=1 ;;
+    Colemak) index=2 ;;
+    Baremak) index=3 ;;
     esac
     if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
-      hyprctl keyword input:kb_layout "us,us,us"
-      hyprctl keyword input:kb_variant ",$variant"
-      hyprctl switchxkblayout current 1
+      hyprctl keyword input:kb_layout "us,us,us,baremak"
+      hyprctl keyword input:kb_variant ",dvorak,colemak_dh,"
+      hyprctl switchxkblayout current "$index"
     fi
     ;;
   *)
