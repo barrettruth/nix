@@ -109,6 +109,13 @@ function M.setup()
             M.open_view(view_name)
         end, 'mux: ' .. view_name)
     end
+    for _, name in ipairs({ 'run', 'build', 'test' }) do
+        local view_name = name
+        local key = core.views[view_name].key
+        muxmap(prefix .. '<c-' .. key .. '>', function()
+            M.open_view(view_name)
+        end, 'mux: ' .. view_name)
+    end
     muxmap(prefix .. 'r', M.reload, 'mux: reload session (restart)')
     muxmap(prefix .. "'", function()
         vim.cmd('vsplit | terminal')
