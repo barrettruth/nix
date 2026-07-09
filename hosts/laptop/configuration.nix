@@ -150,6 +150,7 @@ in
           capslock = "overload(control, esc)";
           leftcontrol = "capslock";
           leftmeta = "A-x";
+          rightalt = "f13";
         };
       };
     };
@@ -283,6 +284,7 @@ in
     "www.vimdoc-language-server.com"
     "vimdoc-language-server.com"
     "vimdoc-language-server.barrettruth.com"
+    "ts.barrettruth.com"
     "delta.barrettruth.com"
     "vault.barrettruth.com"
     "finance.barrettruth.com"
