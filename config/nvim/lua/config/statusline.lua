@@ -187,6 +187,24 @@ local function refresh(root, force)
     end
 end
 
+---@param buf integer
+---@return string?
+local function root_for(buf)
+    local name = vim.api.nvim_buf_get_name(buf)
+    if name ~= '' then
+        local root = vim.fs.root(name, '.git')
+        if root then
+            return root
+        end
+        local path = name:match('^%a[%w+%.%-]*://(/.*)')
+        root = path and vim.fs.root(path, '.git') or nil
+        if root then
+            return root
+        end
+    end
+    return vim.fs.root(vim.fn.getcwd(), '.git')
+end
+
 ---@param buf? integer
 ---@param force? boolean
 function M.update(buf, force)
@@ -194,12 +212,7 @@ function M.update(buf, force)
     if not vim.api.nvim_buf_is_valid(buf) then
         return
     end
-    local name = vim.api.nvim_buf_get_name(buf)
-    if name == '' or vim.bo[buf].buftype ~= '' then
-        buffer_roots[buf] = nil
-        return
-    end
-    local root = vim.fs.root(name, '.git')
+    local root = root_for(buf)
     buffer_roots[buf] = root
     if root then
         refresh(root, force)
@@ -239,17 +252,19 @@ end
 
 ---@return string
 function M.render()
+    local state = repos[buffer_roots[vim.api.nvim_get_current_buf()]]
+    local prefix = state
+            and (state.pr and ('%s/#%s'):format(state.branch, state.pr) or state.branch)
+        or nil
+    local path = prefix
+            and ('%%#Comment#%s%%* '):format(prefix:gsub('%%', '%%%%'))
+        or ''
     local name = vim.fn.expand('%')
-    local path = ''
     if name ~= '' then
-        local state = repos[buffer_roots[vim.api.nvim_get_current_buf()]]
-        local prefix = state
-                and (state.pr and ('%s/#%s'):format(state.branch, state.pr) or state.branch)
-            or nil
-        path = ('%%#Comment#%s%s%%* '):format(
-            prefix and prefix:gsub('%%', '%%%%') .. ' ' or '',
-            vim.fn.expand('%:~'):gsub('%%', '%%%%')
-        )
+        path = path
+            .. ('%%#Directory#%s%%* '):format(
+                vim.fn.expand('%:~'):gsub('%%', '%%%%')
+            )
     end
     local buftype = vim.bo.buftype
     local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
