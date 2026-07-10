@@ -246,7 +246,7 @@ function M.render()
         local prefix = state
                 and (state.pr and ('%s/#%s'):format(state.branch, state.pr) or state.branch)
             or nil
-        path = ('%%#Directory#%s%s%%* '):format(
+        path = ('%%#Comment#%s%s%%* '):format(
             prefix and prefix:gsub('%%', '%%%%') .. ' ' or '',
             vim.fn.expand('%:~'):gsub('%%', '%%%%')
         )
