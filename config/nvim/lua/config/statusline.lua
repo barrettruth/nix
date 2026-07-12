@@ -254,7 +254,7 @@ end
 function M.render()
     local state = repos[buffer_roots[vim.api.nvim_get_current_buf()]]
     local prefix = state
-            and (state.pr and ('%s/#%s'):format(state.branch, state.pr) or state.branch)
+            and (state.pr and ('%s#%s'):format(state.branch, state.pr) or state.branch)
         or nil
     local path = prefix
             and ('%%#Comment#%s%%* '):format(prefix:gsub('%%', '%%%%'))
