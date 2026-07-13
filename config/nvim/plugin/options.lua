@@ -1,7 +1,10 @@
 vim.o.autoread = true
 vim.o.autowrite = true
+vim.o.autocomplete = false
 
 vim.o.breakindent = true
+
+vim.opt.completeopt = { 'menuone', 'noselect', 'noinsert', 'fuzzy', 'popup' }
 
 vim.o.cursorline = true
 
@@ -50,6 +53,7 @@ vim.opt.listchars = {
 
 vim.opt.matchpairs:append('<:>')
 
+vim.o.hlsearch = false
 vim.o.number = true
 vim.o.relativenumber = true
 vim.o.signcolumn = 'no'
@@ -93,6 +97,7 @@ vim.o.updatetime = 50
 
 vim.opt.wildoptions:append('fuzzy')
 
+vim.o.pumborder = 'single'
 vim.o.winborder = 'single'
 
 vim.o.wrap = false

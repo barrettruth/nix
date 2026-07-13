@@ -44,6 +44,10 @@
       "rev": "203eb35f386b4fc9abcff1518c84d5537d41c80a",
       "src": "https://github.com/echasnovski/mini.bracketed"
     },
+    "mini.completion": {
+      "rev": "d2a2b2a2b5350b713ade3bb744df39eee7d4229b",
+      "src": "https://github.com/nvim-mini/mini.completion"
+    },
     "mini.operators": {
       "rev": "f94f9184155c7f7f9a8fb069be2a97ce8a48c97f",
       "src": "https://github.com/echasnovski/mini.operators"

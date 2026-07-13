@@ -2,6 +2,7 @@ vim.pack.add({
     'https://github.com/echasnovski/mini.ai',
     'https://github.com/echasnovski/mini.align',
     'https://github.com/echasnovski/mini.bracketed',
+    'https://github.com/nvim-mini/mini.completion',
     'https://github.com/echasnovski/mini.operators',
     'https://github.com/monaqa/dial.nvim',
     'https://github.com/catgoose/nvim-colorizer.lua',
@@ -16,6 +17,79 @@ return {
         'echasnovski/mini.pairs',
         after = function()
             require('mini.pairs').setup()
+        end,
+        event = 'InsertEnter',
+    },
+    {
+        'nvim-mini/mini.completion',
+        after = function()
+            local completion = require('mini.completion')
+            completion.setup({
+                delay = { completion = 10000000, info = 100, signature = 50 },
+                lsp_completion = {
+                    source_func = 'omnifunc',
+                    auto_setup = false,
+                },
+                mappings = {
+                    force_twostep = '',
+                    force_fallback = '',
+                    scroll_down = '<c-f>',
+                    scroll_up = '<c-b>',
+                },
+            })
+
+            local function set_omnifunc(bufnr)
+                if not vim.api.nvim_buf_is_valid(bufnr) then
+                    return
+                end
+                for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+                    if client:supports_method('textDocument/completion') then
+                        vim.bo[bufnr].omnifunc =
+                            'v:lua.MiniCompletion.completefunc_lsp'
+                        return
+                    end
+                end
+            end
+
+            vim.api.nvim_create_autocmd('LspAttach', {
+                group = vim.api.nvim_create_augroup(
+                    'AMiniCompletionLsp',
+                    { clear = true }
+                ),
+                callback = function(ev)
+                    set_omnifunc(ev.buf)
+                end,
+            })
+
+            for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+                if vim.api.nvim_buf_is_loaded(bufnr) then
+                    set_omnifunc(bufnr)
+                end
+            end
+
+            local function pumvisible()
+                return vim.fn.pumvisible() == 1
+            end
+
+            vim.keymap.set('i', '<c-n>', function()
+                if pumvisible() then
+                    return '<c-n>'
+                end
+                completion.complete_twostage()
+                return ''
+            end, { expr = true, desc = 'complete next' })
+            vim.keymap.set('i', '<c-p>', function()
+                return pumvisible() and '<c-p>' or ''
+            end, { expr = true, desc = 'complete previous' })
+            vim.keymap.set('i', '<c-t>', '<c-x><c-f>', {
+                desc = 'file completion',
+            })
+            vim.keymap.set('i', '<c-;>', '<c-x><c-v>', {
+                desc = 'vim command completion',
+            })
+            vim.keymap.set('i', '<c-r>', '<c-x><c-r>', {
+                desc = 'register completion',
+            })
         end,
         event = 'InsertEnter',
     },
