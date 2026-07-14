@@ -362,6 +362,7 @@ function M._connect(entry, view)
             return
         end
         local function finish()
+            session.flush_session()
             session.record_last(entry.path)
             vim.cmd('connect ' .. vim.fn.fnameescape(sock))
         end
@@ -442,6 +443,7 @@ function M.cycle_project(step)
             return
         end
         leave_terminal()
+        session.flush_session()
         session.record_last(target.cwd)
         vim.cmd('connect ' .. vim.fn.fnameescape(target.sock))
     end)
@@ -487,6 +489,7 @@ function M.stop_to_latest()
     confirm_stop(current, function()
         with_latest_live_other(function(root, sock)
             if sock then
+                session.flush_session()
                 session.record_last(root)
                 pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(sock))
             end

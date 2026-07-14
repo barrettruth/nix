@@ -9,6 +9,10 @@ local sessions_dir = core.sessions_dir
 
 local M = {}
 
+local SAVE_DEBOUNCE_MS = 3000
+local dirty = false
+local save_timer
+
 ---@param root string project root path
 local function push_history(root)
     root = canon(root)
@@ -118,6 +122,44 @@ local function unmark_restore()
     pcall(vim.fn.delete, restore_file())
 end
 
+local function stop_save_timer(close)
+    local timer = save_timer
+    if not timer then
+        return
+    end
+    pcall(timer.stop, timer)
+    if close then
+        save_timer = nil
+        pcall(timer.close, timer)
+    end
+end
+
+function M.mark_dirty()
+    if M._killing or M._restoring then
+        return
+    end
+    dirty = true
+    stop_save_timer()
+    save_timer = save_timer or vim.uv.new_timer()
+    save_timer:start(
+        SAVE_DEBOUNCE_MS,
+        0,
+        vim.schedule_wrap(function()
+            if dirty then
+                M.save_session()
+            end
+        end)
+    )
+end
+
+function M.flush_session()
+    if dirty then
+        M.save_session()
+    else
+        stop_save_timer(true)
+    end
+end
+
 ---@param drop_extra boolean
 ---@return table<integer, boolean>
 local function repair_views(drop_extra)
@@ -151,6 +193,7 @@ end
 -- Soft stop: write all buffers and quit, leaving the saved session
 -- so a next attach may resume the layout.
 function M.stop_session()
+    M.flush_session()
     unmark_restore()
     pcall(vim.cmd, 'silent! wall')
     vim.schedule(function()
@@ -161,6 +204,8 @@ end
 -- Hard kill: delete the saved session and history/last entries, then quit.
 function M.kill_session()
     M._killing = true
+    dirty = false
+    stop_save_timer(true)
     local f = session_file()
     pcall(vim.fn.delete, f)
     pcall(vim.fn.delete, root_file())
@@ -198,6 +243,8 @@ function M.save_session()
     if M._killing then
         return
     end
+    dirty = false
+    stop_save_timer(true)
     repair_views(false)
     local map = {}
     for tp, view in pairs(tab_view) do
@@ -253,7 +300,9 @@ function M.load_session()
     if vim.fn.filereadable(f) == 0 then
         return false
     end
+    M._restoring = true
     if not pcall(vim.cmd, 'silent! source ' .. vim.fn.fnameescape(f)) then
+        M._restoring = false
         return false
     end
     for k in pairs(tab_view) do
@@ -298,6 +347,7 @@ function M.load_session()
     for tp in pairs(drop) do
         engine.close_view_tab(tp, true)
     end
+    M._restoring = false
     return true
 end
 

@@ -36,10 +36,6 @@
       "rev": "2f763720771e192bdf9d2e25bfae339930ba4231",
       "src": "https://github.com/echasnovski/mini.ai"
     },
-    "mini.align": {
-      "rev": "77d7446b9f2452193f13ced9fb73a8b3aa4a4f4d",
-      "src": "https://github.com/echasnovski/mini.align"
-    },
     "mini.bracketed": {
       "rev": "203eb35f386b4fc9abcff1518c84d5537d41c80a",
       "src": "https://github.com/echasnovski/mini.bracketed"
@@ -47,10 +43,6 @@
     "mini.completion": {
       "rev": "d2a2b2a2b5350b713ade3bb744df39eee7d4229b",
       "src": "https://github.com/nvim-mini/mini.completion"
-    },
-    "mini.operators": {
-      "rev": "f94f9184155c7f7f9a8fb069be2a97ce8a48c97f",
-      "src": "https://github.com/echasnovski/mini.operators"
     },
     "mini.pairs": {
       "rev": "b1fd9df3bb4a41c8f45778a3859ee80ef6b367e3",
@@ -72,13 +64,33 @@
       "rev": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"
     },
+    "quicker.nvim": {
+      "rev": "4a6883cb13fe097a20a046eb55f6dffd239276e3",
+      "src": "https://github.com/stevearc/quicker.nvim"
+    },
     "vim-abolish": {
       "rev": "dcbfe065297d31823561ba787f51056c147aa682",
       "src": "https://github.com/tpope/vim-abolish"
     },
+    "vim-apathy": {
+      "rev": "27128a0f55189724c841843ba41cd33cf7186032",
+      "src": "https://github.com/tpope/vim-apathy"
+    },
+    "vim-characterize": {
+      "rev": "a8bffac6cead6b2869d939ecad06312b187a4c79",
+      "src": "https://github.com/tpope/vim-characterize"
+    },
+    "vim-eunuch": {
+      "rev": "e86bb794a1c10a2edac130feb0ea590a00d03f1e",
+      "src": "https://github.com/tpope/vim-eunuch"
+    },
     "vim-fugitive": {
       "rev": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
       "src": "https://github.com/tpope/vim-fugitive"
+    },
+    "vim-repeat": {
+      "rev": "65846025c15494983dafe5e3b46c8f88ab2e9635",
+      "src": "https://github.com/tpope/vim-repeat"
     },
     "vim-rhubarb": {
       "rev": "5496d7c94581c4c9ad7430357449bb57fc59f501",

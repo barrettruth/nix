@@ -7,6 +7,10 @@ local find_view = core.find_view
 
 local M = {}
 
+local function mark_dirty()
+    require('mux.session').mark_dirty()
+end
+
 -- justfile path -> { mtime, recipe-name set }; re-read when the justfile changes.
 local recipe_cache = {}
 
@@ -106,6 +110,9 @@ function M.close_view_tab(tp, restoring)
                     pcall(vim.api.nvim_buf_delete, b, { force = true })
                 end
             end
+            if not restoring then
+                mark_dirty()
+            end
         end
         if vim.api.nvim_tabpage_is_valid(cur) then
             pcall(vim.api.nvim_set_current_tabpage, cur)
@@ -126,11 +133,16 @@ function M.on_ephemeral_exit(win, buf)
         return
     end
     vim.schedule(function()
+        local changed = false
         if vim.api.nvim_win_is_valid(win) then
-            pcall(vim.api.nvim_win_close, win, true)
+            changed = pcall(vim.api.nvim_win_close, win, true) or changed
         end
         if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
-            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            changed = pcall(vim.api.nvim_buf_delete, buf, { force = true })
+                or changed
+        end
+        if changed then
+            mark_dirty()
         end
     end)
 end
@@ -164,6 +176,7 @@ local function create_view(name, enter)
     vim.api.nvim_win_call(win, function()
         M.materialize(name, false)
     end)
+    mark_dirty()
     return tp
 end
 
@@ -181,6 +194,7 @@ function M.open_view(name)
     if existing then
         vim.api.nvim_set_current_tabpage(existing)
         core.restore_terminal_focus()
+        mark_dirty()
         return
     end
 
@@ -246,7 +260,9 @@ function M.in_view(spec, fn)
     if not win then
         return nil, err
     end
-    return vim.api.nvim_win_call(win, fn), nil
+    local result = vim.api.nvim_win_call(win, fn)
+    mark_dirty()
+    return result, nil
 end
 
 function M.state()
@@ -276,6 +292,7 @@ function M.last_view()
     then
         vim.api.nvim_set_current_tabpage(alt)
         core.restore_terminal_focus()
+        mark_dirty()
     end
 end
 

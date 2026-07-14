@@ -1,13 +1,16 @@
 vim.pack.add({
     'https://github.com/echasnovski/mini.ai',
-    'https://github.com/echasnovski/mini.align',
     'https://github.com/echasnovski/mini.bracketed',
     'https://github.com/nvim-mini/mini.completion',
-    'https://github.com/echasnovski/mini.operators',
     'https://github.com/monaqa/dial.nvim',
     'https://github.com/catgoose/nvim-colorizer.lua',
     'https://github.com/echasnovski/mini.pairs',
+    'https://github.com/stevearc/quicker.nvim',
     'https://github.com/tpope/vim-abolish',
+    'https://github.com/tpope/vim-apathy',
+    'https://github.com/tpope/vim-characterize',
+    'https://github.com/tpope/vim-eunuch',
+    'https://github.com/tpope/vim-repeat',
     'https://github.com/tpope/vim-sleuth',
     'https://github.com/kylechui/nvim-surround',
 }, { load = function() end })
@@ -277,7 +280,18 @@ return {
         end,
         event = 'BufReadPre',
     },
+    {
+        'stevearc/quicker.nvim',
+        after = function()
+            require('quicker').setup({})
+        end,
+        ft = 'qf',
+    },
     { 'tpope/vim-abolish', event = 'DeferredUIEnter' },
+    { 'tpope/vim-apathy' },
+    { 'tpope/vim-characterize' },
+    { 'tpope/vim-eunuch' },
+    { 'tpope/vim-repeat' },
     { 'tpope/vim-sleuth', event = 'BufReadPost' },
     {
         'kylechui/nvim-surround',
@@ -291,31 +305,6 @@ return {
             { 'yS', mode = 'n' },
             { 'yss', mode = 'n' },
             { 'ySs', mode = 'n' },
-        },
-    },
-    {
-        'echasnovski/mini.align',
-        after = function()
-            require('mini.align').setup()
-        end,
-        keys = {
-            { 'ga', mode = { 'n', 'x' } },
-            { 'gA', mode = { 'n', 'x' } },
-        },
-    },
-    {
-        'echasnovski/mini.operators',
-        after = function()
-            require('mini.operators').setup({
-                evaluate = { prefix = '' },
-                exchange = { prefix = '' },
-                multiply = { prefix = '' },
-                replace = { prefix = 'dr' },
-                sort = { prefix = '' },
-            })
-        end,
-        keys = {
-            { 'dr', mode = { 'n', 'x' } },
         },
     },
     {

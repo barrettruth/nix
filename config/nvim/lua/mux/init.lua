@@ -33,6 +33,8 @@ M.reload = session.reload
 M.reload_all = session.reload_all
 M.save_session = session.save_session
 M.load_session = session.load_session
+M.mark_dirty = session.mark_dirty
+M.flush_session = session.flush_session
 
 M.direnv_watch = direnv.watch
 
@@ -40,13 +42,13 @@ local bufremove = require('config.bufremove')
 
 function M.bufdelete()
     bufremove(false)
+    session.mark_dirty()
 end
 
 function M.bufwipe()
     bufremove(true)
+    session.mark_dirty()
 end
-
-local AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000
 
 local function disable_terminal_color_request_handler()
     local ok, autocmds = pcall(vim.api.nvim_get_autocmds, {
@@ -101,6 +103,7 @@ function M.setup()
     for _, key in ipairs({ 'H', 'J', 'K', 'L' }) do
         muxmap(prefix .. key, function()
             vim.cmd('wincmd ' .. key)
+            session.mark_dirty()
         end, 'mux: move window ' .. key)
     end
     for name, spec in pairs(core.views) do
@@ -119,9 +122,11 @@ function M.setup()
     muxmap(prefix .. 'r', M.reload, 'mux: reload session (restart)')
     muxmap(prefix .. "'", function()
         vim.cmd('vsplit | terminal')
+        session.mark_dirty()
     end, 'mux: vertical terminal')
     muxmap(prefix .. '-', function()
         vim.cmd('split | terminal')
+        session.mark_dirty()
     end, 'mux: horizontal terminal')
     muxmap(prefix .. '<tab>', M.last_session, 'mux: last session')
     muxmap(prefix .. '<bs>', M.last_session, 'mux: last session')
@@ -159,12 +164,23 @@ function M.setup()
         callback = function()
             core.prune()
             line.refresh()
+            session.mark_dirty()
         end,
     })
     vim.api.nvim_create_autocmd({ 'TabNew', 'DirChanged' }, {
         group = group,
-        callback = line.refresh,
+        callback = function()
+            line.refresh()
+            session.mark_dirty()
+        end,
     })
+    vim.api.nvim_create_autocmd(
+        { 'WinNew', 'WinClosed', 'BufAdd', 'BufDelete' },
+        {
+            group = group,
+            callback = session.mark_dirty,
+        }
+    )
     vim.api.nvim_create_autocmd('TabEnter', {
         group = group,
         callback = function()
@@ -243,15 +259,6 @@ function M.setup()
         core.tag(vim.api.nvim_get_current_tabpage(), 'edit')
     end
     line.refresh()
-
-    M._timer = vim.uv.new_timer()
-    M._timer:start(
-        AUTOSAVE_INTERVAL_MS,
-        AUTOSAVE_INTERVAL_MS,
-        vim.schedule_wrap(function()
-            session.save_session()
-        end)
-    )
 end
 
 return M
