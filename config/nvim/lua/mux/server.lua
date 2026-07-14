@@ -1,12 +1,12 @@
----@class mx.Server
+---@class mux.Server
 ---@field root string
 ---@field session string
 ---@field socket string
 
----@alias mx.EnsureCallback fun(server?: mx.Server, err?: string)
+---@alias mux.EnsureCallback fun(server?: mux.Server, err?: string)
 
----@class mx.PendingEnsure
----@field callbacks mx.EnsureCallback[]
+---@class mux.PendingEnsure
+---@field callbacks mux.EnsureCallback[]
 ---@field timer? any
 ---@field proc? any
 
@@ -16,10 +16,10 @@ local ready = false
 local setup_started = false
 local setup_error
 
----@type mx.Server?
+---@type mux.Server?
 local current_server
 
----@type table<string, mx.PendingEnsure>
+---@type table<string, mux.PendingEnsure>
 local pending = {}
 
 local READY_TIMEOUT_MS = 5000
@@ -117,7 +117,7 @@ local function server_for(root, socket)
     }
 end
 
----@return mx.Server?
+---@return mux.Server?
 function M._record()
     return current_server
 end
@@ -133,7 +133,7 @@ function M.state_dir()
 end
 
 ---@param root string
----@return mx.Server? paths
+---@return mux.Server? paths
 ---@return string? err
 function M.paths(root)
     local real, err = validate_root(root)
@@ -143,7 +143,7 @@ function M.paths(root)
     return paths_for(real)
 end
 
----@return mx.Server? server
+---@return mux.Server? server
 ---@return string? err
 function M.this()
     if not setup_started then
@@ -164,7 +164,7 @@ function M.rpc_this()
     return vim.json.encode({ ok = true, server = server })
 end
 
-local RPC_EXPR = "luaeval('require([[mx.server]]).rpc_this()')"
+local RPC_EXPR = "luaeval('require([[mux.server]]).rpc_this()')"
 
 local function decode_rpc(stdout)
     local raw = vim.trim(stdout or '')
@@ -232,7 +232,7 @@ local function rpc_this_async(socket, timeout, cb)
     end)
 end
 
----@return mx.Server[]
+---@return mux.Server[]
 function M.list()
     local out = {}
     local sockets = vim.fn.glob(runtime_dir() .. '/*.sock', true, true)
@@ -258,7 +258,7 @@ local function contains(path, root)
 end
 
 ---@param path string
----@return mx.Server? server
+---@return mux.Server? server
 ---@return string? err
 function M.find(path)
     if type(path) ~= 'string' or path == '' then
@@ -295,7 +295,7 @@ local function finish_pending(root, server, err)
         local ok, cb_err = pcall(cb, server, err)
         if not ok then
             vim.notify(
-                'mx: ensure callback failed: ' .. tostring(cb_err),
+                'mux: ensure callback failed: ' .. tostring(cb_err),
                 vim.log.levels.ERROR
             )
         end
@@ -303,7 +303,7 @@ local function finish_pending(root, server, err)
 end
 
 ---@param root string
----@param cb mx.EnsureCallback
+---@param cb mux.EnsureCallback
 ---@return nil
 function M.ensure(root, cb)
     local real, err = validate_root(root)
@@ -348,7 +348,7 @@ function M.ensure(root, cb)
         '--headless',
         '--listen',
         paths.socket,
-        '+lua require("mx.server").setup()',
+        '+lua require("mux.server").setup()',
     }, {
         cwd = real,
         detach = true,
@@ -409,7 +409,7 @@ end
 ---@return true? ok
 ---@return string? err
 function M.detach()
-    local session = require('mx.session')
+    local session = require('mux.session')
     local ok, err = session.save()
     if not ok then
         return nil, err
@@ -421,7 +421,7 @@ end
 ---@return true? ok
 ---@return string? err
 function M.close()
-    local session = require('mx.session')
+    local session = require('mux.session')
     local ok, err = session.save()
     if not ok then
         return nil, err
@@ -436,7 +436,7 @@ function M.reload()
     if #vim.api.nvim_list_uis() == 0 then
         return nil, 'no UI attached'
     end
-    local session = require('mx.session')
+    local session = require('mux.session')
     local ok, err = session.save()
     if not ok then
         return nil, err
@@ -465,19 +465,19 @@ function M.setup()
     current_server = server
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
-    require('mx.session').setup()
-    require('mx.view').setup()
-    require('mx.line').setup()
-    local ok, rerr = require('mx.session').restore()
+    require('mux.session').setup()
+    require('mux.view').setup()
+    require('mux.line').setup()
+    local ok, rerr = require('mux.session').restore()
     if not ok and rerr ~= 'no session' then
         setup_error = rerr
         return nil, rerr
     end
     if not ok then
-        require('mx.view').initial()
+        require('mux.view').initial()
     end
     ready = true
-    require('mx.line').update_servers()
+    require('mux.line').update_servers()
     return true
 end
 

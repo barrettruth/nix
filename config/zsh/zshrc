@@ -61,17 +61,6 @@ fzf-config-widget() {
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
-fzf-mux-widget() {
-  local mux_cmd="command mux list | awk -F'\t' '\$3 != \"dead\" { print \$1 }' | sed 's|^$HOME|~|'"
-  local proj="$(FZF_CTRL_T_COMMAND="$mux_cmd" __fzf_select)"
-  [ -n "$proj" ] || { zle reset-prompt; return; }
-  proj="${proj/#\\~/~}"
-  BUFFER="mux ${proj% }"
-  zle accept-line
-}
-zle -N fzf-mux-widget
-bindkey '^G' fzf-mux-widget
-
 # in an nvim :terminal, send editors to the parent server (no nested nvim)
 if [[ -n "$NVIM" ]]; then
   export GIT_EDITOR="nvim --server $NVIM --remote-wait"

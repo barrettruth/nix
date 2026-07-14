@@ -43,17 +43,18 @@ end
 function M.mux(arg)
     local root, err = resolve_arg(arg)
     if not root then
-        vim.notify('mx: ' .. err, vim.log.levels.ERROR)
+        vim.notify('mux: ' .. err, vim.log.levels.ERROR)
         return
     end
-    local current = require('mx.server')._record()
+    local current = require('mux.server')._record()
     if current and current.root == root then
         return
     end
-    require('mx.server').ensure(root, function(server, ensure_err)
+    require('mux.server').ensure(root, function(server, ensure_err)
         if not server then
             vim.notify(
-                'mx: ' .. (ensure_err or ('server startup timed out: ' .. root)),
+                'mux: '
+                    .. (ensure_err or ('server startup timed out: ' .. root)),
                 vim.log.levels.ERROR
             )
             return
@@ -61,7 +62,7 @@ function M.mux(arg)
         local ok, connect_err =
             pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(server.socket))
         if not ok then
-            vim.notify('mx: ' .. tostring(connect_err), vim.log.levels.ERROR)
+            vim.notify('mux: ' .. tostring(connect_err), vim.log.levels.ERROR)
         end
     end)
 end
