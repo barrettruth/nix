@@ -640,7 +640,6 @@ GRID_ROWS: int = 4
 MIN_CONTOUR_COVERAGE: float = 0.15
 MIN_OCCUPIED_CELLS: int = 12
 MAX_CELL_SHARE: float = 0.15
-MAX_CACHED_CANDIDATES: int = 24
 RUN_ID: str = f"{datetime.now().strftime('%Y%m%dT%H%M%S')}-pid{os.getpid()}"
 
 
@@ -652,50 +651,26 @@ def log(message: str) -> None:
 
 
 def random_location() -> Coord:
-    return random.uniform(-60, 70), random.uniform(-180, 180)
+    return round(random.uniform(-60, 70), 2), round(random.uniform(-180, 180), 2)
 
 
-def cached_locations(tiles_x: int, tiles_y: int) -> list[Coord]:
-    suffix = f"_z{ZOOM}_{tiles_x}x{tiles_y}.png"
-    locations: list[Coord] = []
-    for name in os.listdir(CACHE):
-        if not name.startswith("terrain_") or not name.endswith(suffix):
-            continue
-        coords = name[len("terrain_"):-len(suffix)]
-        try:
-            lat, lon = coords.split("_", 1)
-            locations.append((float(lat), float(lon)))
-        except ValueError:
-            continue
-    random.shuffle(locations)
-    return locations[:MAX_CACHED_CANDIDATES]
-
-
-def candidate_locations(tiles_x: int, tiles_y: int) -> Iterator[Candidate]:
+def candidate_locations() -> Iterator[Candidate]:
     seen: set[Coord] = set()
-    cached: list[Coord] = cached_locations(tiles_x, tiles_y)
     fallback: list[Coord] = list(LOCATIONS)
     random.shuffle(fallback)
-    log(f"candidate_pools cached={len(cached)} curated={len(fallback)} random={MAX_RETRIES}")
-    for lat, lon in cached:
-        key = (round(lat, 2), round(lon, 2))
-        if key in seen:
+    log(f"candidate_pools random={MAX_RETRIES} curated={len(fallback)}")
+    for _ in range(MAX_RETRIES):
+        lat, lon = random_location()
+        if (lat, lon) in seen:
             continue
-        seen.add(key)
-        yield lat, lon, "cached"
+        seen.add((lat, lon))
+        yield lat, lon, "random"
     for lat, lon in fallback:
         key = (round(lat, 2), round(lon, 2))
         if key in seen:
             continue
         seen.add(key)
         yield lat, lon, "curated"
-    for _ in range(MAX_RETRIES):
-        lat, lon = random_location()
-        key = (round(lat, 2), round(lon, 2))
-        if key in seen:
-            continue
-        seen.add(key)
-        yield lat, lon, "random"
 
 
 def reverse_geocode(lat: float, lon: float) -> str | None:
@@ -747,12 +722,12 @@ def fetch_tile(z: int, x: int, y: int) -> Image.Image:
 
 
 def fetch_terrain(lat: float, lon: float, tiles_x: int, tiles_y: int, zoom: int) -> tuple[Image.Image, bool]:
-    tag = f"{lat:.2f}_{lon:.2f}_z{zoom}_{tiles_x}x{tiles_y}"
+    cx, cy = lat_lon_to_tile(lat, lon, zoom)
+    sx, sy = cx - tiles_x // 2, cy - tiles_y // 2
+    tag = f"z{zoom}_x{sx}_y{sy}_{tiles_x}x{tiles_y}"
     cache_file = os.path.join(CACHE, f"terrain_{tag}.png")
     if os.path.exists(cache_file):
         return Image.open(cache_file), True
-    cx, cy = lat_lon_to_tile(lat, lon, zoom)
-    sx, sy = cx - tiles_x // 2, cy - tiles_y // 2
     full = Image.new("RGB", (tiles_x * TILE_SIZE, tiles_y * TILE_SIZE))
     for ty in range(tiles_y):
         for tx in range(tiles_x):
@@ -905,7 +880,7 @@ def gen() -> None:
     if theme not in THEMES:
         theme = "midnight"
     log(f"start theme={theme} resolution={W}x{H} tiles={tiles_x}x{tiles_y} log={LOG_FILE}")
-    for index, (lat, lon, source) in enumerate(candidate_locations(tiles_x, tiles_y), start=1):
+    for index, (lat, lon, source) in enumerate(candidate_locations(), start=1):
         log(f"candidate[{index}] source={source} lat={lat:.2f} lon={lon:.2f} begin")
         try:
             terrain_img, cache_hit = fetch_terrain(lat, lon, tiles_x, tiles_y, ZOOM)
