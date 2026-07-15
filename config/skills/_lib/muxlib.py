@@ -154,7 +154,7 @@ def _server_root(socket: str) -> Path | None:
             "--server",
             socket,
             "--remote-expr",
-            "luaeval('require([[mux.server]]).rpc_this()')",
+            "luaeval('require([[mux.server]]).probe()')",
         ],
         check=False,
         text=True,
@@ -212,6 +212,15 @@ _EDIT_LUA = (
     "if err then return vim.json.encode({ ok = false, error = err }); end; return vim.json.encode({ ok = result == true, count = #files }); end)()"
 )
 
+_REVIEW_LUA = (
+    '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
+    'local base = payload.base or ""; local layout = payload.layout or "unified"; '
+    'if base == "" then return vim.json.encode({ ok = false, error = "missing base" }); end; '
+    'if layout ~= "unified" and layout ~= "stacked" and layout ~= "split" then layout = "unified"; end; '
+    'local result, err = require("mux.view").call("vcs", function() vim.cmd("silent! only"); vim.cmd("Diff review ++layout=" .. layout .. " " .. base); if layout ~= "split" then vim.cmd("silent! only"); end; vim.cmd("redraw!"); return true; end); '
+    "if err then return vim.json.encode({ ok = false, error = err }); end; return vim.json.encode({ ok = result == true }); end)()"
+)
+
 
 def _call_lua(socket: str, lua: str, payload: dict[str, Any]) -> dict[str, Any]:
     fd, name = tempfile.mkstemp(prefix=f"mux-rpc-{os.getuid()}-", suffix=".json")
@@ -250,6 +259,8 @@ def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
     """
     if payload.get("op") == "edit":
         return _call_lua(socket, _EDIT_LUA, payload)
+    if payload.get("op") == "review":
+        return _call_lua(socket, _REVIEW_LUA, payload)
     return _call_lua(
         socket,
         'require([[mux.skills]]).rpc(vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")))',

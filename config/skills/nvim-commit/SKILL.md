@@ -59,7 +59,7 @@ MSG
 ```
 
 Omit `--stage` when changes are already staged. For changes in a worktree or a
-branch checked out elsewhere (e.g. one reviewed via `nvim-changes`), add
+branch checked out elsewhere (e.g. one reviewed via `nvim-review`), add
 `--target <branch|worktree-path>`. Use `--dry-run` to preview.
 
 ## Rules
