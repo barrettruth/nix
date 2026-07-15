@@ -48,9 +48,9 @@ local function session_segments()
     return parts
 end
 
----Refresh the cached server list used by the right side of the line.
+---Refresh cached line state and redraw.
 ---@return nil
-function M.update_servers()
+function M.refresh()
     cached_servers = server.list()
     table.sort(cached_servers, function(a, b)
         return a.root < b.root
@@ -113,7 +113,7 @@ end
 ---@return true? ok
 ---@return string? err
 function M.cycle(step)
-    M.update_servers()
+    M.refresh()
     local current = server.state().server
     if not current or #cached_servers == 0 then
         return nil, 'not a mux server'
@@ -149,7 +149,7 @@ function M.setup()
     vim.api.nvim_create_autocmd('UIEnter', {
         group = group,
         callback = function()
-            M.update_servers()
+            M.refresh()
         end,
     })
 end

@@ -564,7 +564,7 @@ function M.setup()
         require('mux.view').initial()
     end
     ready = true
-    require('mux.line').update_servers()
+    require('mux.line').refresh()
     return true
 end
 
