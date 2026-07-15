@@ -16,11 +16,25 @@ return {
             fzf_colors = true,
             grep = {
                 no_header_i = true,
+                no_esc = true,
                 RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
                 rg_opts = fzf.defaults.grep.rg_opts:gsub(
                     '%-e$',
-                    "--glob='!.git/' --glob='!.jj/' -e"
+                    "--fixed-strings --glob='!.git/' --glob='!.jj/' -e"
                 ),
+                actions = {
+                    ['ctrl-r'] = {
+                        fn = function(selected, opts)
+                            actions.toggle_flag(
+                                selected,
+                                vim.tbl_extend('force', opts, {
+                                    toggle_flag = '--fixed-strings',
+                                })
+                            )
+                        end,
+                        desc = 'toggle regex',
+                    },
+                },
             },
             lsp = {
                 includeDeclaration = false,
