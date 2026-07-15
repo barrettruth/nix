@@ -1,6 +1,7 @@
 ---@class mux.ViewEntry
 ---@field kind 'view'|'task'|'tab'
 ---@field name? string
+---@field persist? string|false Persisted tab identity; `false` preserves ordinary Vim tabs.
 ---@field label string
 ---@field tab integer
 ---@field current boolean
@@ -383,6 +384,7 @@ function M.list()
             entry = {
                 kind = 'view',
                 name = view_name,
+                persist = view_name,
                 label = view_name,
                 tab = tp,
                 current = tp == cur,
@@ -390,6 +392,7 @@ function M.list()
         else
             entry = {
                 kind = 'tab',
+                persist = false,
                 label = default_tab_label(tp),
                 tab = tp,
                 current = tp == cur,
@@ -399,7 +402,7 @@ function M.list()
         labels[entry.label] = (labels[entry.label] or 0) + 1
     end
     for _, entry in ipairs(out) do
-        if entry.kind == 'tab' and labels[entry.label] > 1 then
+        if entry.persist == false and labels[entry.label] > 1 then
             entry.label = vim.api.nvim_tabpage_get_number(entry.tab)
                 .. ':'
                 .. entry.label

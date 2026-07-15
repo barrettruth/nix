@@ -502,7 +502,7 @@ function M.close()
     return true
 end
 
----Forget the saved session before force-closing this mux server.
+---Delete the saved session before force-closing this mux server.
 ---@return true? ok
 ---@return string? err
 function M.kill()
