@@ -6,8 +6,10 @@ local restoring = false
 local save_timer
 local did_setup = false
 
-local function server_record()
-    local server = require('mux.server')._record()
+---@return mux.Server? server
+---@return string? err
+local function current()
+    local server = require('mux.server').state().server
     if not server then
         return nil, 'not a mux server'
     end
@@ -48,7 +50,7 @@ end
 ---@return true? ok
 ---@return string? err
 function M.save()
-    local server, err = server_record()
+    local server, err = current()
     if not server then
         return nil, err
     end
@@ -79,7 +81,7 @@ end
 ---@return true? ok
 ---@return string? err
 function M.restore()
-    local server, err = server_record()
+    local server, err = current()
     if not server then
         return nil, err
     end

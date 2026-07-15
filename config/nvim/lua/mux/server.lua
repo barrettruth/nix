@@ -3,6 +3,11 @@
 ---@field session string
 ---@field socket string
 
+---@class mux.State
+---@field server? mux.Server
+---@field runtime_dir string
+---@field state_dir string
+
 ---@alias mux.EnsureCallback fun(server?: mux.Server, err?: string)
 
 ---@class mux.PendingEnsure
@@ -26,6 +31,7 @@ local READY_TIMEOUT_MS = 5000
 local READY_POLL_MS = 50
 local LIST_PROBE_MS = 100
 
+---@return string
 local function runtime_dir()
     local base = vim.env.XDG_RUNTIME_DIR
     if not base or base == '' then
@@ -34,23 +40,21 @@ local function runtime_dir()
     return base .. '/mux'
 end
 
+---@return string
 local function state_dir()
     return vim.fn.stdpath('state') .. '/mux'
 end
 
-local function fs_exists(path)
-    return vim.uv.fs_stat(path) ~= nil
-end
-
-local function is_dir(path)
-    local st = vim.uv.fs_stat(path)
-    return st and st.type == 'directory'
-end
-
+---@param root string
+---@return boolean
 local function has_marker(root)
-    return fs_exists(root .. '/.git') or fs_exists(root .. '/.jj')
+    return vim.uv.fs_stat(root .. '/.git') ~= nil
+        or vim.uv.fs_stat(root .. '/.jj') ~= nil
 end
 
+---@param root string?
+---@return string? root
+---@return string? err
 local function validate_root(root)
     if type(root) ~= 'string' or root == '' then
         return nil, 'empty root'
@@ -59,7 +63,8 @@ local function validate_root(root)
     if not real then
         return nil, 'invalid root: ' .. root
     end
-    if not is_dir(real) then
+    local stat = vim.uv.fs_stat(real)
+    if not stat or stat.type ~= 'directory' then
         return nil, 'not a directory: ' .. real
     end
     if not has_marker(real) then
@@ -68,6 +73,8 @@ local function validate_root(root)
     return real
 end
 
+---@param base string?
+---@return string
 local function sanitize_base(base)
     base = (base or ''):gsub('[^A-Za-z0-9._-]', '_')
     base = base:gsub('_+', '_'):gsub('^_+', ''):gsub('_+$', '')
@@ -77,6 +84,9 @@ local function sanitize_base(base)
     return base
 end
 
+---@param s string
+---@return string? hash
+---@return string? err
 local function cksum(s)
     local res = vim.system({ 'cksum' }, { text = true, stdin = s }):wait()
     if not res or res.code ~= 0 or not res.stdout then
@@ -85,6 +95,9 @@ local function cksum(s)
     return res.stdout:match('^(%d+)')
 end
 
+---@param root string
+---@return string? stem
+---@return string? err
 local function stem(root)
     local hash, err = cksum(root)
     if not hash then
@@ -93,6 +106,9 @@ local function stem(root)
     return sanitize_base(vim.fn.fnamemodify(root, ':t')) .. '-' .. hash
 end
 
+---@param root string
+---@return mux.Server? server
+---@return string? err
 local function paths_for(root)
     local name, err = stem(root)
     if not name then
@@ -105,6 +121,10 @@ local function paths_for(root)
     }
 end
 
+---@param root string
+---@param socket? string
+---@return mux.Server? server
+---@return string? err
 local function server_for(root, socket)
     local paths, err = paths_for(root)
     if not paths then
@@ -117,19 +137,17 @@ local function server_for(root, socket)
     }
 end
 
----@return mux.Server?
-function M._record()
-    return current_server
-end
-
----@return string
-function M.runtime_dir()
-    return runtime_dir()
-end
-
----@return string
-function M.state_dir()
-    return state_dir()
+---@return mux.State
+function M.state()
+    return {
+        server = current_server and {
+            root = current_server.root,
+            session = current_server.session,
+            socket = current_server.socket,
+        } or nil,
+        runtime_dir = runtime_dir(),
+        state_dir = state_dir(),
+    }
 end
 
 ---@param root string
@@ -166,6 +184,9 @@ end
 
 local RPC_EXPR = "luaeval('require([[mux.server]]).rpc_this()')"
 
+---@param stdout string?
+---@return mux.Server? server
+---@return string? err
 local function decode_rpc(stdout)
     local raw = vim.trim(stdout or '')
     if raw == '' then
@@ -181,6 +202,10 @@ local function decode_rpc(stdout)
     return nil, tostring(decoded.error or 'not ready')
 end
 
+---@param socket string
+---@param timeout? integer
+---@return mux.Server? server
+---@return string? err
 local function rpc_this_sync(socket, timeout)
     local proc = vim.system(
         { vim.v.progpath, '--server', socket, '--remote-expr', RPC_EXPR },
@@ -197,10 +222,16 @@ local function rpc_this_sync(socket, timeout)
     return decode_rpc(res.stdout)
 end
 
+---@param socket string
+---@param timeout integer
+---@param cb fun(server?: mux.Server, err?: string)
+---@return nil
 local function rpc_this_async(socket, timeout, cb)
     local done = false
     local timer = vim.uv.new_timer()
     local proc
+    ---@param server? mux.Server
+    ---@param err? string
     local function finish(server, err)
         if done then
             return
@@ -250,6 +281,9 @@ function M.list()
     return out
 end
 
+---@param path string
+---@param root string
+---@return boolean
 local function contains(path, root)
     if path == root then
         return true
@@ -281,6 +315,10 @@ function M.find(path)
     return best
 end
 
+---@param root string
+---@param server? mux.Server
+---@param err? string
+---@return nil
 local function finish_pending(root, server, err)
     local entry = pending[root]
     pending[root] = nil
@@ -337,7 +375,7 @@ function M.ensure(root, cb)
         end)
         return
     end
-    if fs_exists(paths.socket) then
+    if vim.uv.fs_stat(paths.socket) ~= nil then
         pcall(vim.fn.delete, paths.socket)
     end
     pcall(vim.fn.mkdir, runtime_dir(), 'p')
@@ -357,6 +395,7 @@ function M.ensure(root, cb)
     })
     pending[real].proc = proc
     local started = vim.uv.now()
+    ---@return nil
     local function poll()
         local entry = pending[real]
         if not entry then

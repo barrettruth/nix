@@ -22,11 +22,13 @@ local views = {
 
 local did_setup = false
 
+---@return string
 local function root()
-    local server = require('mux.server')._record()
-    return (server and server.root) or vim.fn.getcwd()
+    local state = require('mux.server').state()
+    return (state.server and state.server.root) or vim.fn.getcwd()
 end
 
+---@return boolean
 local function restore_terminal_focus()
     local name = tab_view[vim.api.nvim_get_current_tabpage()]
     local spec = name and views[name]
@@ -43,6 +45,8 @@ local function restore_terminal_focus()
     return true
 end
 
+---@param name string
+---@return integer? tab
 local function find(name)
     for tp, view in pairs(tab_view) do
         if view == name and vim.api.nvim_tabpage_is_valid(tp) then
@@ -51,6 +55,9 @@ local function find(name)
     end
 end
 
+---@param name string
+---@param restoring boolean
+---@return nil
 local function materialize(name, restoring)
     local cwd = root()
     if name == 'edit' then
@@ -67,6 +74,10 @@ local function materialize(name, restoring)
     end
 end
 
+---@param name string
+---@param enter boolean
+---@return integer win
+---@return integer tab
 local function create(name, enter)
     local buf = vim.api.nvim_create_buf(false, true)
     local tp = vim.api.nvim_open_tabpage(buf, enter, {})
@@ -226,6 +237,8 @@ function M.list()
     return out
 end
 
+---@param buf integer
+---@return nil
 local function cleanup_terminal(buf)
     for _, win in ipairs(vim.fn.win_findbuf(buf)) do
         if vim.api.nvim_win_is_valid(win) then
@@ -249,6 +262,7 @@ local function cleanup_terminal(buf)
     require('mux.session').mark_dirty()
 end
 
+---@return nil
 local function setup_keymaps()
     local modes = { 'n', 'i', 't' }
     local prefix = '<a-x>'
@@ -265,18 +279,16 @@ local function setup_keymaps()
     local function map(lhs, rhs, desc)
         vim.keymap.set(modes, lhs, rhs, { desc = desc, silent = true })
     end
-    map(prefix .. 'e', function()
-        M.open('edit')
-    end, 'mux: edit view')
-    map(prefix .. 'v', function()
-        M.open('vcs')
-    end, 'mux: vcs view')
-    map(prefix .. 'a', function()
-        M.open('ai')
-    end, 'mux: ai view')
-    map(prefix .. 'z', function()
-        M.open('zsh')
-    end, 'mux: zsh view')
+    for _, entry in ipairs({
+        { key = 'e', name = 'edit' },
+        { key = 'v', name = 'vcs' },
+        { key = 'a', name = 'ai' },
+        { key = 'z', name = 'zsh' },
+    }) do
+        map(prefix .. entry.key, function()
+            M.open(entry.name)
+        end, 'mux: ' .. entry.name .. ' view')
+    end
     map(prefix .. 'x', function()
         M.close()
     end, 'mux: close view')

@@ -12,7 +12,7 @@ local redraw_pending = false
 
 ---@return nil
 local function apply_visibility()
-    local file = server.runtime_dir() .. '/mux-bar'
+    local file = server.state().runtime_dir .. '/mux-bar'
     local hide = vim.fn.filereadable(file) == 1
         and vim.fn.readfile(file)[1] == 'hide'
     vim.o.tabline = TABLINE_EXPR
@@ -33,7 +33,7 @@ end
 
 ---@return string[]
 local function session_segments()
-    local current = server._record()
+    local current = server.state().server
     local parts = {}
     for _, entry in ipairs(cached_servers) do
         local name = vim.fn.fnamemodify(entry.root, ':t')
@@ -77,7 +77,7 @@ end
 
 ---@return string
 function M.render()
-    if not server._record() then
+    if not server.state().server then
         return ''
     end
     return (' %s%%=%s '):format(
@@ -89,10 +89,11 @@ end
 ---@return true? ok
 ---@return string? err
 function M.toggle()
-    if not server._record() then
+    local state = server.state()
+    if not state.server then
         return nil, 'not a mux server'
     end
-    local file = server.runtime_dir() .. '/mux-bar'
+    local file = state.runtime_dir .. '/mux-bar'
     pcall(vim.fn.mkdir, vim.fn.fnamemodify(file, ':h'), 'p')
     pcall(
         vim.fn.writefile,
@@ -108,7 +109,7 @@ end
 ---@return string? err
 function M.cycle(step)
     M.update_servers()
-    local current = server._record()
+    local current = server.state().server
     if not current or #cached_servers == 0 then
         return nil, 'not a mux server'
     end

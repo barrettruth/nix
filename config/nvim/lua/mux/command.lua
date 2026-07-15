@@ -46,7 +46,7 @@ function M.mux(arg)
         vim.notify('mux: ' .. err, vim.log.levels.ERROR)
         return
     end
-    local current = require('mux.server')._record()
+    local current = require('mux.server').state().server
     if current and current.root == root then
         return
     end
