@@ -184,6 +184,29 @@ end
 
 local RPC_EXPR = "luaeval('require([[mux.server]]).rpc_this()')"
 
+---@param args string[]
+---@param opts table
+---@param cb? function
+---@return any? proc
+---@return string? err
+local function spawn_nvim(args, opts, cb)
+    local prog = vim.fn.executable(vim.v.progpath) == 1 and vim.v.progpath
+        or 'nvim'
+    local argv = vim.list_extend({ prog }, args)
+    local ok, proc = pcall(vim.system, argv, opts, cb)
+    if ok then
+        return proc
+    end
+    if prog ~= 'nvim' then
+        argv[1] = 'nvim'
+        ok, proc = pcall(vim.system, argv, opts, cb)
+        if ok then
+            return proc
+        end
+    end
+    return nil, tostring(proc)
+end
+
 ---@param stdout string?
 ---@return mux.Server? server
 ---@return string? err
@@ -207,10 +230,15 @@ end
 ---@return mux.Server? server
 ---@return string? err
 local function rpc_this_sync(socket, timeout)
-    local proc = vim.system(
-        { vim.v.progpath, '--server', socket, '--remote-expr', RPC_EXPR },
-        { text = true, stdout = true, stderr = true }
-    )
+    local proc, err = spawn_nvim({
+        '--server',
+        socket,
+        '--remote-expr',
+        RPC_EXPR,
+    }, { text = true, stdout = true, stderr = true })
+    if not proc then
+        return nil, err
+    end
     local res = proc:wait(timeout or LIST_PROBE_MS)
     if not res then
         pcall(proc.kill, proc, 15)
@@ -245,18 +273,24 @@ local function rpc_this_async(socket, timeout, cb)
             cb(server, err)
         end)
     end
-    proc = vim.system(
-        { vim.v.progpath, '--server', socket, '--remote-expr', RPC_EXPR },
-        { text = true, stdout = true, stderr = true },
-        function(res)
-            if res.code ~= 0 then
-                finish(nil, vim.trim(res.stderr or ''))
-                return
-            end
-            local server, err = decode_rpc(res.stdout)
-            finish(server, err)
+    local err
+    proc, err = spawn_nvim({
+        '--server',
+        socket,
+        '--remote-expr',
+        RPC_EXPR,
+    }, { text = true, stdout = true, stderr = true }, function(res)
+        if res.code ~= 0 then
+            finish(nil, vim.trim(res.stderr or ''))
+            return
         end
-    )
+        local server, rpc_err = decode_rpc(res.stdout)
+        finish(server, rpc_err)
+    end)
+    if not proc then
+        finish(nil, err)
+        return
+    end
     timer:start(timeout, 0, function()
         pcall(proc.kill, proc, 15)
         finish(nil, 'timeout')
@@ -381,8 +415,7 @@ function M.ensure(root, cb)
     pcall(vim.fn.mkdir, runtime_dir(), 'p')
     pcall(vim.fn.mkdir, state_dir(), 'p')
     pending[real] = { callbacks = { cb } }
-    local proc = vim.system({
-        vim.v.progpath,
+    local proc, spawn_err = spawn_nvim({
         '--headless',
         '--listen',
         paths.socket,
@@ -393,6 +426,10 @@ function M.ensure(root, cb)
         stdout = false,
         stderr = false,
     })
+    if not proc then
+        finish_pending(real, nil, spawn_err)
+        return
+    end
     pending[real].proc = proc
     local started = vim.uv.now()
     ---@return nil
