@@ -322,13 +322,29 @@ function M.restore(names)
     start_direnv()
 end
 
+---@param buf integer
+---@return string
+local function default_buf_label(buf)
+    local name = vim.fn.bufname(buf)
+    if name == '' then
+        return '[No Name]'
+    end
+    if vim.bo[buf].buftype == 'help' then
+        return vim.fn.fnamemodify(name, ':t')
+    end
+    if vim.bo[buf].buftype ~= '' then
+        return name
+    end
+    return vim.fn.pathshorten(vim.fn.fnamemodify(name, ':~'), 1)
+end
+
+-- Match Nvim's default tabline: tab current window, window count, modified mark, shortened name.
 ---@param tp integer
 ---@return string
 local function default_tab_label(tp)
     local win = vim.api.nvim_tabpage_get_win(tp)
     local buf = vim.api.nvim_win_get_buf(win)
-    local name = vim.fn.bufname(buf)
-    local label = name ~= '' and vim.fn.fnamemodify(name, ':~:.') or '[No Name]'
+    local label = default_buf_label(buf)
     local count = 0
     local modified = false
     for _, other in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
