@@ -218,7 +218,12 @@ function M.close()
         name = false
     end
     if #user_tabpages() <= 1 then
-        return require('mux.server').close()
+        local ok, err = require('mux.session').delete()
+        if not ok then
+            return nil, err
+        end
+        vim.cmd('qall')
+        return true
     end
     local bufs = {}
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
@@ -448,7 +453,8 @@ local function cleanup_terminal(buf)
             local spec = name and views[name]
             if spec and spec.terminal then
                 if #user_tabpages() <= 1 then
-                    require('mux.server').close()
+                    require('mux.session').delete()
+                    vim.cmd('qall')
                     return
                 end
                 pcall(vim.api.nvim_set_current_tabpage, tp)
@@ -493,9 +499,6 @@ local function setup_keymaps()
     map(prefix .. 'x', function()
         M.close()
     end, 'mux: close view')
-    map(prefix .. 'X', function()
-        require('mux.server').kill()
-    end, 'mux: kill session')
     map(prefix .. 'B', function()
         require('mux.line').toggle()
     end, 'mux: toggle bar')

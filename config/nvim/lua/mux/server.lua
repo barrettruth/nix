@@ -221,6 +221,7 @@ local function decode_rpc(stdout)
     return nil, tostring(decoded.error or 'not ready')
 end
 
+---Synchronously ask a socket whether it is a ready mux server.
 ---@param socket string
 ---@param timeout? integer
 ---@return mux.Server? server
@@ -507,32 +508,6 @@ function M.ensure(root, cb)
         end)
     end
     poll()
-end
-
----Save the user session before closing this mux server.
----@return true? ok
----@return string? err
-function M.close()
-    local session = require('mux.session')
-    local ok, err = session.save()
-    if not ok then
-        return nil, err
-    end
-    vim.cmd('qall')
-    return true
-end
-
----Delete the saved session before force-closing this mux server.
----@return true? ok
----@return string? err
-function M.kill()
-    local session = require('mux.session')
-    local ok, err = session.delete()
-    if not ok then
-        return nil, err
-    end
-    vim.cmd('qall!')
-    return true
 end
 
 ---Save the user session before restarting this mux server.
