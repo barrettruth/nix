@@ -314,27 +314,13 @@ local function add_server(out, seen, server)
 end
 
 ---@param file string
----@return mux.Server?
-local function saved_server_for(file)
-    local ok, lines = pcall(vim.fn.readfile, file, '', 20)
-    if not ok then
-        return nil
-    end
-    for _, line in ipairs(lines) do
+---@return string? root
+local function saved_root(file)
+    for _, line in ipairs(vim.fn.readfile(file, '', 20)) do
         local expr = line:match('^let Mux = (.+)$')
         if expr then
-            local eval_ok, raw = pcall(vim.fn.eval, expr)
-            local decode_ok, mux = pcall(vim.json.decode, eval_ok and raw or '')
-            local root = decode_ok and type(mux) == 'table' and mux.root
-            root = validate_root(root)
-            if not root then
-                return nil
-            end
-            local paths = paths_for(root)
-            if paths and paths.session == file then
-                return paths
-            end
-            return nil
+            local mux = vim.json.decode(vim.fn.eval(expr))
+            return validate_root(mux.root)
         end
     end
 end
@@ -356,7 +342,8 @@ function M.list()
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
     table.sort(sessions)
     for _, file in ipairs(sessions) do
-        add_server(out, seen, saved_server_for(file))
+        local root = saved_root(file)
+        add_server(out, seen, root and paths_for(root))
     end
     return out
 end
