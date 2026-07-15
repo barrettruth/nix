@@ -87,14 +87,12 @@ function M.save()
     end
     dirty = false
     stop_save_timer(true)
-    local labels = vim.tbl_map(
-        function(entry)
-            return entry.persist
-        end,
-        vim.tbl_filter(function(entry)
-            return entry.persist ~= nil
-        end, require('mux.view').list())
-    )
+    local labels = {}
+    for _, entry in ipairs(require('mux.view').list()) do
+        if entry.persist ~= nil then
+            labels[#labels + 1] = entry.persist or false
+        end
+    end
     vim.g.Mux = vim.json.encode(labels)
     local dir = vim.fn.fnamemodify(server.session, ':h')
     local mk_ok = pcall(vim.fn.mkdir, dir, 'p')

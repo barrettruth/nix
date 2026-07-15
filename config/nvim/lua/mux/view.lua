@@ -402,7 +402,7 @@ function M.list()
         labels[entry.label] = (labels[entry.label] or 0) + 1
     end
     for _, entry in ipairs(out) do
-        if entry.persist == false and labels[entry.label] > 1 then
+        if not entry.persist and labels[entry.label] > 1 then
             entry.label = vim.api.nvim_tabpage_get_number(entry.tab)
                 .. ':'
                 .. entry.label
