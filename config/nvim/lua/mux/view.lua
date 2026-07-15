@@ -293,22 +293,21 @@ local function start_direnv()
     release_task('direnv')
 end
 
----Create the initial edit view when no saved session exists.
----@return nil
-function M.initial()
-    tab_view[vim.api.nvim_get_current_tabpage()] = 'edit'
-    materialize('edit', false)
-    require('mux.session').mark_dirty()
-    start_direnv()
-end
-
----Restore persistent view labels after Vim session load.
+---Restore saved labels or bootstrap the default edit view.
 ---@param names (string|false)[]?
 ---@return nil
 function M.restore(names)
     tab_view = {}
+    if not names then
+        local tp = vim.api.nvim_get_current_tabpage()
+        tab_view[tp] = 'edit'
+        materialize('edit', false)
+        require('mux.session').mark_dirty()
+        start_direnv()
+        return
+    end
     for i, tp in ipairs(vim.api.nvim_list_tabpages()) do
-        local name = names and names[i]
+        local name = names[i]
         tab_view[tp] = type(name) == 'string' and views[name] and name or false
     end
     local cur = vim.api.nvim_get_current_tabpage()

@@ -561,7 +561,7 @@ function M.setup()
         return nil, rerr
     end
     if not ok then
-        require('mux.view').initial()
+        require('mux.view').restore()
     end
     ready = true
     require('mux.line').refresh()
