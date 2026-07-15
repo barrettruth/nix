@@ -294,6 +294,7 @@ local function start_direnv()
 end
 
 ---Restore saved labels or bootstrap the default edit view.
+---`nil` means no saved session; `false` means ordinary Vim tab.
 ---@param names (string|false)[]?
 ---@return nil
 function M.restore(names)
@@ -479,12 +480,6 @@ local function setup_keymaps()
     map(prefix .. 'B', function()
         require('mux.line').toggle()
     end, 'mux: toggle bar')
-    map(prefix .. '[', function()
-        require('mux.line').cycle(-1)
-    end, 'mux: previous server')
-    map(prefix .. ']', function()
-        require('mux.line').cycle(1)
-    end, 'mux: next server')
     map(prefix .. 'r', function()
         require('mux.server').reload()
     end, 'mux: reload')

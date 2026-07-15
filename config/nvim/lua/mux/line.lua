@@ -108,11 +108,10 @@ function M.toggle()
     return true
 end
 
----Move the attached UI to another known mux server.
 ---@param step integer
 ---@return true? ok
 ---@return string? err
-function M.cycle(step)
+local function move(step)
     M.refresh()
     local current = server.state().server
     if not current or #cached_servers == 0 then
@@ -141,6 +140,11 @@ end
 ---@return nil
 function M.setup()
     apply_visibility()
+    for lhs, step in pairs({ ['<a-x>['] = -1, ['<a-x>]'] = 1 }) do
+        vim.keymap.set({ 'n', 'i', 't' }, lhs, function()
+            move(step)
+        end, { desc = 'mux: move server', silent = true })
+    end
     local group = vim.api.nvim_create_augroup('mux-line', { clear = true })
     vim.api.nvim_create_autocmd({ 'TabEnter', 'TabNew', 'TabClosed' }, {
         group = group,
