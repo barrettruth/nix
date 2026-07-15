@@ -301,21 +301,62 @@ local function rpc_this_async(socket, timeout, cb)
     end)
 end
 
+---@param out mux.Server[]
+---@param seen table<string, boolean>
+---@param server mux.Server?
+---@return nil
+local function add_server(out, seen, server)
+    if not server or seen[server.root] then
+        return
+    end
+    seen[server.root] = true
+    out[#out + 1] = server
+end
+
+---@param file string
+---@return mux.Server?
+local function saved_server_for(file)
+    local ok, lines = pcall(vim.fn.readfile, file, '', 20)
+    if not ok then
+        return nil
+    end
+    for _, line in ipairs(lines) do
+        local expr = line:match('^let Mux = (.+)$')
+        if expr then
+            local eval_ok, raw = pcall(vim.fn.eval, expr)
+            local decode_ok, mux = pcall(vim.json.decode, eval_ok and raw or '')
+            local root = decode_ok and type(mux) == 'table' and mux.root
+            root = validate_root(root)
+            if not root then
+                return nil
+            end
+            local paths = paths_for(root)
+            if paths and paths.session == file then
+                return paths
+            end
+            return nil
+        end
+    end
+end
+
 ---List mux servers that answer readiness probes.
 ---@return mux.Server[]
 function M.list()
     local out = {}
+    local seen = {}
     local sockets = vim.fn.glob(runtime_dir() .. '/*.sock', true, true)
     table.sort(sockets)
     for _, socket in ipairs(sockets) do
         if current_server and socket == current_server.socket then
-            out[#out + 1] = current_server
+            add_server(out, seen, current_server)
         else
-            local server = rpc_this_sync(socket, LIST_PROBE_MS)
-            if server and server.socket then
-                out[#out + 1] = server
-            end
+            add_server(out, seen, rpc_this_sync(socket, LIST_PROBE_MS))
         end
+    end
+    local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
+    table.sort(sessions)
+    for _, file in ipairs(sessions) do
+        add_server(out, seen, saved_server_for(file))
     end
     return out
 end

@@ -126,13 +126,22 @@ local function move(step)
     end
     local target = ((idx - 1 + step) % #cached_servers) + 1
     local entry = cached_servers[target]
-    if entry and entry.socket and entry.root ~= current.root then
-        local ok, err =
-            pcall(vim.cmd, 'connect ' .. vim.fn.fnameescape(entry.socket))
-        if not ok then
-            return nil, tostring(err)
-        end
+    if not entry or entry.root == current.root then
+        return true
     end
+    server.ensure(entry.root, function(target_server, ensure_err)
+        if not target_server then
+            vim.notify('mux: ' .. tostring(ensure_err), vim.log.levels.ERROR)
+            return
+        end
+        local ok, err = pcall(
+            vim.cmd,
+            'connect ' .. vim.fn.fnameescape(target_server.socket)
+        )
+        if not ok then
+            vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
+        end
+    end)
     return true
 end
 

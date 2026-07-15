@@ -93,7 +93,7 @@ function M.save()
             labels[#labels + 1] = entry.persist or false
         end
     end
-    vim.g.Mux = vim.json.encode(labels)
+    vim.g.Mux = vim.json.encode({ root = server.root, tabs = labels })
     local dir = vim.fn.fnamemodify(server.session, ':h')
     local mk_ok = pcall(vim.fn.mkdir, dir, 'p')
     if not mk_ok then
@@ -147,8 +147,8 @@ function M.restore()
         restoring = false
         return nil, 'failed to restore session: ' .. server.session
     end
-    local labels = vim.g.Mux and vim.json.decode(vim.g.Mux) or nil
-    require('mux.view').restore(labels)
+    local mux = vim.g.Mux and vim.json.decode(vim.g.Mux) or nil
+    require('mux.view').restore(type(mux) == 'table' and mux.tabs or nil)
     restoring = false
     return true
 end
