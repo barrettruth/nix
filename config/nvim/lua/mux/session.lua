@@ -3,6 +3,7 @@ local M = {}
 local SAVE_DEBOUNCE_MS = 3000
 local dirty = false
 local restoring = false
+local saving = false
 local save_timer
 local did_setup = false
 
@@ -30,7 +31,7 @@ end
 
 ---@return nil
 function M.mark_dirty()
-    if restoring then
+    if restoring or saving then
         return
     end
     dirty = true
@@ -56,25 +57,43 @@ function M.save()
     end
     dirty = false
     stop_save_timer(true)
-    local ok_views, views = pcall(require('mux.view').ordered)
-    if not ok_views then
-        return nil, 'failed to encode mux views'
-    end
-    local ok_json, encoded = pcall(vim.json.encode, views)
-    if not ok_json then
-        return nil, 'failed to encode mux views'
-    end
-    vim.g.mux_views = encoded
+    local views = require('mux.view').ordered()
+    vim.g.Mux = vim.json.encode({ views = views })
     local dir = vim.fn.fnamemodify(server.session, ':h')
     local mk_ok = pcall(vim.fn.mkdir, dir, 'p')
     if not mk_ok then
         return nil, 'failed to create session directory: ' .. dir
     end
-    local ok =
-        pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(server.session))
+    saving = true
+    local ok_wrap, ok = pcall(require('mux.view').without_internal, function()
+        return pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(server.session))
+    end)
+    saving = false
+    if not ok_wrap then
+        return nil, tostring(ok)
+    end
     if not ok then
         return nil, 'failed to write session: ' .. server.session
     end
+    return true
+end
+
+---@return true? ok
+---@return string? err
+function M.forget()
+    local server, err = current()
+    if not server then
+        return nil, err
+    end
+    if
+        vim.fn.filereadable(server.session) == 1
+        and vim.fn.delete(server.session) ~= 0
+    then
+        return nil, 'failed to delete session: ' .. server.session
+    end
+    dirty = false
+    stop_save_timer(true)
+    pcall(vim.api.nvim_del_augroup_by_name, 'mux-session')
     return true
 end
 
@@ -95,15 +114,8 @@ function M.restore()
         restoring = false
         return nil, 'failed to restore session: ' .. server.session
     end
-    local names = {}
-    local raw = vim.g.mux_views
-    if type(raw) == 'string' and raw ~= '' then
-        local ok_json, decoded = pcall(vim.json.decode, raw)
-        if ok_json and type(decoded) == 'table' then
-            names = decoded
-        end
-    end
-    require('mux.view').restore(names)
+    local mux = vim.g.Mux and vim.json.decode(vim.g.Mux) or {}
+    require('mux.view').restore(mux.views)
     restoring = false
     return true
 end

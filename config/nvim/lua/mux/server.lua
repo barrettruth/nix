@@ -73,10 +73,10 @@ local function validate_root(root)
     return real
 end
 
----@param base string?
+---@param base string
 ---@return string
 local function sanitize_base(base)
-    base = (base or ''):gsub('[^A-Za-z0-9._-]', '_')
+    base = base:gsub('[^A-Za-z0-9._-]', '_')
     base = base:gsub('_+', '_'):gsub('^_+', ''):gsub('_+$', '')
     if base == '' then
         return 'project'
@@ -484,18 +484,6 @@ end
 
 ---@return true? ok
 ---@return string? err
-function M.detach()
-    local session = require('mux.session')
-    local ok, err = session.save()
-    if not ok then
-        return nil, err
-    end
-    vim.cmd.detach()
-    return true
-end
-
----@return true? ok
----@return string? err
 function M.close()
     local session = require('mux.session')
     local ok, err = session.save()
@@ -503,6 +491,18 @@ function M.close()
         return nil, err
     end
     vim.cmd('qall')
+    return true
+end
+
+---@return true? ok
+---@return string? err
+function M.kill()
+    local session = require('mux.session')
+    local ok, err = session.forget()
+    if not ok then
+        return nil, err
+    end
+    vim.cmd('qall!')
     return true
 end
 

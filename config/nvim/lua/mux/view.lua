@@ -6,6 +6,8 @@
 ---@class mux.ViewSpec
 ---@field restore? boolean
 ---@field terminal? boolean
+---@field internal? boolean
+---@field auto? boolean
 
 local M = {}
 
@@ -18,14 +20,35 @@ local views = {
     vcs = { restore = true },
     ai = { restore = true, terminal = true },
     zsh = { restore = true, terminal = true },
+    direnv = { terminal = true, internal = true, auto = true },
 }
 
 local did_setup = false
+local suppress_dirty = false
+
+---@type table<integer, boolean>
+local internal_buffers = {}
 
 ---@return string
 local function root()
     local state = require('mux.server').state()
     return (state.server and state.server.root) or vim.fn.getcwd()
+end
+
+---@param name string
+---@return nil
+local function mark_dirty(name)
+    if not suppress_dirty and not views[name].internal then
+        require('mux.session').mark_dirty()
+    end
+end
+
+---@return integer[]
+local function user_tabpages()
+    return vim.tbl_filter(function(tp)
+        local name = tab_view[tp] or 'edit'
+        return not views[name].internal
+    end, vim.api.nvim_list_tabpages())
 end
 
 ---@return boolean
@@ -71,6 +94,12 @@ local function materialize(name, restoring)
     elseif name == 'zsh' then
         vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = cwd })
         restore_terminal_focus()
+    elseif name == 'direnv' then
+        local cmd = ('unset TMUX ZELLIJ KITTY_LISTEN_ON; TERM_PROGRAM=; exec %s -i'):format(
+            vim.fn.shellescape(vim.o.shell)
+        )
+        vim.fn.jobstart({ vim.o.shell, '-ic', cmd }, { term = true, cwd = cwd })
+        restore_terminal_focus()
     end
 end
 
@@ -86,7 +115,7 @@ local function create(name, enter)
     vim.api.nvim_win_call(win, function()
         materialize(name, false)
     end)
-    require('mux.session').mark_dirty()
+    mark_dirty(name)
     return win, tp
 end
 
@@ -118,7 +147,7 @@ function M.open(name)
         vim.api.nvim_set_current_tabpage(tp)
     end
     restore_terminal_focus()
-    require('mux.session').mark_dirty()
+    mark_dirty(name)
     return true
 end
 
@@ -145,7 +174,7 @@ function M.call(name, fn)
     if not ok then
         return nil, tostring(result)
     end
-    require('mux.session').mark_dirty()
+    mark_dirty(name)
     return result
 end
 
@@ -153,7 +182,8 @@ end
 ---@return string? err
 function M.close()
     local tp = vim.api.nvim_get_current_tabpage()
-    if #vim.api.nvim_list_tabpages() <= 1 then
+    local name = tab_view[tp] or 'edit'
+    if not views[name].internal and #user_tabpages() <= 1 then
         return require('mux.server').close()
     end
     local bufs = {}
@@ -174,7 +204,7 @@ function M.close()
             pcall(vim.api.nvim_buf_delete, buf, { force = true })
         end
     end
-    require('mux.session').mark_dirty()
+    mark_dirty(name)
     return true
 end
 
@@ -189,32 +219,24 @@ end
 ---@return nil
 function M.restore(names)
     tab_view = {}
-    local tabs = vim.api.nvim_list_tabpages()
-    for i, name in ipairs(names or {}) do
-        if tabs[i] and vim.api.nvim_tabpage_is_valid(tabs[i]) then
-            tab_view[tabs[i]] = name
-        end
+    for i, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        tab_view[tp] = names and names[i] or 'edit'
     end
     local cur = vim.api.nvim_get_current_tabpage()
     for tp, name in pairs(tab_view) do
-        local spec = views[name]
-        if spec and spec.restore and vim.api.nvim_tabpage_is_valid(tp) then
+        if views[name].restore then
             vim.api.nvim_set_current_tabpage(tp)
             materialize(name, true)
         end
     end
-    if vim.api.nvim_tabpage_is_valid(cur) then
-        pcall(vim.api.nvim_set_current_tabpage, cur)
-    end
+    vim.api.nvim_set_current_tabpage(cur)
 end
 
 ---@return string[]
 function M.ordered()
-    local out = {}
-    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
-        out[#out + 1] = tab_view[tp] or 'edit'
-    end
-    return out
+    return vim.tbl_map(function(tp)
+        return tab_view[tp] or 'edit'
+    end, user_tabpages())
 end
 
 ---@return mux.ViewEntry[]
@@ -237,16 +259,80 @@ function M.list()
     return out
 end
 
+---@generic T
+---@param fn fun(): T
+---@return T
+function M.without_internal(fn)
+    local internal = {}
+    local current = vim.api.nvim_get_current_tabpage()
+    local current_name = tab_view[current]
+    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        local name = tab_view[tp]
+        if name and views[name].internal then
+            for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+                internal_buffers[vim.api.nvim_win_get_buf(win)] = true
+            end
+            internal[#internal + 1] = name
+        end
+    end
+    if #internal == 0 then
+        return fn()
+    end
+    local fallback = user_tabpages()[1]
+    suppress_dirty = true
+    if fallback then
+        vim.api.nvim_set_current_tabpage(fallback)
+    end
+    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        local name = tab_view[tp]
+        if name and views[name].internal then
+            vim.api.nvim_set_current_tabpage(tp)
+            pcall(vim.cmd, 'tabclose')
+            tab_view[tp] = nil
+        end
+    end
+    if fallback and vim.api.nvim_tabpage_is_valid(fallback) then
+        vim.api.nvim_set_current_tabpage(fallback)
+    end
+    local result = { pcall(fn) }
+    for _, name in ipairs(internal) do
+        M.ensure(name)
+    end
+    suppress_dirty = false
+    if current_name and views[current_name].internal then
+        M.open(current_name)
+    elseif vim.api.nvim_tabpage_is_valid(current) then
+        vim.api.nvim_set_current_tabpage(current)
+    end
+    if not result[1] then
+        error(result[2])
+    end
+    return unpack(result, 2)
+end
+
+---@return nil
+function M.start_auto()
+    if
+        vim.fn.executable('direnv-instant') == 1
+        and vim.uv.fs_stat(root() .. '/.envrc')
+    then
+        M.ensure('direnv')
+    end
+end
+
 ---@param buf integer
 ---@return nil
 local function cleanup_terminal(buf)
+    local dirty = not internal_buffers[buf]
+    internal_buffers[buf] = nil
     for _, win in ipairs(vim.fn.win_findbuf(buf)) do
         if vim.api.nvim_win_is_valid(win) then
             local tp = vim.api.nvim_win_get_tabpage(win)
             local name = tab_view[tp]
             local spec = name and views[name]
             if spec and spec.terminal then
-                if #vim.api.nvim_list_tabpages() <= 1 then
+                dirty = dirty and not spec.internal
+                if not spec.internal and #user_tabpages() <= 1 then
                     require('mux.server').close()
                     return
                 end
@@ -259,7 +345,9 @@ local function cleanup_terminal(buf)
     if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
         pcall(vim.api.nvim_buf_delete, buf, { force = true })
     end
-    require('mux.session').mark_dirty()
+    if dirty then
+        require('mux.session').mark_dirty()
+    end
 end
 
 ---@return nil
@@ -292,18 +380,18 @@ local function setup_keymaps()
     map(prefix .. 'x', function()
         M.close()
     end, 'mux: close view')
+    map(prefix .. 'X', function()
+        require('mux.server').kill()
+    end, 'mux: kill session')
     map(prefix .. 'B', function()
         require('mux.line').toggle()
     end, 'mux: toggle bar')
-    map(prefix .. '[', function()
+    map(prefix .. '[m', function()
         require('mux.line').cycle(-1)
     end, 'mux: previous server')
-    map(prefix .. ']', function()
+    map(prefix .. ']m', function()
         require('mux.line').cycle(1)
     end, 'mux: next server')
-    map(prefix .. 'd', function()
-        require('mux.server').detach()
-    end, 'mux: detach')
     map(prefix .. 'r', function()
         require('mux.server').reload()
     end, 'mux: reload')
