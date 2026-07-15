@@ -114,7 +114,7 @@ end
 ---Delete the saved session file and stop persistence hooks.
 ---@return true? ok
 ---@return string? err
-function M.forget()
+function M.delete()
     local server, err = current()
     if not server then
         return nil, err

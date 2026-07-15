@@ -507,7 +507,7 @@ end
 ---@return string? err
 function M.kill()
     local session = require('mux.session')
-    local ok, err = session.forget()
+    local ok, err = session.delete()
     if not ok then
         return nil, err
     end
