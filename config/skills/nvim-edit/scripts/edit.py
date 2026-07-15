@@ -15,7 +15,6 @@ from typing import Iterable
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
 import muxlib  # noqa: E402
 
-
 HOME = Path.home()
 DEFAULT_LIMIT = 8
 
@@ -114,6 +113,7 @@ DIRTY_TOKENS = {
     "untracked",
 }
 
+POSITION_OPTIONS = {"--line", "--column"}
 TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
 PATH_TOKEN_RE = re.compile(r"(?:~|/|\./|\../)[^\s,;]+")
 
@@ -550,12 +550,30 @@ def print_plan(root: Path, query: str, candidates: list[Candidate]) -> None:
         print(f"{candidate.score:.1f}\t{rel(root, candidate.path)}\t{candidate.reason}")
 
 
-def view_spec(args: argparse.Namespace):
-    if args.win is not None:
-        return {"win": args.win}
-    if args.tab is not None:
-        return {"tab": args.tab}
-    return args.view
+def positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be >= 1")
+    return parsed
+
+
+def split_position_args(argv: list[str]) -> tuple[list[str], list[str]]:
+    query: list[str] = []
+    position: list[str] = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg in POSITION_OPTIONS:
+            position.append(arg)
+            if i + 1 >= len(argv):
+                position.append("")
+                break
+            position.append(argv[i + 1])
+            i += 2
+            continue
+        query.append(arg)
+        i += 1
+    return query, position
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -570,13 +588,25 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-l", "--limit", type=int, default=None, help="maximum files to populate"
     )
     parser.add_argument(
-        "--root", type=Path, default=None, help="repo root (default: current mux project)"
+        "--root",
+        type=Path,
+        default=None,
+        help="repo root (default: current mux project)",
     )
-    parser.add_argument("--view", default="edit", help="destination view (default: edit)")
-    parser.add_argument("--win", type=int, default=None, help="destination window id")
-    parser.add_argument("--tab", type=int, default=None, help="destination tab number")
-    parser.add_argument("query", nargs=argparse.REMAINDER)
-    return parser.parse_args(argv)
+    parser.add_argument("--line", type=positive_int, default=None, help="1-based line")
+    parser.add_argument(
+        "--column", type=positive_int, default=None, help="1-based column"
+    )
+    known, rest = parser.parse_known_args(argv)
+    query, position = split_position_args(rest)
+    if position:
+        positions = parser.parse_args(position)
+        if positions.line is not None:
+            known.line = positions.line
+        if positions.column is not None:
+            known.column = positions.column
+    known.query = query
+    return known
 
 
 def main(argv: list[str]) -> int:
@@ -585,24 +615,28 @@ def main(argv: list[str]) -> int:
     query_parts = args.query
     query = " ".join(query_parts).strip()
     candidates = resolve_files(root, query_parts, effective_limit(query, args.limit))
+    if args.column is not None and args.line is None:
+        print("edit: --column requires --line", file=sys.stderr)
+        return 1
 
     if args.dry_run:
         print_plan(root, query, candidates)
         return 0
 
     files, items = resolved_files(root, candidates)
+    payload = {
+        "op": "edit",
+        "files": files,
+        "items": items,
+        "root": str(root),
+    }
+    if len(files) == 1 and args.line is not None:
+        payload["line"] = args.line
+        if args.column is not None:
+            payload["column"] = args.column
     try:
         socket = muxlib.socket_for_root(root)
-        res = muxlib.call(
-            socket,
-            {
-                "op": "edit",
-                "files": files,
-                "items": items,
-                "root": str(root),
-                "view": view_spec(args),
-            },
-        )
+        res = muxlib.call(socket, payload)
     except muxlib.MuxError as e:
         print(f"edit: {e}", file=sys.stderr)
         return 1

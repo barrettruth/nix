@@ -22,6 +22,10 @@ resolve the target to concrete path(s) and pass them.
   containing X, then pick one.
 - Singular phrasing ("a random file") populates one file unless Barrett asks for
   more.
+- For one resolved file, extract an explicit position from natural language or
+  pasted locations and pass it as 1-based `--line <n>` plus optional
+  `--column <n>` after the path. Examples: `foo.lua:42`, `foo.lua:42:7`,
+  "line 42 column 7". Omit position flags for multiple files.
 - Compose the resolver and helper in one shell invocation when the request is
   simple.
 
@@ -42,7 +46,8 @@ resolve the target to concrete path(s) and pass them.
 ## Helper
 
 ```sh
-python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py --dry-run <path> [<path> ...]
-python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py <path> [<path> ...]
-file=$(git ls-files | shuf -n 1) && python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit-window.py "$file"
+python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py --dry-run <path> [<path> ...]
+python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py <path> [<path> ...]
+python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py <path> --line <n> [--column <n>]
+file=$(git ls-files | shuf -n 1) && python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py "$file"
 ```

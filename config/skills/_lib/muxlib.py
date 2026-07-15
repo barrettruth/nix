@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -100,7 +101,9 @@ def resolve_target(base: Path, target: str | None) -> Path:
             return root
     wt = worktree_for_branch(base, target)
     if wt is None:
-        raise MuxError(f"'{target}' is not a worktree path or a branch checked out under {base}")
+        raise MuxError(
+            f"'{target}' is not a worktree path or a branch checked out under {base}"
+        )
     return wt
 
 
@@ -118,6 +121,58 @@ def _server_cwd(socket: str) -> str:
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def _runtime_dir() -> Path:
+    base = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+    return Path(base) / "mux"
+
+
+def _stem(root: Path) -> str:
+    proc = subprocess.run(
+        ["cksum"],
+        check=False,
+        input=str(root),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode != 0:
+        raise MuxError("cksum failed")
+    checksum = proc.stdout.split()[0]
+    base = re.sub(r"[^A-Za-z0-9._-]", "_", root.name)
+    base = re.sub(r"_+", "_", base).strip("_") or "project"
+    return f"{base}-{checksum}"
+
+
+def _socket_path(root: Path) -> Path:
+    return _runtime_dir() / f"{_stem(root)}.sock"
+
+
+def _server_root(socket: str) -> Path | None:
+    proc = subprocess.run(
+        [
+            "nvim",
+            "--server",
+            socket,
+            "--remote-expr",
+            "luaeval('require([[mux.server]]).rpc_this()')",
+        ],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode != 0:
+        return None
+    try:
+        decoded = json.loads(proc.stdout.strip())
+    except json.JSONDecodeError:
+        return None
+    if not decoded.get("ok") or not isinstance(decoded.get("server"), dict):
+        return None
+    server_root = decoded["server"].get("root")
+    return normalize_path(server_root) if server_root else None
+
+
 def socket_for_root(root: Path, *, spawn: bool = True) -> str:
     """The project's mux Neovim server socket for `root`.
 
@@ -128,47 +183,42 @@ def socket_for_root(root: Path, *, spawn: bool = True) -> str:
     target = normalize_path(root)
 
     env = os.environ.get("NVIM")
-    if env and os.path.exists(env) and normalize_path(_server_cwd(env) or "/") == target:
+    if (
+        env
+        and os.path.exists(env)
+        and normalize_path(_server_cwd(env) or "/") == target
+    ):
         return env
 
-    listing = maybe_output(["mux", "list"])
-    for line in listing.splitlines():
-        fields = line.split("\t")
-        if len(fields) < 3:
-            continue
-        cwd, sock, status = fields[:3]
-        if status == "live" and sock and normalize_path(cwd) == target:
-            if os.path.exists(sock):
-                return sock
+    sock = _socket_path(target)
+    if sock.exists() and _server_root(str(sock)) == target:
+        return str(sock)
 
-    if spawn:
-        sock = maybe_output(["mux", "ensure", str(target)])
-        sock = sock.splitlines()[0].strip() if sock else ""
-        if sock and os.path.exists(sock):
-            return sock
-
-    raise MuxError(f"no mux server for {target} (is mux running?)")
+    hint = "open it with mux first" if spawn else "not found"
+    raise MuxError(f"no mux server for {target} ({hint})")
 
 
 # --- RPC ---------------------------------------------------------------------
 
 
-def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """Invoke mux.skills.rpc(payload) on the server, returning its result dict.
+_EDIT_LUA = (
+    '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
+    "local files = payload.files or {}; local items = payload.items or {}; local root = payload.root or vim.fn.getcwd(); local line = tonumber(payload.line); local column = tonumber(payload.column); "
+    'local result, err = require("mux.view").call("edit", function() '
+    'pcall(vim.fn.setreg, "/", ""); pcall(vim.fn.histdel, "search"); pcall(vim.cmd, "silent! nohlsearch"); pcall(vim.cmd, "silent! only"); '
+    'if #files == 0 then vim.cmd("edit " .. vim.fn.fnameescape(root)); else vim.cmd("%argdelete"); local escaped = {}; for i, file in ipairs(files) do escaped[i] = vim.fn.fnameescape(file); end; vim.cmd("args " .. table.concat(escaped, " ")); vim.cmd("edit " .. vim.fn.fnameescape(files[1])); for i = 2, #files do vim.cmd("badd " .. vim.fn.fnameescape(files[i])); end; end; '
+    'if #files == 1 and line and line >= 1 then local maxline = math.max(vim.api.nvim_buf_line_count(0), 1); local target_line = math.min(line, maxline); local text = vim.api.nvim_buf_get_lines(0, target_line - 1, target_line, false)[1] or ""; local target_column = math.max((column or 1) - 1, 0); target_column = math.min(target_column, #text); pcall(vim.api.nvim_win_set_cursor, 0, { target_line, target_column }); end; '
+    'vim.fn.setqflist({}, "r", { title = "edit", items = items }); if #items > 1 then vim.cmd("botright copen"); vim.cmd("wincmd p"); else vim.cmd("cclose"); end; pcall(vim.cmd, "silent! nohlsearch"); vim.cmd("redraw!"); return true; end); '
+    "if err then return vim.json.encode({ ok = false, error = err }); end; return vim.json.encode({ ok = result == true, count = #files }); end)()"
+)
 
-    The payload is passed via a temp file (its path as luaeval's _A) so commit
-    messages / PR bodies with quotes or apostrophes never need shell/vim
-    escaping. Raises MuxError on transport failure.
-    """
+
+def _call_lua(socket: str, lua: str, payload: dict[str, Any]) -> dict[str, Any]:
     fd, name = tempfile.mkstemp(prefix=f"mux-rpc-{os.getuid()}-", suffix=".json")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(payload, fh)
-        expr = (
-            "luaeval('require([[mux.skills]]).rpc("
-            'vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")))\', '
-            f"{_vim_str(name)})"
-        )
+        expr = f"luaeval({_vim_str(lua)}, {_vim_str(name)})"
         proc = subprocess.run(
             ["nvim", "--server", socket, "--remote-expr", expr],
             check=False,
@@ -189,6 +239,22 @@ def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
             os.unlink(name)
         except OSError:
             pass
+
+
+def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Invoke mux.skills.rpc(payload) on the server, returning its result dict.
+
+    The payload is passed via a temp file (its path as luaeval's _A) so commit
+    messages / PR bodies with quotes or apostrophes never need shell/vim
+    escaping. Raises MuxError on transport failure.
+    """
+    if payload.get("op") == "edit":
+        return _call_lua(socket, _EDIT_LUA, payload)
+    return _call_lua(
+        socket,
+        'require([[mux.skills]]).rpc(vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")))',
+        payload,
+    )
 
 
 def _vim_str(s: str) -> str:
