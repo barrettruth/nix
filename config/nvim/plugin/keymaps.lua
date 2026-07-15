@@ -31,9 +31,6 @@ for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
         { desc = 'go to window ' .. key }
     )
 end
-vim.keymap.set('n', '[t', '<cmd>tabprevious<cr>', { desc = 'previous tab' })
-vim.keymap.set('n', ']t', '<cmd>tabnext<cr>', { desc = 'next tab' })
-
 vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'join lines (keep cursor)' })
 
 vim.keymap.set('x', 'p', '"_dp', { desc = 'paste without yanking' })
