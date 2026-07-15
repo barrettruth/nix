@@ -25,7 +25,7 @@ local function view_segments()
     for _, entry in ipairs(view.list()) do
         parts[#parts + 1] = ('%%#%s#%s%%*'):format(
             entry.current and 'TabLineSel' or 'TabLine',
-            entry.name
+            entry.label
         )
     end
     return parts
@@ -48,6 +48,7 @@ local function session_segments()
     return parts
 end
 
+---Refresh the cached server list used by the right side of the line.
 ---@return nil
 function M.update_servers()
     cached_servers = server.list()
@@ -57,6 +58,7 @@ function M.update_servers()
     M.redraw()
 end
 
+---Coalesce tabline redraws across fast events and autocmd bursts.
 ---@return nil
 function M.redraw()
     if vim.in_fast_event() then
@@ -75,6 +77,7 @@ function M.redraw()
     end)
 end
 
+---Render user views on the left and mux servers on the right.
 ---@return string
 function M.render()
     if not server.state().server then
@@ -86,6 +89,7 @@ function M.render()
     )
 end
 
+---Persistently toggle whether the mux line is shown.
 ---@return true? ok
 ---@return string? err
 function M.toggle()
@@ -104,6 +108,7 @@ function M.toggle()
     return true
 end
 
+---Move the attached UI to another known mux server.
 ---@param step integer
 ---@return true? ok
 ---@return string? err
@@ -132,6 +137,7 @@ function M.cycle(step)
     return true
 end
 
+---Install mux line visibility and redraw autocmds.
 ---@return nil
 function M.setup()
     apply_visibility()

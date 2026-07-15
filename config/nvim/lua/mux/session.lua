@@ -4,7 +4,7 @@ local SAVE_DEBOUNCE_MS = 3000
 local dirty = false
 local restoring = false
 local saving = false
-local suppress_dirty = 0
+local holds = 0
 local save_timer
 local did_setup = false
 
@@ -44,66 +44,74 @@ local function schedule_save()
     )
 end
 
+---Mark persistent user session state dirty and debounce a save.
 ---@return nil
 function M.mark_dirty()
-    if restoring or saving or suppress_dirty > 0 then
+    if restoring or saving then
         return
     end
     dirty = true
-    schedule_save()
-end
-
----@generic T
----@param fn fun(): T
----@return T
-function M.without_dirty(fn)
-    suppress_dirty = suppress_dirty + 1
-    local result = { pcall(fn) }
-    suppress_dirty = suppress_dirty - 1
-    if not result[1] then
-        error(result[2])
+    if holds == 0 then
+        schedule_save()
     end
-    return unpack(result, 2)
 end
 
----@param force? boolean
+---Pause autosave while transient UI makes the tab graph unsavable.
+---@return fun()
+function M.hold()
+    holds = holds + 1
+    stop_save_timer()
+    local released = false
+    return function()
+        if released then
+            return
+        end
+        released = true
+        holds = math.max(holds - 1, 0)
+        if holds == 0 and dirty then
+            schedule_save()
+        end
+    end
+end
+
+---Persist the current user view layout to the server session file.
 ---@return true? ok
 ---@return string? err
-function M.save(force)
+function M.save()
     local server, err = current()
     if not server then
         return nil, err
     end
-    if not force and require('mux.view').has_internal() then
-        schedule_save()
-        return true
+    if holds > 0 then
+        return nil, 'session save held'
     end
     dirty = false
     stop_save_timer(true)
-    local views = require('mux.view').ordered()
-    vim.g.Mux = vim.json.encode({ views = views })
+    local labels = {}
+    for _, entry in ipairs(require('mux.view').list()) do
+        if entry.kind == 'view' then
+            labels[#labels + 1] = entry.name
+        elseif entry.kind == 'tab' then
+            labels[#labels + 1] = false
+        end
+    end
+    vim.g.Mux = vim.json.encode(labels)
     local dir = vim.fn.fnamemodify(server.session, ':h')
     local mk_ok = pcall(vim.fn.mkdir, dir, 'p')
     if not mk_ok then
         return nil, 'failed to create session directory: ' .. dir
     end
     saving = true
-    local ok_wrap, ok = pcall(require('mux.view').without_internal, function()
-        return pcall(
-            vim.cmd,
-            'mksession! ' .. vim.fn.fnameescape(server.session)
-        )
-    end)
+    local ok =
+        pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(server.session))
     saving = false
-    if not ok_wrap then
-        return nil, tostring(ok)
-    end
     if not ok then
         return nil, 'failed to write session: ' .. server.session
     end
     return true
 end
 
+---Delete the saved session file and stop persistence hooks.
 ---@return true? ok
 ---@return string? err
 function M.forget()
@@ -123,6 +131,7 @@ function M.forget()
     return true
 end
 
+---Source the saved session and reattach mux view identities.
 ---@return true? ok
 ---@return string? err
 function M.restore()
@@ -140,12 +149,13 @@ function M.restore()
         restoring = false
         return nil, 'failed to restore session: ' .. server.session
     end
-    local mux = vim.g.Mux and vim.json.decode(vim.g.Mux) or {}
-    require('mux.view').restore(mux.views)
+    local labels = vim.g.Mux and vim.json.decode(vim.g.Mux) or nil
+    require('mux.view').restore(labels)
     restoring = false
     return true
 end
 
+---Install session dirty tracking and leave-time persistence hooks.
 ---@return nil
 function M.setup()
     if did_setup then

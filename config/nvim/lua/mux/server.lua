@@ -137,6 +137,7 @@ local function server_for(root, socket)
     }
 end
 
+---Return a non-strict snapshot of mux runtime and server state.
 ---@return mux.State
 function M.state()
     return {
@@ -150,6 +151,7 @@ function M.state()
     }
 end
 
+---Return deterministic socket and session paths for a root.
 ---@param root string
 ---@return mux.Server? paths
 ---@return string? err
@@ -161,6 +163,7 @@ function M.paths(root)
     return paths_for(real)
 end
 
+---Return this server only after setup has completed.
 ---@return mux.Server? server
 ---@return string? err
 function M.this()
@@ -173,6 +176,7 @@ function M.this()
     return current_server
 end
 
+---Serialize this server's readiness for remote probes.
 ---@return string
 function M.rpc_this()
     local server, err = M.this()
@@ -297,6 +301,7 @@ local function rpc_this_async(socket, timeout, cb)
     end)
 end
 
+---List mux servers that answer readiness probes.
 ---@return mux.Server[]
 function M.list()
     local out = {}
@@ -325,6 +330,7 @@ local function contains(path, root)
     return vim.startswith(path, root .. '/')
 end
 
+---Find the most specific known mux server containing a path.
 ---@param path string
 ---@return mux.Server? server
 ---@return string? err
@@ -374,6 +380,7 @@ local function finish_pending(root, server, err)
     end
 end
 
+---Start or reuse the mux server for a validated project root.
 ---@param root string
 ---@param cb mux.EnsureCallback
 ---@return nil
@@ -482,11 +489,12 @@ function M.ensure(root, cb)
     poll()
 end
 
+---Save the user session before closing this mux server.
 ---@return true? ok
 ---@return string? err
 function M.close()
     local session = require('mux.session')
-    local ok, err = session.save(true)
+    local ok, err = session.save()
     if not ok then
         return nil, err
     end
@@ -494,6 +502,7 @@ function M.close()
     return true
 end
 
+---Forget the saved session before force-closing this mux server.
 ---@return true? ok
 ---@return string? err
 function M.kill()
@@ -506,6 +515,7 @@ function M.kill()
     return true
 end
 
+---Save the user session before restarting this mux server.
 ---@return true? ok
 ---@return string? err
 function M.reload()
@@ -513,7 +523,7 @@ function M.reload()
         return nil, 'no UI attached'
     end
     local session = require('mux.session')
-    local ok, err = session.save(true)
+    local ok, err = session.save()
     if not ok then
         return nil, err
     end
@@ -521,6 +531,7 @@ function M.reload()
     return true
 end
 
+---Initialize this process as the mux server for its cwd.
 ---@return true? ok
 ---@return string? err
 function M.setup()

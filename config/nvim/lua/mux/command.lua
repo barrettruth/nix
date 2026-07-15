@@ -38,6 +38,7 @@ local function resolve_arg(arg)
     return nil, 'no git/jj root: ' .. raw
 end
 
+---Connect this UI to the mux server for a resolved project root.
 ---@param arg string?
 ---@return nil
 function M.mux(arg)
