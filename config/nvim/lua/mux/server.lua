@@ -225,7 +225,7 @@ end
 ---@param timeout? integer
 ---@return mux.Server? server
 ---@return string? err
-local function rpc_this_sync(socket, timeout)
+local function probe_sync(socket, timeout)
     local proc, err = spawn_nvim({
         '--server',
         socket,
@@ -250,7 +250,7 @@ end
 ---@param timeout integer
 ---@param cb fun(server?: mux.Server, err?: string)
 ---@return nil
-local function rpc_this_async(socket, timeout, cb)
+local function probe_async(socket, timeout, cb)
     local done = false
     local timer = vim.uv.new_timer()
     local proc
@@ -328,7 +328,7 @@ function M.list()
         if current_server and socket == current_server.socket then
             add_server(out, seen, current_server)
         else
-            add_server(out, seen, rpc_this_sync(socket, LIST_PROBE_MS))
+            add_server(out, seen, probe_sync(socket, LIST_PROBE_MS))
         end
     end
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
@@ -423,7 +423,7 @@ function M.ensure(root, cb)
         end)
         return
     end
-    local existing = rpc_this_sync(paths.socket, LIST_PROBE_MS)
+    local existing = probe_sync(paths.socket, LIST_PROBE_MS)
     if existing then
         if existing.root ~= real then
             vim.schedule(function()
@@ -476,7 +476,7 @@ function M.ensure(root, cb)
             finish_pending(real, nil, 'server startup timed out: ' .. real)
             return
         end
-        rpc_this_async(paths.socket, LIST_PROBE_MS, function(server, rerr)
+        probe_async(paths.socket, LIST_PROBE_MS, function(server, rerr)
             if server then
                 if server.root == real then
                     finish_pending(real, server)
