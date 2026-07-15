@@ -95,10 +95,11 @@ local function materialize(name, restoring)
         vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = cwd })
         restore_terminal_focus()
     elseif name == 'direnv' then
-        local cmd = ('unset TMUX ZELLIJ KITTY_LISTEN_ON; TERM_PROGRAM=; exec %s -i'):format(
-            vim.fn.shellescape(vim.o.shell)
-        )
-        vim.fn.jobstart({ vim.o.shell, '-ic', cmd }, { term = true, cwd = cwd })
+        vim.fn.jobstart({
+            vim.o.shell,
+            '-lc',
+            'unset TMUX ZELLIJ KITTY_LISTEN_ON; TERM_PROGRAM=; exec direnv-instant start >/dev/null',
+        }, { term = true, cwd = cwd })
         restore_terminal_focus()
     end
 end
@@ -108,15 +109,21 @@ end
 ---@return integer win
 ---@return integer tab
 local function create(name, enter)
-    local buf = vim.api.nvim_create_buf(false, true)
-    local tp = vim.api.nvim_open_tabpage(buf, enter, {})
-    tab_view[tp] = name
-    local win = vim.api.nvim_tabpage_get_win(tp)
-    vim.api.nvim_win_call(win, function()
-        materialize(name, false)
-    end)
-    mark_dirty(name)
-    return win, tp
+    local function create_view()
+        local buf = vim.api.nvim_create_buf(false, true)
+        local tp = vim.api.nvim_open_tabpage(buf, enter, {})
+        tab_view[tp] = name
+        local win = vim.api.nvim_tabpage_get_win(tp)
+        vim.api.nvim_win_call(win, function()
+            materialize(name, false)
+        end)
+        mark_dirty(name)
+        return win, tp
+    end
+    if views[name].internal then
+        return require('mux.session').without_dirty(create_view)
+    end
+    return create_view()
 end
 
 ---@param name string
@@ -239,6 +246,17 @@ function M.ordered()
     end, user_tabpages())
 end
 
+---@return boolean
+function M.has_internal()
+    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        local name = tab_view[tp]
+        if name and views[name].internal then
+            return true
+        end
+    end
+    return false
+end
+
 ---@return mux.ViewEntry[]
 function M.list()
     local cur = vim.api.nvim_get_current_tabpage()
@@ -336,17 +354,37 @@ local function cleanup_terminal(buf)
                     require('mux.server').close()
                     return
                 end
-                pcall(vim.api.nvim_set_current_tabpage, tp)
-                pcall(vim.cmd, 'tabclose')
-                tab_view[tp] = nil
+                local function close_tab()
+                    pcall(vim.api.nvim_set_current_tabpage, tp)
+                    if spec.internal and #vim.api.nvim_list_tabpages() <= 1 then
+                        tab_view[tp] = 'edit'
+                        materialize('edit', false)
+                        return false
+                    end
+                    local ok = pcall(vim.cmd, 'tabclose')
+                    if ok then
+                        tab_view[tp] = nil
+                    end
+                    return ok
+                end
+                if spec.internal then
+                    require('mux.session').without_dirty(close_tab)
+                else
+                    close_tab()
+                end
             end
         end
     end
-    if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
-        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    local function delete_buf()
+        if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
+            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        end
     end
     if dirty then
+        delete_buf()
         require('mux.session').mark_dirty()
+    else
+        require('mux.session').without_dirty(delete_buf)
     end
 end
 
@@ -386,10 +424,10 @@ local function setup_keymaps()
     map(prefix .. 'B', function()
         require('mux.line').toggle()
     end, 'mux: toggle bar')
-    map(prefix .. '[m', function()
+    map(prefix .. '[', function()
         require('mux.line').cycle(-1)
     end, 'mux: previous server')
-    map(prefix .. ']m', function()
+    map(prefix .. ']', function()
         require('mux.line').cycle(1)
     end, 'mux: next server')
     map(prefix .. 'r', function()

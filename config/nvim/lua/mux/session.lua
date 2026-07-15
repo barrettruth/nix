@@ -4,6 +4,7 @@ local SAVE_DEBOUNCE_MS = 3000
 local dirty = false
 local restoring = false
 local saving = false
+local suppress_dirty = 0
 local save_timer
 local did_setup = false
 
@@ -29,12 +30,7 @@ local function stop_save_timer(close)
     end
 end
 
----@return nil
-function M.mark_dirty()
-    if restoring or saving then
-        return
-    end
-    dirty = true
+local function schedule_save()
     stop_save_timer()
     save_timer = save_timer or vim.uv.new_timer()
     save_timer:start(
@@ -48,12 +44,39 @@ function M.mark_dirty()
     )
 end
 
+---@return nil
+function M.mark_dirty()
+    if restoring or saving or suppress_dirty > 0 then
+        return
+    end
+    dirty = true
+    schedule_save()
+end
+
+---@generic T
+---@param fn fun(): T
+---@return T
+function M.without_dirty(fn)
+    suppress_dirty = suppress_dirty + 1
+    local result = { pcall(fn) }
+    suppress_dirty = suppress_dirty - 1
+    if not result[1] then
+        error(result[2])
+    end
+    return unpack(result, 2)
+end
+
+---@param force? boolean
 ---@return true? ok
 ---@return string? err
-function M.save()
+function M.save(force)
     local server, err = current()
     if not server then
         return nil, err
+    end
+    if not force and require('mux.view').has_internal() then
+        schedule_save()
+        return true
     end
     dirty = false
     stop_save_timer(true)
@@ -66,7 +89,10 @@ function M.save()
     end
     saving = true
     local ok_wrap, ok = pcall(require('mux.view').without_internal, function()
-        return pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(server.session))
+        return pcall(
+            vim.cmd,
+            'mksession! ' .. vim.fn.fnameescape(server.session)
+        )
     end)
     saving = false
     if not ok_wrap then

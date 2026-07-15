@@ -486,7 +486,7 @@ end
 ---@return string? err
 function M.close()
     local session = require('mux.session')
-    local ok, err = session.save()
+    local ok, err = session.save(true)
     if not ok then
         return nil, err
     end
@@ -513,7 +513,7 @@ function M.reload()
         return nil, 'no UI attached'
     end
     local session = require('mux.session')
-    local ok, err = session.save()
+    local ok, err = session.save(true)
     if not ok then
         return nil, err
     end
