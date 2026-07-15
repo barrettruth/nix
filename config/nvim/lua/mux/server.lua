@@ -163,30 +163,22 @@ function M.paths(root)
     return paths_for(real)
 end
 
----Return this server only after setup has completed.
----@return mux.Server? server
----@return string? err
-function M.this()
+---Serialize this server's readiness and identity for remote probes.
+---@return string
+function M.probe()
     if not setup_started then
-        return nil, 'not a mux server'
+        return vim.json.encode({ ok = false, error = 'not a mux server' })
     end
     if not ready then
-        return nil, setup_error or 'not ready'
+        return vim.json.encode({
+            ok = false,
+            error = setup_error or 'not ready',
+        })
     end
-    return current_server
+    return vim.json.encode({ ok = true, server = current_server })
 end
 
----Serialize this server's readiness for remote probes.
----@return string
-function M.rpc_this()
-    local server, err = M.this()
-    if not server then
-        return vim.json.encode({ ok = false, error = err })
-    end
-    return vim.json.encode({ ok = true, server = server })
-end
-
-local RPC_EXPR = "luaeval('require([[mux.server]]).rpc_this()')"
+local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
 
 ---@param args string[]
 ---@param opts table
