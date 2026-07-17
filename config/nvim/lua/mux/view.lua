@@ -496,6 +496,8 @@ local function setup_keymaps()
             M.open(entry.name)
         end, 'mux: ' .. entry.name .. ' view')
     end
+    map(prefix .. "'", '<cmd>vertical terminal<cr>', 'mux: vertical terminal')
+    map(prefix .. '-', '<cmd>split | terminal<cr>', 'mux: terminal')
     map(prefix .. 'x', function()
         M.close()
     end, 'mux: close view')
