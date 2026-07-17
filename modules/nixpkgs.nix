@@ -95,7 +95,6 @@ let
   ];
 
   sharedUnfree = [
-    "slack"
     "apple_cursor"
     "devin"
   ];

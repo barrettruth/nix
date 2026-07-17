@@ -97,7 +97,6 @@ let
     text/html=chromium-browser.desktop
     text/plain=nvim.desktop
     application/pdf=org.pwmt.zathura.desktop
-    # x-scheme-handler/discord=vesktop.desktop
   '';
 
   awsConf = pkgs.writeText "aws-config" ''
@@ -212,9 +211,7 @@ in
         jujutsu
         gnupg
         whisper
-        slack
         (mpv.override { youtubeSupport = false; })
-        # vesktop
         # signal-desktop
         telegram-desktop
         # element-desktop

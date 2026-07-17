@@ -21,9 +21,6 @@ app_class() {
   telegram-desktop | telegram) printf '%s\n' "org.telegram.desktop" ;;
   ghostty) printf '%s\n' "com.mitchellh.ghostty" ;;
   bitwarden-desktop | bitwarden) printf '%s\n' "Bitwarden" ;;
-  slack) printf '%s\n' "Slack" ;;
-  discord) printf '%s\n' "discord" ;;
-  vesktop) printf '%s\n' "vesktop" ;;
   element-desktop | element) printf '%s\n' "electron" ;;
   *) printf '%s\n' "$1" ;;
   esac
