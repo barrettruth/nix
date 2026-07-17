@@ -81,7 +81,6 @@ in
       {
         groups = [ "wheel" ];
         persist = true;
-        keepEnv = true;
       }
     ];
   };
