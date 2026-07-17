@@ -31,7 +31,7 @@ let
         ];
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-P2ppDhVLre9nI5tQyumlrapxFgfLt1LvyB5a5GJqT38=";
+        outputHash = "sha256-XMvRQXVlitpclYqfGRISjXzOa79V29rC4jwDNsU4Cbs=";
       }
       ''
         set -euo pipefail
