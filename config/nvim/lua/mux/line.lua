@@ -129,15 +129,27 @@ local function move(step)
     if not entry or entry.root == current.root then
         return true
     end
-    server.ensure(entry.root, function(target_server, ensure_err)
-        if not target_server then
-            vim.notify('mux: ' .. tostring(ensure_err), vim.log.levels.ERROR)
-            return
+    server.connect(entry.root, function(ok, err)
+        if not ok then
+            vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
         end
-        local ok, err = pcall(
-            vim.cmd,
-            'connect ' .. vim.fn.fnameescape(target_server.socket)
-        )
+    end)
+    return true
+end
+
+---@return true? ok
+---@return string? err
+local function move_last()
+    local state = server.state()
+    local current = state.server
+    if not current then
+        return nil, 'not a mux server'
+    end
+    local root = state.last_root
+    if not root or root == current.root then
+        return true
+    end
+    server.connect(root, function(ok, err)
         if not ok then
             vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
         end
@@ -154,6 +166,9 @@ function M.setup()
             move(step)
         end, { desc = 'mux: move server', silent = true })
     end
+    vim.keymap.set({ 'n', 'i', 't' }, '<a-x><bs>', function()
+        move_last()
+    end, { desc = 'mux: last server', silent = true })
     local group = vim.api.nvim_create_augroup('mux-line', { clear = true })
     vim.api.nvim_create_autocmd({ 'TabEnter', 'TabNew', 'TabClosed' }, {
         group = group,

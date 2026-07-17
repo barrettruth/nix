@@ -7,6 +7,7 @@
 ---@field server? mux.Server
 ---@field runtime_dir string
 ---@field state_dir string
+---@field last_root? string
 
 ---@alias mux.EnsureCallback fun(server?: mux.Server, err?: string)
 
@@ -148,6 +149,7 @@ function M.state()
         } or nil,
         runtime_dir = runtime_dir(),
         state_dir = state_dir(),
+        last_root = vim.g.mux_last_root,
     }
 end
 
@@ -179,6 +181,7 @@ function M.probe()
 end
 
 local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
+local SET_LAST_ROOT_EXPR = "execute('let g:mux_last_root = ' . string(%s))"
 
 ---@param args string[]
 ---@param opts table
@@ -201,6 +204,28 @@ local function spawn_nvim(args, opts, cb)
         end
     end
     return nil, tostring(proc)
+end
+
+---@param socket string
+---@param root string
+---@param cb fun(err?: string)
+local function set_remote_last_root(socket, root, cb)
+    local expr = SET_LAST_ROOT_EXPR:format(vim.fn.string(root))
+    local proc, err = spawn_nvim({
+        '--server',
+        socket,
+        '--remote-expr',
+        expr,
+    }, { text = true, stdout = true, stderr = true }, function(res)
+        vim.schedule(function()
+            cb(res.code == 0 and nil or vim.trim(res.stderr or ''))
+        end)
+    end)
+    if not proc then
+        vim.schedule(function()
+            cb(err)
+        end)
+    end
 end
 
 ---@param stdout string?
@@ -508,6 +533,51 @@ function M.ensure(root, cb)
         end)
     end
     poll()
+end
+
+---Connect this UI to a mux root, recording the current root on the target.
+---@param root string
+---@param cb? fun(ok?: true, err?: string)
+---@return nil
+function M.connect(root, cb)
+    cb = cb or function() end
+    local current = current_server
+    M.ensure(root, function(target_server, ensure_err)
+        if not target_server then
+            cb(nil, ensure_err)
+            return
+        end
+        if current and current.root == target_server.root then
+            cb(true)
+            return
+        end
+        local function connect()
+            local ok, connect_err = pcall(
+                vim.cmd,
+                'connect ' .. vim.fn.fnameescape(target_server.socket)
+            )
+            if not ok then
+                cb(nil, tostring(connect_err))
+                return
+            end
+            cb(true)
+        end
+        if current and current.root ~= target_server.root then
+            set_remote_last_root(
+                target_server.socket,
+                current.root,
+                function(set_err)
+                    if set_err then
+                        cb(nil, set_err)
+                        return
+                    end
+                    connect()
+                end
+            )
+            return
+        end
+        connect()
+    end)
 end
 
 ---Save the user session before restarting this mux server.
