@@ -77,7 +77,7 @@ let
     text/html=${browserDesktop}
     text/plain=nvim.desktop
     application/pdf=org.pwmt.zathura.desktop
-    x-scheme-handler/discord=vesktop.desktop
+    # x-scheme-handler/discord=vesktop.desktop
   '';
 
   awsConf = pkgs.writeText "aws-config" ''

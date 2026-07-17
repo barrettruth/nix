@@ -24,7 +24,6 @@ app_class() {
   slack) printf '%s\n' "Slack" ;;
   discord) printf '%s\n' "discord" ;;
   vesktop) printf '%s\n' "vesktop" ;;
-  cinny-desktop | cinny) printf '%s\n' "cinny" ;;
   element-desktop | element) printf '%s\n' "electron" ;;
   *) printf '%s\n' "$1" ;;
   esac

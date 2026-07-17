@@ -97,7 +97,7 @@ let
     text/html=chromium-browser.desktop
     text/plain=nvim.desktop
     application/pdf=org.pwmt.zathura.desktop
-    x-scheme-handler/discord=vesktop.desktop
+    # x-scheme-handler/discord=vesktop.desktop
   '';
 
   awsConf = pkgs.writeText "aws-config" ''
@@ -214,11 +214,10 @@ in
         whisper
         slack
         (mpv.override { youtubeSupport = false; })
-        vesktop
-        signal-desktop
+        # vesktop
+        # signal-desktop
         telegram-desktop
-        cinny-desktop
-        element-desktop
+        # element-desktop
         zathura
         biber
         (texlive.combine {

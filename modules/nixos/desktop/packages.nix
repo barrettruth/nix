@@ -147,11 +147,10 @@ in
     ++ lib.optionals hostConfig.enableDesktop [
       slack
       (mpv.override { youtubeSupport = false; })
-      vesktop
-      signal-desktop
+      # vesktop
+      # signal-desktop
       telegram-desktop
-      cinny-desktop
-      element-desktop
+      # element-desktop
       xdg-desktop-portal-gtk
       papirus-icon-theme
       apple-cursor
