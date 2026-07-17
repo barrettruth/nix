@@ -10,6 +10,15 @@ local cached_servers = {}
 
 local redraw_pending = false
 
+---@return mux.Server[]
+function M.servers()
+    local servers = server.list()
+    table.sort(servers, function(a, b)
+        return a.root < b.root
+    end)
+    return servers
+end
+
 ---@return nil
 local function apply_visibility()
     local file = server.state().runtime_dir .. '/mux-bar'
@@ -51,10 +60,7 @@ end
 ---Refresh cached line state and redraw.
 ---@return nil
 function M.refresh()
-    cached_servers = server.list()
-    table.sort(cached_servers, function(a, b)
-        return a.root < b.root
-    end)
+    cached_servers = M.servers()
     M.redraw()
 end
 

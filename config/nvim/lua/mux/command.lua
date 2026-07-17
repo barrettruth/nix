@@ -42,7 +42,14 @@ end
 ---@param arg string?
 ---@return nil
 function M.mux(arg)
-    local root, err = resolve_arg(arg)
+    local root, err
+    if vim.trim(arg or '') == '' then
+        local first = require('mux.line').servers()[1]
+        root = first and first.root
+    end
+    if not root then
+        root, err = resolve_arg(arg)
+    end
     if not root then
         vim.notify('mux: ' .. err, vim.log.levels.ERROR)
         return
