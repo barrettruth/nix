@@ -1,7 +1,12 @@
 import { replaceRepositoryFileIcons } from "./nonicons.js";
 import { renderGithubStats } from "./github-stats.js";
 
+function removeNavbarLogo() {
+  document.getElementById("navbar-logo")?.remove();
+}
+
 function init() {
+  removeNavbarLogo();
   renderGithubStats();
   replaceRepositoryFileIcons();
 }
