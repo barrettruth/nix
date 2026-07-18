@@ -562,21 +562,27 @@ function M.connect(root, cb)
             end
             cb(true)
         end
+        local function connect_when_ready()
+            if #vim.api.nvim_list_uis() > 0 then
+                connect()
+                return
+            end
+            vim.api.nvim_create_autocmd('UIEnter', {
+                group = vim.api.nvim_create_augroup(
+                    'mux-connect',
+                    { clear = true }
+                ),
+                once = true,
+                callback = connect,
+            })
+        end
         if current and current.root ~= target_server.root then
-            set_remote_last_root(
-                target_server.socket,
-                current.root,
-                function(set_err)
-                    if set_err then
-                        cb(nil, set_err)
-                        return
-                    end
-                    connect()
-                end
-            )
+            set_remote_last_root(target_server.socket, current.root, function()
+                connect_when_ready()
+            end)
             return
         end
-        connect()
+        connect_when_ready()
     end)
 end
 
