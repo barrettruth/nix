@@ -47,3 +47,48 @@
   --diffs-bg-selection-number-override: var(--color-active);
 }
 */
+
+:root {
+  --barrett-code-bg: light-dark(#f5f5f5, #121212);
+  --barrett-code-fg: light-dark(#1a1a1a, #e0e0e0);
+  --barrett-diff-added-line-bg: light-dark(#c5d8c8, #313c2a);
+  --barrett-diff-removed-line-bg: light-dark(#e9c2cc, #4a2727);
+  --barrett-diff-added-text-bg: light-dark(#a5c5ab, #47583b);
+  --barrett-diff-removed-text-bg: light-dark(#e2a1b2, #703535);
+  --barrett-diff-changed-text-bg: light-dark(#aab7ea, #3b4b6d);
+  --barrett-diff-selected-bg: light-dark(#3b5bdb, #7aa2f7);
+  --barrett-diff-dim-bg: light-dark(#ececec, #1a1a1a);
+  --diffs-font-family: var(--fonts-monospace);
+  --diffs-header-font-family: var(--fonts-monospace);
+  --diffs-font-size: 13px;
+  --diffs-line-height: 1.6;
+  --diffs-tab-size: 2;
+  --diffs-font-features: normal;
+  --diffs-min-number-column-width: 3ch;
+  --diffs-gap-inline: 0;
+  --diffs-gap-block: 0;
+  --diffs-light-bg: #f5f5f5;
+  --diffs-dark-bg: #121212;
+  --diffs-light: #1a1a1a;
+  --diffs-dark: #e0e0e0;
+  --diffs-bg-buffer-override: var(--barrett-code-bg);
+  --diffs-bg-hover-override: light-dark(#ebebeb, #222222);
+  --diffs-bg-context-override: var(--barrett-code-bg);
+  --diffs-bg-context-gutter-override: var(--barrett-code-bg);
+  --diffs-bg-separator-override: var(--barrett-diff-dim-bg);
+  --diffs-fg-number-override: light-dark(#6b6b6b, #666666);
+  --diffs-fg-number-addition-override: light-dark(#2d7f3e, #98c379);
+  --diffs-fg-number-deletion-override: light-dark(#c7254e, #ff6b6b);
+  --diffs-fg-conflict-marker-override: #808080;
+  --diffs-deletion-color-override: light-dark(#c7254e, #ff6b6b);
+  --diffs-addition-color-override: light-dark(#2d7f3e, #98c379);
+  --diffs-modified-color-override: light-dark(#3b5bdb, #7aa2f7);
+  --diffs-bg-deletion-override: var(--barrett-diff-removed-line-bg);
+  --diffs-bg-deletion-number-override: var(--barrett-diff-removed-line-bg);
+  --diffs-bg-deletion-emphasis-override: var(--barrett-diff-removed-text-bg);
+  --diffs-bg-addition-override: var(--barrett-diff-added-line-bg);
+  --diffs-bg-addition-number-override: var(--barrett-diff-added-line-bg);
+  --diffs-bg-addition-emphasis-override: var(--barrett-diff-added-text-bg);
+  --diffs-bg-selection-override: var(--barrett-diff-selected-bg);
+  --diffs-bg-selection-number-override: var(--barrett-diff-selected-bg);
+}
