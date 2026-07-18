@@ -9,7 +9,6 @@
 
 let
   username = config.barrett.user.name;
-  homeDirectory = config.barrett.user.homeDirectory;
 in
 {
   imports = [
