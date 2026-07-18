@@ -29,6 +29,10 @@
   color: var(--color-primary);
 }
 
+#navbar-logo {
+  display: none;
+}
+
 .navbar-left > a.item[href="https://forgejo.org/docs/latest/"],
 .navbar-right li:has(> a[href="https://forgejo.org/docs/latest/"]) {
   display: none;
