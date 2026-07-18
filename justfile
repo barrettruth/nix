@@ -5,8 +5,8 @@ rebuild-desktop:
     nixos-rebuild switch --no-reexec --flake .#desktop --target-host desktop --build-host desktop
 
 rebuild-laptop:
-    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; run0 is only for activation.' >&2; exit 1; fi
-    nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate run0
+    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
+    nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate sudo --ask-elevate-password
 
 _python-scripts:
    @git ls-files 'scripts/**' | while IFS= read -r file; do \
