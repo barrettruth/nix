@@ -213,7 +213,7 @@ in
         whisper
         (mpv.override { youtubeSupport = false; })
         # signal-desktop
-        telegram-desktop
+        # telegram-desktop
         # element-desktop
         zathura
         biber

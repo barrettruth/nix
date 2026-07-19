@@ -147,7 +147,7 @@ in
     ++ lib.optionals hostConfig.enableDesktop [
       (mpv.override { youtubeSupport = false; })
       # signal-desktop
-      telegram-desktop
+      # telegram-desktop
       # element-desktop
       xdg-desktop-portal-gtk
       papirus-icon-theme
