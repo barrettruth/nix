@@ -108,6 +108,7 @@ theme = "github"
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
+"gpt-5.6-sol" = 4
 
 [projects."/home/barrett/.config/nix"]
 trust_level = "trusted"

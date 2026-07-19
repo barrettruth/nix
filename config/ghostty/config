@@ -1,7 +1,7 @@
-font-family = Iosevka
-font-family-bold = Iosevka
-font-family-italic = Iosevka
-font-family-bold-italic = Iosevka
+font-family = Iosevka Term
+font-family-bold = Iosevka Term
+font-family-italic = Iosevka Term
+font-family-bold-italic = Iosevka Term
 font-style = Regular
 font-style-bold = Bold
 font-style-italic = Italic

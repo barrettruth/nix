@@ -354,7 +354,7 @@ in
 
     fonts.packages = with pkgs; [
       barrett-fonts
-      iosevka
+      (iosevka.override { set = "Term"; })
       dejavu_fonts
       freefont_ttf
       gyre-fonts
