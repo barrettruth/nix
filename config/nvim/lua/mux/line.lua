@@ -32,8 +32,9 @@ end
 local function view_segments()
     local parts = {}
     for _, entry in ipairs(view.list()) do
-        parts[#parts + 1] = ('%%#%s#%s%%*'):format(
+        parts[#parts + 1] = ('%%#%s#%s%s%%*'):format(
             entry.current and 'TabLineSel' or 'TabLine',
+            entry.current and '*' or '',
             entry.label
         )
     end
@@ -47,11 +48,10 @@ local function session_segments()
     for _, entry in ipairs(cached_servers) do
         local name = vim.fn.fnamemodify(entry.root, ':t')
         if name ~= '' then
-            local group = current
-                    and current.root == entry.root
-                    and 'TabLineSel'
-                or 'TabLine'
-            parts[#parts + 1] = ('%%#%s#%s%%*'):format(group, name)
+            local selected = current and current.root == entry.root
+            local group = selected and 'TabLineSel' or 'TabLine'
+            parts[#parts + 1] =
+                ('%%#%s#%s%s%%*'):format(group, selected and '*' or '', name)
         end
     end
     return parts
