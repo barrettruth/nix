@@ -182,6 +182,8 @@ end
 
 local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
 local SET_LAST_ROOT_EXPR = "execute('let g:mux_last_root = ' . string(%s))"
+local CLEAR_LAST_ROOT_EXPR =
+    "luaeval('(function(root) if vim.g.mux_last_root == root then vim.g.mux_last_root = nil end return true end)(_A)', %s)"
 
 ---@param args string[]
 ---@param opts table
@@ -209,8 +211,11 @@ end
 ---@param socket string
 ---@param root string
 ---@param cb fun(err?: string)
-local function set_remote_last_root(socket, root, cb)
-    local expr = SET_LAST_ROOT_EXPR:format(vim.fn.string(root))
+---@param clear? boolean
+local function set_remote_last_root(socket, root, cb, clear)
+    local expr = (clear and CLEAR_LAST_ROOT_EXPR or SET_LAST_ROOT_EXPR):format(
+        vim.fn.string(root)
+    )
     local proc, err = spawn_nvim({
         '--server',
         socket,
@@ -538,8 +543,9 @@ end
 ---Connect this UI to a mux root, recording the current root on the target.
 ---@param root string
 ---@param cb? fun(ok?: true, err?: string)
+---@param clear_last? boolean
 ---@return nil
-function M.connect(root, cb)
+function M.connect(root, cb, clear_last)
     cb = cb or function() end
     local current = current_server
     M.ensure(root, function(target_server, ensure_err)
@@ -579,7 +585,7 @@ function M.connect(root, cb)
         if current and current.root ~= target_server.root then
             set_remote_last_root(target_server.socket, current.root, function()
                 connect_when_ready()
-            end)
+            end, clear_last)
             return
         end
         connect_when_ready()

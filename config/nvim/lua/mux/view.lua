@@ -78,6 +78,27 @@ local function user_tabpages()
     end, vim.api.nvim_list_tabpages())
 end
 
+local function retire_session()
+    local server = require('mux.server')
+    local root = server.state().last_root
+    local ok, err = require('mux.session').delete()
+    if not ok then
+        return nil, err
+    end
+    local function exit(connected)
+        if not connected and #vim.api.nvim_list_uis() > 0 then
+            vim.cmd('detach')
+        end
+        vim.cmd('qall!')
+    end
+    if root then
+        server.connect(root, exit, true)
+    else
+        exit()
+    end
+    return true
+end
+
 ---@return boolean
 local function restore_terminal_focus()
     local tp = vim.api.nvim_get_current_tabpage()
@@ -218,12 +239,7 @@ function M.close()
         name = false
     end
     if #user_tabpages() <= 1 then
-        local ok, err = require('mux.session').delete()
-        if not ok then
-            return nil, err
-        end
-        vim.cmd('qall')
-        return true
+        return retire_session()
     end
     local bufs = {}
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
@@ -453,8 +469,7 @@ local function cleanup_terminal(buf)
             local spec = name and views[name]
             if spec and spec.terminal then
                 if #user_tabpages() <= 1 then
-                    require('mux.session').delete()
-                    vim.cmd('qall')
+                    retire_session()
                     return
                 end
                 pcall(vim.api.nvim_set_current_tabpage, tp)
