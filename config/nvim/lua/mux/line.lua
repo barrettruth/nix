@@ -50,8 +50,11 @@ local function session_segments()
         if name ~= '' then
             local selected = current and current.root == entry.root
             local group = selected and 'TabLineSel' or 'TabLine'
-            parts[#parts + 1] =
-                ('%%#%s#%s%s%%*'):format(group, selected and '*' or '', name)
+            parts[#parts + 1] = ('%%#%s#%s%s%%*'):format(
+                group,
+                selected and '*' or '',
+                name
+            )
         end
     end
     return parts
@@ -114,6 +117,14 @@ function M.toggle()
     return true
 end
 
+local function connect(root)
+    server.connect(root, function(ok, err)
+        if not ok then
+            vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
+        end
+    end)
+end
+
 ---@param step integer
 ---@return true? ok
 ---@return string? err
@@ -135,11 +146,7 @@ local function move(step)
     if not entry or entry.root == current.root then
         return true
     end
-    server.connect(entry.root, function(ok, err)
-        if not ok then
-            vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
-        end
-    end)
+    connect(entry.root)
     return true
 end
 
@@ -155,11 +162,7 @@ local function move_last()
     if not root or root == current.root then
         return true
     end
-    server.connect(root, function(ok, err)
-        if not ok then
-            vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
-        end
-    end)
+    connect(root)
     return true
 end
 
@@ -169,7 +172,7 @@ function M.setup()
     apply_visibility()
     for lhs, step in pairs({ ['<a-x>['] = -1, ['<a-x>]'] = 1 }) do
         vim.keymap.set({ 'n', 'i', 't' }, lhs, function()
-            move(step)
+            move(step * vim.v.count1)
         end, { desc = 'mux: move server', silent = true })
     end
     vim.keymap.set({ 'n', 'i', 't' }, '<a-x><bs>', function()
