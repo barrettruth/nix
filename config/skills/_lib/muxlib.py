@@ -201,6 +201,18 @@ def socket_for_root(root: Path, *, spawn: bool = True) -> str:
 # --- RPC ---------------------------------------------------------------------
 
 
+_COMMIT_LUA = (
+    '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
+    'local message = payload.message or {}; if #message == 0 then return vim.json.encode({ ok = false, error = "empty commit message" }); end; '
+    'local _, err = require("mux.view").call("vcs", function() local existing = vim.fn.bufnr("COMMIT_EDITMSG"); if existing > 0 then pcall(vim.cmd, "silent! bwipeout! " .. existing); end; pcall(vim.cmd, "silent! Git"); pcall(vim.cmd, "silent! only"); pcall(vim.cmd, "Git commit"); return true; end); '
+    "if err then return vim.json.encode({ ok = false, error = err }); end; "
+    'local ready = vim.wait(6000, function() local buf = vim.fn.bufnr("COMMIT_EDITMSG"); return buf > 0 and vim.fn.bufloaded(buf) == 1 and vim.bo[buf].modifiable == true; end, 50); '
+    'if ready ~= true then return vim.json.encode({ ok = false, error = "commit buffer did not open" }); end; '
+    'local buf = vim.fn.bufnr("COMMIT_EDITMSG"); local current = vim.api.nvim_buf_get_lines(buf, 0, -1, false); local cut = #current; for i = 1, #current do if current[i]:match("^#") then cut = i - 1; break; end; end; '
+    'local head = {}; for _, line in ipairs(message) do head[#head + 1] = line; end; head[#head + 1] = ""; vim.api.nvim_buf_set_lines(buf, 0, cut, false, head); '
+    "for _, win in ipairs(vim.fn.win_findbuf(buf)) do pcall(vim.api.nvim_win_set_cursor, win, { 1, 0 }); end; return vim.json.encode({ ok = true, subject = message[1] }); end)()"
+)
+
 _EDIT_LUA = (
     '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
     "local files = payload.files or {}; local items = payload.items or {}; local root = payload.root or vim.fn.getcwd(); local line = tonumber(payload.line); local column = tonumber(payload.column); "
@@ -257,15 +269,13 @@ def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
     messages / PR bodies with quotes or apostrophes never need shell/vim
     escaping. Raises MuxError on transport failure.
     """
+    if payload.get("op") == "commit":
+        return _call_lua(socket, _COMMIT_LUA, payload)
     if payload.get("op") == "edit":
         return _call_lua(socket, _EDIT_LUA, payload)
     if payload.get("op") == "review":
         return _call_lua(socket, _REVIEW_LUA, payload)
-    return _call_lua(
-        socket,
-        'require([[mux.skills]]).rpc(vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")))',
-        payload,
-    )
+    return {"ok": False, "error": f"unknown op: {payload.get('op')}"}
 
 
 def _vim_str(s: str) -> str:
