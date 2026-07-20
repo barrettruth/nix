@@ -70,6 +70,23 @@ grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 grayscale_state_file="$grayscale_state_dir/grayscale"
 grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
 grayscale_shader_dir="${BARRETT_NIX_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nix/config}/hypr/shaders"
+idle_runtime_dir="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}/ctl-$(id -u)}/idle"
+idle_toggle_lock="$idle_runtime_dir/toggle.lock"
+idle_toggle_timestamp="$idle_runtime_dir/toggle.timestamp"
+
+idle_toggle_allowed() {
+  require flock
+  mkdir -p "$idle_runtime_dir"
+  exec 8>"$idle_toggle_lock" || exit 1
+  flock 8 || exit 1
+  now="$(date +%s)"
+  last="$(cat "$idle_toggle_timestamp" 2>/dev/null || true)"
+  printf '%s\n' "$now" >"$idle_toggle_timestamp"
+  case "$last" in
+  '' | *[!0-9]*) return 0 ;;
+  esac
+  [ $((now - last)) -ge 5 ]
+}
 
 idle_read_state() {
   if systemctl --user is-active --quiet hypridle.service; then
@@ -1126,6 +1143,7 @@ dictate)
 idle)
   case "${2:-toggle}" in
   toggle)
+    idle_toggle_allowed || exit 0
     require notify-send
     if systemctl --user is-active --quiet hypridle.service; then
       idle_off
