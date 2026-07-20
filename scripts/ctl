@@ -1147,10 +1147,10 @@ idle)
     require notify-send
     if systemctl --user is-active --quiet hypridle.service; then
       idle_off
-      notify-send -a ctl -t 2500 "Idle" "Off"
+      notify-send -a ctl -t 2500 "Idle Manager" "Off"
     else
       idle_on
-      notify-send -a ctl -t 2500 "Idle" "On"
+      notify-send -a ctl -t 2500 "Idle Manager" "On"
     fi
     ;;
   on)
