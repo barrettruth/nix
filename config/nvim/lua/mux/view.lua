@@ -305,6 +305,7 @@ local function start_direnv()
         restore_terminal_focus()
         return id
     end)
+    vim.cmd.stopinsert()
     if ok and type(job) == 'number' and job > 0 then
         return
     end
