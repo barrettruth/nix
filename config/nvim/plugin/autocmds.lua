@@ -175,3 +175,10 @@ vim.api.nvim_create_autocmd('FileType', {
     end,
     group = aug,
 })
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'directory',
+    callback = function(ev)
+        vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = ev.buf })
+    end,
+})
