@@ -316,6 +316,7 @@ return {
                 diagnostic = { suffix = '' },
                 file = { suffix = '' },
                 indent = { suffix = '' },
+                treesitter = { suffix = '' },
             })
         end,
         event = 'DeferredUIEnter',
