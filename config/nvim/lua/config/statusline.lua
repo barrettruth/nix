@@ -251,6 +251,18 @@ function M.setup()
 end
 
 ---@return string
+local function search_count()
+    if vim.o.cmdheight ~= 0 then
+        return ''
+    end
+    local ok, count = pcall(vim.fn.searchcount, { maxcount = 999 })
+    if not ok or type(count) ~= 'table' or not count.total or count.total == 0 then
+        return ''
+    end
+    return ('[%s/%s] '):format(count.current, count.total)
+end
+
+---@return string
 function M.render()
     local state = repos[buffer_roots[vim.api.nvim_get_current_buf()]]
     local prefix = state
@@ -269,7 +281,12 @@ function M.render()
     local buftype = vim.bo.buftype
     local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
     local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or buftype
-    return (' %s%s%%=%%c:%%l/%%L %s '):format(path, flags, filetype)
+    return (' %s%s%%=%s%%c:%%l/%%L %s '):format(
+        path,
+        flags,
+        search_count(),
+        filetype
+    )
 end
 
 return M
