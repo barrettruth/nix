@@ -525,6 +525,38 @@ local function setup_keymaps()
     map(prefix .. 'r', function()
         require('mux.server').reload()
     end, 'mux: reload')
+    map(prefix .. 'R', function()
+        local server = require('mux.server')
+        local current = server.state().server
+        if not current then
+            return
+        end
+        for _, entry in ipairs(server.list()) do
+            if
+                entry.socket ~= current.socket
+                and vim.uv.fs_stat(entry.socket)
+            then
+                local result = vim.system({
+                    vim.v.progpath,
+                    '--server',
+                    entry.socket,
+                    '--remote-expr',
+                    "luaeval('require([[mux.server]]).reload()')",
+                }, { text = true }):wait()
+                if
+                    result.code ~= 0
+                    or vim.trim(result.stdout or '') ~= 'true'
+                then
+                    vim.notify(
+                        'mux: failed to reload ' .. entry.root,
+                        vim.log.levels.ERROR
+                    )
+                    return
+                end
+            end
+        end
+        server.reload()
+    end, 'mux: reload all')
 end
 
 ---Install view keymaps and terminal lifecycle cleanup.

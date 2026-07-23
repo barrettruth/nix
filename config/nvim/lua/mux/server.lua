@@ -596,15 +596,14 @@ end
 ---@return true? ok
 ---@return string? err
 function M.reload()
-    if #vim.api.nvim_list_uis() == 0 then
-        return nil, 'no UI attached'
-    end
     local session = require('mux.session')
     local ok, err = session.save()
     if not ok then
         return nil, err
     end
-    vim.cmd('restart! +qall!')
+    vim.schedule(function()
+        vim.cmd('restart! +qall!')
+    end)
     return true
 end
 
