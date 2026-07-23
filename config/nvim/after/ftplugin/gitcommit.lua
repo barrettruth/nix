@@ -1,3 +1,1 @@
--- wipe on close so `:wq` unblocks a waiting `nvim --remote-wait` git editor
-vim.bo.bufhidden = 'wipe'
 vim.wo.colorcolumn = '73'

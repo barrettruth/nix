@@ -61,13 +61,6 @@ fzf-config-widget() {
 zle -N fzf-config-widget
 bindkey '^E' fzf-config-widget
 
-# in an nvim :terminal, send editors to the parent server (no nested nvim)
-if [[ -n "$NVIM" ]]; then
-  export GIT_EDITOR="nvim --server $NVIM --remote-wait"
-  export EDITOR="nvim --server $NVIM --remote-wait"
-  export VISUAL="nvim --server $NVIM --remote-wait"
-fi
-
 if [[ -f /etc/NIXOS ]]; then
   _nix_profile_gen=$(readlink /etc/profiles/per-user/$USER 2>/dev/null)
   precmd_rehash() {
