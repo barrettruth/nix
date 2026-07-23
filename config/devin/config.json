@@ -1,6 +1,6 @@
 {
   "agent": {
-    "model": "gpt-5-6-sol-xhigh-priority"
+    "model": "gpt-5-6-sol-xhigh"
   },
   "read_config_from": {
     "cursor": false,
@@ -11,7 +11,7 @@
     "setup_complete": true
   },
   "show_hints": false,
-  "theme_mode": "dark",
+  "theme_mode": "light",
   "version": 1,
   "devin": {
     "org_id": "org-f27ebacf926a440d96985a94ab9b66bf"
