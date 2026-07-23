@@ -7,3 +7,4 @@ config/chromium/extension/theme.js
 config/nvim/lazy-lock.json
 /AGENTS.md
 .codex
+.devin
