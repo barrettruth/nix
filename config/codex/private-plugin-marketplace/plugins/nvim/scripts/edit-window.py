@@ -1,1 +1,0 @@
-../../../../../skills/nvim-edit/scripts/edit-window.py

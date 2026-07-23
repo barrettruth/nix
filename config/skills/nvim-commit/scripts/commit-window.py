@@ -50,14 +50,6 @@ def ensure_staged(root: Path, stage: list[str], dry_run: bool) -> tuple[bool, li
     return False, paths
 
 
-def view_spec(args):
-    if args.win is not None:
-        return {"win": args.win}
-    if args.tab is not None:
-        return {"tab": args.tab}
-    return args.view
-
-
 def parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="commit-window",
@@ -68,9 +60,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--stage", nargs="*", default=[], help="files to stage iff nothing is staged")
     p.add_argument("--root", type=Path, default=None, help="base repo (default: current project)")
     p.add_argument("--target", default=None, help="branch or worktree the changes live in")
-    p.add_argument("--view", default="vcs", help="destination view name (default: vcs)")
-    p.add_argument("--win", type=int, default=None, help="destination window id (overrides --view)")
-    p.add_argument("--tab", type=int, default=None, help="destination tab number (overrides --view)")
     p.add_argument("-n", "--dry-run", action="store_true", help="print the plan; do not stage/touch nvim")
     return p.parse_args(argv)
 
@@ -97,7 +86,7 @@ def main(argv: list[str]) -> int:
             return 0
 
         socket = muxlib.socket_for_root(root)
-        res = muxlib.call(socket, {"op": "commit", "message": message, "view": view_spec(args)})
+        res = muxlib.call(socket, {"op": "commit", "message": message})
     except muxlib.MuxError as e:
         die(str(e))
 

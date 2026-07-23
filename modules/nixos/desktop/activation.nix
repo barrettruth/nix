@@ -161,7 +161,7 @@ in
       rm -f "${XDG_CONFIG_HOME}/devin/skills"
     fi
     ${mkDir "${XDG_CONFIG_HOME}/devin/skills"}
-    for skill in ${repo}/config/skills/*/; do
+    for skill in ${repo}/config/skills/*/ ${repo}/.devin/skills/*/; do
       [ -f "$skill/SKILL.md" ] || continue
       name="$(basename "$skill")"
       for agentdir in "${XDG_CONFIG_HOME}/codex/skills" "${XDG_CONFIG_HOME}/devin/skills"; do

@@ -177,6 +177,3 @@ trust_level = "trusted"
 last_updated = "2026-05-21T03:17:12Z"
 source_type = "local"
 source = "/home/barrett/.config/nix/config/codex/private-plugin-marketplace"
-
-[plugins."nvim@barrett-private"]
-enabled = true

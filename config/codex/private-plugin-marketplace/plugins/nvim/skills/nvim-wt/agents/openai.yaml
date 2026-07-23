@@ -1,4 +1,0 @@
-interface:
-  display_name: "Neovim Worktrees"
-  short_description: "Coordinate Neovim worktrees and checkout locks."
-  default_prompt: "Prepare a Neovim worktree for this task."

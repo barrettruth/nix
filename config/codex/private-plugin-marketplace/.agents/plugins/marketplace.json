@@ -3,18 +3,5 @@
   "interface": {
     "displayName": "Barrett Private"
   },
-  "plugins": [
-    {
-      "name": "nvim",
-      "source": {
-        "source": "local",
-        "path": "./plugins/nvim"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Coding"
-    }
-  ]
+  "plugins": []
 }
