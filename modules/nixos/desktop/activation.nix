@@ -39,9 +39,12 @@ let
     email = "${identity.email}"
 
     [signing]
-    behavior = "own"
-    backend = "gpg"
-    key = "${identity.gpgKey}"
+    behavior = "drop"
+    backend = "ssh"
+    key = "${homeDirectory}/.ssh/id_ed25519.pub"
+
+    [signing.backends.ssh]
+    allowed-signers = "${repo}/config/git/allowed_signers"
 
     [ui]
     editor = "nvim"
@@ -59,13 +62,12 @@ let
 
   gitConf = pkgs.writeText "git-wrapper" ''
     [user]
-    	name = ${identity.fullName}
-    	email = ${identity.email}
-    	signingKey = ${identity.gpgKey}
+      name = ${identity.fullName}
+      email = ${identity.email}
     [safe]
-    	directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
+      directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
     [include]
-    	path = ${repo}/config/git/config
+      path = ${repo}/config/git/config
   '';
 
   browserDesktop = "chromium-browser.desktop";

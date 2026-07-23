@@ -8,8 +8,9 @@
   ...
 }:
 let
-  forgejoSigningKeyId = "AEB0C5593951F51260C1388DF09FD58E4737029E";
-  forgejoSigningTrustFingerprint = "F2CC7F7FD33F423B7A31B4E3A6C96C9349D2FC81";
+  forgejoSigningPublicKey = pkgs.writeText "forgejo-signing-key.pub" ''
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN+HWhaAsJvKzEEpmJJMRS1SJcFJ72z+5kLA2iOh42lb Forgejo instance signing <noreply@barrettruth.com>
+  '';
   forgejoOauthSources = {
     github = {
       provider = "github";
@@ -30,16 +31,6 @@ let
       "forgejo-oauth-${name}-secret"
     ]) forgejoOauthSources
   );
-  forgejoGpgAgentConf = pkgs.writeText "gpg-agent.conf" ''
-    allow-loopback-pinentry
-  '';
-  forgejoGpgProgram = pkgs.writeShellScript "forgejo-gpg" ''
-    exec ${pkgs.gnupg}/bin/gpg \
-      --batch \
-      --pinentry-mode loopback \
-      --passphrase-file "$CREDENTIALS_DIRECTORY/gpg-passphrase" \
-      "$@"
-  '';
   forgejoBrandingSvg = pkgs.writeText "forgejo-delta-symbol.svg" ''
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
       <style>
@@ -284,23 +275,15 @@ in
       "forgejo-hcaptcha-sitekey"
       "forgejo-hcaptcha-secret"
       "forgejo-ssh-host-ed25519-key"
+      "forgejo-ssh-signing-key"
     ] (mkForgejoSecret [ "forgejo.service" ])
-    // lib.genAttrs forgejoOauthSecretNames (mkForgejoSecret [ "forgejo-oauth-sync.service" ])
-    //
-      lib.genAttrs
-        [
-          "forgejo-gpg-passphrase"
-          "forgejo-gpg-secret.asc"
-        ]
-        (mkForgejoSecret [
-          "forgejo.service"
-          "forgejo-gpg-import.service"
-        ]);
+    // lib.genAttrs forgejoOauthSecretNames (mkForgejoSecret [ "forgejo-oauth-sync.service" ]);
 
   services.forgejo = {
     enable = true;
     package = pierreForgejo.mkForgejoWithPierre { fileView = false; } (
       pkgs.callPackage ../../pkgs/forgejo-cm6-langs {
+        forgejo = pkgs.forgejo-lts;
         frontendPatches = builtins.filter (
           p: lib.hasSuffix "expose-init-globals.patch" (toString p)
         ) pierreForgejo.patches;
@@ -365,11 +348,11 @@ in
         DEFAULT_INTERVAL = "15m";
         MIN_INTERVAL = "5m";
       };
-      "git.config" = {
-        "gpg.program" = "${forgejoGpgProgram}";
-      };
       "repository.signing" = {
-        SIGNING_KEY = forgejoSigningKeyId;
+        FORMAT = "ssh";
+        SIGNING_KEY = "/run/credentials/forgejo.service/forgejo-signing-key.pub";
+        SIGNING_NAME = "Forgejo";
+        SIGNING_EMAIL = "noreply@${identity.domain}";
         INITIAL_COMMIT = "always";
         CRUD_ACTIONS = "always";
         MERGES = "always";
@@ -411,10 +394,8 @@ in
   systemd.services.forgejo = {
     after = [ "pierre-ssr.service" ];
     wants = [ "pierre-ssr.service" ];
-    environment = {
-      GNUPGHOME = "/var/lib/forgejo/.gnupg";
-      PIERRE_SSR_SOCKET = config.services.pierre-ssr.socketPath;
-    };
+    path = [ pkgs.openssh ];
+    environment.PIERRE_SSR_SOCKET = config.services.pierre-ssr.socketPath;
     restartTriggers = [
       forgejoCustom.frontend
       forgejoCustom.assets
@@ -424,35 +405,9 @@ in
       pierreForgejo.templates
     ];
     serviceConfig.LoadCredential = lib.mkAfter [
-      "gpg-passphrase:${config.sops.secrets."forgejo-gpg-passphrase".path}"
+      "forgejo-signing-key:${config.sops.secrets."forgejo-ssh-signing-key".path}"
+      "forgejo-signing-key.pub:${forgejoSigningPublicKey}"
     ];
-  };
-
-  systemd.services.forgejo-gpg-import = {
-    description = "Import Forgejo GPG signing key into git keyring (idempotent)";
-    before = [ "forgejo.service" ];
-    wantedBy = [ "forgejo.service" ];
-    path = [ pkgs.gnupg ];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "git";
-      Group = "git";
-      LoadCredential = [
-        "passphrase:${config.sops.secrets."forgejo-gpg-passphrase".path}"
-        "secret:${config.sops.secrets."forgejo-gpg-secret.asc".path}"
-      ];
-      Environment = [ "GNUPGHOME=/var/lib/forgejo/.gnupg" ];
-    };
-    script = ''
-      set -eu
-      if gpg --list-secret-keys ${forgejoSigningKeyId} >/dev/null 2>&1; then
-        exit 0
-      fi
-      gpg --batch --pinentry-mode loopback \
-        --passphrase-file "$CREDENTIALS_DIRECTORY/passphrase" \
-        --import "$CREDENTIALS_DIRECTORY/secret"
-      printf '%s:6:\n' ${forgejoSigningTrustFingerprint} | gpg --import-ownertrust
-    '';
   };
 
   systemd.services.forgejo-oauth-sync = {
@@ -627,8 +582,6 @@ in
   users.groups.git = { };
 
   systemd.tmpfiles.rules = [
-    "d /var/lib/forgejo/.gnupg 0700 git git -"
-    "L+ /var/lib/forgejo/.gnupg/gpg-agent.conf - - - - ${forgejoGpgAgentConf}"
     "d /var/lib/forgejo/custom/public 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets 0750 git git -"
     "d /var/lib/forgejo/custom/public/assets/img 0750 git git -"

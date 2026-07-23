@@ -19,8 +19,6 @@ Personal, always-on rules that apply to every Devin session in every project.
   bodies. Write issue text, PR bodies, and commit bodies as natural human prose,
   not bullet-point summaries, except where a repository template explicitly
   requires checklists or structured fields.
-- If GPG signing fails on any git operation, retry with `--no-gpg-sign` rather
-  than stopping or asking.
 - Never end a response with "Would you like..." or a similar opt-in follow-up
   suggestion. If the user already asked for work, do the next obvious step;
   otherwise stop after answering. Ask a follow-up question only when

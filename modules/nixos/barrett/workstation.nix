@@ -53,7 +53,6 @@ let
 
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
   whisper = whisperPkgs.whisper-cpp.override { cudaSupport = ui.gpu != "generic"; };
-  gpgCacheTtlSeconds = 2147483647;
 
   jjConf = pkgs.writeText "jj-config" ''
     [user]
@@ -61,9 +60,12 @@ let
     email = "${identity.email}"
 
     [signing]
-    behavior = "own"
-    backend = "gpg"
-    key = "${identity.gpgKey}"
+    behavior = "drop"
+    backend = "ssh"
+    key = "${homeDirectory}/.ssh/id_ed25519.pub"
+
+    [signing.backends.ssh]
+    allowed-signers = "${repo}/config/git/allowed_signers"
 
     [ui]
     editor = "nvim"
@@ -81,13 +83,12 @@ let
 
   gitConf = pkgs.writeText "git-wrapper" ''
     [user]
-    	name = ${identity.fullName}
-    	email = ${identity.email}
-    	signingKey = ${identity.gpgKey}
+      name = ${identity.fullName}
+      email = ${identity.email}
     [safe]
-    	directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
+      directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
     [include]
-    	path = ${repo}/config/git/config
+      path = ${repo}/config/git/config
   '';
 
   mimeappsList = pkgs.writeText "mimeapps-workstation.list" ''
@@ -284,12 +285,6 @@ in
     programs.gnupg.agent = {
       enable = true;
       pinentryPackage = pkgs.pinentry-curses;
-      settings = {
-        default-cache-ttl = gpgCacheTtlSeconds;
-        default-cache-ttl-ssh = gpgCacheTtlSeconds;
-        max-cache-ttl = gpgCacheTtlSeconds;
-        max-cache-ttl-ssh = gpgCacheTtlSeconds;
-      };
     };
 
     systemd.user.services.nix-flake-update = {
