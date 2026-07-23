@@ -343,6 +343,8 @@ function M.restore(names)
     end
     vim.api.nvim_set_current_tabpage(cur)
     start_direnv()
+    vim.cmd.stopinsert()
+    restore_terminal_focus()
 end
 
 ---@param buf integer
