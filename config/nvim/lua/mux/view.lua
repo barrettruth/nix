@@ -471,13 +471,24 @@ local function cleanup_terminal(buf)
             local name = tab_view[tp]
             local spec = name and views[name]
             if spec and spec.terminal then
-                if #user_tabpages() <= 1 then
+                local has_terminal = false
+                for _, other_win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+                    local other = vim.api.nvim_win_get_buf(other_win)
+                    if other ~= buf and vim.bo[other].buftype == 'terminal' then
+                        has_terminal = true
+                        break
+                    end
+                end
+                if has_terminal then
+                    pcall(vim.api.nvim_win_close, win, true)
+                elseif #user_tabpages() <= 1 then
                     retire_session()
                     return
+                else
+                    pcall(vim.api.nvim_set_current_tabpage, tp)
+                    pcall(vim.cmd, 'tabclose')
+                    tab_view[tp] = nil
                 end
-                pcall(vim.api.nvim_set_current_tabpage, tp)
-                pcall(vim.cmd, 'tabclose')
-                tab_view[tp] = nil
             end
         end
     end
