@@ -414,13 +414,12 @@ wifi)
       fw=$((w1 + 4 + w2 + 4 + w3 + 17))
       sep=$(awk -v n="$((w1 + w2 + w3 + 8))" 'BEGIN{for(i=0;i<n;i++)printf "─";print ""}')
       header=$(printf "       %-*s    %-*s    %s\n       %s" "$w1" "Network name" "$w2" "Security" "Signal" "$sep")
-      count=$(printf '%s\n' "$networks" | wc -l)
       ssid=$(printf '%s\n' "$networks" |
         awk -F'\t' -v w1="$w1" -v w2="$w2" '{
           prefix = ($4 == ">") ? "  >    " : "       "
           printf "%s%-*s    %-*s    %s\t%s\n", prefix, w1, $1, w2, $2, $3, $1
         }' |
-        fuzzel --dmenu --prompt="wifi:  " --no-icons --lines="$count" \
+        fuzzel --dmenu --prompt="wifi:  " --no-icons --minimal-lines \
           --with-nth=1 --accept-nth=2 \
           --mesg="$header" --mesg-mode=expand \
           --font="Berkeley Mono:size=12" --width="$fw")
