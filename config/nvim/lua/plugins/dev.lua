@@ -1,6 +1,7 @@
 local dev_plugins = {
     'midnight.nvim',
     'diffs.nvim',
+    'preview.nvim',
 }
 
 local function current_colorscheme()
@@ -73,5 +74,52 @@ return {
         after = function()
             vim.cmd.colorscheme(current_colorscheme())
         end,
+    },
+    {
+        'barrettruth/preview.nvim',
+        ft = { 'typst', 'tex', 'markdown', },
+        before = function()
+            vim.g.preview = {
+                debug = false,
+                github = {
+                    output = function(ctx)
+                        return '/tmp/'
+                            .. vim.fn.fnamemodify(ctx.file, ':t:r')
+                            .. '.html'
+                    end,
+                },
+                typst = { open = { 'zathura' } },
+                plantuml = true,
+                mermaid = true,
+                latex = {
+                    open = { 'zathura' },
+                    args = function(ctx)
+                        local dir = vim.fn.fnamemodify(ctx.file, ':h')
+                            .. '/build'
+                        vim.fn.mkdir(dir, 'p')
+                        return {
+                            '-pdf',
+                            '-interaction=nonstopmode',
+                            '-output-directory=' .. dir,
+                            '-pdflatex=pdflatex -file-line-error %O %S',
+                            ctx.file,
+                        }
+                    end,
+                    output = function(ctx)
+                        return vim.fn.fnamemodify(ctx.file, ':h')
+                            .. '/build/'
+                            .. vim.fn.fnamemodify(ctx.file, ':t:r')
+                            .. '.pdf'
+                    end,
+                },
+            }
+        end,
+        keys = {
+            {
+                '<leader>p',
+                '<Plug>(preview-toggle)',
+                desc = 'toggle preview',
+            },
+        },
     },
 }
