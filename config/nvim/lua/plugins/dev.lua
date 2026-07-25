@@ -41,6 +41,7 @@ return {
                 integrations = {
                     difftastic = false,
                     fugitive = true,
+                    gitsigns = true,
                 },
                 extra_filetypes = { 'diff' },
                 view = { prefix = false },

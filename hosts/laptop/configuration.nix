@@ -166,6 +166,8 @@ in
     wireplumber.enable = true;
   };
 
+  services.upower.enable = true;
+
   virtualisation.docker.enable = true;
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
@@ -189,6 +191,7 @@ in
   ];
 
   security.sudo.enable = true;
+  security.rtkit.enable = true;
 
   fonts.packages = with pkgs; [
     dejavu_fonts
@@ -212,6 +215,7 @@ in
     ntfs3g
     efibootmgr
     dmidecode
+    alsa-utils
   ];
 
   programs.ssh.extraConfig = ''

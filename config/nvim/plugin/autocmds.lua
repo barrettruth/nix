@@ -94,6 +94,28 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     group = aug,
 })
 
+vim.api.nvim_create_autocmd('InsertEnter', {
+    group = aug,
+    callback = function()
+        if vim.v.hlsearch == 1 then
+            vim.o.hlsearch = false
+        end
+    end,
+})
+
+vim.api.nvim_create_autocmd('CursorMoved', {
+    group = aug,
+    callback = function()
+        if vim.v.hlsearch == 0 then
+            return
+        end
+        local count = vim.fn.searchcount({ recompute = true, maxcount = 1 })
+        if count.exact_match ~= 1 then
+            vim.o.hlsearch = false
+        end
+    end,
+})
+
 vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave', 'VimLeave' }, {
     pattern = '*',
     callback = function()
