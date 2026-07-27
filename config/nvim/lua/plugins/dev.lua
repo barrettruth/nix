@@ -2,6 +2,7 @@ local dev_plugins = {
     'midnight.nvim',
     'diffs.nvim',
     'preview.nvim',
+    'ci.nvim',
 }
 
 local function current_colorscheme()
@@ -30,6 +31,15 @@ for _, name in ipairs(dev_plugins) do
 end
 
 return {
+    {
+        'barrettruth/ci.nvim',
+        cmd = 'CI',
+        before = function()
+            vim.g.ci = {
+                debug = false,
+            }
+        end,
+    },
     {
         'barrettruth/diffs.nvim',
         enabled = true,
