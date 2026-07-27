@@ -25,7 +25,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     delta = {
-      url = "git+file:///home/barrett/dev/delta";
+      url = "git+ssh://git@forge.barrettruth.com/barrettruth/delta.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pierrejo = {

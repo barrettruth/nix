@@ -404,6 +404,7 @@ in
       pierreForgejo.assets
       pierreForgejo.templates
     ];
+    serviceConfig.TimeoutStopSec = "300s";
     serviceConfig.LoadCredential = lib.mkAfter [
       "forgejo-signing-key:${config.sops.secrets."forgejo-ssh-signing-key".path}"
       "forgejo-signing-key.pub:${forgejoSigningPublicKey}"

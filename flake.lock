@@ -28,15 +28,15 @@
       "locked": {
         "lastModified": 1781481719,
         "narHash": "sha256-6PuTwLDj6JJs8FMeJ+hBMJJFdLrmNcOoFfDkMWIHDnY=",
-        "ref": "refs/heads/queue-kanban-count-nav",
+        "ref": "refs/heads/main",
         "rev": "054d2248ababd9eb39536e894dab6f809031ad1f",
         "revCount": 617,
         "type": "git",
-        "url": "file:///home/barrett/dev/delta"
+        "url": "ssh://git@forge.barrettruth.com/barrettruth/delta.git"
       },
       "original": {
         "type": "git",
-        "url": "file:///home/barrett/dev/delta"
+        "url": "ssh://git@forge.barrettruth.com/barrettruth/delta.git"
       }
     },
     "determinate": {

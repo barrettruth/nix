@@ -182,6 +182,8 @@ let
     partOf = [ target ];
     after = [ target ];
     wantedBy = [ target ];
+    startLimitIntervalSec = 120;
+    startLimitBurst = 5;
     serviceConfig = {
       ExecStartPre = "${hyprSessionEnv}/bin/hypr-session-env wait";
       Restart = "on-failure";

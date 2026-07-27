@@ -289,6 +289,7 @@ in
 
     systemd.user.services.nix-flake-update = {
       description = "Update nix flake inputs";
+      unitConfig.ConditionPathIsDirectory = "%h/.config/nix";
       serviceConfig = {
         Type = "oneshot";
         WorkingDirectory = "%h/.config/nix";
