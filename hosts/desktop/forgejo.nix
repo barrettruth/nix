@@ -348,6 +348,11 @@ in
         DEFAULT_INTERVAL = "15m";
         MIN_INTERVAL = "5m";
       };
+      "repository.pull-request" = {
+        POPULATE_SQUASH_COMMENT_WITH_COMMIT_MESSAGES = true;
+        DEFAULT_MERGE_MESSAGE_COMMITS_LIMIT = -1;
+        DEFAULT_MERGE_MESSAGE_SIZE = -1;
+      };
       "repository.signing" = {
         FORMAT = "ssh";
         SIGNING_KEY = "/run/credentials/forgejo.service/forgejo-signing-key.pub";
