@@ -331,10 +331,11 @@ in
       oauth2_client = {
         ENABLE_AUTO_REGISTRATION = true;
         ACCOUNT_LINKING = "auto";
+        REGISTER_EMAIL_CONFIRM = false;
         UPDATE_AVATAR = true;
         USERNAME = "nickname";
       };
-      security.GLOBAL_TWO_FACTOR_REQUIREMENT = "all";
+      security.GLOBAL_TWO_FACTOR_REQUIREMENT = "admin";
       session.COOKIE_SECURE = true;
       mailer = {
         ENABLED = true;
