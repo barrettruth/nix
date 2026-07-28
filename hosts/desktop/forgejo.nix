@@ -350,8 +350,8 @@ in
       };
       "repository.pull-request" = {
         POPULATE_SQUASH_COMMENT_WITH_COMMIT_MESSAGES = true;
-        DEFAULT_MERGE_MESSAGE_COMMITS_LIMIT = -1;
-        DEFAULT_MERGE_MESSAGE_SIZE = -1;
+        DEFAULT_MERGE_MESSAGE_COMMITS_LIMIT = 1000;
+        DEFAULT_MERGE_MESSAGE_SIZE = 1048576;
       };
       "repository.signing" = {
         FORMAT = "ssh";
