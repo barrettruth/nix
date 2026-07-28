@@ -957,7 +957,7 @@ clip)
   count=$(printf '%s\n' "$entries" | wc -l)
   lines=$((count < 15 ? count : 15))
   sep=$(printf '\034')
-  printf '%s\n' "$entries" |
+  selected=$(printf '%s\n' "$entries" |
     awk -F'\t' -v sep="$sep" '{
       content = substr($0, index($0, "\t") + 1)
       display = (length(content) > 63) ? substr(content, 1, 60) "..." : content
@@ -966,12 +966,21 @@ clip)
     fuzzel --dmenu --no-icons --prompt="clip:  " \
       --nth-delimiter="$sep" --with-nth=1 --accept-nth=2 \
       --font="Berkeley Mono:size=12" \
-      --lines="$lines" --width=75 |
-    {
-      IFS= read -r selected || exit 0
-      [ -n "$selected" ] || exit 0
-      printf '%s\n' "$selected" | cliphist decode | wl-copy
-    }
+      --lines="$lines" --width=75)
+  rc=$?
+  [ "$rc" = 13 ] && {
+    cliphist wipe
+    exit 0
+  }
+  [ -n "$selected" ] || exit 0
+  case $selected in
+  *'[[ binary data '*' png '*) set -- --type image/png ;;
+  *'[[ binary data '*' jpeg '*) set -- --type image/jpeg ;;
+  *'[[ binary data '*' gif '*) set -- --type image/gif ;;
+  *'[[ binary data '*) set -- ;;
+  *) set -- --type text/plain ;;
+  esac
+  printf '%s\n' "$selected" | cliphist decode | wl-copy "$@"
   ;;
 power)
   require fuzzel
