@@ -251,6 +251,18 @@ function M.setup()
 end
 
 ---@return string
+local function recording()
+    if vim.o.cmdheight ~= 0 or vim.o.shortmess:find('q', 1, true) then
+        return ''
+    end
+    local register = vim.fn.reg_recording()
+    if register == '' then
+        return ''
+    end
+    return ('%%#ModeMsg#recording @%s%%* '):format(register)
+end
+
+---@return string
 local function search_count()
     if vim.o.cmdheight ~= 0 then
         return ''
@@ -281,9 +293,10 @@ function M.render()
     local buftype = vim.bo.buftype
     local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
     local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or buftype
-    return (' %s%s%%=%s%%c:%%l/%%L %s '):format(
+    return (' %s%s%%=%s%s%%c:%%l/%%L %s '):format(
         path,
         flags,
+        recording(),
         search_count(),
         filetype
     )
