@@ -31,7 +31,7 @@ let
         ];
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-XMvRQXVlitpclYqfGRISjXzOa79V29rC4jwDNsU4Cbs=";
+        outputHash = "sha256-VgwwviIw/x1od1SlM0boaeD6BzXojOQVANPMMNTP6Jc=";
       }
       ''
         set -euo pipefail
@@ -66,7 +66,7 @@ let
     pname = "forgejo-frontend-with-cm6-langs";
     inherit version;
     src = patchedSrc;
-    npmDepsHash = "sha256-4LB1vS7AFck6+ZFbrK9B7N1DM7jOOBiF2jH+GRKfqiw=";
+    npmDepsHash = "sha256-4yBpclK8HfJyLUMig++xAaw2gO30/xkYWVsJ5+p+HRI=";
     patches = frontendPatches;
 
     buildPhase = ''
@@ -139,6 +139,7 @@ buildGoModule {
   postInstall = ''
     mkdir $data
     cp -R ./{templates,options} ${frontend}/public $data
+    chmod -R u+w $data
     mkdir -p $out
     cp -R ./options/locale $out/locale
     wrapProgram $out/bin/forgejo \

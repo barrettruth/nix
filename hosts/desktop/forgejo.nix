@@ -283,7 +283,7 @@ in
     enable = true;
     package = pierreForgejo.mkForgejoWithPierre { fileView = false; } (
       pkgs.callPackage ../../pkgs/forgejo-cm6-langs {
-        forgejo = pkgs.forgejo-lts;
+        forgejo = pkgs.forgejo;
         frontendPatches = builtins.filter (
           p: lib.hasSuffix "expose-init-globals.patch" (toString p)
         ) pierreForgejo.patches;
