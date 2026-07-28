@@ -61,7 +61,6 @@ vim.o.relativenumber = true
 vim.o.signcolumn = 'no'
 
 require('config.statuscolumn').setup()
-require('config.statusline').setup()
 vim.o.statusline = "%!v:lua.require'config.statusline'.render()"
 vim.o.tabline = "%!v:lua.require'mux.line'.render()"
 
