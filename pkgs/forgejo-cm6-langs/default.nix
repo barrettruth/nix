@@ -139,7 +139,6 @@ buildGoModule {
   postInstall = ''
     mkdir $data
     cp -R ./{templates,options} ${frontend}/public $data
-    chmod -R u+w $data
     mkdir -p $out
     cp -R ./options/locale $out/locale
     wrapProgram $out/bin/forgejo \
