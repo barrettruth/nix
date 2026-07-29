@@ -2,6 +2,7 @@
 ---@field root string
 ---@field session string
 ---@field socket string
+---@field stale? boolean running binary no longer matches `v:progpath`; nil when not running
 
 ---@class mux.State
 ---@field server? mux.Server
@@ -31,6 +32,8 @@ local pending = {}
 local READY_TIMEOUT_MS = 5000
 local READY_POLL_MS = 50
 local LIST_PROBE_MS = 100
+local ENSURE_PROBE_MS = 2000
+local CONNECT_PROBE_MS = 200
 
 ---@return string
 local function runtime_dir()
@@ -165,6 +168,23 @@ function M.paths(root)
     return paths_for(real)
 end
 
+---Report whether this process runs a binary image that has since been replaced.
+---@return boolean
+local function exe_stale()
+    local running = vim.uv.fs_stat('/proc/self/exe')
+    local on_disk = vim.uv.fs_stat(vim.v.progpath)
+    if not running or not on_disk then
+        return false
+    end
+    return running.ino ~= on_disk.ino
+end
+
+---@param server mux.Server
+---@return mux.Server
+local function with_stale(server)
+    return vim.tbl_extend('force', server, { stale = exe_stale() })
+end
+
 ---Serialize this server's readiness and identity for remote probes.
 ---@return string
 function M.probe()
@@ -177,7 +197,7 @@ function M.probe()
             error = setup_error or 'not ready',
         })
     end
-    return vim.json.encode({ ok = true, server = current_server })
+    return vim.json.encode({ ok = true, server = with_stale(current_server) })
 end
 
 local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
@@ -324,6 +344,35 @@ local function probe_async(socket, timeout, cb)
     end)
 end
 
+---Report whether a socket path currently has a listener bound to it.
+---A stale socket file left by a dead server refuses the connection; a live but
+---busy server accepts it, so this distinguishes "gone" from "not answering yet".
+---@param socket string
+---@return boolean
+local function socket_listening(socket)
+    if not vim.uv.fs_stat(socket) then
+        return false
+    end
+    local ok, pipe = pcall(vim.uv.new_pipe, false)
+    if not ok or not pipe then
+        return false
+    end
+    local done, alive = false, false
+    pcall(function()
+        pipe:connect(socket, function(err)
+            alive = err == nil
+            done = true
+        end)
+    end)
+    vim.wait(CONNECT_PROBE_MS, function()
+        return done
+    end, 10)
+    pcall(function()
+        pipe:close()
+    end)
+    return alive
+end
+
 ---@param out mux.Server[]
 ---@param seen table<string, boolean>
 ---@param server mux.Server?
@@ -357,7 +406,7 @@ function M.list()
     table.sort(sockets)
     for _, socket in ipairs(sockets) do
         if current_server and socket == current_server.socket then
-            add_server(out, seen, current_server)
+            add_server(out, seen, with_stale(current_server))
         else
             add_server(out, seen, probe_sync(socket, LIST_PROBE_MS))
         end
@@ -454,7 +503,24 @@ function M.ensure(root, cb)
         end)
         return
     end
-    local existing = probe_sync(paths.socket, LIST_PROBE_MS)
+    local existing, probe_err = probe_sync(paths.socket, LIST_PROBE_MS)
+    if not existing and socket_listening(paths.socket) then
+        existing, probe_err = probe_sync(paths.socket, ENSURE_PROBE_MS)
+        if not existing then
+            local reason = probe_err and probe_err ~= '' and probe_err
+                or 'no response'
+            vim.schedule(function()
+                cb(
+                    nil,
+                    ('socket in use by an unresponsive server: %s (%s)'):format(
+                        paths.socket,
+                        reason
+                    )
+                )
+            end)
+            return
+        end
+    end
     if existing then
         if existing.root ~= real then
             vim.schedule(function()
@@ -593,9 +659,14 @@ function M.connect(root, cb, clear_last)
 end
 
 ---Save the user session before restarting this mux server.
+---Without `force` this is a no-op when the running binary is already current.
+---@param force? boolean restart even when the binary has not been replaced
 ---@return true? ok
 ---@return string? err
-function M.reload()
+function M.reload(force)
+    if not force and not exe_stale() then
+        return true
+    end
     local session = require('mux.session')
     local ok, err = session.save()
     if not ok then

@@ -23,6 +23,13 @@ Personal, always-on rules that apply to every Devin session in every project.
   suggestion. If the user already asked for work, do the next obvious step;
   otherwise stop after answering. Ask a follow-up question only when
   clarification is actually required.
+- Drafting text is welcome: issue bodies and comments, PR titles and
+  descriptions, review comments, commit messages, release notes. Write these
+  when they would help, without being asked twice.
+- Never publish any of it, and never offer or propose to. Do not post, comment,
+  open, submit, or push, and do not end with "say the word and I'll post it" or
+  any equivalent. Barrett publishes everything himself. Produce the draft, hand
+  it over, and stop there.
 - When working in a repository, detect repo-root `justfile`/`Justfile`,
   `flake.nix`, and `.envrc` early. Prefer repo `just` recipes over ad-hoc
   commands, do not invent recipe names, and prefer the repo's nix shell for
