@@ -64,6 +64,7 @@ in
       )
     ];
     specialArgs = {
+      isDarwin = false;
       inherit
         desktopBuildPool
         identity

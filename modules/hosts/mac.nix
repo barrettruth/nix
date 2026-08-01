@@ -16,8 +16,10 @@ in
   flake.darwinConfigurations.mac = inputs.nix-darwin.lib.darwinSystem {
     modules = [
       inputs.determinate.darwinModules.default
+      ../darwin/common/activation.nix
       ../darwin/common/sops.nix
       ../darwin/common/tailscale.nix
+      ../nixos/barrett/workstation.nix
       ../../hosts/mac/configuration.nix
       {
         nixpkgs.hostPlatform = platform;
@@ -27,6 +29,7 @@ in
       }
     ];
     specialArgs = {
+      isDarwin = true;
       inherit
         inputs
         identity

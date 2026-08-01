@@ -54,6 +54,8 @@ in
 
   programs.zsh.enable = true;
 
+  barrett.workstation.enable = true;
+
   security.pam.services.sudo_local.touchIdAuth = true;
 
   fonts.packages = [ pkgs.barrett-fonts ];
