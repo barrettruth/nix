@@ -447,14 +447,12 @@ in
             git
             neovim
             ghostty
-            jq
-            curl
             openssl
             socat
             zsh-syntax-highlighting
             zsh-autosuggestions
           ])
-          ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (
+          ++ lib.optionals isLinux (
             with pkgs;
             [
               gcc
