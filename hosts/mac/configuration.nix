@@ -127,7 +127,6 @@ in
   environment.systemPackages = with pkgs; [
     age
     google-chrome
-    maccy
     rectangle
     curl
     fd
