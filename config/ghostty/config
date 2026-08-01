@@ -24,7 +24,6 @@ resize-overlay = never
 mouse-scroll-multiplier = 0.5
 quit-after-last-window-closed = true
 confirm-close-surface = false
-keybind = clear
 keybind = alt+r=reload_config
 keybind = alt+y=copy_to_clipboard
 keybind = alt+p=paste_from_clipboard
