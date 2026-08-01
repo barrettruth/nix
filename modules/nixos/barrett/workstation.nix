@@ -204,7 +204,7 @@ let
         if [ ! -s "${XDG_STATE_HOME}/theme" ]; then
           tmp="$(mktemp)"
           printf '%s\n' midnight > "$tmp"
-          install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/theme"
+          install -Dm644 -o ${username} -g ${act.group} "$tmp" "${XDG_STATE_HOME}/theme"
           rm -f "$tmp"
         fi
         ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
