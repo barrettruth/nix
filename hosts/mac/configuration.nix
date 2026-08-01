@@ -235,9 +235,13 @@ in
   # No nix-darwin option exists for the ambient light sensor, so write the
   # domain directly. It is the "Automatically adjust brightness" toggle in
   # System Settings > Displays.
-  system.defaults.CustomSystemPreferences."com.apple.iokit.AmbientLightSensor" = {
-    "Automatic Display Enabled" = false;
-  };
+  # The domain must be an absolute path: CustomSystemPreferences emits a bare
+  # `defaults write <domain>` as root, which would land in
+  # /var/root/Library/Preferences rather than the system-wide location.
+  system.defaults.CustomSystemPreferences."/Library/Preferences/com.apple.iokit.AmbientLightSensor" =
+    {
+      "Automatic Display Enabled" = false;
+    };
 
   system.defaults = {
     dock = {
