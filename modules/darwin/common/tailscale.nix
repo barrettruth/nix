@@ -13,7 +13,23 @@ in
     mode = "0400";
   };
 
-  services.tailscale.enable = true;
+  services.tailscale = {
+    enable = true;
+
+    # Tailscaled on macOS registers split DNS for its own ts.net rather than
+    # headscale's base_domain, so *.ts.barrettruth.com never reached
+    # 100.100.100.100. Headscale already sets override_local_dns and global
+    # nameservers, so it is safe to make it the sole resolver.
+    overrideLocalDns = true;
+  };
+
+  # networking.dns is applied per entry in knownNetworkServices, so without
+  # this the resolver is never actually set and the option silently does
+  # nothing.
+  networking.knownNetworkServices = [
+    "Wi-Fi"
+    "Thunderbolt Bridge"
+  ];
 
   launchd.daemons.tailscaled-autoconnect = {
     serviceConfig = {
