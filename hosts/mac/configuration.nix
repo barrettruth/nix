@@ -92,6 +92,10 @@ in
   system.activationScripts.extraActivation.text = ''
     install -d -m 0755 "/Library/Managed Preferences"
     install -m 0644 ${chromePolicyPlist} "/Library/Managed Preferences/com.google.Chrome.plist"
+
+    # power.sleep drives systemsetup, which only writes the AC profile.
+    # The battery profile keeps macOS defaults of 1 and 2 minutes.
+    /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10
   '';
 
   programs.ssh.extraConfig = ''
