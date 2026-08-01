@@ -14,14 +14,12 @@ theme = dark:midnight,light:daylight
 cursor-style = bar
 cursor-style-blink = false
 shell-integration-features = no-cursor
-window-decoration = false
 window-padding-x = 0
 window-padding-y = 0
 window-padding-color = background
 app-notifications = no-clipboard-copy,no-config-reload
 gtk-single-instance = false
 resize-overlay = never
-mouse-scroll-multiplier = 0.5
 quit-after-last-window-closed = true
 confirm-close-surface = false
 keybind = alt+r=reload_config
