@@ -278,7 +278,7 @@ in
       persistent-others = [ ];
     };
     NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
-    NSGlobalDomain."com.apple.swipescrolldirection" = false;
+    NSGlobalDomain."com.apple.swipescrolldirection" = true;
   };
 
   environment.systemPackages = with pkgs; [
