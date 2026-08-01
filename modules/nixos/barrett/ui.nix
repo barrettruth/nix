@@ -61,36 +61,12 @@ let
     [ -z "$theme" ] && theme="midnight"
   '';
 
-  zshInit = pkgs.writeText "zsh-init" ''
-    source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-    source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-    ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-    fpath+=(${pkgs.pure-prompt}/share/zsh/site-functions)
-    source ${pkgs.fzf}/share/fzf/key-bindings.zsh
-    source ${pkgs.fzf}/share/fzf/completion.zsh
-    eval "$(${pkgs.zoxide}/bin/zoxide init zsh)"
-    alias ls="${pkgs.eza}/bin/eza --git"
-    source ${configRoot}/zsh/zshrc
-  '';
-
   mimeappsList = pkgs.writeText "mimeapps-ui.list" ''
     [Default Applications]
     x-scheme-handler/http=chromium-browser.desktop
     x-scheme-handler/https=chromium-browser.desktop
     text/html=chromium-browser.desktop
     text/plain=nvim.desktop
-  '';
-
-  fzfThemes = pkgs.runCommand "fzf-theme-files" { } ''
-    mkdir -p $out
-
-    cat > $out/midnight << 'FZFMIDNIGHT'
-    ${themeGenerators.mkFzfTheme palettes.midnight}
-    FZFMIDNIGHT
-
-    cat > $out/daylight << 'FZFDAYLIGHT'
-    ${themeGenerators.mkFzfTheme palettes.daylight}
-    FZFDAYLIGHT
   '';
 
   hyprThemes = pkgs.runCommand "hypr-theme-files" { } ''
@@ -318,19 +294,6 @@ in
       shell = lib.mkDefault pkgs.zsh;
       packages =
         (with pkgs; [
-          pure-prompt
-          fzf
-          eza
-          zoxide
-          ripgrep
-          fd
-          git
-          neovim
-          ghostty
-          jq
-          curl
-          openssl
-          socat
           procps
           dconf
           hyprlock
@@ -352,8 +315,6 @@ in
           apple-cursor
           libnotify
           gsettings-desktop-schemas
-          zsh-syntax-highlighting
-          zsh-autosuggestions
         ])
         ++ [
           chromium
@@ -379,22 +340,6 @@ in
     };
 
     environment.sessionVariables = {
-      XDG_CONFIG_HOME = XDG_CONFIG_HOME;
-      XDG_DATA_HOME = XDG_DATA_HOME;
-      XDG_STATE_HOME = XDG_STATE_HOME;
-      XDG_CACHE_HOME = XDG_CACHE_HOME;
-      EDITOR = "nvim";
-      MANPAGER = "nvim +Man!";
-      TERMINAL = "ghostty";
-      TERM = "xterm-ghostty";
-      TERMINFO = "${XDG_DATA_HOME}/terminfo";
-      BROWSER = "chromium";
-      LESSHISTFILE = "-";
-      BARRETT_NIX_CONFIG_DIR = configRoot;
-      FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
-      FZF_DEFAULT_COMMAND = "rg --files --hidden";
-      FZF_CTRL_T_COMMAND = "rg --files --hidden";
-      FZF_ALT_C_COMMAND = "fd --type d --hidden";
       HYPRLAND_NO_SD_VARS = "1";
       QT_AUTO_SCREEN_SCALE_FACTOR = "1";
       XCURSOR_SIZE = "24";
@@ -407,12 +352,6 @@ in
 
     programs.zsh = {
       enable = true;
-      shellInit = ''
-        export ZDOTDIR="$HOME/.config/zsh"
-        THEME="$(cat "''${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || THEME="midnight"
-        [ -z "$THEME" ] && THEME="midnight"
-        export THEME
-      '';
       loginShellInit = ''
         if [[ -z "$DISPLAY$WAYLAND_DISPLAY" && "$(tty)" == /dev/tty1 ]]; then
           [ -e /etc/set-environment ] && . /etc/set-environment
@@ -528,20 +467,9 @@ in
       ${mkDir "${XDG_DATA_HOME}"}
       ${mkDir "${XDG_STATE_HOME}"}
       ${mkDir "${XDG_CACHE_HOME}"}
-      ${mkDir "${XDG_CONFIG_HOME}/zsh"}
-      ${mkDir "${XDG_STATE_HOME}/zsh"}
-      if [ ! -s "${XDG_STATE_HOME}/theme" ]; then
-        tmp="$(mktemp)"
-        printf '%s\n' midnight > "$tmp"
-        install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/theme"
-        rm -f "$tmp"
-      fi
-      ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
       if [ -d "${XDG_CONFIG_HOME}/ghostty/themes" ] && [ ! -L "${XDG_CONFIG_HOME}/ghostty/themes" ]; then
         rmdir "${XDG_CONFIG_HOME}/ghostty/themes" 2>/dev/null || true
       fi
-      ${mkDir "${XDG_CONFIG_HOME}/fzf"}
-      ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
       ${mkDir "${XDG_CONFIG_HOME}/hypr"}
       ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
       ${mkDir "${XDG_STATE_HOME}/hypr"}
@@ -563,13 +491,7 @@ in
         fi
       ''}
 
-      ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
-      ${mkSymlink "${configRoot}/nvim" "${XDG_CONFIG_HOME}/nvim"}
-      ${mkSymlink "${configRoot}/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
-      ${mkSymlink "${configRoot}/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
 
-      ${mkSymlink "${fzfThemes}/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
-      ${mkSymlink "${fzfThemes}/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
 
       ${mkSymlink "${hyprThemes}/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
       ${mkSymlink "${hyprThemes}/daylight.conf" "${XDG_CONFIG_HOME}/hypr/themes/daylight.conf"}
@@ -602,7 +524,6 @@ in
       ''}
 
       ${readTheme}
-      ${mkSymlink "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"}
       ${mkSymlink "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"}
       ${mkSymlink "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"}
       ${mkSymlink "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"}

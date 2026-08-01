@@ -33,6 +33,30 @@ let
     [ -z "$theme" ] && theme="midnight"
   '';
 
+  zshInit = pkgs.writeText "zsh-init" ''
+    source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+    fpath+=(${pkgs.pure-prompt}/share/zsh/site-functions)
+    source ${pkgs.fzf}/share/fzf/key-bindings.zsh
+    source ${pkgs.fzf}/share/fzf/completion.zsh
+    eval "$(${pkgs.zoxide}/bin/zoxide init zsh)"
+    alias ls="${pkgs.eza}/bin/eza --git"
+    source ${repo}/config/zsh/zshrc
+  '';
+
+  fzfThemes = pkgs.runCommand "fzf-theme-files" { } ''
+    mkdir -p $out
+
+    cat > $out/midnight << 'FZFMIDNIGHT'
+    ${themeGenerators.mkFzfTheme palettes.midnight}
+    FZFMIDNIGHT
+
+    cat > $out/daylight << 'FZFDAYLIGHT'
+    ${themeGenerators.mkFzfTheme palettes.daylight}
+    FZFDAYLIGHT
+  '';
+
   agentPackages = with pkgs; [
     codex
     devin-cli
@@ -115,6 +139,23 @@ let
   isLinux = !isDarwin;
 
   sessionVariables = {
+    XDG_CONFIG_HOME = XDG_CONFIG_HOME;
+    XDG_DATA_HOME = XDG_DATA_HOME;
+    XDG_STATE_HOME = XDG_STATE_HOME;
+    XDG_CACHE_HOME = XDG_CACHE_HOME;
+    EDITOR = "nvim";
+    MANPAGER = "nvim +Man!";
+    TERMINAL = "ghostty";
+    TERM = "xterm-ghostty";
+    TERMINFO = "${XDG_DATA_HOME}/terminfo";
+    BROWSER = if isDarwin then "google-chrome-stable" else "chromium";
+    LESSHISTFILE = "-";
+    BARRETT_NIX_CONFIG_DIR = "${repo}/config";
+    FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
+    FZF_DEFAULT_COMMAND = "rg --files --hidden";
+    FZF_CTRL_T_COMMAND = "rg --files --hidden";
+    FZF_ALT_C_COMMAND = "fd --type d --hidden";
+
     WGETRC = "${XDG_CONFIG_HOME}/wgetrc";
     LUAROCKS_CONFIG = "${XDG_CONFIG_HOME}/luarocks/config.lua";
     GRADLE_USER_HOME = "${XDG_CONFIG_HOME}/gradle";
@@ -155,6 +196,23 @@ let
   };
 
   activationText = ''
+        ${mkDir "${XDG_CONFIG_HOME}/zsh"}
+        ${mkDir "${XDG_STATE_HOME}/zsh"}
+        ${mkDir "${XDG_CONFIG_HOME}/ghostty"}
+        ${mkDir "${XDG_CONFIG_HOME}/fzf"}
+        ${mkDir "${XDG_CONFIG_HOME}/fzf/themes"}
+        if [ ! -s "${XDG_STATE_HOME}/theme" ]; then
+          tmp="$(mktemp)"
+          printf '%s\n' midnight > "$tmp"
+          install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/theme"
+          rm -f "$tmp"
+        fi
+        ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
+        ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
+        ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
+        ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
+        ${mkSymlink "${fzfThemes}/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
+        ${mkSymlink "${fzfThemes}/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
             ${mkDir "${XDG_CONFIG_HOME}"}
             ${mkDir "${XDG_DATA_HOME}"}
             ${mkDir "${XDG_STATE_HOME}"}
@@ -205,7 +263,8 @@ let
     ${lib.optionalString isLinux "${mkSymlink "${zathuraThemes}/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}"}
     ${lib.optionalString isLinux "${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}"}
 
-    ${lib.optionalString isLinux "${readTheme}"}
+    ${readTheme}
+    ${mkSymlink "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"}
     ${lib.optionalString isLinux "${mkSymlink "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"}"}
 
             ${mkDir "${XDG_CONFIG_HOME}/codex/skills"}
@@ -351,6 +410,21 @@ in
             gh
             jujutsu
             gnupg
+            pure-prompt
+            fzf
+            eza
+            zoxide
+            ripgrep
+            fd
+            git
+            neovim
+            ghostty
+            jq
+            curl
+            openssl
+            socat
+            zsh-syntax-highlighting
+            zsh-autosuggestions
           ])
           ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (
             with pkgs;
@@ -378,6 +452,14 @@ in
           if [ -z "''${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json" ]; then
             export GOOGLE_APPLICATION_CREDENTIALS="${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json"
           fi
+        '';
+
+        programs.zsh.enable = true;
+        programs.zsh.shellInit = ''
+          export ZDOTDIR="$HOME/.config/zsh"
+          THEME="$(cat "''${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || THEME="midnight"
+          [ -z "$THEME" ] && THEME="midnight"
+          export THEME
         '';
 
         programs.gnupg.agent.enable = true;
