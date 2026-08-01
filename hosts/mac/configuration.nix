@@ -1,6 +1,42 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 let
   username = "barrett";
+
+  # Mirrors programs.chromium.extraOpts on the laptop. macOS has no
+  # equivalent module, so the policies are rendered to the managed
+  # preferences domain by hand.
+  chromePolicies = {
+    BrowserSigninEnabled = 1;
+    SyncDisabled = false;
+    SpellCheckServiceEnabled = true;
+    SearchSuggestEnabled = true;
+    UrlKeyedAnonymizedDataCollectionEnabled = true;
+    HttpsOnlyMode = "force_enabled";
+    BookmarkBarEnabled = false;
+    PasswordManagerEnabled = false;
+    AutofillAddressEnabled = false;
+    AutofillCreditCardEnabled = false;
+    TranslateEnabled = true;
+    ImportBookmarks = false;
+    SafeBrowsingProtectionLevel = 1;
+    DnsOverHttpsMode = "automatic";
+    BlockThirdPartyCookies = true;
+    CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
+    RestoreOnStartup = 1;
+    NewTabPageLocation = "chrome-extension://demmbkpegigoeiappcbliinlijmeoaop/newtab.html";
+    ExtensionInstallForcelist = map (id: "${id};https://clients2.google.com/service/update2/crx") [
+      # Bitwarden Password Manager
+      "nngceckbapebfimnlniiiahkandclblb"
+      # uBlock Origin Lite
+      "ddkjiahejlhfcafbddmgiahcphecmpfh"
+      # React Developer Tools
+      "fmkadmapgofadopljbjfkapdkoienihi"
+    ];
+  };
+
+  chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
+    lib.generators.toPlist { } chromePolicies
+  );
 in
 {
   networking.hostName = "mac";
@@ -21,6 +57,11 @@ in
   security.pam.services.sudo_local.touchIdAuth = true;
 
   fonts.packages = [ pkgs.barrett-fonts ];
+
+  system.activationScripts.extraActivation.text = ''
+    install -d -m 0755 "/Library/Managed Preferences"
+    install -m 0644 ${chromePolicyPlist} "/Library/Managed Preferences/com.google.Chrome.plist"
+  '';
 
   programs.ssh.extraConfig = ''
     Host forge.barrettruth.com git.barrettruth.com
@@ -44,7 +85,7 @@ in
       autohide = true;
       show-recents = false;
       persistent-apps = [
-        { app = "/Applications/Nix Apps/Chromium.app"; }
+        { app = "/Applications/Nix Apps/Google Chrome.app"; }
         { app = "/Applications/Nix Apps/Ghostty.app"; }
       ];
       persistent-others = [ ];
@@ -54,7 +95,7 @@ in
 
   environment.systemPackages = with pkgs; [
     age
-    chromium
+    google-chrome
     curl
     fd
     fzf

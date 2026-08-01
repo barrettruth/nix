@@ -1,6 +1,5 @@
 [
-  (final: prev: {
-    chromium = final.callPackage ../../pkgs/chromium-bin { };
+  (_: prev: {
     ghostty = prev.ghostty-bin;
   })
 ]

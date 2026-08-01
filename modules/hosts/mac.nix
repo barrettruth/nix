@@ -22,7 +22,8 @@ in
       {
         nixpkgs.hostPlatform = platform;
         nixpkgs.overlays = overlays ++ darwinOverlays;
-        nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) sharedUnfree;
+        nixpkgs.config.allowUnfreePredicate =
+          pkg: builtins.elem (lib.getName pkg) (sharedUnfree ++ [ "google-chrome" ]);
       }
     ];
     specialArgs = {
