@@ -73,9 +73,7 @@
     };
   };
 
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
-  ];
+  users.users.root.openssh.authorizedKeys.keys = identity.sshKeys;
 
   security.acme = {
     acceptTerms = true;

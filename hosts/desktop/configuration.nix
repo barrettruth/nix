@@ -99,9 +99,7 @@ in
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
-  ];
+  users.users.root.openssh.authorizedKeys.keys = identity.sshKeys;
 
   users.groups.nixremote = { };
   users.users.nixremote = {
@@ -127,9 +125,7 @@ in
       "power"
     ];
     linger = true;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILA1pOJawzHtJqIn56AZT4IhPUh9vUEhLPLwndk5s3iM ${identity.email}"
-    ];
+    openssh.authorizedKeys.keys = identity.sshKeys;
   };
 
   systemd.user.slices.rbuild = {
