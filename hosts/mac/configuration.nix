@@ -34,6 +34,51 @@ let
     ];
   };
 
+  # nixpkgs applies commandLineArgs only to bin/google-chrome-stable on
+  # darwin; the .app is copied unwrapped, so Dock launches would miss the
+  # flag. Chrome is signed with library validation, so the bundle cannot be
+  # patched in place. Ship a small launcher bundle instead that execs the
+  # signed binary. The flag silences the debugger banner the Midnight
+  # extension triggers via Emulation.setAutoDarkModeOverride.
+  chromeFlags = [ "--silent-debugger-extension-api" ];
+
+  chromeWrapped = pkgs.runCommand "google-chrome-wrapped" { } ''
+    real="${pkgs.google-chrome}/Applications/Google Chrome.app"
+    app="$out/Applications/Google Chrome.app"
+    mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$out/bin"
+
+    cp "$real/Contents/Resources/app.icns" "$app/Contents/Resources/app.icns"
+
+    cat >"$app/Contents/Info.plist" <<'PLIST'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>CFBundleExecutable</key><string>chrome</string>
+      <key>CFBundleIdentifier</key><string>com.barrettruth.google-chrome</string>
+      <key>CFBundleName</key><string>Google Chrome</string>
+      <key>CFBundleDisplayName</key><string>Google Chrome</string>
+      <key>CFBundleIconFile</key><string>app.icns</string>
+      <key>CFBundlePackageType</key><string>APPL</string>
+      <key>CFBundleShortVersionString</key><string>${pkgs.google-chrome.version}</string>
+      <key>LSMinimumSystemVersion</key><string>11.0</string>
+    </dict>
+    </plist>
+    PLIST
+
+    cat >"$app/Contents/MacOS/chrome" <<EOF
+    #!/bin/sh
+    exec "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
+    EOF
+    chmod +x "$app/Contents/MacOS/chrome"
+
+    cat >"$out/bin/google-chrome-stable" <<EOF
+    #!/bin/sh
+    exec "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
+    EOF
+    chmod +x "$out/bin/google-chrome-stable"
+  '';
+
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   chromeApp = "/Applications/Nix Apps/Google Chrome.app";
 
@@ -130,7 +175,7 @@ in
 
   environment.systemPackages = with pkgs; [
     age
-    google-chrome
+    chromeWrapped
     rectangle
     curl
     fd
