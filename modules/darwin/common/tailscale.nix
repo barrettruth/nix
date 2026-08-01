@@ -23,6 +23,11 @@ in
     overrideLocalDns = true;
   };
 
+  # nix-darwin's tailscaled daemon sets RunAtLoad but not KeepAlive. With
+  # overrideLocalDns it is the only resolver, so a crash would take all name
+  # resolution with it until someone noticed.
+  launchd.daemons.tailscaled.serviceConfig.KeepAlive = true;
+
   # networking.dns is applied per entry in knownNetworkServices, so without
   # this the resolver is never actually set and the option silently does
   # nothing.
