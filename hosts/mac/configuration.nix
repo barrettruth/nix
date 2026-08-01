@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  identity,
+  ...
+}:
 let
   username = "barrett";
 
@@ -81,6 +86,13 @@ let
     chmod +x "$out/bin/google-chrome-stable"
   '';
 
+  # nix-darwin has no networking.hosts. Without these the public A records
+  # win, and they point at an address that does not answer, so every
+  # request to a self-hosted service stalls until it times out.
+  tailnetHostsBlock = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (ip: names: "${ip} ${lib.concatStringsSep " " names}") identity.tailnetHosts
+  );
+
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   chromeApp = "/Applications/Nix Apps/Google Chrome.app";
 
@@ -160,6 +172,20 @@ in
     # power.sleep drives systemsetup, which only writes the AC profile.
     # The battery profile keeps macOS defaults of 1 and 2 minutes.
     /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10
+
+    tmp=$(mktemp)
+    awk '
+      $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
+      $0 == "# END nix-darwin tailnet"   { skip = 0; next }
+      !skip { print }
+    ' /etc/hosts >"$tmp"
+    {
+      echo "# BEGIN nix-darwin tailnet"
+      echo "${tailnetHostsBlock}"
+      echo "# END nix-darwin tailnet"
+    } >>"$tmp"
+    install -m 0644 -o root -g wheel "$tmp" /etc/hosts
+    rm -f "$tmp"
 
     # The laptop prunes to +5 and the vps to +2; nix-darwin has no
     # equivalent, and determinate ships no scheduled collection, so do it

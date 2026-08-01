@@ -266,24 +266,7 @@ in
     mode = "0400";
   };
 
-  networking.hosts."100.64.0.1" = [
-    "desktop"
-    "forge.barrettruth.com"
-    "git.barrettruth.com"
-    "www.barrettruth.com"
-    "barrettruth.com"
-    "www.barrettruth.sh"
-    "barrettruth.sh"
-    "www.philipmruth.com"
-    "philipmruth.com"
-    "www.vimdoc-language-server.com"
-    "vimdoc-language-server.com"
-    "vimdoc-language-server.barrettruth.com"
-    "ts.barrettruth.com"
-    "delta.barrettruth.com"
-    "vault.barrettruth.com"
-    "finance.barrettruth.com"
-  ];
+  networking.hosts = identity.tailnetHosts;
 
   programs.ssh.knownHosts.desktop = {
     hostNames = [
