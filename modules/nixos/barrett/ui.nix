@@ -18,7 +18,14 @@ let
   repo = "${XDG_CONFIG_HOME}/nix";
   sourceRoot = ../../..;
   sourceConfig = "${sourceRoot}/config";
-  sourceScripts = "${sourceRoot}/scripts";
+  sourceScripts = builtins.path {
+    path = ../../../scripts;
+    name = "barrett-scripts";
+  };
+  xkbBaremak = builtins.path {
+    path = ../../../config/xkb/baremak;
+    name = "xkb-baremak";
+  };
   configRoot = if cfg.useHomeRepo then "${repo}/config" else sourceConfig;
   scriptsPath = if cfg.useHomeRepo then "${repo}/scripts" else "${uiScripts}/bin";
 
@@ -439,7 +446,7 @@ in
     services.xserver.xkb.extraLayouts.baremak = {
       description = "English (Baremak)";
       languages = [ "eng" ];
-      symbolsFile = sourceRoot + "/config/xkb/baremak";
+      symbolsFile = xkbBaremak;
     };
 
     environment.pathsToLink = [

@@ -35,3 +35,4 @@ pkgs/                            custom derivations
 - **laptop**: Dell XPS 9500 workstation.
 - **desktop**: NixOS workstation, primary self-host. [Forgejo](https://forgejo.org/) at `forge.barrettruth.com`, Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [delta](https://forge.barrettruth.com/barrettruth/delta) at `delta.barrettruth.com`, `finance.barrettruth.com`, and static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`).
 - **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com` and [Headscale](https://headscale.net/) at `headscale.barrettruth.com`.
+
