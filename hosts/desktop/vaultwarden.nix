@@ -34,7 +34,13 @@ lib.mkMerge [
     services.nginx.virtualHosts."vault.${identity.domain}" = {
       enableACME = true;
       forceSSL = true;
-      locations."/".proxyPass = "http://127.0.0.1:8222";
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:8222";
+        # /notifications/hub is a websocket; without the upgrade headers
+        # nginx turns it into a plain GET, which falls through to a 404 and
+        # leaves clients with no live sync.
+        proxyWebsockets = true;
+      };
     };
 
     sops.secrets."vaultwarden-r2-backup-env" = mkDesktopSecret "vaultwarden-r2-backup-env" { };
