@@ -50,6 +50,13 @@ printf '%s\n' "$theme" >"$state_dir/theme"
 export THEME="$theme"
 apply_nvim_theme
 
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+fzf_themes="$cfg/fzf/themes"
+[ -f "$fzf_themes/$theme" ] && {
+  ln -sf "$fzf_themes/$theme" "$fzf_themes/theme"
+}
+
 case "$(uname)" in
 Linux)
   require dconf
@@ -69,18 +76,11 @@ Linux)
       ;;
     esac
 
-    cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
-
     waybarctl apply-theme
 
     hypr_themes="$cfg/hypr/themes"
     [ -f "$hypr_themes/$theme.lua" ] && {
       ln -sf "$hypr_themes/$theme.lua" "$hypr_themes/theme.lua"
-    }
-
-    fzf_themes="$cfg/fzf/themes"
-    [ -f "$fzf_themes/$theme" ] && {
-      ln -sf "$fzf_themes/$theme" "$fzf_themes/theme"
     }
 
     fuzzel_themes="$cfg/fuzzel/themes"

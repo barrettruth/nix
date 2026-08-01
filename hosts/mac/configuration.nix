@@ -7,6 +7,12 @@
 let
   username = "barrett";
 
+  hidKeyboardUsage = usage: 30064771072 + usage;
+  capsLock = hidKeyboardUsage 57;
+  leftControl = hidKeyboardUsage 224;
+  rightCommand = hidKeyboardUsage 231;
+  f14 = hidKeyboardUsage 105;
+
   # Mirrors programs.chromium.extraOpts on the laptop. macOS has no
   # equivalent module, so the policies are rendered to the managed
   # preferences domain by hand.
@@ -138,6 +144,24 @@ in
       alt + shift - b : open -a "${chromeApp}"
       alt + ctrl - i : ${idleToggle}
     '';
+  };
+
+  system.keyboard = {
+    enableKeyMapping = true;
+    userKeyMapping = [
+      {
+        HIDKeyboardModifierMappingSrc = capsLock;
+        HIDKeyboardModifierMappingDst = leftControl;
+      }
+      {
+        HIDKeyboardModifierMappingSrc = leftControl;
+        HIDKeyboardModifierMappingDst = capsLock;
+      }
+      {
+        HIDKeyboardModifierMappingSrc = rightCommand;
+        HIDKeyboardModifierMappingDst = f14;
+      }
+    ];
   };
 
   # nix.enable is off, so nix.gc is never emitted: everything under
