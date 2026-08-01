@@ -11,7 +11,7 @@ let
   capsLock = hidKeyboardUsage 57;
   leftControl = hidKeyboardUsage 224;
   rightCommand = hidKeyboardUsage 231;
-  f14 = hidKeyboardUsage 105;
+  f18 = hidKeyboardUsage 109;
 
   # Mirrors programs.chromium.extraOpts on the laptop. macOS has no
   # equivalent module, so the policies are rendered to the managed
@@ -159,7 +159,7 @@ in
       }
       {
         HIDKeyboardModifierMappingSrc = rightCommand;
-        HIDKeyboardModifierMappingDst = f14;
+        HIDKeyboardModifierMappingDst = f18;
       }
     ];
   };

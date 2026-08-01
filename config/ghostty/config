@@ -23,7 +23,7 @@ resize-overlay = never
 quit-after-last-window-closed = true
 confirm-close-surface = false
 macos-option-as-alt = left
-keybind = f14=esc:x
+keybind = f18=esc:x
 keybind = alt+r=reload_config
 keybind = alt+y=copy_to_clipboard
 keybind = alt+p=paste_from_clipboard
