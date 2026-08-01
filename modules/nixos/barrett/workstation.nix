@@ -57,6 +57,16 @@ let
     FZFDAYLIGHT
   '';
 
+  # config/ghostty/config sets `keybind = clear`, which also drops the
+  # macOS defaults. Layer the platform-native clipboard binds on top.
+  ghosttyDarwinConf = pkgs.writeText "ghostty-config-darwin" ''
+    config-file = ${repo}/config/ghostty/config
+    keybind = super+c=copy_to_clipboard
+    keybind = super+v=paste_from_clipboard
+  '';
+
+  ghosttyConfig = if isDarwin then "${ghosttyDarwinConf}" else "${repo}/config/ghostty/config";
+
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
@@ -212,7 +222,7 @@ let
         fi
         ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
         ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
-        ${mkSymlink "${repo}/config/ghostty/config" "${XDG_CONFIG_HOME}/ghostty/config"}
+        ${mkSymlink ghosttyConfig "${XDG_CONFIG_HOME}/ghostty/config"}
         ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
         ${mkSymlink "${fzfThemes}/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
         ${mkSymlink "${fzfThemes}/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
