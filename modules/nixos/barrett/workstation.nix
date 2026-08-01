@@ -57,6 +57,9 @@ let
     FZFDAYLIGHT
   '';
 
+  chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
+  chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
+
   agentPackages = with pkgs; [
     codex
     devin-cli
@@ -259,6 +262,8 @@ let
             ${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}
             ${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
+        ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
+        ${mkSymlink "${chromiumThemeJs}" "${repo}/config/chromium/extension/theme.js"}
     ${lib.optionalString isLinux "${mkSymlink "${zathuraThemes}/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}"}
     ${lib.optionalString isLinux "${mkSymlink "${zathuraThemes}/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}"}
     ${lib.optionalString isLinux "${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}"}

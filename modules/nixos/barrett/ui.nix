@@ -514,10 +514,6 @@ in
       ${mkSymlink "${dunstThemes}/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
       ${mkSymlink "${configRoot}/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
 
-      ${lib.optionalString cfg.useHomeRepo ''
-        ${mkSymlink "${chromiumThemeCss}" "${configRoot}/chromium/extension/theme.css"}
-        ${mkSymlink "${chromiumThemeJs}" "${configRoot}/chromium/extension/theme.js"}
-      ''}
       ${lib.optionalString (!cfg.useHomeRepo) ''
         ${mkDir "${XDG_CONFIG_HOME}/chromium"}
         ${mkSymlink "${chromiumExtension}" "${XDG_CONFIG_HOME}/chromium/extension"}
