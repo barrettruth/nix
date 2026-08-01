@@ -9,6 +9,20 @@ let
   headscalePort = 8085;
 in
 {
+  # headscale validates its OIDC issuer at startup, which means reaching
+  # authelia through nginx. Without ordering it loses the race on boot,
+  # fails with a 502 and only recovers on the systemd restart.
+  systemd.services.headscale = {
+    after = [
+      "nginx.service"
+      "authelia-finance.service"
+    ];
+    wants = [
+      "nginx.service"
+      "authelia-finance.service"
+    ];
+  };
+
   services.headscale = {
     enable = true;
     address = "127.0.0.1";

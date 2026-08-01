@@ -277,7 +277,7 @@ in
       "desktop.ts.barrettruth.com"
       "100.64.0.1"
     ];
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
+    publicKey = identity.hostKeys.desktop;
   };
 
   programs.ssh.knownHosts."forge-tailnet" = {
@@ -285,7 +285,7 @@ in
       "[forge.barrettruth.com]:2222"
       "[git.barrettruth.com]:2222"
     ];
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlaElaGlwSxKvtujoAnGWSrZWlxZRdviq3Y9TgZCLZ/";
+    publicKey = identity.hostKeys.forge-tailnet;
   };
 
   nix.gc = {
