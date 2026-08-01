@@ -15,7 +15,7 @@ rebuild-mac:
       sudo /nix/var/nix/profiles/system/activate
 
 _python-scripts:
-   @git ls-files 'scripts/**' | while IFS= read -r file; do \
+   @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
         shebang=$(sed -n '1p' "$file"); \
         case "$shebang" in \
@@ -24,7 +24,7 @@ _python-scripts:
     done
 
 _shell-scripts:
-    @git ls-files 'scripts/**' | while IFS= read -r file; do \
+    @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
         shebang=$(sed -n '1p' "$file"); \
         case "$shebang" in \
