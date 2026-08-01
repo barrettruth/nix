@@ -344,32 +344,64 @@ local function probe_async(socket, timeout, cb)
     end)
 end
 
+---@param socket string
+---@param cb fun(listening: boolean)
+---@return nil
+local function socket_listening_async(socket, cb)
+    if not vim.uv.fs_stat(socket) then
+        vim.schedule(function()
+            cb(false)
+        end)
+        return
+    end
+    local ok, pipe = pcall(vim.uv.new_pipe, false)
+    if not ok or not pipe then
+        vim.schedule(function()
+            cb(false)
+        end)
+        return
+    end
+    local timer = vim.uv.new_timer()
+    local done = false
+    ---@param alive boolean
+    ---@return nil
+    local function finish(alive)
+        if done then
+            return
+        end
+        done = true
+        pcall(timer.stop, timer)
+        pcall(timer.close, timer)
+        pcall(function()
+            pipe:close()
+        end)
+        vim.schedule(function()
+            cb(alive)
+        end)
+    end
+    timer:start(CONNECT_PROBE_MS, 0, function()
+        finish(false)
+    end)
+    pcall(function()
+        pipe:connect(socket, function(err)
+            finish(err == nil)
+        end)
+    end)
+end
+
 ---Report whether a socket path currently has a listener bound to it.
 ---A stale socket file left by a dead server refuses the connection; a live but
 ---busy server accepts it, so this distinguishes "gone" from "not answering yet".
 ---@param socket string
 ---@return boolean
 local function socket_listening(socket)
-    if not vim.uv.fs_stat(socket) then
-        return false
-    end
-    local ok, pipe = pcall(vim.uv.new_pipe, false)
-    if not ok or not pipe then
-        return false
-    end
     local done, alive = false, false
-    pcall(function()
-        pipe:connect(socket, function(err)
-            alive = err == nil
-            done = true
-        end)
+    socket_listening_async(socket, function(listening)
+        alive, done = listening, true
     end)
-    vim.wait(CONNECT_PROBE_MS, function()
+    vim.wait(CONNECT_PROBE_MS + READY_POLL_MS, function()
         return done
     end, 10)
-    pcall(function()
-        pipe:close()
-    end)
     return alive
 end
 
@@ -573,34 +605,45 @@ function M.ensure(root, cb)
             finish_pending(real, nil, 'server startup timed out: ' .. real)
             return
         end
-        probe_async(paths.socket, LIST_PROBE_MS, function(server, rerr)
-            if server then
-                if server.root == real then
-                    finish_pending(real, server)
-                else
-                    finish_pending(
-                        real,
-                        nil,
-                        'socket belongs to different root: ' .. paths.socket
-                    )
-                end
-                return
-            end
-            if
-                rerr
-                and rerr ~= ''
-                and rerr ~= 'not ready'
-                and rerr ~= 'timeout'
-            then
-                finish_pending(real, nil, rerr)
-                return
-            end
+        ---@return nil
+        local function reschedule()
             local entry2 = pending[real]
             if not entry2 then
                 return
             end
             entry2.timer = vim.uv.new_timer()
             entry2.timer:start(READY_POLL_MS, 0, poll)
+        end
+        socket_listening_async(paths.socket, function(listening)
+            if not listening then
+                reschedule()
+                return
+            end
+            probe_async(paths.socket, LIST_PROBE_MS, function(server, rerr)
+                if server then
+                    if server.root == real then
+                        finish_pending(real, server)
+                    else
+                        finish_pending(
+                            real,
+                            nil,
+                            'socket belongs to different root: '
+                                .. paths.socket
+                        )
+                    end
+                    return
+                end
+                if
+                    rerr
+                    and rerr ~= ''
+                    and rerr ~= 'not ready'
+                    and rerr ~= 'timeout'
+                then
+                    finish_pending(real, nil, rerr)
+                    return
+                end
+                reschedule()
+            end)
         end)
     end
     poll()
