@@ -173,6 +173,9 @@ in
     # The battery profile keeps macOS defaults of 1 and 2 minutes.
     /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10
 
+    # login(1) prints "Last login:" unless this exists.
+    install -m 0644 -o ${username} -g staff /dev/null "/Users/${username}/.hushlogin"
+
     tmp=$(mktemp)
     awk '
       $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
@@ -227,6 +230,13 @@ in
       "[git.barrettruth.com]:2222"
     ];
     publicKey = identity.hostKeys.forge-tailnet;
+  };
+
+  # No nix-darwin option exists for the ambient light sensor, so write the
+  # domain directly. It is the "Automatically adjust brightness" toggle in
+  # System Settings > Displays.
+  system.defaults.CustomSystemPreferences."com.apple.iokit.AmbientLightSensor" = {
+    "Automatic Display Enabled" = false;
   };
 
   system.defaults = {
