@@ -22,6 +22,22 @@ let
   XDG_CACHE_HOME = "${homeDirectory}/.cache";
   repo = "${XDG_CONFIG_HOME}/nix";
 
+  sourceScripts = builtins.path {
+    path = ../../../scripts;
+    name = "barrett-scripts";
+  };
+
+  barrettScripts = pkgs.runCommand "barrett-scripts" { } ''
+    mkdir -p $out/bin
+    for script in ${sourceScripts}/*; do
+      ln -s "$script" "$out/bin/$(basename "$script")"
+    done
+  '';
+
+  useHomeRepo = config.barrett.ui.useHomeRepo or true;
+
+  scriptsPath = if useHomeRepo then "${repo}/scripts" else "${barrettScripts}/bin";
+
   inherit (act) runAsUser mkSymlink;
 
   mkDir = act.installDirMode "0755";
@@ -339,6 +355,13 @@ in
 
   options.barrett.workstation.enable = lib.mkEnableOption "Barrett workstation extras";
 
+  options.barrett.workstation.scriptsPath = lib.mkOption {
+    type = lib.types.str;
+    readOnly = true;
+    internal = true;
+    default = scriptsPath;
+  };
+
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
@@ -450,9 +473,11 @@ in
             ]
           )
           ++ agentPackages
-          ++ codexRuntimePackages;
+          ++ codexRuntimePackages
+          ++ [ barrettScripts ];
 
         environment.extraInit = ''
+          export PATH="${scriptsPath}:${homeDirectory}/.local/bin:$PATH"
           export PATH="${XDG_DATA_HOME}/cargo/bin:${XDG_DATA_HOME}/go/bin:${XDG_DATA_HOME}/pnpm:$PATH"
           if [ -z "''${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json" ]; then
             export GOOGLE_APPLICATION_CREDENTIALS="${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json"

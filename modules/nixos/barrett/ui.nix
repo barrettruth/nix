@@ -19,16 +19,12 @@ let
   repo = "${XDG_CONFIG_HOME}/nix";
   sourceRoot = ../../..;
   sourceConfig = "${sourceRoot}/config";
-  sourceScripts = builtins.path {
-    path = ../../../scripts;
-    name = "barrett-scripts";
-  };
   xkbBaremak = builtins.path {
     path = ../../../config/xkb/baremak;
     name = "xkb-baremak";
   };
   configRoot = if cfg.useHomeRepo then "${repo}/config" else sourceConfig;
-  scriptsPath = if cfg.useHomeRepo then "${repo}/scripts" else "${uiScripts}/bin";
+  scriptsPath = config.barrett.workstation.scriptsPath;
 
   iosevkaTerm = (pkgs.iosevka-bin.override { variant = "SGr-IosevkaTerm"; }).overrideAttrs {
     inherit (pkgs.iosevka) version;
@@ -37,13 +33,6 @@ let
       hash = "sha256-dpzswpCXn2MN6Q6MscHHmyo80dsI8evHa21ELwkLEG0=";
     };
   };
-
-  uiScripts = pkgs.runCommand "barrett-ui-scripts" { } ''
-    mkdir -p $out/bin
-    for script in ctl hypr mux theme waybarctl; do
-      ln -s ${sourceScripts}/$script $out/bin/$script
-    done
-  '';
 
   wayland = import ../desktop/wayland.nix { inherit pkgs; };
   inherit (wayland)
@@ -336,7 +325,6 @@ in
         ])
         ++ [
           chromium
-          uiScripts
         ];
     };
 
@@ -363,10 +351,6 @@ in
       XCURSOR_SIZE = "24";
       XCURSOR_THEME = "macOS";
     };
-
-    environment.extraInit = ''
-      export PATH="${scriptsPath}:${homeDirectory}/.local/bin:$PATH"
-    '';
 
     programs.zsh = {
       enable = true;
