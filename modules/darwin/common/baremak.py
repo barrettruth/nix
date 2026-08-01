@@ -158,11 +158,14 @@ def key_map(index: int, level: int, levels: dict[str, list[str]]) -> str:
 
 
 def main() -> None:
+    if len(sys.argv) != 3:
+        raise SystemExit("usage: baremak.py <id> <name> <baremak.xkb >out.keylayout")
+    layout_id, name = sys.argv[1], sys.argv[2]
     levels = parse(sys.stdin.read())
     maps = "\n".join(key_map(i, i, levels) for i in range(4))
     print(f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE keyboard SYSTEM "file://localhost/System/Library/DTDs/KeyboardLayout.dtd">
-<keyboard group="126" id="-19001" name="Baremak" maxout="1">
+<keyboard group="126" id="{layout_id}" name="{name}" maxout="1">
   <layouts>
     <layout first="0" last="17" modifiers="mods" mapSet="ANSI"/>
   </layouts>

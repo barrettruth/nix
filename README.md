@@ -40,13 +40,13 @@ pkgs/                            custom derivations
 - **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com` and [Headscale](https://headscale.net/) at `headscale.barrettruth.com`.
 - **mac**: Apple silicon MacBook, built from `.#darwinConfigurations.mac` with `just rebuild-mac`.
 
-Two things on the mac are set once per machine and cannot be declared:
+One thing on the mac is set once per machine and cannot be declared: **a still
+image has to be chosen as the wallpaper** in Settings > Wallpaper. macOS ships
+a dynamic wallpaper, and while one is active `WallpaperAgent` renders over
+anything `NSWorkspace.setDesktopImageURL` sets, so `ctl wallpaper gen` reports
+success and changes nothing.
 
-- **A still image has to be chosen as the wallpaper** in Settings > Wallpaper.
-  macOS ships a dynamic wallpaper, and while one is active `WallpaperAgent`
-  renders over anything `NSWorkspace.setDesktopImageURL` sets, so
-  `ctl wallpaper gen` reports success and changes nothing.
-- **Baremak has to be added** under Settings > Keyboard > Text Input > Input
-  Sources. Activation installs the layout to `/Library/Keyboard Layouts`, but
-  enabling an input source is not scriptable.
+The baremak layout is installed to `/Library/Keyboard Layouts` and enabled
+through `AppleEnabledInputSources`, so it needs no setup, but a newly enabled
+input source only reaches the menu bar after a logout.
 
