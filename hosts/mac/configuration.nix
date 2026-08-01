@@ -203,6 +203,24 @@ in
         IdentitiesOnly yes
   '';
 
+  programs.ssh.knownHosts.desktop = {
+    hostNames = [
+      "desktop"
+      "desktop.ts.barrettruth.com"
+      "100.64.0.1"
+    ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
+  };
+
+  programs.ssh.knownHosts.laptop = {
+    hostNames = [
+      "laptop"
+      "laptop.ts.barrettruth.com"
+      "100.64.0.2"
+    ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILt1sOYoWNtfIjLoZ7XT/VmC5s0d/Hw8Q9GQyUUaKeIC";
+  };
+
   programs.ssh.knownHosts."forge-tailnet" = {
     hostNames = [
       "[forge.barrettruth.com]:2222"
