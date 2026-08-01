@@ -17,6 +17,7 @@ in
     modules = [
       inputs.determinate.darwinModules.default
       ../darwin/common/activation.nix
+      ../darwin/common/keylayout.nix
       ../darwin/common/sops.nix
       ../darwin/common/tailscale.nix
       ../nixos/barrett/workstation.nix
