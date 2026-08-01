@@ -2,10 +2,7 @@ default:
     @just --list
 
 rebuild:
-    @case "$(hostname -s)" in \
-      mac | laptop | desktop) just "rebuild-$(hostname -s)" ;; \
-      *) printf '%s\n' "no rebuild recipe for host: $(hostname -s)" >&2; exit 1 ;; \
-    esac
+    @just "rebuild-$(hostname -s)"
 
 rebuild-desktop:
     nixos-rebuild switch --no-reexec --flake .#desktop --target-host desktop --build-host desktop
