@@ -70,7 +70,7 @@ in
         HostName 100.64.0.1
         Port 2222
         HostKeyAlias forge.barrettruth.com
-        IdentityFile ~/.ssh/id_ed25519
+        IdentityFile /Users/${username}/.ssh/id_ed25519
         IdentitiesOnly yes
   '';
 
