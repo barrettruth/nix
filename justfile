@@ -1,9 +1,6 @@
 default:
     @just --list
 
-rebuild:
-    @just "rebuild-$(hostname -s)"
-
 rebuild-desktop:
     nixos-rebuild switch --no-reexec --flake .#desktop --target-host desktop --build-host desktop
 
