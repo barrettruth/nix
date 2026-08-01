@@ -41,6 +41,7 @@ local function runtime_dir()
     if not base or base == '' then
         base = '/run/user/' .. vim.uv.getuid()
     end
+    base = base:gsub('/+$', '')
     return base .. '/mux'
 end
 
@@ -492,6 +493,12 @@ end
 ---@param err? string
 ---@return nil
 local function finish_pending(root, server, err)
+    if vim.in_fast_event() then
+        vim.schedule(function()
+            finish_pending(root, server, err)
+        end)
+        return
+    end
     local entry = pending[root]
     pending[root] = nil
     if not entry then
