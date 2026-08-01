@@ -147,6 +147,17 @@ grayscale_off() {
   grayscale_apply_runtime
 }
 
+case "$(uname)" in
+Darwin)
+  case "$1" in
+  screenshot | keyboard | audio | battery | brightness | volume | wifi | media | clip | power | dictate | idle | grayscale)
+    echo "ctl: $1 is linux-only" >&2
+    exit 1
+    ;;
+  esac
+  ;;
+esac
+
 case "$1" in
 screenshot)
   dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
