@@ -561,7 +561,7 @@ media)
   ;;
 wallpaper)
   require nix-shell
-  _wp=$(mktemp /tmp/ctl_wp_XXXXXX.py)
+  _wp=$(mktemp "${TMPDIR:-/tmp}/ctl_wp_XXXXXX")
   trap 'rm -f "$_wp"' EXIT
   cat >"$_wp" <<'PYTHON'
 # /// script
@@ -569,6 +569,7 @@ wallpaper)
 # ///
 from collections.abc import Iterator
 from datetime import datetime
+import glob
 import json
 import math
 import os
@@ -604,6 +605,7 @@ def font_path() -> str:
     candidates = [
         os.path.join(HOME, ".local", "share", "fonts", "berkeley-mono", "BerkeleyMono-Regular.ttf"),
     ]
+    candidates.extend(sorted(glob.glob("/Library/Fonts/Nix Fonts/*/share/fonts/barrett/berkeley-mono/BerkeleyMono-Regular.ttf")))
     for candidate in candidates:
         if os.path.exists(candidate):
             return candidate
@@ -703,7 +705,21 @@ def reverse_geocode(lat: float, lon: float) -> str | None:
 
 def get_resolution() -> tuple[int, int]:
     output: str = "1920x1080"
-    if "WAYLAND_DISPLAY" in os.environ:
+    if sys.platform == "darwin":
+        try:
+            output = subprocess.check_output(
+                [
+                    "osascript", "-l", "JavaScript", "-e",
+                    'ObjC.import("AppKit");'
+                    "var s = $.NSScreen.mainScreen, f = s.frame;"
+                    'Math.round(f.size.width * s.backingScaleFactor) + "x"'
+                    " + Math.round(f.size.height * s.backingScaleFactor);",
+                ],
+                text=True,
+            ).strip()
+        except Exception:
+            pass
+    elif "WAYLAND_DISPLAY" in os.environ:
         desktop: str = os.environ.get("XDG_CURRENT_DESKTOP", "")
         try:
             if desktop == "Hyprland":
@@ -935,7 +951,8 @@ def gen() -> None:
 
 cmd: str | None = sys.argv[1] if len(sys.argv) > 1 else None
 if cmd == "lock":
-    lock()
+    if sys.platform != "darwin":
+        lock()
 elif cmd == "gen":
     gen()
 else:
@@ -945,8 +962,19 @@ PYTHON
   nix-shell -p 'python3.withPackages (ps: [ ps.pillow ])' --run "python3 \"$_wp\" \"$2\""
   status=$?
   [ "$status" -eq 0 ] || exit "$status"
-  if [ "$2" = gen ] && systemctl --user is-active --quiet hyprpaper 2>/dev/null; then
-    systemctl --user restart hyprpaper >/dev/null 2>&1 || true
+  if [ "$2" = gen ]; then
+    case "$(uname)" in
+    Linux)
+      if systemctl --user is-active --quiet hyprpaper 2>/dev/null; then
+        systemctl --user restart hyprpaper >/dev/null 2>&1 || true
+      fi
+      ;;
+    Darwin)
+      wp_theme="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || wp_theme=midnight
+      [ -n "$wp_theme" ] || wp_theme=midnight
+      theme "$wp_theme" >/dev/null 2>&1 || true
+      ;;
+    esac
   fi
   ;;
 clip)

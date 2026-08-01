@@ -596,6 +596,18 @@ in
               }
             ];
           };
+
+          wallpaper-gen = {
+            script = ''
+              [ -x "${scriptsPath}/ctl" ] || exit 0
+
+              export PATH="${scriptsPath}:/run/current-system/sw/bin:/etc/profiles/per-user/${username}/bin:/nix/var/nix/profiles/default/bin:$PATH"
+              export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-$TMPDIR}"
+
+              exec "${scriptsPath}/ctl" wallpaper gen
+            '';
+            serviceConfig.RunAtLoad = true;
+          };
         };
       })
     ]

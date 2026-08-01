@@ -28,6 +28,57 @@ apply_nvim_theme() {
   done
 }
 
+set_darwin_wallpaper() {
+  src="$1"
+  dir="$(dirname "$src")"
+  stamp="$(stat -f %m "$src" 2>/dev/null)" || return 0
+
+  pinned="$dir/.wallpaper-$theme-$stamp.jpg"
+  [ -f "$pinned" ] || {
+    rm -f "$dir/.wallpaper-$theme-"*.jpg
+    ln "$src" "$pinned" 2>/dev/null || cp "$src" "$pinned"
+  }
+
+  osascript -l JavaScript -e 'function run(argv) {
+    ObjC.import("AppKit");
+    var url = $.NSURL.fileURLWithPath(argv[0]);
+    var screens = $.NSScreen.screens;
+    for (var i = 0; i < screens.count; i++) {
+      $.NSWorkspace.sharedWorkspace.setDesktopImageURLForScreenOptionsError(
+        url, screens.objectAtIndex(i), $.NSDictionary.dictionary, null);
+    }
+  }' "$pinned" >/dev/null 2>&1 || true
+}
+
+apply_wallpaper() {
+  pics="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screensavers"
+  themed_wp="$pics/wallpaper-$theme.jpg"
+  [ -f "$themed_wp" ] || return 0
+
+  wp_link="$pics/wallpaper.jpg"
+  current_wp="$(readlink -f "$wp_link" 2>/dev/null || true)"
+  desired_wp="$(readlink -f "$themed_wp" 2>/dev/null || true)"
+  [ "$current_wp" = "$desired_wp" ] || ln -sf "$themed_wp" "$wp_link"
+
+  case "$(uname)" in
+  Linux)
+    [ "$current_wp" = "$desired_wp" ] && return 0
+    systemctl --user is-active --quiet hyprpaper 2>/dev/null || return 0
+    reload_lock="${XDG_RUNTIME_DIR:-/tmp}/theme-hyprpaper-reload"
+    mkdir "$reload_lock" 2>/dev/null || return 0
+    (
+      sleep 0.2
+      systemctl --user is-active --quiet hyprpaper 2>/dev/null &&
+        systemctl --user restart hyprpaper >/dev/null 2>&1
+      rmdir "$reload_lock" 2>/dev/null || true
+    ) &
+    ;;
+  Darwin)
+    set_darwin_wallpaper "$themed_wp"
+    ;;
+  esac
+}
+
 themes="daylight
 midnight"
 
@@ -56,6 +107,8 @@ fzf_themes="$cfg/fzf/themes"
 [ -f "$fzf_themes/$theme" ] && {
   ln -sf "$fzf_themes/$theme" "$fzf_themes/theme"
 }
+
+apply_wallpaper
 
 case "$(uname)" in
 Linux)
@@ -104,28 +157,6 @@ Linux)
             /org/pwmt/zathura org.pwmt.zathura.SourceConfig 2>/dev/null || true
         done
       ) &
-    }
-
-    pics="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screensavers"
-    themed_wp="$pics/wallpaper-$theme.jpg"
-    [ -f "$themed_wp" ] && {
-      wp_link="$pics/wallpaper.jpg"
-      current_wp="$(readlink -f "$wp_link" 2>/dev/null || true)"
-      desired_wp="$(readlink -f "$themed_wp" 2>/dev/null || true)"
-      if [ "$current_wp" != "$desired_wp" ]; then
-        ln -sf "$themed_wp" "$wp_link"
-        if systemctl --user is-active --quiet hyprpaper 2>/dev/null; then
-          reload_lock="${XDG_RUNTIME_DIR:-/tmp}/theme-hyprpaper-reload"
-          if mkdir "$reload_lock" 2>/dev/null; then
-            (
-              sleep 0.2
-              systemctl --user is-active --quiet hyprpaper 2>/dev/null &&
-                systemctl --user restart hyprpaper >/dev/null 2>&1
-              rmdir "$reload_lock" 2>/dev/null || true
-            ) &
-          fi
-        fi
-      fi
     }
 
   fi
