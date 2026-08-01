@@ -16,6 +16,8 @@ in
   flake.darwinConfigurations.mac = inputs.nix-darwin.lib.darwinSystem {
     modules = [
       inputs.determinate.darwinModules.default
+      ../darwin/common/sops.nix
+      ../darwin/common/tailscale.nix
       ../../hosts/mac/configuration.nix
       {
         nixpkgs.hostPlatform = platform;

@@ -277,11 +277,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780744292,
-        "narHash": "sha256-/KpGqrjBphNeOAADQ+EGH7+IJu5eaVmV7yq7vVX+ws4=",
+        "lastModified": 1785552023,
+        "narHash": "sha256-ld5MDeyoOp9a0SaCD2+zmSY4mQe6W6vZTvfga2/ZELA=",
         "ref": "refs/heads/main",
-        "rev": "0f0c07cfadae6436c97abd76f59fcc3fc131d2e7",
-        "revCount": 10,
+        "rev": "ed12179eb9537cb6e369397eb3e202dd4d9c2bf9",
+        "revCount": 11,
         "type": "git",
         "url": "ssh://git@forge.barrettruth.com/barrettruth/fonts.git"
       },

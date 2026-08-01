@@ -18,9 +18,9 @@ in
 
   programs.zsh.enable = true;
 
-  services.tailscale.enable = true;
-
   security.pam.services.sudo_local.touchIdAuth = true;
+
+  fonts.packages = [ pkgs.barrett-fonts ];
 
   programs.ssh.extraConfig = ''
     Host forge.barrettruth.com git.barrettruth.com
