@@ -5,6 +5,10 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs-whisper.url = "github:nixos/nixpkgs/a499dfba7b52aac86504356512836550e9d49a5a";
     disko = {
       url = "github:nix-community/disko";
@@ -58,6 +62,7 @@
         ./modules/hosts/laptop.nix
         ./modules/hosts/vps.nix
         ./modules/hosts/desktop.nix
+        ./modules/hosts/mac.nix
       ];
     };
 }
