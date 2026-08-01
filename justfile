@@ -11,8 +11,8 @@ rebuild-laptop:
 rebuild-mac:
     @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-mac must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
     @system=$(nix build --no-link --print-out-paths '.#darwinConfigurations.mac.system') && \
-      sudo nix-env --profile /nix/var/nix/profiles/system --set "$system" && \
-      sudo /nix/var/nix/profiles/system/activate
+      sudo -H nix-env --profile /nix/var/nix/profiles/system --set "$system" && \
+      sudo -H /nix/var/nix/profiles/system/activate
 
 _python-scripts:
    @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
