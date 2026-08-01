@@ -82,3 +82,18 @@ end, { desc = 'toggle wrap' })
 vim.keymap.set('n', '<leader>ic', function()
     vim.o.cmdheight = vim.o.cmdheight == 0 and 1 or 0
 end, { desc = 'toggle cmdheight' })
+
+if vim.fn.has('mac') == 1 then
+    vim.keymap.set(
+        'x',
+        '<d-c>',
+        '"+y',
+        { desc = 'yank selection to clipboard' }
+    )
+    vim.keymap.set('n', '<d-v>', '"+p', { desc = 'paste clipboard' })
+    vim.keymap.set('i', '<d-v>', '<c-r><c-o>+', { desc = 'paste clipboard' })
+    vim.keymap.set('c', '<d-v>', '<c-r>+', { desc = 'paste clipboard' })
+    vim.keymap.set('t', '<d-v>', '<c-\\><c-n>"+pa', {
+        desc = 'paste clipboard',
+    })
+end
