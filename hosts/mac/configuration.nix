@@ -112,6 +112,10 @@ let
     fi
   '';
 
+  rectangleAction = pkgs.writeShellScript "rectangle-action" ''
+    exec /usr/bin/open -g "rectangle://execute-action?name=$1"
+  '';
+
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
     lib.generators.toPlist { escape = true; } chromePolicies
   );
@@ -139,12 +143,26 @@ in
   services.skhd = {
     enable = true;
     skhdConfig = ''
-      alt + ctrl - t : open -a "${ghosttyApp}"
-      alt + ctrl - b : open -a "${chromeApp}"
-      alt + shift - return : open -a "${ghosttyApp}"
-      alt + shift - b : open -a "${chromeApp}"
-      alt + ctrl - i : ${idleToggle}
+      ralt - t : open -a "${ghosttyApp}"
+      ralt - b : open -a "${chromeApp}"
+      ralt - f : open -a Finder
+      ralt - i : ${idleToggle}
+
+      ralt - return : ${rectangleAction} maximize
+      ralt - left : ${rectangleAction} left-half
+      ralt - right : ${rectangleAction} right-half
+      ralt - up : ${rectangleAction} top-half
+      ralt - down : ${rectangleAction} bottom-half
+      ralt - c : ${rectangleAction} center
     '';
+  };
+
+  launchd.user.agents.rectangle = {
+    command = "${pkgs.rectangle}/Applications/Rectangle.app/Contents/MacOS/Rectangle";
+    serviceConfig = {
+      RunAtLoad = true;
+      KeepAlive = true;
+    };
   };
 
   system.keyboard = {
