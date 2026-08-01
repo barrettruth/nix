@@ -126,6 +126,23 @@ in
     '';
   };
 
+  # nix.enable is off, so nix.gc is never emitted: everything under
+  # managedConfig is gated on it, which is also why nix.settings would be
+  # silently dropped here. Determinate ships no collection of its own.
+  launchd.daemons.nix-gc = {
+    serviceConfig.StartCalendarInterval = [
+      {
+        Hour = 4;
+        Minute = 0;
+      }
+    ];
+    script = ''
+      nix=/nix/var/nix/profiles/default/bin
+      "$nix/nix-env" --profile /nix/var/nix/profiles/system --delete-generations +5
+      "$nix/nix-collect-garbage" --delete-older-than 30d
+    '';
+  };
+
   power.sleep = {
     computer = 30;
     display = 10;
@@ -141,6 +158,12 @@ in
     # power.sleep drives systemsetup, which only writes the AC profile.
     # The battery profile keeps macOS defaults of 1 and 2 minutes.
     /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10
+
+    # The laptop prunes to +5 and the vps to +2; nix-darwin has no
+    # equivalent, and determinate ships no scheduled collection, so do it
+    # here. nix.enable is off, so use the determinate nix-env directly.
+    /nix/var/nix/profiles/default/bin/nix-env \
+      --profile /nix/var/nix/profiles/system --delete-generations +5
   '';
 
   programs.ssh.extraConfig = ''
