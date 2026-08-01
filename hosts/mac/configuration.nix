@@ -37,6 +37,13 @@ let
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
     lib.generators.toPlist { } chromePolicies
   );
+
+  disabledAppleServices = [
+    "com.apple.imagent"
+    "com.apple.imcore.imtransferagent"
+    "com.apple.imdpersistence.IMDPersistenceAgent"
+    "com.apple.facetimemessagestored"
+  ];
 in
 {
   networking.hostName = "mac";
@@ -63,6 +70,17 @@ in
   system.activationScripts.extraActivation.text = ''
     install -d -m 0755 "/Library/Managed Preferences"
     install -m 0644 ${chromePolicyPlist} "/Library/Managed Preferences/com.google.Chrome.plist"
+
+    # FaceTime.app and Messages.app live under /System and are protected by
+    # SIP, so they cannot be removed. Disabling their launchd agents stops
+    # the services; the apps still open but cannot sign in or deliver.
+    # identityservicesd and callservicesd are deliberately left alone, as
+    # Handoff, Continuity and AirDrop depend on them.
+    uid=$(id -u ${username})
+    for svc in ${lib.concatStringsSep " " disabledAppleServices}; do
+      launchctl disable "gui/$uid/$svc" 2>/dev/null || true
+      launchctl bootout "gui/$uid/$svc" 2>/dev/null || true
+    done
   '';
 
   programs.ssh.extraConfig = ''
@@ -92,7 +110,7 @@ in
       ];
       persistent-others = [ ];
     };
-    NSGlobalDomain."com.apple.swipescrolldirection" = true;
+    NSGlobalDomain."com.apple.swipescrolldirection" = false;
   };
 
   environment.systemPackages = with pkgs; [
