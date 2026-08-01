@@ -220,7 +220,7 @@ let
   hypridleConf = pkgs.writeText "hypridle-conf" ''
     general {
       lock_cmd = ${hypridleLockCmd}/bin/hypridle-lock
-      after_sleep_cmd = ${pkgs.hyprland}/bin/hyprctl dispatch dpms on
+      after_sleep_cmd = ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
     }
 
     listener {
@@ -230,8 +230,8 @@ let
 
     listener {
       timeout = 600
-      on-timeout = ${pkgs.hyprland}/bin/hyprctl dispatch dpms off
-      on-resume = ${pkgs.hyprland}/bin/hyprctl dispatch dpms on
+      on-timeout = ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
+      on-resume = ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
     }
 
     ${lib.optionalString cfg.idle.suspend ''

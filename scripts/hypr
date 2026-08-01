@@ -57,6 +57,22 @@ build_exec_command() {
   printf '%s\n' "$CMD"
 }
 
+lua_string() {
+  printf '"%s"' "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+}
+
+focus_window() {
+  hyprctl dispatch "hl.dsp.focus({ window = $(lua_string "address:$1") })"
+}
+
+focus_workspace() {
+  hyprctl dispatch "hl.dsp.focus({ workspace = $1 })"
+}
+
+move_window_to_workspace() {
+  hyprctl dispatch "hl.dsp.window.move({ window = $(lua_string "address:$1"), workspace = $2, follow = $3 })"
+}
+
 usage() {
   cat <<EOF
 Usage: hypr <subcommand> [app] [args...]
@@ -88,7 +104,7 @@ exit)
   require hyprctl
   pkill hypridle
   pkill hyprpaper
-  hyprctl dispatch exit
+  hyprctl dispatch 'hl.dsp.exit()'
   exit 0
   ;;
 pull)
@@ -126,8 +142,8 @@ pull)
 
   [ -z "$WIN_ADDR" ] && exit 0
 
-  hyprctl dispatch movetoworkspace "${CUR_WS},address:${WIN_ADDR}"
-  hyprctl dispatch focuswindow "address:${WIN_ADDR}"
+  move_window_to_workspace "$WIN_ADDR" "$CUR_WS" true
+  focus_window "$WIN_ADDR"
   ;;
 spawnfocus)
   require hyprctl jq fuzzel socat
@@ -182,23 +198,23 @@ spawnfocus)
       WIN_WS=$(window_workspace_id "$WIN_ADDR")
 
       if [ "$WIN_WS" != "$WS" ]; then
-        hyprctl dispatch movetoworkspacesilent "$WS,address:$WIN_ADDR"
+        move_window_to_workspace "$WIN_ADDR" "$WS" false
       fi
 
-      hyprctl dispatch workspace "$WS"
+      focus_workspace "$WS"
     else
       WIN_WS=$(window_workspace_id "$WIN_ADDR")
-      hyprctl dispatch workspace "$WIN_WS"
+      focus_workspace "$WIN_WS"
     fi
 
-    hyprctl dispatch focuswindow "address:$WIN_ADDR"
+    focus_window "$WIN_ADDR"
   else
     EXISTING_HEX=$(printf '%s\n' "$WIN_ADDRS" | awk -F'\t' 'NF { sub(/^0x/, "", $3); printf "%s ", $3 }')
 
     if [ -n "$WS" ]; then
-      hyprctl dispatch workspace "$WS"
+      focus_workspace "$WS"
       LAUNCH_CMD=$(build_exec_command "$APP" "$@")
-      hyprctl dispatch exec "[workspace $WS silent; no_initial_focus] $LAUNCH_CMD"
+      hyprctl dispatch "hl.dsp.exec_cmd($(lua_string "$LAUNCH_CMD"), { workspace = $(lua_string "$WS silent"), no_initial_focus = true })"
     elif [ $# -eq 0 ]; then
       "$APP" &
     else
@@ -221,14 +237,14 @@ spawnfocus)
             if [ -n "$WS" ]; then
               WIN_WS=$(window_workspace_id "$addr")
               if [ "$WIN_WS" != "$WS" ]; then
-                hyprctl dispatch movetoworkspacesilent "$WS,address:$addr"
+                move_window_to_workspace "$addr" "$WS" false
               fi
               CUR_WS=$(active_workspace_id)
               if [ "$CUR_WS" = "$WS" ]; then
-                hyprctl dispatch focuswindow "address:$addr"
+                focus_window "$addr"
               fi
             else
-              hyprctl dispatch focuswindow "address:$addr"
+              focus_window "$addr"
             fi
             break
             ;;
