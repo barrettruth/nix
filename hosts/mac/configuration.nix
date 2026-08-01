@@ -34,6 +34,18 @@ let
     ];
   };
 
+  ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
+  chromeApp = "/Applications/Nix Apps/Google Chrome.app";
+
+  # ctl idle had no macOS analogue worth porting; caffeinate is built in.
+  idleToggle = pkgs.writeShellScript "idle-toggle" ''
+    if /usr/bin/pgrep -x caffeinate >/dev/null 2>&1; then
+      /usr/bin/killall caffeinate
+    else
+      /usr/bin/caffeinate -d &
+    fi
+  '';
+
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
     lib.generators.toPlist { escape = true; } chromePolicies
   );
@@ -57,6 +69,23 @@ in
   barrett.workstation.enable = true;
 
   security.pam.services.sudo_local.touchIdAuth = true;
+
+  services.skhd = {
+    enable = true;
+    skhdConfig = ''
+      alt + ctrl - t : open -a "${ghosttyApp}"
+      alt + ctrl - b : open -a "${chromeApp}"
+      alt + shift - return : open -a "${ghosttyApp}"
+      alt + shift - b : open -a "${chromeApp}"
+      alt + ctrl - i : ${idleToggle}
+    '';
+  };
+
+  power.sleep = {
+    computer = 30;
+    display = 10;
+    harddisk = 30;
+  };
 
   fonts.packages = [ pkgs.barrett-fonts ];
 
@@ -98,6 +127,8 @@ in
   environment.systemPackages = with pkgs; [
     age
     google-chrome
+    maccy
+    rectangle
     curl
     fd
     fzf
