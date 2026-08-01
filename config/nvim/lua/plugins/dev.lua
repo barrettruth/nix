@@ -84,6 +84,18 @@ return {
         enabled = true,
         after = function()
             vim.cmd.colorscheme(current_colorscheme())
+
+            vim.api.nvim_create_autocmd('OptionSet', {
+                pattern = 'background',
+                group = vim.api.nvim_create_augroup('Theme', { clear = true }),
+                callback = function()
+                    local want = vim.o.background == 'light' and 'daylight'
+                        or 'midnight'
+                    if vim.g.colors_name ~= want then
+                        vim.cmd.colorscheme(want)
+                    end
+                end,
+            })
         end,
     },
     {

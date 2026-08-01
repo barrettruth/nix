@@ -277,6 +277,7 @@ in
       ];
       persistent-others = [ ];
     };
+    NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
     NSGlobalDomain."com.apple.swipescrolldirection" = false;
   };
 

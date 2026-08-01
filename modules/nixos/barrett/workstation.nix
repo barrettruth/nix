@@ -596,29 +596,6 @@ in
               }
             ];
           };
-
-          theme-appearance = {
-            script = ''
-              [ -x "${scriptsPath}/theme" ] || exit 0
-
-              export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/${username}/bin:$PATH"
-              export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-$TMPDIR}"
-
-              case "$(/usr/bin/defaults read -g AppleInterfaceStyle 2>/dev/null)" in
-              Dark) desired=midnight ;;
-              *) desired=daylight ;;
-              esac
-
-              current="$(cat "${XDG_STATE_HOME}/theme" 2>/dev/null)" || current=""
-              [ "$current" = "$desired" ] && exit 0
-
-              exec "${scriptsPath}/theme" "$desired"
-            '';
-            serviceConfig = {
-              RunAtLoad = true;
-              StartInterval = 30;
-            };
-          };
         };
       })
     ]
