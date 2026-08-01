@@ -62,12 +62,10 @@ Linux)
   if command -v hyprctl >/dev/null 2>&1 && hyprctl monitors >/dev/null 2>&1; then
     case "$theme" in
     midnight)
-      hyprctl keyword general:col.active_border "rgb(e0e0e0)" >/dev/null
-      hyprctl keyword general:col.inactive_border "rgb(121212)" >/dev/null
+      hyprctl eval 'hl.config({ general = { col = { active_border = "rgb(e0e0e0)", inactive_border = "rgb(121212)" } } })' >/dev/null
       ;;
     daylight)
-      hyprctl keyword general:col.active_border "rgb(1a1a1a)" >/dev/null
-      hyprctl keyword general:col.inactive_border "rgb(f5f5f5)" >/dev/null
+      hyprctl eval 'hl.config({ general = { col = { active_border = "rgb(1a1a1a)", inactive_border = "rgb(f5f5f5)" } } })' >/dev/null
       ;;
     esac
 
@@ -76,8 +74,8 @@ Linux)
     waybarctl apply-theme
 
     hypr_themes="$cfg/hypr/themes"
-    [ -f "$hypr_themes/$theme.conf" ] && {
-      ln -sf "$hypr_themes/$theme.conf" "$hypr_themes/theme.conf"
+    [ -f "$hypr_themes/$theme.lua" ] && {
+      ln -sf "$hypr_themes/$theme.lua" "$hypr_themes/theme.lua"
     }
 
     fzf_themes="$cfg/fzf/themes"

@@ -8,6 +8,12 @@ rebuild-laptop:
     @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
     nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate sudo --ask-elevate-password
 
+rebuild-mac:
+    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-mac must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
+    @system=$(nix build --no-link --print-out-paths '.#darwinConfigurations.mac.system') && \
+      sudo nix-env --profile /nix/var/nix/profiles/system --set "$system" && \
+      sudo /nix/var/nix/profiles/system/activate
+
 _python-scripts:
    @git ls-files 'scripts/**' | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \

@@ -72,11 +72,11 @@ let
   hyprThemes = pkgs.runCommand "hypr-theme-files" { } ''
     mkdir -p $out
 
-    cat > $out/midnight.conf << 'HYPRMIDNIGHT'
+    cat > $out/midnight.lua << 'HYPRMIDNIGHT'
     ${themeGenerators.mkHyprTheme palettes.midnight}
     HYPRMIDNIGHT
 
-    cat > $out/daylight.conf << 'HYPRDAYLIGHT'
+    cat > $out/daylight.lua << 'HYPRDAYLIGHT'
     ${themeGenerators.mkHyprTheme palettes.daylight}
     HYPRDAYLIGHT
   '';
@@ -135,17 +135,35 @@ let
     include=${configRoot}/fuzzel/fuzzel.ini
   '';
 
-  hyprlandConf = pkgs.writeText "hyprland-wrapper" ''
-    env = XCURSOR_SIZE,24
-    env = HYPRCURSOR_SIZE,24
-    env = HYPRCURSOR_THEME,macOS
-    env = GSK_RENDERER,ngl
-    decoration {
-      screen_shader = ${XDG_STATE_HOME}/hypr/screen-shader.frag
-    }
-    exec-once = ${hyprSessionEnv}/bin/hypr-session-env import
-    source = ${configRoot}/hypr/hosts/${config.networking.hostName}.conf
-    source = ${configRoot}/hypr/hyprland.conf
+  hyprlandConf = pkgs.writeText "hyprland-wrapper.lua" ''
+    hl.env("XCURSOR_SIZE", "24")
+    hl.env("HYPRCURSOR_SIZE", "24")
+    hl.env("HYPRCURSOR_THEME", "macOS")
+    hl.env("GSK_RENDERER", "ngl")
+
+    hl.config({
+        decoration = {
+            screen_shader = "${XDG_STATE_HOME}/hypr/screen-shader.frag",
+        },
+    })
+
+    hl.on("hyprland.start", function()
+        hl.exec_cmd("${hyprSessionEnv}/bin/hypr-session-env import")
+    end)
+
+    local function source(path)
+        local ok, err = pcall(require, path)
+        if ok then
+            return
+        end
+
+        hl.on("hyprland.start", function()
+            hl.notification.create({ text = "hyprland: " .. tostring(err), timeout = 15000 })
+        end)
+    end
+
+    source("${configRoot}/hypr/hosts/${config.networking.hostName}.lua")
+    source("${configRoot}/hypr/hyprland.lua")
   '';
 
   hyprpaperConf = pkgs.writeText "hyprpaper-conf" ''
@@ -493,9 +511,15 @@ in
 
 
 
-      ${mkSymlink "${hyprThemes}/midnight.conf" "${XDG_CONFIG_HOME}/hypr/themes/midnight.conf"}
-      ${mkSymlink "${hyprThemes}/daylight.conf" "${XDG_CONFIG_HOME}/hypr/themes/daylight.conf"}
-      ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.conf"}
+      for stale in hyprland.conf themes/midnight.conf themes/daylight.conf themes/theme.conf; do
+        if [ -L "${XDG_CONFIG_HOME}/hypr/$stale" ]; then
+          ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${XDG_CONFIG_HOME}/hypr/$stale"
+        fi
+      done
+
+      ${mkSymlink "${hyprThemes}/midnight.lua" "${XDG_CONFIG_HOME}/hypr/themes/midnight.lua"}
+      ${mkSymlink "${hyprThemes}/daylight.lua" "${XDG_CONFIG_HOME}/hypr/themes/daylight.lua"}
+      ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.lua"}
       ${mkSymlink "${configRoot}/xkb/baremak" "${XDG_CONFIG_HOME}/xkb/symbols/baremak"}
       ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
       ${mkSymlink "${hypridleConf}" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
@@ -520,7 +544,7 @@ in
       ''}
 
       ${readTheme}
-      ${mkSymlink "${XDG_CONFIG_HOME}/hypr/themes/$theme.conf" "${XDG_CONFIG_HOME}/hypr/themes/theme.conf"}
+      ${mkSymlink "${XDG_CONFIG_HOME}/hypr/themes/$theme.lua" "${XDG_CONFIG_HOME}/hypr/themes/theme.lua"}
       ${mkSymlink "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"}
       ${mkSymlink "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"}
       ${mkSymlink "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"}

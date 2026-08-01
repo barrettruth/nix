@@ -50,10 +50,14 @@ let
   '';
 
   mkHyprTheme = palette: ''
-    general {
-        col.active_border = rgb(${hex palette.fg})
-        col.inactive_border = rgb(${hex palette.bg})
-    }
+    hl.config({
+        general = {
+            col = {
+                active_border = "rgb(${hex palette.fg})",
+                inactive_border = "rgb(${hex palette.bg})",
+            },
+        },
+    })
   '';
 
   mkWaybarTheme = palette: ''

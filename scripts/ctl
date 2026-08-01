@@ -133,7 +133,7 @@ grayscale_apply_runtime() {
   mkdir -p "$grayscale_state_dir"
   ln -sfnT "$target" "$grayscale_shader_file"
   if [ "${XDG_CURRENT_DESKTOP:-}" = "Hyprland" ]; then
-    hyprctl keyword decoration:screen_shader "$target" >/dev/null
+    hyprctl eval "hl.config({ decoration = { screen_shader = \"$target\" } })" >/dev/null
   fi
 }
 
@@ -204,8 +204,7 @@ keyboard)
     Baremak) index=3 ;;
     esac
     if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
-      hyprctl keyword input:kb_layout "us,us,us,baremak"
-      hyprctl keyword input:kb_variant ",dvorak,colemak_dh,"
+      hyprctl eval 'hl.config({ input = { kb_layout = "us,us,us,baremak", kb_variant = ",dvorak,colemak_dh," } })'
       hyprctl switchxkblayout current "$index"
     fi
     ;;
