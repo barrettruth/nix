@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   identity,
@@ -162,6 +163,13 @@ in
         HIDKeyboardModifierMappingDst = f18;
       }
     ];
+  };
+
+  launchd.user.agents.keyboard-mapping = {
+    command = "/usr/bin/hidutil property --set '${
+      builtins.toJSON { UserKeyMapping = config.system.keyboard.userKeyMapping; }
+    }'";
+    serviceConfig.RunAtLoad = true;
   };
 
   # nix.enable is off, so nix.gc is never emitted: everything under
