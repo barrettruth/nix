@@ -81,8 +81,11 @@ in
 
   environment.binsh = "${pkgs.dash}/bin/dash";
 
+  users.users.root.openssh.authorizedKeys.keys = identity.sshKeys;
+
   users.users.${username} = {
     isNormalUser = true;
+    openssh.authorizedKeys.keys = identity.sshKeys;
     extraGroups = [
       "wheel"
       "docker"
