@@ -142,11 +142,7 @@ in
         unzip
         gnumake
         just
-        gcc
         file
-        ffmpeg
-        poppler-utils
-        librsvg
         imagemagick
         luarocks
         delta-cli
@@ -196,32 +192,30 @@ in
         typst
         typstyle
         glab
-        psmisc
-        brightnessctl
-        glib.bin
         direnv
         nix-direnv
         gh
         jujutsu
         gnupg
-        whisper
-        (mpv.override { youtubeSupport = false; })
-        # signal-desktop
-        # telegram-desktop
-        # element-desktop
-        zathura
-        biber
-        (texlive.combine {
-          inherit (texlive)
-            scheme-small
-            latexindent
-            latexmk
-            lastpage
-            pgf
-            collection-fontsrecommended
-            ;
-        })
       ])
+      ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (
+        with pkgs;
+        [
+          gcc
+          ffmpeg
+          poppler-utils
+          librsvg
+          psmisc
+          brightnessctl
+          glib.bin
+          whisper
+          (mpv.override { youtubeSupport = false; })
+          # signal-desktop
+          # telegram-desktop
+          # element-desktop
+          zathura
+        ]
+      )
       ++ agentPackages
       ++ codexRuntimePackages;
 
@@ -262,9 +256,6 @@ in
       BOTO_CONFIG = "${XDG_CONFIG_HOME}/boto/config";
       PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
       SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
-      TEXMFHOME = "${XDG_DATA_HOME}/texmf";
-      TEXMFVAR = "${XDG_CACHE_HOME}/texlive/texmf-var";
-      TEXMFCONFIG = "${XDG_CONFIG_HOME}/texlive/texmf-config";
       INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
     };
 
@@ -405,9 +396,6 @@ in
 
         ${readTheme}
         ${mkSymlink "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"}
-
-        ${mkDir "${XDG_CONFIG_HOME}/latexmk"}
-        ${mkSymlink "${repo}/config/latexmk/latexmkrc" "${XDG_CONFIG_HOME}/latexmk/latexmkrc"}
 
         ${mkDir "${XDG_CONFIG_HOME}/codex/skills"}
         if [ -L "${XDG_CONFIG_HOME}/devin/skills" ]; then
