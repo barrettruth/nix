@@ -62,19 +62,21 @@ let
       <key>CFBundlePackageType</key><string>APPL</string>
       <key>CFBundleShortVersionString</key><string>${pkgs.google-chrome.version}</string>
       <key>LSMinimumSystemVersion</key><string>11.0</string>
+      <key>LSRequiresNativeExecution</key><true/>
+      <key>LSArchitecturePriority</key><array><string>${pkgs.stdenv.hostPlatform.darwinArch}</string></array>
     </dict>
     </plist>
     PLIST
 
     cat >"$app/Contents/MacOS/chrome" <<EOF
     #!/bin/sh
-    exec "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
+    exec /usr/bin/arch -${pkgs.stdenv.hostPlatform.darwinArch} "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
     EOF
     chmod +x "$app/Contents/MacOS/chrome"
 
     cat >"$out/bin/google-chrome-stable" <<EOF
     #!/bin/sh
-    exec "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
+    exec /usr/bin/arch -${pkgs.stdenv.hostPlatform.darwinArch} "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
     EOF
     chmod +x "$out/bin/google-chrome-stable"
   '';
