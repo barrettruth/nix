@@ -6,6 +6,7 @@
   themeGenerators ? null,
   palettes ? null,
   whisperPkgs ? pkgs,
+  act,
   ...
 }:
 let
@@ -20,19 +21,11 @@ let
   XDG_CACHE_HOME = "${homeDirectory}/.cache";
   repo = "${XDG_CONFIG_HOME}/nix";
 
-  runUser = "${pkgs.util-linux}/bin/runuser -u ${username} --";
+  inherit (act) runAsUser mkSymlink;
 
-  mkSymlink = target: link: ''
-    ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
-  '';
+  mkDir = act.installDirMode "0755";
 
-  mkDirMode = mode: dir: ''
-    install -d -m ${mode} -o ${username} -g users "${dir}"
-  '';
-
-  mkDir = mkDirMode "0755";
-
-  mkPrivateDir = mkDirMode "0700";
+  mkPrivateDir = act.installDirMode "0700";
 
   readTheme = ''
     theme="$(cat "${XDG_STATE_HOME}/theme" 2>/dev/null)" || theme="midnight"
@@ -382,7 +375,7 @@ in
         ${mkPrivateDir "${homeDirectory}/.ssh"}
         ${mkPrivateDir "${homeDirectory}/.gnupg"}
         if [ -L "${homeDirectory}/.codex" ]; then
-          ${runUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
+          ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
         fi
 
         ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
@@ -425,7 +418,7 @@ in
           [ -f "$skill/SKILL.md" ] || continue
           name="$(basename "$skill")"
           for agentdir in "${XDG_CONFIG_HOME}/codex/skills" "${XDG_CONFIG_HOME}/devin/skills"; do
-            ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "$skill" "$agentdir/$name"
+            ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$skill" "$agentdir/$name"
           done
         done
 
@@ -434,11 +427,11 @@ in
         ${mkDir "${XDG_DATA_HOME}/whisper-models"}
 
         for link in ${homeDirectory}/.nix-profile ${homeDirectory}/.nix-defexpr; do
-          [ -L "$link" ] && [ ! -e "$link" ] && ${runUser} ${pkgs.coreutils}/bin/rm "$link"
+          [ -L "$link" ] && [ ! -e "$link" ] && ${runAsUser} ${pkgs.coreutils}/bin/rm "$link"
         done
 
         if [ "$(readlink "${XDG_DATA_HOME}/fonts" 2>/dev/null || true)" = "${repo}/fonts" ]; then
-          ${runUser} ${pkgs.coreutils}/bin/rm "${XDG_DATA_HOME}/fonts"
+          ${runAsUser} ${pkgs.coreutils}/bin/rm "${XDG_DATA_HOME}/fonts"
         fi
       '';
     };

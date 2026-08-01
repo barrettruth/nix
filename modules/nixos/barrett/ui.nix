@@ -4,6 +4,7 @@
   lib,
   palettes ? null,
   themeGenerators ? null,
+  act,
   ...
 }:
 let
@@ -52,15 +53,8 @@ let
     ;
   waylandGate = mkWaylandGate "hyprland-session.target";
 
-  runUser = "${pkgs.util-linux}/bin/runuser -u ${username} --";
-
-  mkSymlink = target: link: ''
-    ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
-  '';
-
-  mkDir = dir: ''
-    install -d -o ${username} -g users "${dir}"
-  '';
+  inherit (act) runAsUser mkSymlink;
+  mkDir = act.installDir;
 
   readTheme = ''
     theme="$(cat "${XDG_STATE_HOME}/theme" 2>/dev/null)" || theme="midnight"
@@ -565,7 +559,7 @@ in
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
       ${lib.optionalString (!cfg.useHomeRepo) ''
         if [ ! -e "${repo}" ] && [ ! -L "${repo}" ]; then
-          ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "${sourceRoot}" "${repo}"
+          ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "${sourceRoot}" "${repo}"
         fi
       ''}
 
@@ -620,7 +614,7 @@ in
         for f in "$src"/*; do
           [ -f "$f" ] || continue
           name=$(basename "$f")
-          [ -L "$dest/$name" ] || ${runUser} ${pkgs.coreutils}/bin/ln -sf "$f" "$dest/$name"
+          [ -L "$dest/$name" ] || ${runAsUser} ${pkgs.coreutils}/bin/ln -sf "$f" "$dest/$name"
         done
       fi
 
@@ -635,19 +629,19 @@ in
         on) screen_shader="${configRoot}/hypr/shaders/grayscale.frag" ;;
         *) screen_shader="${configRoot}/hypr/shaders/pass-through.frag" ;;
       esac
-      ${runUser} ${pkgs.coreutils}/bin/ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
+      ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
 
       wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
       wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
-      [ -f "$wp_themed" ] && ${runUser} ${pkgs.coreutils}/bin/ln -sf "$wp_themed" "$wp_link"
+      [ -f "$wp_themed" ] && ${runAsUser} ${pkgs.coreutils}/bin/ln -sf "$wp_themed" "$wp_link"
 
       for profile in "${XDG_CONFIG_HOME}"/chromium/Default "${XDG_CONFIG_HOME}"/chromium/Profile\ *; do
         prefs="$profile/Preferences"
         [ -f "$prefs" ] || continue
-        ${runUser} ${pkgs.python3}/bin/python "${configRoot}/chromium/seed_shortcuts.py" "$prefs"
+        ${runAsUser} ${pkgs.python3}/bin/python "${configRoot}/chromium/seed_shortcuts.py" "$prefs"
       done
 
-      [ -L ${homeDirectory}/.zshenv ] && ${runUser} ${pkgs.coreutils}/bin/rm ${homeDirectory}/.zshenv || true
+      [ -L ${homeDirectory}/.zshenv ] && ${runAsUser} ${pkgs.coreutils}/bin/rm ${homeDirectory}/.zshenv || true
     '';
   };
 }
