@@ -538,6 +538,13 @@ in
       (lib.optionalAttrs isDarwin {
         environment.variables = sessionVariables;
 
+        # macOS has no XDG_RUNTIME_DIR. TMPDIR is the closest analogue: per
+        # user, already 0700, and cleaned by the system. Anything expecting
+        # the linux /run/user/$UID falls back to it.
+        environment.extraInit = ''
+          export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-$TMPDIR}"
+        '';
+
         system.activationScripts.postActivation.text = activationText;
 
         launchd.user.agents = {
