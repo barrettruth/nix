@@ -284,10 +284,6 @@ in
     package = pierreForgejo.mkForgejoWithPierre { fileView = false; } (
       pkgs.callPackage ../../pkgs/forgejo-cm6-langs {
         forgejo = pkgs.forgejo;
-        # The patched-source FOD runs npm install, so its output moves with
-        # the npm version. Pin node so unrelated nixpkgs bumps stop
-        # invalidating the hashes.
-        nodejs = pkgs.nodejs_24;
         frontendPatches = builtins.filter (
           p: lib.hasSuffix "expose-init-globals.patch" (toString p)
         ) pierreForgejo.patches;

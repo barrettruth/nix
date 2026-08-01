@@ -4,6 +4,7 @@
   forgejo,
   buildGoModule,
   buildNpmPackage,
+  fetchurl,
   bash,
   git,
   gzip,
@@ -11,7 +12,6 @@
   makeWrapper,
   writableTmpDirAsHomeHook,
   nodejs,
-  cacert,
   python3,
   frontendPatches ? [ ],
 }:
@@ -19,55 +19,41 @@ let
   inherit (forgejo) version vendorHash;
   legacyModesVersion = "6.5.0";
 
-  # FOD: add @codemirror/legacy-modes + extra lang registrations to forgejo's
-  # web source; outputHash needs lib.fakeHash iteration on first build.
-  patchedSrc =
-    pkgs.runCommand "forgejo-${version}-with-cm6-langs-source"
-      {
-        nativeBuildInputs = [
-          nodejs
-          python3
-          cacert
-        ];
-        outputHashMode = "recursive";
-        outputHashAlgo = "sha256";
-        outputHash = "sha256-k7TF7AjET8d14vDRsSXWJ7l77VfEKzQb8eZfXQmnFjs=";
-      }
-      ''
-        set -euo pipefail
-        cp -r --no-preserve=mode,ownership ${forgejo.src} src
-        cd src
-        export HOME=$(mktemp -d)
-        export NPM_CONFIG_CACHE="$HOME/.npm-cache"
-        export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
-
-        node -e "
-          const fs = require('fs');
-          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          pkg.dependencies['@codemirror/legacy-modes'] = '${legacyModesVersion}';
-          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-        "
-
-        npm install --package-lock-only --no-audit --no-fund
-
-        python3 -c "
-        import re, pathlib
-        path = pathlib.Path('web_src/js/features/codemirror-lang.ts')
-        text = path.read_text()
-        addition = pathlib.Path('${./codemirror-langs.append.txt}').read_text()
-        text = re.sub(r'(\n  \];\n\}\n?)$', '\n' + addition + r'\1', text, count=1)
-        path.write_text(text)
-        "
-
-        cp -r --no-preserve=mode . $out
-      '';
+  # forgejo already depends on @codemirror/language; legacy-modes is the only
+  # missing package, and it is a leaf. Fetching the tarball and dropping it
+  # into node_modules avoids regenerating the lockfile, which previously
+  # required a networked fixed-output derivation whose hash moved with every
+  # npm version.
+  legacyModes = fetchurl {
+    url = "https://registry.npmjs.org/@codemirror/legacy-modes/-/legacy-modes-${legacyModesVersion}.tgz";
+    hash = "sha256-NarHMgm6lGRLB21eke8AOQn7ezOyo9A2uMXP/bG3JtM=";
+  };
 
   frontend = buildNpmPackage {
     pname = "forgejo-frontend-with-cm6-langs";
-    inherit version;
-    src = patchedSrc;
-    npmDepsHash = "sha256-xpSB0gtQaZZo+7eZVE/N3oXDXqw5ukt5PcYD6UJ1B1E=";
+    inherit version nodejs;
+    src = forgejo.src;
+    # reuse forgejo's own dependency set: the lockfile is untouched
+    inherit (forgejo) npmDeps;
     patches = frontendPatches;
+
+    nativeBuildInputs = [ python3 ];
+
+    postPatch = ''
+      python3 -c "
+      import re, pathlib
+      path = pathlib.Path('web_src/js/features/codemirror-lang.ts')
+      text = path.read_text()
+      addition = pathlib.Path('${./codemirror-langs.append.txt}').read_text()
+      text = re.sub(r'(\n  \];\n\}\n?)$', '\n' + addition + r'\1', text, count=1)
+      path.write_text(text)
+      "
+    '';
+
+    preBuild = ''
+      mkdir -p node_modules/@codemirror/legacy-modes
+      tar xzf ${legacyModes} -C node_modules/@codemirror/legacy-modes --strip-components=1
+    '';
 
     buildPhase = ''
       runHook preBuild
@@ -86,7 +72,7 @@ in
 buildGoModule {
   pname = "forgejo-with-cm6-langs";
   inherit version vendorHash;
-  src = patchedSrc;
+  src = forgejo.src;
 
   subPackages = [
     "."
@@ -159,6 +145,6 @@ buildGoModule {
   meta = forgejo.meta // {
     description =
       forgejo.meta.description
-      + " (with @codemirror/legacy-modes registered for INI/TOML/Shell/Lua/Ruby/Dockerfile/Perl/Nginx/Vim script/Diff)";
+      + " (with @codemirror/legacy-modes registered for INI/TOML/Shell/Lua/Ruby/Dockerfile/Perl/Nginx/Diff)";
   };
 }
