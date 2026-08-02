@@ -308,6 +308,7 @@ in
       persistent-others = [ ];
     };
     NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
+    NSGlobalDomain._HIHideMenuBar = true;
     NSGlobalDomain."com.apple.swipescrolldirection" = true;
   };
 
