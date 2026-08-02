@@ -161,6 +161,12 @@ in
     '';
   };
 
+  launchd.user.agents.skhd.serviceConfig.ProgramArguments = lib.mkForce [
+    "${pkgs.skhd}/bin/skhd"
+    "-c"
+    "${config.environment.etc."skhdrc".source}"
+  ];
+
   launchd.user.agents.rectangle = {
     command = "${pkgs.rectangle}/Applications/Rectangle.app/Contents/MacOS/Rectangle";
     serviceConfig = {
