@@ -148,6 +148,10 @@ in
       ralt - f : open -a Finder
       ralt - i : ${idleToggle}
 
+      ralt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
+      ralt - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
+      ralt - w : ${pkgs.skhd}/bin/skhd -k "cmd - w"
+
       ralt - return : ${rectangleAction} maximize
       ralt - left : ${rectangleAction} left-half
       ralt - right : ${rectangleAction} right-half
