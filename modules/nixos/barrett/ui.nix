@@ -26,14 +26,6 @@ let
   configRoot = if cfg.useHomeRepo then "${repo}/config" else sourceConfig;
   scriptsPath = config.barrett.workstation.scriptsPath;
 
-  iosevkaTerm = (pkgs.iosevka-bin.override { variant = "SGr-IosevkaTerm"; }).overrideAttrs {
-    inherit (pkgs.iosevka) version;
-    src = pkgs.fetchurl {
-      url = "https://github.com/be5invis/Iosevka/releases/download/v${pkgs.iosevka.version}/PkgTTC-SGr-IosevkaTerm-${pkgs.iosevka.version}.zip";
-      hash = "sha256-dpzswpCXn2MN6Q6MscHHmyo80dsI8evHa21ELwkLEG0=";
-    };
-  };
-
   wayland = import ../desktop/wayland.nix { inherit pkgs; };
   inherit (wayland)
     hyprSessionEnv
@@ -330,7 +322,6 @@ in
 
     fonts.packages = with pkgs; [
       barrett-fonts
-      iosevkaTerm
       dejavu_fonts
       freefont_ttf
       gyre-fonts

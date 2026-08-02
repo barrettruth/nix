@@ -73,6 +73,14 @@ let
     FZFDAYLIGHT
   '';
 
+  iosevkaTerm = (pkgs.iosevka-bin.override { variant = "SGr-IosevkaTerm"; }).overrideAttrs {
+    inherit (pkgs.iosevka) version;
+    src = pkgs.fetchurl {
+      url = "https://github.com/be5invis/Iosevka/releases/download/v${pkgs.iosevka.version}/PkgTTC-SGr-IosevkaTerm-${pkgs.iosevka.version}.zip";
+      hash = "sha256-dpzswpCXn2MN6Q6MscHHmyo80dsI8evHa21ELwkLEG0=";
+    };
+  };
+
   ghosttyDarwinConf = pkgs.writeText "ghostty-config-darwin" ''
     config-file = ${repo}/config/ghostty/config
     command = shell:/bin/wait4path /nix/store && exec /bin/zsh -l
@@ -387,6 +395,8 @@ in
             message = "barrett.workstation.enable requires palettes and themeGenerators module arguments";
           }
         ];
+
+        fonts.packages = [ iosevkaTerm ];
 
         users.users.${username}.packages =
           (with pkgs; [
