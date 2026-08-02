@@ -22,7 +22,9 @@ in
 {
   system.activationScripts.extraActivation.text = ''
     install -d -m 0755 "/Library/Keyboard Layouts"
-    install -m 0644 ${baremakLayout}/${layoutName}.keylayout "/Library/Keyboard Layouts/${layoutName}.keylayout"
+    if ! cmp -s ${baremakLayout}/${layoutName}.keylayout "/Library/Keyboard Layouts/${layoutName}.keylayout"; then
+      install -m 0644 ${baremakLayout}/${layoutName}.keylayout "/Library/Keyboard Layouts/${layoutName}.keylayout"
+    fi
   '';
 
   system.defaults.CustomUserPreferences."com.apple.HIToolbox".AppleEnabledInputSources = [
