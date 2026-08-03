@@ -164,9 +164,9 @@ in
   };
 
   launchd.user.agents.skhd.serviceConfig.ProgramArguments = lib.mkForce [
-    "${pkgs.skhd}/bin/skhd"
+    "/bin/sh"
     "-c"
-    "${config.environment.etc."skhdrc".source}"
+    "/bin/wait4path /nix/store && exec ${pkgs.skhd}/bin/skhd -c ${config.environment.etc."skhdrc".source}"
   ];
 
   launchd.user.agents.rectangle = {
