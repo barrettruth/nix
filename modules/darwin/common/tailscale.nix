@@ -20,8 +20,10 @@ in
     # headscale's base_domain, so *.ts.barrettruth.com never reached
     # 100.100.100.100. Headscale already sets override_local_dns and global
     # nameservers, so it is safe to make it the sole resolver.
-    overrideLocalDns = true;
+    overrideLocalDns = false;
   };
+
+  environment.etc."resolver/ts.${identity.domain}".text = "nameserver 100.100.100.100";
 
   # nix-darwin's tailscaled daemon sets RunAtLoad but not KeepAlive. With
   # overrideLocalDns it is the only resolver, so a crash would take all name
