@@ -9,7 +9,9 @@ in
     inherit runAsUser group;
 
     mkSymlink = target: link: ''
-      ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
+      if [ "$(${pkgs.coreutils}/bin/readlink "${link}" 2>/dev/null)" != "${target}" ]; then
+        ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "${target}" "${link}"
+      fi
     '';
 
     installDir = dir: ''
