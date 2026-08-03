@@ -7,15 +7,17 @@ import json
 import re
 import subprocess
 import sys
-import urllib.error
-import urllib.request
-from http.client import HTTPResponse
 from pathlib import Path
 from typing import Protocol, TypedDict, cast
 
 FIELD = "\x1f"
 RECORD = "\x1e"
-TEA_CONFIG = Path.home() / ".config" / "tea" / "config.yml"
+TEMPLATES = (
+    ".github/pull_request_template.md",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    "docs/pull_request_template.md",
+    "pull_request_template.md",
+)
 
 
 class StackError(Exception):
@@ -42,18 +44,6 @@ class GhPull(TypedDict):
     number: int
     headRefName: str
     baseRefName: str
-    title: str
-    body: str
-
-
-class ForgejoRef(TypedDict):
-    ref: str
-
-
-class ForgejoPull(TypedDict):
-    number: int
-    head: ForgejoRef
-    base: ForgejoRef
     title: str
     body: str
 
@@ -181,9 +171,20 @@ def repair(changes: list[Change], *, dry_run: bool) -> None:
 
 
 def drift(pull: PullRequest, change: Change, base: str) -> dict[str, str]:
-    wanted = {"base": base, "title": change["title"], "body": change["body"]}
-    current = {"base": pull["base"], "title": pull["title"], "body": pull["body"]}
+    wanted = {"base": base, "title": change["title"]}
+    current = {"base": pull["base"], "title": pull["title"]}
     return {key: value for key, value in wanted.items() if current[key] != value}
+
+
+def initial_body(change: Change) -> list[str]:
+    if change["body"]:
+        return ["--body", change["body"]]
+    root = jj("workspace", "root").strip()
+    for candidate in TEMPLATES:
+        template = Path(root) / candidate
+        if template.is_file():
+            return ["--body-file", str(template)]
+    return ["--body", ""]
 
 
 def remote_url() -> str:
@@ -235,22 +236,9 @@ class GitHub:
         ]
 
     def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
-        run(
-            [
-                "gh",
-                "pr",
-                "create",
-                "--head",
-                head,
-                "--base",
-                base,
-                "--title",
-                change["title"],
-                "--body",
-                change["body"],
-            ],
-            dry_run=dry_run,
-        )
+        command = ["gh", "pr", "create", "--head", head, "--base", base]
+        command += ["--title", change["title"]]
+        run(command + initial_body(change), dry_run=dry_run)
 
     def update(
         self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
@@ -261,96 +249,11 @@ class GitHub:
         run(command, dry_run=dry_run)
 
 
-class Forgejo:
-    api: str
-    token: str
-
-    def __init__(self, host: str, owner: str, name: str) -> None:
-        self.api = f"https://{host}/api/v1/repos/{owner}/{name}"
-        self.token = read_tea_token(host)
-
-    def request(self, method: str, path: str, payload: dict[str, str] | None) -> str:
-        request = urllib.request.Request(
-            self.api + path,
-            data=json.dumps(payload).encode() if payload is not None else None,
-            method=method,
-            headers={
-                "Authorization": f"token {self.token}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-        )
-        try:
-            with cast(HTTPResponse, urllib.request.urlopen(request)) as response:
-                return response.read().decode()
-        except urllib.error.HTTPError as error:
-            raise StackError(
-                f"{method} {path} failed: {error.read().decode()}"
-            ) from error
-
-    def open_pulls(self) -> list[PullRequest]:
-        payload = cast(
-            list[ForgejoPull],
-            json.loads(
-                self.request("GET", "/pulls?state=open&limit=100", None) or "[]"
-            ),
-        )
-        return [
-            {
-                "number": item["number"],
-                "head": item["head"]["ref"],
-                "base": item["base"]["ref"],
-                "title": item["title"],
-                "body": (item["body"] or "").strip(),
-            }
-            for item in payload
-        ]
-
-    def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
-        echo(["forgejo", "pr", "create", "--head", head, "--base", base])
-        if dry_run:
-            return
-        _ = self.request(
-            "POST",
-            "/pulls",
-            {
-                "head": head,
-                "base": base,
-                "title": change["title"],
-                "body": change["body"],
-            },
-        )
-
-    def update(
-        self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
-    ) -> None:
-        command = ["forgejo", "pr", "edit", str(pull["number"])]
-        for key, value in fields.items():
-            command += [f"--{key}", value]
-        echo(command)
-        if dry_run:
-            return
-        _ = self.request("PATCH", f"/pulls/{pull['number']}", fields)
-
-
-def read_tea_token(host: str) -> str:
-    if not TEA_CONFIG.exists():
-        raise StackError(f"no tea config at {TEA_CONFIG}; run 'tea login add'")
-    for block in TEA_CONFIG.read_text().split("- name:")[1:]:
-        fields = {
-            key.strip(): value.strip()
-            for key, _, value in (line.partition(":") for line in block.splitlines())
-        }
-        if host in fields.get("url", "") and fields.get("token"):
-            return fields["token"]
-    raise StackError(f"no tea login for {host}")
-
-
 def detect_forge() -> Forge:
-    host, owner, name = parse_slug(remote_url())
-    if host == "github.com":
-        return GitHub()
-    return Forgejo(host, owner, name)
+    host, _, _ = parse_slug(remote_url())
+    if host != "github.com":
+        raise StackError(f"only github.com is supported, origin is {host}")
+    return GitHub()
 
 
 def parse_arguments() -> Arguments:
