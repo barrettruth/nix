@@ -1,0 +1,406 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from http.client import HTTPResponse
+from pathlib import Path
+from typing import Protocol, TypedDict, cast
+
+FIELD = "\x1f"
+RECORD = "\x1e"
+TEA_CONFIG = Path.home() / ".config" / "tea" / "config.yml"
+
+
+class StackError(Exception):
+    pass
+
+
+class Change(TypedDict):
+    id: str
+    parents: list[str]
+    bookmarks: list[str]
+    title: str
+    body: str
+
+
+class PullRequest(TypedDict):
+    number: int
+    head: str
+    base: str
+    title: str
+    body: str
+
+
+class GhPull(TypedDict):
+    number: int
+    headRefName: str
+    baseRefName: str
+    title: str
+    body: str
+
+
+class ForgejoRef(TypedDict):
+    ref: str
+
+
+class ForgejoPull(TypedDict):
+    number: int
+    head: ForgejoRef
+    base: ForgejoRef
+    title: str
+    body: str
+
+
+class Forge(Protocol):
+    def open_pulls(self) -> list[PullRequest]: ...
+
+    def create(
+        self, change: Change, head: str, base: str, *, dry_run: bool
+    ) -> None: ...
+
+    def update(
+        self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
+    ) -> None: ...
+
+
+class Arguments(argparse.Namespace):
+    revset: str = "ready()"
+    dry_run: bool = False
+
+
+def echo(command: list[str]) -> None:
+    print("$ " + " ".join(command), file=sys.stderr)
+
+
+def capture(command: list[str]) -> str:
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise StackError((result.stderr or result.stdout).strip())
+    return result.stdout
+
+
+def run(command: list[str], *, dry_run: bool) -> None:
+    echo(command)
+    if not dry_run:
+        _ = capture(command)
+
+
+def jj(*args: str) -> str:
+    return capture(["jj", *args])
+
+
+def bookmark_of(change_id: str) -> str:
+    return f"push-{change_id}"
+
+
+def load_stack(revset: str) -> list[Change]:
+    template = (
+        'change_id.short() ++ "\\x1f"'
+        ' ++ parents.map(|p| p.change_id().short()).join(",") ++ "\\x1f"'
+        ' ++ local_bookmarks.map(|b| b.name()).join(",") ++ "\\x1f"'
+        ' ++ description ++ "\\x1e"'
+    )
+    raw = jj("log", "--no-graph", "--reversed", "-r", revset, "-T", template)
+    changes: list[Change] = []
+    for record in raw.split(RECORD):
+        if not record.strip():
+            continue
+        change_id, parents, bookmarks, description = record.split(FIELD)
+        lines = description.strip().splitlines()
+        changes.append(
+            {
+                "id": change_id,
+                "parents": [p for p in parents.split(",") if p],
+                "bookmarks": [b for b in bookmarks.split(",") if b],
+                "title": lines[0] if lines else "",
+                "body": "\n".join(lines[1:]).strip(),
+            }
+        )
+    return changes
+
+
+def linearize(changes: list[Change]) -> None:
+    known = {change["id"] for change in changes}
+    for index, change in enumerate(changes):
+        inside = [p for p in change["parents"] if p in known]
+        if index == 0 and inside:
+            raise StackError(f"{change['id']} is not the bottom of the stack")
+        if index > 0 and inside != [changes[index - 1]["id"]]:
+            below = changes[index - 1]["id"]
+            hint = "the stack forks, so there is no single chain of pull requests"
+            raise StackError(
+                f"{change['id']} does not sit directly on {below}: {hint}; narrow --revset"
+            )
+
+
+def trunk_bookmark() -> str:
+    raw = jj(
+        "log",
+        "--no-graph",
+        "-r",
+        "trunk()",
+        "-T",
+        'remote_bookmarks.map(|b| b.name()).join(",")',
+    )
+    names = sorted({name for name in raw.split(",") if name})
+    if len(names) != 1:
+        raise StackError(f"cannot determine trunk bookmark, found {names or 'none'}")
+    return names[0]
+
+
+def repair(changes: list[Change], *, dry_run: bool) -> None:
+    known = {change["id"] for change in changes}
+    for change in changes:
+        for bookmark in change["bookmarks"]:
+            match = re.fullmatch(r"push-([a-z]+)", bookmark)
+            if not match or match.group(1) == change["id"]:
+                continue
+            owner = match.group(1)
+            if owner in known:
+                run(
+                    [
+                        "jj",
+                        "bookmark",
+                        "move",
+                        bookmark,
+                        "--to",
+                        owner,
+                        "--allow-backwards",
+                    ],
+                    dry_run=dry_run,
+                )
+            else:
+                run(["jj", "bookmark", "delete", bookmark], dry_run=dry_run)
+
+
+def drift(pull: PullRequest, change: Change, base: str) -> dict[str, str]:
+    wanted = {"base": base, "title": change["title"], "body": change["body"]}
+    current = {"base": pull["base"], "title": pull["title"], "body": pull["body"]}
+    return {key: value for key, value in wanted.items() if current[key] != value}
+
+
+def remote_url() -> str:
+    for line in jj("git", "remote", "list").splitlines():
+        name, _, url = line.partition(" ")
+        if name == "origin":
+            return url.strip()
+    raise StackError("no 'origin' remote")
+
+
+def parse_slug(url: str) -> tuple[str, str, str]:
+    trimmed = url.strip().removesuffix(".git")
+    match = re.fullmatch(
+        r"(?:ssh://)?[^@/]+@([^:/]+)(?::\d+)?[:/](.+)", trimmed
+    ) or re.fullmatch(r"https?://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+)", trimmed)
+    if not match:
+        raise StackError(f"cannot parse remote url: {url}")
+    owner, _, name = match.group(2).rpartition("/")
+    if not owner or not name:
+        raise StackError(f"cannot parse owner/repo from: {url}")
+    return match.group(1), owner, name
+
+
+class GitHub:
+    def open_pulls(self) -> list[PullRequest]:
+        raw = capture(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--state",
+                "open",
+                "--limit",
+                "200",
+                "--json",
+                "number,headRefName,baseRefName,title,body",
+            ]
+        )
+        payload = cast(list[GhPull], json.loads(raw or "[]"))
+        return [
+            {
+                "number": item["number"],
+                "head": item["headRefName"],
+                "base": item["baseRefName"],
+                "title": item["title"],
+                "body": item["body"].strip(),
+            }
+            for item in payload
+        ]
+
+    def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
+        run(
+            [
+                "gh",
+                "pr",
+                "create",
+                "--head",
+                head,
+                "--base",
+                base,
+                "--title",
+                change["title"],
+                "--body",
+                change["body"],
+            ],
+            dry_run=dry_run,
+        )
+
+    def update(
+        self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
+    ) -> None:
+        command = ["gh", "pr", "edit", str(pull["number"])]
+        for key, value in fields.items():
+            command += [f"--{key}", value]
+        run(command, dry_run=dry_run)
+
+
+class Forgejo:
+    api: str
+    token: str
+
+    def __init__(self, host: str, owner: str, name: str) -> None:
+        self.api = f"https://{host}/api/v1/repos/{owner}/{name}"
+        self.token = read_tea_token(host)
+
+    def request(self, method: str, path: str, payload: dict[str, str] | None) -> str:
+        request = urllib.request.Request(
+            self.api + path,
+            data=json.dumps(payload).encode() if payload is not None else None,
+            method=method,
+            headers={
+                "Authorization": f"token {self.token}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+        )
+        try:
+            with cast(HTTPResponse, urllib.request.urlopen(request)) as response:
+                return response.read().decode()
+        except urllib.error.HTTPError as error:
+            raise StackError(
+                f"{method} {path} failed: {error.read().decode()}"
+            ) from error
+
+    def open_pulls(self) -> list[PullRequest]:
+        payload = cast(
+            list[ForgejoPull],
+            json.loads(
+                self.request("GET", "/pulls?state=open&limit=100", None) or "[]"
+            ),
+        )
+        return [
+            {
+                "number": item["number"],
+                "head": item["head"]["ref"],
+                "base": item["base"]["ref"],
+                "title": item["title"],
+                "body": (item["body"] or "").strip(),
+            }
+            for item in payload
+        ]
+
+    def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
+        echo(["forgejo", "pr", "create", "--head", head, "--base", base])
+        if dry_run:
+            return
+        _ = self.request(
+            "POST",
+            "/pulls",
+            {
+                "head": head,
+                "base": base,
+                "title": change["title"],
+                "body": change["body"],
+            },
+        )
+
+    def update(
+        self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
+    ) -> None:
+        command = ["forgejo", "pr", "edit", str(pull["number"])]
+        for key, value in fields.items():
+            command += [f"--{key}", value]
+        echo(command)
+        if dry_run:
+            return
+        _ = self.request("PATCH", f"/pulls/{pull['number']}", fields)
+
+
+def read_tea_token(host: str) -> str:
+    if not TEA_CONFIG.exists():
+        raise StackError(f"no tea config at {TEA_CONFIG}; run 'tea login add'")
+    for block in TEA_CONFIG.read_text().split("- name:")[1:]:
+        fields = {
+            key.strip(): value.strip()
+            for key, _, value in (line.partition(":") for line in block.splitlines())
+        }
+        if host in fields.get("url", "") and fields.get("token"):
+            return fields["token"]
+    raise StackError(f"no tea login for {host}")
+
+
+def detect_forge() -> Forge:
+    host, owner, name = parse_slug(remote_url())
+    if host == "github.com":
+        return GitHub()
+    return Forgejo(host, owner, name)
+
+
+def parse_arguments() -> Arguments:
+    parser = argparse.ArgumentParser(
+        prog="jj-pr",
+        description="Reconcile the current jj stack with pull requests on the forge.",
+    )
+    _ = parser.add_argument("--revset", default="ready()", help="changes to publish")
+    _ = parser.add_argument("--dry-run", action="store_true", help="show commands only")
+    return cast(Arguments, parser.parse_args())
+
+
+def main() -> int:
+    args = parse_arguments()
+
+    changes = load_stack(args.revset)
+    if not changes:
+        print(f"jj-pr: no changes matched {args.revset}", file=sys.stderr)
+        return 0
+    linearize(changes)
+
+    repair(changes, dry_run=args.dry_run)
+    run(["jj", "git", "push", "-c", args.revset], dry_run=args.dry_run)
+    run(["jj", "git", "push", "--deleted"], dry_run=args.dry_run)
+
+    forge = detect_forge()
+    existing = {pull["head"]: pull for pull in forge.open_pulls()}
+    base = trunk_bookmark()
+
+    for change in changes:
+        head = bookmark_of(change["id"])
+        pull = existing.get(head)
+        if pull is None:
+            forge.create(change, head, base, dry_run=args.dry_run)
+        else:
+            fields = drift(pull, change, base)
+            if fields:
+                forge.update(pull, fields, dry_run=args.dry_run)
+            else:
+                print(f"  ok  {head} -> {base}", file=sys.stderr)
+        base = head
+
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except StackError as error:
+        print(f"jj-pr: {error}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)

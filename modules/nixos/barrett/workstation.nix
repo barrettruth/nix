@@ -163,6 +163,7 @@ let
     sy = ["sync"]
     up = ["git", "push", "-c", "ready()"]
     u = ["up"]
+    pr = ["util", "exec", "--", "jj-pr"]
   '';
 
   gitConf = pkgs.writeText "git-wrapper" ''
