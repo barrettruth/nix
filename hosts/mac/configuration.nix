@@ -321,6 +321,25 @@ in
     };
     NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
     NSGlobalDomain."com.apple.swipescrolldirection" = true;
+    CustomUserPreferences."com.apple.loginwindow" = {
+      TALLogoutSavesState = false;
+      LoginwindowLaunchesRelaunchApps = false;
+    };
+  };
+
+  launchd.user.agents.ghostty = {
+    command = ''/usr/bin/open -a "/Applications/Nix Apps/Ghostty.app"'';
+    serviceConfig.RunAtLoad = true;
+  };
+
+  launchd.user.agents.google-chrome = {
+    command = ''/usr/bin/open -a "/Applications/Nix Apps/Google Chrome.app"'';
+    serviceConfig.RunAtLoad = true;
+  };
+
+  launchd.daemons.activate-system.serviceConfig = {
+    StandardOutPath = "/var/log/activate-system.log";
+    StandardErrorPath = "/var/log/activate-system.log";
   };
 
   environment.systemPackages = with pkgs; [
