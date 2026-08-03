@@ -261,7 +261,17 @@ let
           install -Dm644 -o ${username} -g ${act.group} ${zshenvWait} "${homeDirectory}/.zshenv"
         ''}
         ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
-        ${mkSymlink ghosttyConfig "${XDG_CONFIG_HOME}/ghostty/config"}
+        ${
+          if isDarwin then
+            ''
+              if [ -L "${XDG_CONFIG_HOME}/ghostty/config" ] || ! cmp -s ${ghosttyConfig} "${XDG_CONFIG_HOME}/ghostty/config"; then
+                rm -f "${XDG_CONFIG_HOME}/ghostty/config"
+                install -Dm644 -o ${username} -g ${act.group} ${ghosttyConfig} "${XDG_CONFIG_HOME}/ghostty/config"
+              fi
+            ''
+          else
+            mkSymlink ghosttyConfig "${XDG_CONFIG_HOME}/ghostty/config"
+        }
         ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
         ${mkSymlink "${fzfThemes}/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
         ${mkSymlink "${fzfThemes}/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
