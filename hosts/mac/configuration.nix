@@ -102,6 +102,7 @@ let
 
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   chromeApp = "/Applications/Nix Apps/Google Chrome.app";
+  rectangleApp = "/Applications/Nix Apps/Rectangle.app";
 
   # ctl idle had no macOS analogue worth porting; caffeinate is built in.
   idleToggle = pkgs.writeShellScript "idle-toggle" ''
@@ -113,7 +114,7 @@ let
   '';
 
   rectangleAction = pkgs.writeShellScript "rectangle-action" ''
-    exec /usr/bin/open -g "rectangle://execute-action?name=$1"
+    exec /usr/bin/open -g -a "${rectangleApp}" "rectangle://execute-action?name=$1"
   '';
 
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
@@ -166,11 +167,13 @@ in
   launchd.user.agents.skhd.serviceConfig.ProgramArguments = lib.mkForce [
     "/bin/sh"
     "-c"
-    "/bin/wait4path /nix/store && exec ${pkgs.skhd}/bin/skhd -c ${config.environment.etc."skhdrc".source}"
+    "/bin/wait4path /nix/store && exec ${pkgs.skhd}/bin/skhd -c ${
+      config.environment.etc."skhdrc".source
+    }"
   ];
 
   launchd.user.agents.rectangle = {
-    command = "${pkgs.rectangle}/Applications/Rectangle.app/Contents/MacOS/Rectangle";
+    command = ''"${rectangleApp}/Contents/MacOS/Rectangle"'';
     serviceConfig = {
       RunAtLoad = true;
       KeepAlive = true;
