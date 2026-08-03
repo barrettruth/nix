@@ -81,13 +81,6 @@ let
     };
   };
 
-  zshenvWait = pkgs.writeText "zshenv-wait4path" ''
-    if [ ! -e /nix/store ] && [[ -o login ]]; then
-      /bin/wait4path /nix/store
-      exec /bin/zsh -l
-    fi
-  '';
-
   ghosttyDarwinConf = pkgs.writeText "ghostty-config-darwin" ''
     config-file = ${repo}/config/ghostty/config
     macos-option-as-alt = false
@@ -257,21 +250,8 @@ let
           rm -f "$tmp"
         fi
         ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
-        ${lib.optionalString isDarwin ''
-          install -Dm644 -o ${username} -g ${act.group} ${zshenvWait} "${homeDirectory}/.zshenv"
-        ''}
         ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
-        ${
-          if isDarwin then
-            ''
-              if [ -L "${XDG_CONFIG_HOME}/ghostty/config" ] || ! cmp -s ${ghosttyConfig} "${XDG_CONFIG_HOME}/ghostty/config"; then
-                rm -f "${XDG_CONFIG_HOME}/ghostty/config"
-                install -Dm644 -o ${username} -g ${act.group} ${ghosttyConfig} "${XDG_CONFIG_HOME}/ghostty/config"
-              fi
-            ''
-          else
-            mkSymlink ghosttyConfig "${XDG_CONFIG_HOME}/ghostty/config"
-        }
+        ${mkSymlink ghosttyConfig "${XDG_CONFIG_HOME}/ghostty/config"}
         ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
         ${mkSymlink "${fzfThemes}/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
         ${mkSymlink "${fzfThemes}/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
