@@ -149,6 +149,8 @@ in
       ralt - i : ${idleToggle}
 
       ralt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
+      ralt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
+      ralt - 0x32 : ${pkgs.skhd}/bin/skhd -k "cmd - 0x32"
       ralt - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
       ralt - w : ${pkgs.skhd}/bin/skhd -k "cmd - w"
 
