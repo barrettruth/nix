@@ -112,7 +112,7 @@ in
       TranslateEnabled = true;
       ImportBookmarks = false;
       SafeBrowsingProtectionLevel = 1;
-      DnsOverHttpsMode = "automatic";
+      DnsOverHttpsMode = "off";
       BlockThirdPartyCookies = true;
       CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
       RestoreOnStartup = 1;
