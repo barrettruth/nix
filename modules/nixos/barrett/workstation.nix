@@ -139,6 +139,18 @@ let
 
     [merge-tools.vimdiff]
     program = "nvim"
+
+    [remotes.origin]
+    auto-track-bookmarks = 'exact:"main" | exact:"master"'
+
+    [revset-aliases]
+    "stack()" = "reachable(@, mutable())"
+    "ready()" = 'stack() & ~empty() & ~description(exact:"")'
+
+    [aliases]
+    s = ["log", "-r", "stack()"]
+    restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
+    up = ["git", "push", "-c", "ready()"]
   '';
 
   gitConf = pkgs.writeText "git-wrapper" ''
