@@ -146,10 +146,17 @@ let
     [revset-aliases]
     "stack()" = "reachable(@, mutable())"
     "ready()" = 'stack() & ~empty() & ~description(exact:"")'
+    "top()" = "heads(stack())"
 
     [aliases]
     stack = ["log", "-r", "stack()"]
     s = ["stack"]
+    sdiff = ["diff", "--from", "trunk()", "--to", "top()"]
+    sd = ["sdiff"]
+    spatch = ["log", "-r", "stack()", "-p"]
+    sp = ["spatch"]
+    hist = ["log", "-r", "::trunk() ~ root()"]
+    h = ["hist"]
     restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
     rs = ["restack"]
     sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack && jj stack"]
