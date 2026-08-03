@@ -58,9 +58,14 @@ in
         sleep 1
       done
 
-      exec ${pkgs.tailscale}/bin/tailscale up \
-        --login-server "https://headscale.${identity.domain}" \
-        --auth-key "file:${authKeyPath}"
+      for _ in $(seq 1 10); do
+        ${pkgs.tailscale}/bin/tailscale up \
+          --login-server "https://headscale.${identity.domain}" \
+          --auth-key "file:${authKeyPath}" && exit 0
+        sleep 15
+      done
+
+      exit 1
     '';
   };
 }
