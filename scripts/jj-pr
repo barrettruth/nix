@@ -29,7 +29,6 @@ class Change(TypedDict):
     parents: list[str]
     bookmarks: list[str]
     title: str
-    body: str
 
 
 class PullRequest(TypedDict):
@@ -37,7 +36,6 @@ class PullRequest(TypedDict):
     head: str
     base: str
     title: str
-    body: str
 
 
 class GhPull(TypedDict):
@@ -45,7 +43,6 @@ class GhPull(TypedDict):
     headRefName: str
     baseRefName: str
     title: str
-    body: str
 
 
 class Forge(Protocol):
@@ -110,7 +107,6 @@ def load_stack(revset: str) -> list[Change]:
                 "parents": [p for p in parents.split(",") if p],
                 "bookmarks": [b for b in bookmarks.split(",") if b],
                 "title": lines[0] if lines else "",
-                "body": "\n".join(lines[1:]).strip(),
             }
         )
     return changes
@@ -176,9 +172,7 @@ def drift(pull: PullRequest, change: Change, base: str) -> dict[str, str]:
     return {key: value for key, value in wanted.items() if current[key] != value}
 
 
-def initial_body(change: Change) -> list[str]:
-    if change["body"]:
-        return ["--body", change["body"]]
+def scaffold() -> list[str]:
     root = jj("workspace", "root").strip()
     for candidate in TEMPLATES:
         template = Path(root) / candidate
@@ -220,7 +214,7 @@ class GitHub:
                 "--limit",
                 "200",
                 "--json",
-                "number,headRefName,baseRefName,title,body",
+                "number,headRefName,baseRefName,title",
             ]
         )
         payload = cast(list[GhPull], json.loads(raw or "[]"))
@@ -230,7 +224,6 @@ class GitHub:
                 "head": item["headRefName"],
                 "base": item["baseRefName"],
                 "title": item["title"],
-                "body": item["body"].strip(),
             }
             for item in payload
         ]
@@ -238,7 +231,7 @@ class GitHub:
     def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
         command = ["gh", "pr", "create", "--head", head, "--base", base]
         command += ["--title", change["title"]]
-        run(command + initial_body(change), dry_run=dry_run)
+        run(command + scaffold(), dry_run=dry_run)
 
     def update(
         self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
