@@ -150,6 +150,7 @@ let
     [aliases]
     s = ["log", "-r", "stack()"]
     restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
+    sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack"]
     up = ["git", "push", "-c", "ready()"]
   '';
 
