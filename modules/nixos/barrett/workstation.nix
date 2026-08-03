@@ -83,7 +83,6 @@ let
 
   ghosttyDarwinConf = pkgs.writeText "ghostty-config-darwin" ''
     config-file = ${repo}/config/ghostty/config
-    command = shell:/bin/wait4path /nix/store && exec /bin/zsh -l
     macos-option-as-alt = false
     keybind = f18=esc:x
     keybind = super+r=reload_config
