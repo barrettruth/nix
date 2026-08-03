@@ -148,10 +148,14 @@ let
     "ready()" = 'stack() & ~empty() & ~description(exact:"")'
 
     [aliases]
-    s = ["log", "-r", "stack()"]
+    stack = ["log", "-r", "stack()"]
+    s = ["stack"]
     restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
-    sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack"]
+    rs = ["restack"]
+    sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack && jj stack"]
+    sy = ["sync"]
     up = ["git", "push", "-c", "ready()"]
+    u = ["up"]
   '';
 
   gitConf = pkgs.writeText "git-wrapper" ''
