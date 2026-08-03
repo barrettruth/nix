@@ -81,6 +81,13 @@ let
     };
   };
 
+  zshenvWait = pkgs.writeText "zshenv-wait4path" ''
+    if [ ! -e /nix/store ] && [[ -o login ]]; then
+      /bin/wait4path /nix/store
+      exec /bin/zsh -l
+    fi
+  '';
+
   ghosttyDarwinConf = pkgs.writeText "ghostty-config-darwin" ''
     config-file = ${repo}/config/ghostty/config
     macos-option-as-alt = false
@@ -250,6 +257,9 @@ let
           rm -f "$tmp"
         fi
         ${mkSymlink "${zshInit}" "${XDG_CONFIG_HOME}/zsh/.zshrc"}
+        ${lib.optionalString isDarwin ''
+          install -Dm644 -o ${username} -g ${act.group} ${zshenvWait} "${homeDirectory}/.zshenv"
+        ''}
         ${mkSymlink "${repo}/config/nvim" "${XDG_CONFIG_HOME}/nvim"}
         ${mkSymlink ghosttyConfig "${XDG_CONFIG_HOME}/ghostty/config"}
         ${mkSymlink "${repo}/config/ghostty/themes" "${XDG_CONFIG_HOME}/ghostty/themes"}
