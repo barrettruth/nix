@@ -2,11 +2,13 @@
   config,
   lib,
   pkgs,
+  act,
   identity,
   ...
 }:
 let
   username = "barrett";
+  screenshotDir = "${config.barrett.user.homeDirectory}/Pictures/Screenshots";
 
   hidKeyboardUsage = usage: 30064771072 + usage;
   capsLock = hidKeyboardUsage 57;
@@ -204,6 +206,8 @@ in
     # login(1) prints "Last login:" unless this exists.
     install -m 0644 -o ${username} -g staff /dev/null "/Users/${username}/.hushlogin"
 
+    ${act.installDirMode "0755" screenshotDir}
+
     tmp=$(mktemp)
     awk '
       $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
@@ -281,6 +285,7 @@ in
       ];
       persistent-others = [ ];
     };
+    screencapture.location = screenshotDir;
     NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
     NSGlobalDomain."com.apple.swipescrolldirection" = true;
     CustomUserPreferences."com.apple.loginwindow" = {
