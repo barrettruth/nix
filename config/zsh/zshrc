@@ -36,6 +36,12 @@ export PURE_GIT_PULL=0
 export PURE_GIT_UNTRACKED_DIRTY=1
 zstyle ':prompt:pure:git:stash' show yes
 
+zstyle ':vcs_info:git+pre-get-data:*' hooks jj-skip
++vi-jj-skip() {
+    local root=$(command git rev-parse --show-toplevel 2>/dev/null)
+    [[ -n $root && -d $root/.jj ]] && ret=1
+}
+
 autoload -Uz promptinit && promptinit
 prompt pure
 
