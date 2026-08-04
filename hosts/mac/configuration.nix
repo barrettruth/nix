@@ -201,7 +201,7 @@ in
 
     # power.sleep drives systemsetup, which only writes the AC profile.
     # The battery profile keeps macOS defaults of 1 and 2 minutes.
-    /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10
+    /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10 lessbright 0
 
     # login(1) prints "Last login:" unless this exists.
     install -m 0644 -o ${username} -g staff /dev/null "/Users/${username}/.hushlogin"
