@@ -36,10 +36,20 @@ export PURE_GIT_PULL=0
 export PURE_GIT_UNTRACKED_DIRTY=1
 zstyle ':prompt:pure:git:stash' show yes
 
-zstyle ':vcs_info:git+pre-get-data:*' hooks jj-skip
-+vi-jj-skip() {
-    local root=$(command git rev-parse --show-toplevel 2>/dev/null)
-    [[ -n $root && -d $root/.jj ]] && ret=1
+zstyle ':vcs_info:git+set-message:*' hooks jj-branch
++vi-jj-branch() {
+    [[ -d ${hook_com[base]}/.jj ]] || return 0
+    case $1 in
+        0)
+            hook_com[message]=$(command jj log --ignore-working-copy --no-graph \
+                -r @ -T 'change_id.short(8) ++ if(conflict, " [x]")' 2>/dev/null)
+            ret=1
+            ;;
+        1)
+            hook_com[message]=
+            ret=1
+            ;;
+    esac
 }
 
 autoload -Uz promptinit && promptinit
