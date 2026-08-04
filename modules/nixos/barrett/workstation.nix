@@ -136,6 +136,7 @@ let
 
     [git]
     sign-on-push = true
+    fetch = ["glob:*"]
 
     [merge-tools.vimdiff]
     program = "nvim"
