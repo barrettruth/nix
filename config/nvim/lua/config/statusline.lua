@@ -1,6 +1,6 @@
 local M = {}
 
-local jj_template = 'change_id.short(8) ++ if(conflict, " ×")'
+local jj_template = 'change_id.short(8) ++ if(conflict, " [x]")'
 
 ---@type string
 local jj_label = ''
