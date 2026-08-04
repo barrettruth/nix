@@ -46,52 +46,11 @@ let
     ];
   };
 
-  # nixpkgs applies commandLineArgs only to bin/google-chrome-stable on
-  # darwin; the .app is copied unwrapped, so Dock launches would miss the
-  # flag. Chrome is signed with library validation, so the bundle cannot be
-  # patched in place. Ship a small launcher bundle instead that execs the
-  # signed binary. The flag silences the debugger banner the Midnight
-  # extension triggers via Emulation.setAutoDarkModeOverride.
   chromeFlags = [ "--silent-debugger-extension-api" ];
 
-  chromeWrapped = pkgs.runCommand "google-chrome-wrapped" { } ''
-    real="${pkgs.google-chrome}/Applications/Google Chrome.app"
-    app="$out/Applications/Google Chrome.app"
-    mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$out/bin"
-
-    cp "$real/Contents/Resources/app.icns" "$app/Contents/Resources/app.icns"
-
-    cat >"$app/Contents/Info.plist" <<'PLIST'
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>CFBundleExecutable</key><string>chrome</string>
-      <key>CFBundleIdentifier</key><string>com.barrettruth.google-chrome</string>
-      <key>CFBundleName</key><string>Google Chrome</string>
-      <key>CFBundleDisplayName</key><string>Google Chrome</string>
-      <key>CFBundleIconFile</key><string>app.icns</string>
-      <key>CFBundlePackageType</key><string>APPL</string>
-      <key>CFBundleShortVersionString</key><string>${pkgs.google-chrome.version}</string>
-      <key>LSMinimumSystemVersion</key><string>11.0</string>
-      <key>LSRequiresNativeExecution</key><true/>
-      <key>LSArchitecturePriority</key><array><string>${pkgs.stdenv.hostPlatform.darwinArch}</string></array>
-    </dict>
-    </plist>
-    PLIST
-
-    cat >"$app/Contents/MacOS/chrome" <<EOF
-    #!/bin/sh
-    exec /usr/bin/arch -${pkgs.stdenv.hostPlatform.darwinArch} "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
-    EOF
-    chmod +x "$app/Contents/MacOS/chrome"
-
-    cat >"$out/bin/google-chrome-stable" <<EOF
-    #!/bin/sh
-    exec /usr/bin/arch -${pkgs.stdenv.hostPlatform.darwinArch} "$real/Contents/MacOS/Google Chrome" ${builtins.concatStringsSep " " chromeFlags} "\$@"
-    EOF
-    chmod +x "$out/bin/google-chrome-stable"
-  '';
+  chromePkg = pkgs.google-chrome.override {
+    commandLineArgs = lib.concatStringsSep " " chromeFlags;
+  };
 
   # nix-darwin has no networking.hosts. Without these the public A records
   # win, and they point at an address that does not answer, so every
@@ -336,7 +295,7 @@ in
   };
 
   launchd.user.agents.google-chrome = {
-    command = ''/usr/bin/open -a "/Applications/Nix Apps/Google Chrome.app"'';
+    command = ''/usr/bin/open -a "${chromeApp}" --args ${lib.concatStringsSep " " chromeFlags}'';
     serviceConfig.RunAtLoad = true;
   };
 
@@ -347,7 +306,7 @@ in
 
   environment.systemPackages = with pkgs; [
     age
-    chromeWrapped
+    chromePkg
     rectangle
     curl
     fd
