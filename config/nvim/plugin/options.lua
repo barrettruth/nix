@@ -4,7 +4,7 @@ vim.o.autocomplete = false
 
 vim.o.breakindent = true
 
-vim.o.cmdheight = 0
+vim.o.cmdheight = 1
 
 vim.opt.completeopt = { 'menuone', 'noselect', 'noinsert', 'fuzzy', 'popup' }
 
