@@ -42,7 +42,7 @@ zstyle ':vcs_info:git+set-message:*' hooks jj-branch
     case $1 in
         0)
             hook_com[message]=$(command jj log --ignore-working-copy --no-graph \
-                -r @ -T 'change_id.short(8) ++ if(conflict, " [x]")' 2>/dev/null)
+                -r @ -T '"@" ++ change_id.short(8) ++ if(conflict, " [x]")' 2>/dev/null)
             ret=1
             ;;
         1)
