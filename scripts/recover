@@ -10,6 +10,7 @@ import os
 import re
 import shlex
 import signal
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -89,7 +90,40 @@ def lock_is_held(path: Path) -> bool:
         os.close(descriptor)
 
 
+DARWIN = sys.platform == "darwin"
+
+
+def command_output(command: list[str]) -> str:
+    try:
+        result = subprocess.run(
+            command, capture_output=True, text=True, timeout=5.0, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return result.stdout
+
+
+def ps_output(pid: int, fields: str) -> str:
+    return command_output(["ps", "-o", fields, "-p", str(pid)]).strip()
+
+
+def darwin_stat(pid: int) -> tuple[int, int, str]:
+    value = ps_output(pid, "ppid=,stat=,lstart=")
+    if not value:
+        raise RecoveryError(f"process {pid} no longer exists")
+    fields = value.split(maxsplit=2)
+    if len(fields) < 3:
+        raise RecoveryError(f"cannot parse process state for PID {pid}")
+    try:
+        started = time.strptime(fields[2].strip(), "%a %b %d %H:%M:%S %Y")
+        return int(fields[0]), int(time.mktime(started)), fields[1]
+    except (OverflowError, ValueError):
+        raise RecoveryError(f"cannot parse process state for PID {pid}") from None
+
+
 def proc_stat(pid: int) -> tuple[int, int, str]:
+    if DARWIN:
+        return darwin_stat(pid)
     try:
         value = Path(f"/proc/{pid}/stat").read_text()
     except (FileNotFoundError, ProcessLookupError):
@@ -104,6 +138,8 @@ def proc_stat(pid: int) -> tuple[int, int, str]:
 
 
 def process_executable(pid: int) -> str:
+    if DARWIN:
+        return ps_output(pid, "comm=")
     try:
         value = os.readlink(f"/proc/{pid}/exe")
     except (FileNotFoundError, ProcessLookupError, PermissionError):
@@ -115,7 +151,20 @@ def process_is_devin(pid: int) -> bool:
     return Path(process_executable(pid)).name == "devin"
 
 
+def darwin_holds(pid: int, path: Path) -> bool:
+    output = command_output(["lsof", "-t", "--", str(path)])
+    for line in output.split():
+        try:
+            if int(line) == pid:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def process_holds(pid: int, path: Path) -> bool:
+    if DARWIN:
+        return darwin_holds(pid, path)
     directory = Path(f"/proc/{pid}/fd")
     try:
         descriptors = list(directory.iterdir())
@@ -137,21 +186,50 @@ def read_link(path: str) -> str | None:
         return None
 
 
-def process_details(pid: int) -> ProcessDetails:
-    ppid, started, state = proc_stat(pid)
+def process_args(pid: int) -> list[str]:
+    if DARWIN:
+        value = command_output(["ps", "-ww", "-o", "args=", "-p", str(pid)]).strip()
+        if not value:
+            return []
+        try:
+            return shlex.split(value)
+        except ValueError:
+            return value.split()
     try:
         command = Path(f"/proc/{pid}/cmdline").read_bytes().rstrip(b"\0").split(b"\0")
     except (FileNotFoundError, PermissionError, OSError):
         command = []
-    args = [item.decode(errors="replace") for item in command]
+    return [item.decode(errors="replace") for item in command]
+
+
+def process_cwd(pid: int) -> str | None:
+    if DARWIN:
+        output = command_output(["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"])
+        for line in output.splitlines():
+            if line.startswith("n"):
+                return line[1:]
+        return None
+    return read_link(f"/proc/{pid}/cwd")
+
+
+def process_tty(pid: int) -> str | None:
+    if DARWIN:
+        value = ps_output(pid, "tty=")
+        return f"/dev/{value}" if value and value != "??" else None
+    return read_link(f"/proc/{pid}/fd/0")
+
+
+def process_details(pid: int) -> ProcessDetails:
+    ppid, started, state = proc_stat(pid)
+    args = process_args(pid)
     return {
         "pid": pid,
         "ppid": ppid,
         "state": state,
         "start_ticks": started,
         "executable": process_executable(pid),
-        "cwd": read_link(f"/proc/{pid}/cwd"),
-        "tty": read_link(f"/proc/{pid}/fd/0"),
+        "cwd": process_cwd(pid),
+        "tty": process_tty(pid),
         "args": args,
         "command": shlex.join(args),
     }
