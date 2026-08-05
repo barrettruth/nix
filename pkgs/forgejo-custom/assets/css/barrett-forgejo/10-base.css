@@ -52,6 +52,10 @@ nav#navbar a#navbar-logo > img {
   display: none;
 }
 
+.sha.label .signature-author .avatar {
+  display: none;
+}
+
 .markup code,
 .markup pre,
 .markup tt,
