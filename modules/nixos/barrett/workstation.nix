@@ -15,7 +15,7 @@ let
   ui = config.barrett.ui;
   user = config.barrett.user;
   username = user.name;
-  homeDirectory = user.homeDirectory;
+  inherit (user) homeDirectory;
   XDG_CONFIG_HOME = "${homeDirectory}/.config";
   XDG_DATA_HOME = "${homeDirectory}/.local/share";
   XDG_STATE_HOME = "${homeDirectory}/.local/state";
@@ -207,10 +207,12 @@ let
   isLinux = !isDarwin;
 
   sessionVariables = {
-    XDG_CONFIG_HOME = XDG_CONFIG_HOME;
-    XDG_DATA_HOME = XDG_DATA_HOME;
-    XDG_STATE_HOME = XDG_STATE_HOME;
-    XDG_CACHE_HOME = XDG_CACHE_HOME;
+    inherit
+      XDG_CONFIG_HOME
+      XDG_DATA_HOME
+      XDG_STATE_HOME
+      XDG_CACHE_HOME
+      ;
     EDITOR = "nvim";
     MANPAGER = "nvim +Man!";
     TERMINAL = "ghostty";
@@ -444,6 +446,7 @@ in
             bash-language-server
             basedpyright
             clang-tools
+            gcc
             emmet-language-server
             lua-language-server
             mdx-language-server
@@ -503,10 +506,16 @@ in
             zsh-syntax-highlighting
             zsh-autosuggestions
           ])
+          ++ lib.optionals isDarwin (
+            with pkgs;
+            [
+              coreutils
+              gnused
+            ]
+          )
           ++ lib.optionals isLinux (
             with pkgs;
             [
-              gcc
               ffmpeg
               poppler-utils
               librsvg

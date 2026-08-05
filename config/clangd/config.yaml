@@ -1,5 +1,5 @@
 If:
-  PathMatch: /home/barrett/dev/cp/.*
+  PathMatch: .*/dev/cp/.*
 CompileFlags:
   Add:
     - -std=c++23
