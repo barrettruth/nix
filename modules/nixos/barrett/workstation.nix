@@ -99,9 +99,12 @@ let
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
-  agentPackages = with pkgs; [
-    codex
-    devin-cli
+  codexEnabled = false;
+
+  agentPackages = lib.optionals codexEnabled [ pkgs.codex ] ++ [ pkgs.devin-cli ];
+
+  agentSkillDirs = lib.optionals codexEnabled [ "${XDG_CONFIG_HOME}/codex/skills" ] ++ [
+    "${XDG_CONFIG_HOME}/devin/skills"
   ];
 
   codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [
@@ -255,7 +258,6 @@ let
     JUPYTER_PLATFORM_DIRS = "1";
     OPAMROOT = "${XDG_DATA_HOME}/opam";
     DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
-    CODEX_HOME = "${XDG_CONFIG_HOME}/codex";
     DEVIN_PERMISSION_MODE = "dangerous";
     AWS_SHARED_CREDENTIALS_FILE = "${XDG_CONFIG_HOME}/aws/credentials";
     AWS_CONFIG_FILE = "${XDG_CONFIG_HOME}/aws/config";
@@ -263,7 +265,8 @@ let
     PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
     SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
     INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
-  };
+  }
+  // lib.optionalAttrs codexEnabled { CODEX_HOME = "${XDG_CONFIG_HOME}/codex"; };
 
   activationText = ''
         ${mkDir "${XDG_CONFIG_HOME}/zsh"}
@@ -299,7 +302,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
-            ${mkDir "${XDG_CONFIG_HOME}/codex"}
+    ${lib.optionalString codexEnabled "${mkDir "${XDG_CONFIG_HOME}/codex"}"}
             ${mkDir "${XDG_CONFIG_HOME}/clangd"}
     ${lib.optionalString isLinux "${mkDir "${XDG_CONFIG_HOME}/zathura"}"}
     ${lib.optionalString isLinux "${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}"}
@@ -328,8 +331,8 @@ let
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
             ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
             ${mkSymlink "${repo}/config/devin/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
-            ${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}
-            ${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
+    ${lib.optionalString codexEnabled "${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}"}
+    ${lib.optionalString codexEnabled "${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
         ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
         ${mkSymlink "${chromiumThemeJs}" "${repo}/config/chromium/extension/theme.js"}
@@ -341,7 +344,7 @@ let
     ${mkSymlink "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"}
     ${lib.optionalString isLinux "${mkSymlink "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"}"}
 
-            ${mkDir "${XDG_CONFIG_HOME}/codex/skills"}
+    ${lib.optionalString codexEnabled "${mkDir "${XDG_CONFIG_HOME}/codex/skills"}"}
             if [ -L "${XDG_CONFIG_HOME}/devin/skills" ]; then
               rm -f "${XDG_CONFIG_HOME}/devin/skills"
             fi
@@ -349,9 +352,9 @@ let
             for skill in ${repo}/config/skills/*/ ${repo}/.devin/skills/*/; do
               [ -f "$skill/SKILL.md" ] || continue
               name="$(basename "$skill")"
-              for agentdir in "${XDG_CONFIG_HOME}/codex/skills" "${XDG_CONFIG_HOME}/devin/skills"; do
-                ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$skill" "$agentdir/$name"
-              done
+              ${lib.concatMapStringsSep "\n              " (
+                dir: ''${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$skill" "${dir}/$name"''
+              ) agentSkillDirs}
             done
 
             ${mkDir "${XDG_CONFIG_HOME}/aws"}
