@@ -14,6 +14,14 @@ rebuild-mac:
       sudo -H nix-env --profile /nix/var/nix/profiles/system --set "$system" && \
       sudo -H /nix/var/nix/profiles/system/activate
 
+rebuild-vps:
+    @export NIX_SSHOPTS="-o ControlMaster=auto -o ControlPath=/tmp/nixos-rebuild-vps-%C -o ControlPersist=180 -o ConnectTimeout=20 -o ServerAliveInterval=15"; \
+    if command -v nixos-rebuild >/dev/null 2>&1; then \
+      nixos-rebuild switch --no-reexec --flake .#vps --target-host vps --build-host vps; \
+    else \
+      nix run nixpkgs#nixos-rebuild -- switch --no-reexec --flake .#vps --target-host vps --build-host vps; \
+    fi
+
 _python-scripts:
    @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \

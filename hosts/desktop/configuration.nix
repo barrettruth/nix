@@ -23,7 +23,7 @@ in
     ./hardware.nix
     ./disk-config.nix
     ./forgejo.nix
-    ./static-sites.nix
+    # ./static-sites.nix
     ./delta.nix
     ./vaultwarden.nix
     ./finance.nix

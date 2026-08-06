@@ -12,6 +12,7 @@
   imports = [
     ./finance.nix
     ./headscale.nix
+    ./static-sites.nix
     ./disk-config.nix
     ./hardware-configuration.nix
     (modulesPath + "/profiles/minimal.nix")

@@ -7,22 +7,13 @@ let
     tailnetHosts = {
       "100.64.0.1" = [
         "desktop"
-        "forge.barrettruth.com"
-        "git.barrettruth.com"
-        "www.barrettruth.com"
-        "barrettruth.com"
-        "www.barrettruth.sh"
-        "barrettruth.sh"
-        "www.philipmruth.com"
-        "philipmruth.com"
-        "www.vimdoc-language-server.com"
-        "vimdoc-language-server.com"
-        "vimdoc-language-server.barrettruth.com"
-        "ts.barrettruth.com"
         "delta.barrettruth.com"
         "vault.barrettruth.com"
         "finance.barrettruth.com"
       ];
+      # magicdns claims all of ts.barrettruth.com, so the typing site is
+      # NXDOMAIN on tailnet members until headscale's base_domain moves.
+      "152.53.168.144" = [ "ts.barrettruth.com" ];
     };
     hostKeys = {
       desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
