@@ -289,6 +289,7 @@ let
             ${mkDir "${XDG_CACHE_HOME}"}
             ${mkDir "${XDG_CONFIG_HOME}/git"}
             ${mkDir "${XDG_CONFIG_HOME}/gh"}
+            ${mkDir "${XDG_DATA_HOME}/gh/extensions/gh-stack"}
             ${mkDir "${XDG_CONFIG_HOME}/jj"}
             ${mkDir "${XDG_CONFIG_HOME}/rg"}
             ${mkDir "${XDG_CONFIG_HOME}/fd"}
@@ -315,6 +316,7 @@ let
             ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
             ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
             ${mkSymlink "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"}
+            ${mkSymlink "${pkgs.gh-stack}/bin/gh-stack" "${XDG_DATA_HOME}/gh/extensions/gh-stack/gh-stack"}
             ${mkSymlink "${jjConf}" "${XDG_CONFIG_HOME}/jj/config.toml"}
             ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
             ${mkSymlink "${repo}/config/fd/ignore" "${XDG_CONFIG_HOME}/fd/ignore"}
