@@ -1,5 +1,5 @@
 keys:
-  - &admin_laptop age1avg36skretl5rqx553kktq3w2m28lnzc4054t3rjsujhlw90l9cs4l4nuq
+  - &admin age1avg36skretl5rqx553kktq3w2m28lnzc4054t3rjsujhlw90l9cs4l4nuq
   - &host_vps age1xplsygmt2pclqs33fzw6vpnqjtedhl7t94rf5pphr284j32ck3cs2krf4h
   - &host_laptop age1e4hnk50ruclzpwunepj7w4xgk0t6ppqqu6dyresauy2shjzqpedqhw3g5p
   - &host_desktop age12tuhqxx244zygf2p349tpurp43qeecgaeyufqcft650upzptdeqqae4g7w
@@ -9,20 +9,20 @@ creation_rules:
   - path_regex: secrets/vps/[^/]+$
     key_groups:
       - age:
-          - *admin_laptop
+          - *admin
           - *host_vps
   - path_regex: secrets/laptop/[^/]+$
     key_groups:
       - age:
-          - *admin_laptop
+          - *admin
           - *host_laptop
   - path_regex: secrets/desktop/[^/]+$
     key_groups:
       - age:
-          - *admin_laptop
+          - *admin
           - *host_desktop
   - path_regex: secrets/mac/[^/]+$
     key_groups:
       - age:
-          - *admin_laptop
+          - *admin
           - *host_mac

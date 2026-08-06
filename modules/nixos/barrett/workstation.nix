@@ -308,6 +308,8 @@ let
     ${lib.optionalString isLinux "${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
             ${mkPrivateDir "${homeDirectory}/.gnupg"}
+            ${mkPrivateDir "${XDG_CONFIG_HOME}/sops"}
+            ${mkPrivateDir "${XDG_CONFIG_HOME}/sops/age"}
             if [ -L "${homeDirectory}/.codex" ]; then
               ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
             fi

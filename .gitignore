@@ -1,6 +1,12 @@
 result
 .direnv/
 .envrc
+keys.txt
+*.agekey
+id_ed25519
+id_rsa
+*.pem
+!pkgs/**/*.pem
 fonts/*
 config/chromium/extension/theme.css
 config/chromium/extension/theme.js
