@@ -19,7 +19,7 @@ let
     "ts.barrettruth.com" = "/srv/www/ts.barrettruth.com/current";
     "vimdoc-language-server.com" = "/srv/www/vimdoc-language-server.com/current";
   };
-  forgeRedirectTarget = "https://github.com/barrettruth";
+  githubOwner = "barrettruth";
   mkStaticSiteHost = root: {
     enableACME = true;
     forceSSL = true;
@@ -57,10 +57,11 @@ let
     forceSSL = true;
     locations."/".return = "301 https://${target}$request_uri";
   };
-  mkExternalRedirectHost = target: {
+  mkForgeRedirectHost = {
     enableACME = true;
     forceSSL = true;
-    locations."/".return = "301 ${target}";
+    locations."= /".return = "301 https://github.com/${githubOwner}";
+    locations."/".return = "301 https://github.com$request_uri";
   };
 in
 {
@@ -76,8 +77,8 @@ in
     virtualHosts."www.philipmruth.com" = mkStaticSiteHost staticWebRoots."philipmruth.com";
     virtualHosts."philipmruth.com" = mkRedirectHost "www.philipmruth.com";
     virtualHosts."ts.${identity.domain}" = mkStaticSiteHost staticWebRoots."ts.barrettruth.com";
-    virtualHosts."forge.${identity.domain}" = mkExternalRedirectHost forgeRedirectTarget;
-    virtualHosts."git.${identity.domain}" = mkExternalRedirectHost forgeRedirectTarget;
+    virtualHosts."forge.${identity.domain}" = mkForgeRedirectHost;
+    virtualHosts."git.${identity.domain}" = mkForgeRedirectHost;
     virtualHosts."www.vimdoc-language-server.com" =
       mkStaticSiteHost
         staticWebRoots."vimdoc-language-server.com";
