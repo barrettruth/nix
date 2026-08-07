@@ -241,7 +241,7 @@ in
   programs.ssh.knownHosts.desktop = {
     hostNames = [
       "desktop"
-      "desktop.ts.barrettruth.com"
+      "desktop.${identity.tailnetDomain}"
       "100.64.0.1"
     ];
     publicKey = identity.hostKeys.desktop;
@@ -250,7 +250,7 @@ in
   programs.ssh.knownHosts.laptop = {
     hostNames = [
       "laptop"
-      "laptop.ts.barrettruth.com"
+      "laptop.${identity.tailnetDomain}"
       "100.64.0.2"
     ];
     publicKey = identity.hostKeys.laptop;

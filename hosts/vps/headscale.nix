@@ -31,7 +31,7 @@ in
       server_url = "https://${headscaleHost}";
       dns = {
         magic_dns = true;
-        base_domain = "ts.${identity.domain}";
+        base_domain = identity.tailnetDomain;
         nameservers.global = [
           "1.1.1.1"
           "8.8.8.8"

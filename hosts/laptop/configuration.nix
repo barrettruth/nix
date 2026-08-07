@@ -274,7 +274,7 @@ in
   programs.ssh.knownHosts.desktop = {
     hostNames = [
       "desktop"
-      "desktop.ts.barrettruth.com"
+      "desktop.${identity.tailnetDomain}"
       "100.64.0.1"
     ];
     publicKey = identity.hostKeys.desktop;

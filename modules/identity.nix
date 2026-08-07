@@ -4,6 +4,7 @@ let
     fullName = "Barrett Ruth";
     email = "br@barrettruth.com";
     domain = "barrettruth.com";
+    tailnetDomain = "tn.${domain}";
     tailnetHosts = {
       "100.64.0.1" = [
         "desktop"
@@ -11,9 +12,6 @@ let
         "vault.barrettruth.com"
         "finance.barrettruth.com"
       ];
-      # magicdns claims all of ts.barrettruth.com, so the typing site is
-      # NXDOMAIN on tailnet members until headscale's base_domain moves.
-      "152.53.168.144" = [ "ts.barrettruth.com" ];
     };
     hostKeys = {
       desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";

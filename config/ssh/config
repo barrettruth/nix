@@ -16,7 +16,7 @@ Host vps
     User root
 
 Host desktop
-    HostName desktop.ts.barrettruth.com
+    HostName desktop.tn.barrettruth.com
     User root
     HostKeyAlias 100.64.0.1
     IdentityFile ~/.ssh/id_ed25519

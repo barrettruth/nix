@@ -23,7 +23,7 @@ in
     overrideLocalDns = false;
   };
 
-  environment.etc."resolver/ts.${identity.domain}".text = "nameserver 100.100.100.100";
+  environment.etc."resolver/${identity.tailnetDomain}".text = "nameserver 100.100.100.100";
 
   # nix-darwin's tailscaled daemon sets RunAtLoad but not KeepAlive. With
   # overrideLocalDns it is the only resolver, so a crash would take all name
