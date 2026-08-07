@@ -36,8 +36,8 @@ pkgs/                            custom derivations
 ## Hosts
 
 - **laptop**: Dell XPS 9500 workstation.
-- **desktop**: NixOS workstation, primary self-host. [Forgejo](https://forgejo.org/) at `forge.barrettruth.com`, Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [delta](https://forge.barrettruth.com/barrettruth/delta) at `delta.barrettruth.com`, `finance.barrettruth.com`, and static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`).
-- **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com` and [Headscale](https://headscale.net/) at `headscale.barrettruth.com`.
+- **desktop**: NixOS workstation. Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [delta](https://github.com/barrettruth/delta) at `delta.barrettruth.com`, and `finance.barrettruth.com`.
+- **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
 - **mac**: Apple silicon MacBook, built from `.#darwinConfigurations.mac` with `just rebuild-mac`.
 
 One thing on the mac is set once per machine and cannot be declared: **a still
