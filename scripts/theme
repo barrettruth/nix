@@ -31,7 +31,7 @@ apply_nvim_theme() {
 set_darwin_wallpaper() {
   src="$1"
   dir="$(dirname "$src")"
-  stamp="$(stat -f %m "$src" 2>/dev/null)" || return 0
+  stamp="$(/usr/bin/stat -f %m "$src")" || return 0
 
   pinned="$dir/.wallpaper-$theme-$stamp.jpg"
   [ -f "$pinned" ] || {
