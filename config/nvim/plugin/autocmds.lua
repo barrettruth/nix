@@ -179,6 +179,11 @@ vim.api.nvim_create_autocmd('WinLeave', {
     end,
 })
 
+vim.api.nvim_create_autocmd('VimResized', {
+    group = aug,
+    command = 'wincmd =',
+})
+
 vim.api.nvim_create_autocmd('FileType', {
     pattern = { 'lua', 'vim' },
     callback = function(ev)
