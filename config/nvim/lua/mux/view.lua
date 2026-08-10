@@ -12,6 +12,8 @@
 
 local M = {}
 
+local JOB_EXIT_TIMEOUT_MS = 5000
+
 ---@type table<integer, string|false>
 local tab_view = {}
 
@@ -499,6 +501,21 @@ local function cleanup_terminal(buf)
 end
 
 ---@return nil
+local function stop_terminals()
+    local jobs = {}
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local job = vim.b[buf].terminal_job_id
+        if job then
+            jobs[#jobs + 1] = job
+            pcall(vim.fn.jobstop, job)
+        end
+    end
+    if #jobs > 0 then
+        vim.fn.jobwait(jobs, JOB_EXIT_TIMEOUT_MS)
+    end
+end
+
+---@return nil
 local function setup_keymaps()
     local modes = { 'n', 'i', 't' }
     local prefix = '<a-x>'
@@ -590,6 +607,13 @@ function M.setup()
                     cleanup_terminal(args.buf)
                 end)
             end
+        end,
+    })
+    vim.api.nvim_create_autocmd('VimLeavePre', {
+        group = group,
+        callback = function()
+            pcall(vim.api.nvim_del_augroup_by_id, group)
+            stop_terminals()
         end,
     })
 end
