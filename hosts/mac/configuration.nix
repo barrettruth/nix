@@ -64,6 +64,7 @@ let
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   chromeApp = "/Applications/Nix Apps/Google Chrome.app";
   rectangleApp = "/Applications/Nix Apps/Rectangle.app";
+  trexApp = "/Applications/Nix Apps/TRex.app";
 
   # ctl idle had no macOS analogue worth porting; caffeinate is built in.
   idleToggle = pkgs.writeShellScript "idle-toggle" ''
@@ -76,6 +77,10 @@ let
 
   rectangleAction = pkgs.writeShellScript "rectangle-action" ''
     exec /usr/bin/open -g -a "${rectangleApp}" "rectangle://execute-action?name=$1"
+  '';
+
+  trexCapture = pkgs.writeShellScript "trex-capture" ''
+    exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
 
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
@@ -109,6 +114,7 @@ in
       ralt - b : open -a "${chromeApp}"
       ralt - f : open -a Finder
       ralt - i : ${idleToggle}
+      ralt - o : ${trexCapture}
 
       ralt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
       ralt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
@@ -135,6 +141,14 @@ in
 
   launchd.user.agents.rectangle = {
     command = ''"${rectangleApp}/Contents/MacOS/Rectangle"'';
+    serviceConfig = {
+      RunAtLoad = true;
+      KeepAlive = true;
+    };
+  };
+
+  launchd.user.agents.trex = {
+    command = ''"${trexApp}/Contents/MacOS/TRex"'';
     serviceConfig = {
       RunAtLoad = true;
       KeepAlive = true;
@@ -313,6 +327,7 @@ in
     age
     chromePkg
     rectangle
+    trex
     curl
     fd
     fzf
