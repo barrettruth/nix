@@ -107,7 +107,6 @@ let
   ];
 
   codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [
-    pkgs.google-cloud-sdk
     pkgs.google-workspace-cli
     pkgs.google-workspace-guard
     pkgs.mgrep
@@ -409,6 +408,7 @@ in
         users.users.${username}.packages =
           (with pkgs; [
             awscli2
+            google-cloud-sdk
             tree
             typos
             jq
