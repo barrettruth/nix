@@ -30,6 +30,12 @@ Personal, always-on rules that apply to every Devin session in every project.
   open, submit, or push, and do not end with "say the word and I'll post it" or
   any equivalent. Barrett publishes everything himself. Produce the draft, hand
   it over, and stop there.
+- Committing is the one exception, and it is not publishing. When Barrett says
+  "commit", write the message and run `git commit` immediately. Never use the
+  `nvim-commit` skill or any other draft-and-wait flow that parks a message in
+  an editor for him to finish. Stage only the paths the message covers, match
+  the repository's own subject style, and report the resulting commit. Pushing
+  is still his.
 - When working in a repository, detect repo-root `justfile`/`Justfile`,
   `flake.nix`, and `.envrc` early. Prefer repo `just` recipes over ad-hoc
   commands, do not invent recipe names, and prefer the repo's nix shell for
