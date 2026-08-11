@@ -39,7 +39,11 @@ local CONNECT_PROBE_MS = 200
 local function runtime_dir()
     local base = vim.env.XDG_RUNTIME_DIR
     if not base or base == '' then
-        base = '/run/user/' .. vim.uv.getuid()
+        if vim.uv.os_uname().sysname == 'Darwin' then
+            base = vim.env.TMPDIR or '/tmp'
+        else
+            base = '/run/user/' .. vim.uv.getuid()
+        end
     end
     base = base:gsub('/+$', '')
     return base .. '/mux'
@@ -169,15 +173,18 @@ function M.paths(root)
     return paths_for(real)
 end
 
+---Inode of the binary this process started from, sampled before it can be
+---replaced. Darwin has no /proc/self/exe to compare against later.
+local exe_ino = (vim.uv.fs_stat(vim.v.progpath) or {}).ino
+
 ---Report whether this process runs a binary image that has since been replaced.
 ---@return boolean
 local function exe_stale()
-    local running = vim.uv.fs_stat('/proc/self/exe')
     local on_disk = vim.uv.fs_stat(vim.v.progpath)
-    if not running or not on_disk then
+    if not exe_ino or not on_disk then
         return false
     end
-    return running.ino ~= on_disk.ino
+    return on_disk.ino ~= exe_ino
 end
 
 ---@param server mux.Server
@@ -634,8 +641,7 @@ function M.ensure(root, cb)
                         finish_pending(
                             real,
                             nil,
-                            'socket belongs to different root: '
-                                .. paths.socket
+                            'socket belongs to different root: ' .. paths.socket
                         )
                     end
                     return

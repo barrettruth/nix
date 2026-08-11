@@ -12,6 +12,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Iterable
@@ -122,7 +123,12 @@ def _server_cwd(socket: str) -> str:
 
 
 def _runtime_dir() -> Path:
-    base = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    if not base:
+        if sys.platform == "darwin":
+            base = os.environ.get("TMPDIR") or "/tmp"
+        else:
+            base = f"/run/user/{os.getuid()}"
     return Path(base) / "mux"
 
 

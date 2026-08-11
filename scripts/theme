@@ -18,7 +18,14 @@ apply_nvim_theme() {
     nvim --server "$NVIM" --remote-expr "$expr" </dev/null >/dev/null 2>&1 &
   fi
 
-  runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mux"
+  runtime_dir="${XDG_RUNTIME_DIR:-}"
+  if [ -z "$runtime_dir" ]; then
+    case "$(uname -s)" in
+    Darwin) runtime_dir="${TMPDIR:-/tmp}" ;;
+    *) runtime_dir="/run/user/$(id -u)" ;;
+    esac
+  fi
+  runtime_dir="${runtime_dir%/}/mux"
   [ -d "$runtime_dir" ] || return 0
 
   for sock in "$runtime_dir"/*.sock; do
