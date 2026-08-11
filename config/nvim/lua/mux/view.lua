@@ -606,7 +606,7 @@ local function setup_keymaps()
                     '--server',
                     entry.socket,
                     '--remote-expr',
-                    "luaeval('require([[mux.server]]).reload()')",
+                    "luaeval('require([[mux.server]]).reload(true)')",
                 }, { text = true }):wait()
                 if
                     result.code ~= 0
@@ -616,11 +616,10 @@ local function setup_keymaps()
                         'mux: failed to reload ' .. entry.root,
                         vim.log.levels.ERROR
                     )
-                    return
                 end
             end
         end
-        server.reload()
+        server.reload(true)
     end, 'mux: reload all')
 end
 
