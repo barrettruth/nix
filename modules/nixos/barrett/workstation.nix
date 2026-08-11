@@ -5,14 +5,13 @@
   identity,
   themeGenerators ? null,
   palettes ? null,
-  whisperPkgs ? pkgs,
   act,
   isDarwin,
   ...
 }:
 let
   cfg = config.barrett.workstation;
-  ui = config.barrett.ui;
+  hasDisplay = isDarwin || (config.barrett.ui.enable or false);
   user = config.barrett.user;
   username = user.name;
   inherit (user) homeDirectory;
@@ -34,7 +33,7 @@ let
     done
   '';
 
-  useHomeRepo = config.barrett.ui.useHomeRepo or true;
+  inherit (cfg) useHomeRepo;
 
   scriptsPath = if useHomeRepo then "${repo}/scripts" else "${barrettScripts}/bin";
 
@@ -115,7 +114,6 @@ let
   ];
 
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
-  whisper = whisperPkgs.whisper-cpp.override { cudaSupport = ui.gpu != "generic"; };
 
   jjConf = pkgs.writeText "jj-config" ''
     [user]
@@ -180,15 +178,6 @@ let
       path = ${repo}/config/git/config
   '';
 
-  mimeappsList = pkgs.writeText "mimeapps-workstation.list" ''
-    [Default Applications]
-    x-scheme-handler/http=chromium-browser.desktop
-    x-scheme-handler/https=chromium-browser.desktop
-    text/html=chromium-browser.desktop
-    text/plain=nvim.desktop
-    application/pdf=org.pwmt.zathura.desktop
-  '';
-
   awsConf = pkgs.writeText "aws-config" ''
     [default]
     [profile barrett]
@@ -196,17 +185,6 @@ let
     output = json
   '';
 
-  zathuraThemes = pkgs.runCommand "zathura-theme-files" { } ''
-    mkdir -p $out
-
-    cat > $out/midnight << 'ZATHURAMIDNIGHT'
-    ${themeGenerators.mkZathuraTheme palettes.midnight}
-    ZATHURAMIDNIGHT
-
-    cat > $out/daylight << 'ZATHURADAYLIGHT'
-    ${themeGenerators.mkZathuraTheme palettes.daylight}
-    ZATHURADAYLIGHT
-  '';
   isLinux = !isDarwin;
 
   sessionVariables = {
@@ -304,8 +282,6 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
     ${lib.optionalString codexEnabled "${mkDir "${XDG_CONFIG_HOME}/codex"}"}
             ${mkDir "${XDG_CONFIG_HOME}/clangd"}
-    ${lib.optionalString isLinux "${mkDir "${XDG_CONFIG_HOME}/zathura"}"}
-    ${lib.optionalString isLinux "${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
             ${mkPrivateDir "${homeDirectory}/.gnupg"}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/sops"}
@@ -314,8 +290,6 @@ let
               ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
             fi
 
-    ${lib.optionalString isLinux "${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}"}
-    ${lib.optionalString isLinux "${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}"}
             ${mkSymlink "${gitConf}" "${XDG_CONFIG_HOME}/git/config"}
             ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
             ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
@@ -338,13 +312,9 @@ let
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
         ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
         ${mkSymlink "${chromiumThemeJs}" "${repo}/config/chromium/extension/theme.js"}
-    ${lib.optionalString isLinux "${mkSymlink "${zathuraThemes}/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}"}
-    ${lib.optionalString isLinux "${mkSymlink "${zathuraThemes}/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}"}
-    ${lib.optionalString isLinux "${mkSymlink "${repo}/config/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}"}
 
     ${readTheme}
     ${mkSymlink "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"}
-    ${lib.optionalString isLinux "${mkSymlink "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"}"}
 
     ${lib.optionalString codexEnabled "${mkDir "${XDG_CONFIG_HOME}/codex/skills"}"}
             if [ -L "${XDG_CONFIG_HOME}/devin/skills" ]; then
@@ -361,7 +331,6 @@ let
 
             ${mkDir "${XDG_CONFIG_HOME}/aws"}
             ${mkSymlink "${awsConf}" "${XDG_CONFIG_HOME}/aws/config"}
-    ${lib.optionalString isLinux "${mkDir "${XDG_DATA_HOME}/whisper-models"}"}
 
             for link in ${homeDirectory}/.nix-profile ${homeDirectory}/.nix-defexpr; do
               [ -L "$link" ] && [ ! -e "$link" ] && ${runAsUser} ${pkgs.coreutils}/bin/rm "$link"
@@ -413,6 +382,11 @@ in
 
   options.barrett.workstation.enable = lib.mkEnableOption "Barrett workstation extras";
 
+  options.barrett.workstation.useHomeRepo = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+  };
+
   options.barrett.workstation.scriptsPath = lib.mkOption {
     type = lib.types.str;
     readOnly = true;
@@ -430,7 +404,7 @@ in
           }
         ];
 
-        fonts.packages = [ iosevkaTerm ];
+        fonts.packages = lib.optionals hasDisplay [ iosevkaTerm ];
 
         users.users.${username}.packages =
           (with pkgs; [
@@ -444,7 +418,6 @@ in
             gnumake
             just
             file
-            imagemagick
             luarocks
             delta-cli
             rustup
@@ -507,12 +480,12 @@ in
             fd
             git
             neovim
-            ghostty
             openssl
             socat
             zsh-syntax-highlighting
             zsh-autosuggestions
           ])
+          ++ [ (if hasDisplay then pkgs.ghostty else pkgs.ghostty.terminfo) ]
           ++ lib.optionals isDarwin (
             with pkgs;
             [
@@ -520,23 +493,7 @@ in
               gnused
             ]
           )
-          ++ lib.optionals isLinux (
-            with pkgs;
-            [
-              ffmpeg
-              poppler-utils
-              librsvg
-              psmisc
-              brightnessctl
-              glib.bin
-              whisper
-              (mpv.override { youtubeSupport = false; })
-              # signal-desktop
-              # telegram-desktop
-              # element-desktop
-              zathura
-            ]
-          )
+          ++ lib.optionals isLinux [ pkgs.psmisc ]
           ++ agentPackages
           ++ codexRuntimePackages
           ++ [ barrettScripts ];
@@ -562,10 +519,6 @@ in
       }
 
       (lib.optionalAttrs isLinux {
-        barrett.ui.enable = lib.mkDefault true;
-        barrett.ui.idle.suspend = lib.mkDefault true;
-        barrett.ui.useHomeRepo = lib.mkDefault true;
-
         systemd.tmpfiles.rules = [
           "d ${homeDirectory}/dev 0755 ${username} users -"
         ];
@@ -575,7 +528,7 @@ in
         programs.gnupg.agent.pinentryPackage = pkgs.pinentry-curses;
 
         system.activationScripts.barrettWorkstationConfig = {
-          deps = [ "barrettUiConfig" ];
+          deps = lib.optional config.barrett.ui.enable "barrettUiConfig";
           text = activationText;
         };
 
@@ -612,15 +565,6 @@ in
           timerConfig = {
             OnCalendar = "daily";
             Persistent = true;
-          };
-        };
-
-        systemd.user.services.whisper-dictation = {
-          description = "Whisper dictation server";
-          unitConfig.ConditionPathExists = "${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin";
-          serviceConfig = {
-            Type = "simple";
-            ExecStart = "${whisper}/bin/whisper-server --model ${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
           };
         };
       })

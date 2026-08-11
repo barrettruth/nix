@@ -22,6 +22,7 @@ in
     ./hardware-configuration.nix
     ./hardware.nix
     ./disk-config.nix
+    ./web.nix
     ./forgejo.nix
     # ./static-sites.nix
     ./delta.nix
@@ -87,17 +88,7 @@ in
 
   security.sudo.enable = true;
 
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    jack.enable = true;
-    pulse.enable = true;
-    wireplumber.enable = true;
-  };
-
   virtualisation.docker.enable = true;
-  virtualisation.libvirtd.enable = true;
-  programs.virt-manager.enable = true;
 
   users.users.root.openssh.authorizedKeys.keys = identity.sshKeys;
 
@@ -120,9 +111,6 @@ in
     extraGroups = [
       "wheel"
       "docker"
-      "libvirt"
-      "storage"
-      "power"
     ];
     linger = true;
     openssh.authorizedKeys.keys = identity.sshKeys;

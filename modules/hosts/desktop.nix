@@ -29,7 +29,7 @@ in
         { pkgs, ... }:
         {
           barrett.workstation.enable = true;
-          barrett.ui.gpu = "nvidia";
+          barrett.ui.enable = false;
           programs.direnv.enable = true;
           programs.direnv.enableZshIntegration = false;
           programs.direnv.nix-direnv.enable = true;
@@ -52,12 +52,7 @@ in
               sharedUnfree
               ++ [
                 "nvidia-x11"
-                "nvidia-settings"
                 "nvidia-kernel-modules"
-                "cuda_cccl"
-                "cuda_cudart"
-                "libcublas"
-                "cuda_nvcc"
               ]
             );
         }
@@ -72,17 +67,6 @@ in
         palettes
         themeGenerators
         ;
-      whisperPkgs = import inputs.nixpkgs-whisper {
-        system = platform;
-        config.allowUnfreePredicate =
-          pkg:
-          builtins.elem (lib.getName pkg) [
-            "cuda_cccl"
-            "cuda_cudart"
-            "libcublas"
-            "cuda_nvcc"
-          ];
-      };
     };
   };
 }

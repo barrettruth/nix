@@ -36,6 +36,6 @@ pkgs/                            custom derivations
 ## Hosts
 
 - **laptop**: Dell XPS 9500 workstation.
-- **desktop**: NixOS workstation. Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [delta](https://github.com/barrettruth/delta) at `delta.barrettruth.com`, and `finance.barrettruth.com`.
+- **desktop**: headless NixOS server and remote build host. Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [delta](https://github.com/barrettruth/delta) at `delta.barrettruth.com`, and `finance.barrettruth.com`. Runs no compositor: `barrett.ui.enable` is off, so the Hyprland stack, desktop applications and fonts are absent and only the terminal development environment is installed.
 - **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
 - **mac**: Apple silicon MacBook, built from `.#darwinConfigurations.mac` with `just rebuild-mac`.

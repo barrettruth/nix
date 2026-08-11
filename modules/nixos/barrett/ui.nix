@@ -4,6 +4,7 @@
   lib,
   palettes ? null,
   themeGenerators ? null,
+  whisperPkgs ? pkgs,
   act,
   ...
 }:
@@ -23,8 +24,8 @@ let
     path = ../../../config/xkb/baremak;
     name = "xkb-baremak";
   };
-  configRoot = if cfg.useHomeRepo then "${repo}/config" else sourceConfig;
-  scriptsPath = config.barrett.workstation.scriptsPath;
+  inherit (config.barrett.workstation) useHomeRepo scriptsPath;
+  configRoot = if useHomeRepo then "${repo}/config" else sourceConfig;
 
   wayland = import ../desktop/wayland.nix { inherit pkgs; };
   inherit (wayland)
@@ -48,6 +49,21 @@ let
     x-scheme-handler/https=chromium-browser.desktop
     text/html=chromium-browser.desktop
     text/plain=nvim.desktop
+    application/pdf=org.pwmt.zathura.desktop
+  '';
+
+  whisper = whisperPkgs.whisper-cpp.override { cudaSupport = cfg.gpu != "generic"; };
+
+  zathuraThemes = pkgs.runCommand "zathura-theme-files" { } ''
+    mkdir -p $out
+
+    cat > $out/midnight << 'ZATHURAMIDNIGHT'
+    ${themeGenerators.mkZathuraTheme palettes.midnight}
+    ZATHURAMIDNIGHT
+
+    cat > $out/daylight << 'ZATHURADAYLIGHT'
+    ${themeGenerators.mkZathuraTheme palettes.daylight}
+    ZATHURADAYLIGHT
   '';
 
   hyprThemes = pkgs.runCommand "hypr-theme-files" { } ''
@@ -103,7 +119,7 @@ let
       builtins.readFile (sourceRoot + "/config/waybar/config.jsonc")
     )
   );
-  waybarConfigFile = if cfg.useHomeRepo then "${configRoot}/waybar/config.jsonc" else waybarConfig;
+  waybarConfigFile = if useHomeRepo then "${configRoot}/waybar/config.jsonc" else waybarConfig;
 
   chromiumExtension = pkgs.runCommand "chromium-extension" { } ''
     cp -R --no-preserve=mode,ownership ${sourceConfig}/chromium/extension $out
@@ -275,10 +291,6 @@ in
       type = lib.types.bool;
       default = false;
     };
-    useHomeRepo = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -293,7 +305,6 @@ in
       shell = lib.mkDefault pkgs.zsh;
       packages =
         (with pkgs; [
-          procps
           dconf
           hyprlock
           hyprpaper
@@ -314,9 +325,20 @@ in
           apple-cursor
           libnotify
           gsettings-desktop-schemas
+          zathura
+          ffmpeg
+          poppler-utils
+          librsvg
+          brightnessctl
+          glib.bin
+          (mpv.override { youtubeSupport = false; })
+          # signal-desktop
+          # telegram-desktop
+          # element-desktop
         ])
         ++ [
           chromium
+          whisper
         ];
     };
 
@@ -348,7 +370,7 @@ in
       loginShellInit = ''
         if [[ -z "$DISPLAY$WAYLAND_DISPLAY" && "$(tty)" == /dev/tty1 ]]; then
           [ -e /etc/set-environment ] && . /etc/set-environment
-          exec start-hyprland
+          exec ${pkgs.hyprland}/bin/Hyprland
         fi
       '';
     };
@@ -430,6 +452,15 @@ in
       };
     };
 
+    systemd.user.services.whisper-dictation = {
+      description = "Whisper dictation server";
+      unitConfig.ConditionPathExists = "${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin";
+      serviceConfig = {
+        Type = "simple";
+        ExecStart = "${whisper}/bin/whisper-server --model ${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
+      };
+    };
+
     systemd.user.services.dconf-setup = {
       description = "Set dconf preferences";
       wantedBy = [ "hyprland-session.target" ];
@@ -475,10 +506,14 @@ in
       ${mkDir "${XDG_CONFIG_HOME}/dunst"}
       ${mkDir "${XDG_CONFIG_HOME}/dunst/themes"}
       ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
+      ${mkDir "${XDG_CONFIG_HOME}/zathura"}
+      ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
+      ${mkDir "${XDG_DATA_HOME}/whisper-models"}
       ${mkDir "${homeDirectory}/Pictures/Screensavers"}
 
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
-      ${lib.optionalString (!cfg.useHomeRepo) ''
+      ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
+      ${lib.optionalString (!useHomeRepo) ''
         if [ ! -e "${repo}" ] && [ ! -L "${repo}" ]; then
           ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "${sourceRoot}" "${repo}"
         fi
@@ -518,7 +553,11 @@ in
       ${mkSymlink "${dunstThemes}/daylight.conf" "${XDG_CONFIG_HOME}/dunst/themes/daylight.conf"}
       ${mkSymlink "${configRoot}/dunst/dunstrc" "${XDG_CONFIG_HOME}/dunst/dunstrc"}
 
-      ${lib.optionalString (!cfg.useHomeRepo) ''
+      ${mkSymlink "${zathuraThemes}/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
+      ${mkSymlink "${zathuraThemes}/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
+      ${mkSymlink "${configRoot}/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}
+
+      ${lib.optionalString (!useHomeRepo) ''
         ${mkDir "${XDG_CONFIG_HOME}/chromium"}
         ${mkSymlink "${chromiumExtension}" "${XDG_CONFIG_HOME}/chromium/extension"}
       ''}
@@ -528,6 +567,7 @@ in
       ${mkSymlink "${XDG_CONFIG_HOME}/waybar/themes/$theme.css" "${XDG_CONFIG_HOME}/waybar/themes/theme.css"}
       ${mkSymlink "${XDG_CONFIG_HOME}/fuzzel/themes/$theme.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini"}
       ${mkSymlink "${XDG_CONFIG_HOME}/dunst/themes/$theme.conf" "${XDG_CONFIG_HOME}/dunst/dunstrc.d/theme.conf"}
+      ${mkSymlink "${XDG_CONFIG_HOME}/zathura/themes/$theme" "${XDG_CONFIG_HOME}/zathura/theme"}
 
       src="${configRoot}/screen"
       dest="${homeDirectory}/Pictures/Screensavers"
