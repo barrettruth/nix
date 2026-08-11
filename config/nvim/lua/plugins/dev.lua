@@ -100,7 +100,7 @@ return {
     },
     {
         'barrettruth/preview.nvim',
-        ft = { 'typst', 'tex', 'markdown', },
+        ft = { 'typst', 'tex', 'markdown' },
         before = function()
             vim.g.preview = {
                 debug = false,

@@ -11,6 +11,7 @@
         pkgs.black
         pkgs.shellcheck
         pkgs.shfmt
+        pkgs.stylua
         pkgs.ty
       ];
     in

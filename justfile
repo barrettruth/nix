@@ -45,6 +45,7 @@ format:
     nix fmt -- --ci
     just _shell-scripts | xargs -r shfmt -i 2 -d
     just _python-scripts | xargs -r black --check
+    stylua --check config/nvim
 
 lint:
     git ls-files '*.nix' | xargs deadnix --fail --no-lambda-pattern-names
