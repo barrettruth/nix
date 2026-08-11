@@ -588,7 +588,7 @@ local function setup_keymaps()
         require('mux.line').toggle()
     end, 'mux: toggle bar')
     map(prefix .. 'r', function()
-        require('mux.server').reload(true)
+        require('mux.server').reload()
     end, 'mux: reload')
     map(prefix .. 'R', function()
         local server = require('mux.server')
@@ -606,7 +606,7 @@ local function setup_keymaps()
                     '--server',
                     entry.socket,
                     '--remote-expr',
-                    "luaeval('require([[mux.server]]).reload(true)')",
+                    "luaeval('require([[mux.server]]).reload()')",
                 }, { text = true }):wait()
                 if
                     result.code ~= 0
@@ -619,7 +619,7 @@ local function setup_keymaps()
                 end
             end
         end
-        server.reload(true)
+        server.reload()
     end, 'mux: reload all')
 end
 
