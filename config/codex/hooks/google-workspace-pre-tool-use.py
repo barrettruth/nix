@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import cast
 
-
 PACKAGE_MANAGERS = {"npm", "npx", "pnpm", "pnpx", "yarn", "bun"}
 
 
@@ -96,8 +95,10 @@ def is_gws_lookup(tokens: list[str]) -> bool:
                 if item.startswith("-"):
                     continue
                 targets.append(item)
-            return lookup_seen and bool(targets) and all(
-                Path(target).name in {"gws", "google"} for target in targets
+            return (
+                lookup_seen
+                and bool(targets)
+                and all(Path(target).name in {"gws", "google"} for target in targets)
             )
 
     return False
