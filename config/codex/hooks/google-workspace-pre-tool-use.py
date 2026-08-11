@@ -156,12 +156,12 @@ def run_self_tests() -> int:
     ]
     allowed = [
         "google drive files list",
-        "direnv exec /home/barrett/dev/death google drive files list",
+        "direnv exec ~/dev/death google drive files list",
         "python3 scripts/google-workspace-guard.py --dry-run-wrapper drive files list",
         "which gws",
         "command -v gws",
         "type gws",
-        "direnv exec /home/barrett/dev/death which gws",
+        "direnv exec ~/dev/death which gws",
         "bash -lc 'command -v gws'",
     ]
     for command in denied:

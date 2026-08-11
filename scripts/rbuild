@@ -26,7 +26,7 @@ LOCAL_STATE_ROOT = Path(
     os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))
 )
 NVIM_LOG_ROOT = LOCAL_STATE_ROOT / "rbuild" / "nvim"
-NVIM_LOCAL_ROOT = "/home/barrett/dev/neovim"
+NVIM_LOCAL_ROOT = str(Path.home() / "dev/neovim")
 NVIM_REMOTE_ROOT = "dev/neovim"
 NVIM_NIX_PACKAGES = [
     "nixpkgs#bash",
@@ -82,7 +82,7 @@ Environment:
 
 Neovim:
   <issue> is a numeric Neovim issue number.
-  The local worktree is /home/barrett/dev/neovim/.worktrees/<issue>.
+  The local worktree is ~/dev/neovim/.worktrees/<issue>.
   The Rbuild mirror is ~/dev/neovim/.worktrees/<issue>.
   The local worktree is the source of truth; build/test/run/shell sync it first.
   build/deps/test/run write local logs under ~/.local/state/rbuild/nvim/<issue>/.

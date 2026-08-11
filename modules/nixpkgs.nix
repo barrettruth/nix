@@ -31,7 +31,7 @@ let
               set -eu
 
               base="${base}/bin/nvim"
-              home="''${HOME:-/home/barrett}"
+              home="''${HOME:-}"
               src="$home/dev/neovim"
               asan="$src/build_asan/bin/nvim"
               normal="$src/build/bin/nvim"

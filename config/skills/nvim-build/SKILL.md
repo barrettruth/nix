@@ -12,7 +12,7 @@ If Barrett names a branch or worktree, `cd` to that checkout first.
 Run:
 
 ```sh
-/home/barrett/.config/nix/config/skills/nvim-build/scripts/build
+~/.config/nix/config/skills/nvim-build/scripts/build
 ```
 
 Report the result and the printed log path.

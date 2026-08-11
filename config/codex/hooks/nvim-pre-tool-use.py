@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import cast
 
-NVIM_ROOT = Path("/home/barrett/dev/neovim")
+NVIM_ROOT = Path.home() / "dev/neovim"
 
 GIT_BLOCKED = {
     "commit",

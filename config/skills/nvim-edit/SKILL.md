@@ -56,9 +56,9 @@ resolve the target to concrete path(s) and pass them.
 ## Helper
 
 ```sh
-python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py --dry-run <path> [<path> ...]
-python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py <path> [<path> ...]
-python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py --root <repo-root> <path> [<path> ...]
-python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py <path> --line <n> [--column <n>]
-file=$(git ls-files | shuf -n 1) && python3 /home/barrett/.config/nix/config/skills/nvim-edit/scripts/edit.py "$file"
+python3 ~/.config/nix/config/skills/nvim-edit/scripts/edit.py --dry-run <path> [<path> ...]
+python3 ~/.config/nix/config/skills/nvim-edit/scripts/edit.py <path> [<path> ...]
+python3 ~/.config/nix/config/skills/nvim-edit/scripts/edit.py --root <repo-root> <path> [<path> ...]
+python3 ~/.config/nix/config/skills/nvim-edit/scripts/edit.py <path> --line <n> [--column <n>]
+file=$(git ls-files | shuf -n 1) && python3 ~/.config/nix/config/skills/nvim-edit/scripts/edit.py "$file"
 ```

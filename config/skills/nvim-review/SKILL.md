@@ -22,7 +22,7 @@ Map layout language only when explicit: "split" or "side-by-side" ->
 omit layout.
 
 ```sh
-python3 /home/barrett/.config/nix/config/skills/nvim-review/scripts/review.py [--layout unified|stacked|split]
+python3 ~/.config/nix/config/skills/nvim-review/scripts/review.py [--layout unified|stacked|split]
 ```
 
 Use `--dry-run --json` to inspect the review model without opening mux.

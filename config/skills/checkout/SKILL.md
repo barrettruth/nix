@@ -14,7 +14,7 @@ then use the helper to inspect, resolve, or prepare that checkout.
 2. Gather local facts once:
 
 ```sh
-python3 /home/barrett/.config/nix/config/skills/checkout/scripts/checkout.py inspect --json
+python3 ~/.config/nix/config/skills/checkout/scripts/checkout.py inspect --json
 ```
 
 3. Use those facts to resolve Barrett's phrase to exactly one canonical target:
@@ -25,8 +25,8 @@ python3 /home/barrett/.config/nix/config/skills/checkout/scripts/checkout.py ins
 ## Commands
 
 ```sh
-python3 /home/barrett/.config/nix/config/skills/checkout/scripts/checkout.py resolve --target <branch-or-worktree> --json
-python3 /home/barrett/.config/nix/config/skills/checkout/scripts/checkout.py ensure --target <branch-or-worktree> --json
+python3 ~/.config/nix/config/skills/checkout/scripts/checkout.py resolve --target <branch-or-worktree> --json
+python3 ~/.config/nix/config/skills/checkout/scripts/checkout.py ensure --target <branch-or-worktree> --json
 ```
 
 `ensure` returns the current checkout when the target is already current, returns

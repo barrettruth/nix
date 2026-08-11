@@ -51,7 +51,7 @@ commits that; otherwise pass the specific files your message covers via `--stage
 (only those — not unrelated working-tree noise).
 
 ```sh
-python3 /home/barrett/.config/nix/config/skills/nvim-commit/scripts/commit-window.py --stage <path> [<path> ...] <<'MSG'
+python3 ~/.config/nix/config/skills/nvim-commit/scripts/commit-window.py --stage <path> [<path> ...] <<'MSG'
 <subject>
 
 <optional body>
