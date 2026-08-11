@@ -17,6 +17,10 @@ local JOB_EXIT_TIMEOUT_MS = 5000
 ---@type table<integer, string|false>
 local tab_view = {}
 
+---Pty group leaders for live mux terminals, keyed by buffer.
+---@type table<integer, integer>
+local term_pids = {}
+
 ---@type table<string, mux.ViewSpec>
 local views = {
     edit = {},
@@ -500,6 +504,32 @@ local function cleanup_terminal(buf)
     require('mux.session').mark_dirty()
 end
 
+---Signal a pty job's whole process group.
+---Nvim setsid's pty children, so the job pid is its group leader. Signalling
+---the job alone leaves grandchildren behind holding whatever the child held.
+---@param pid integer
+---@param signal string
+---@return nil
+local function kill_group(pid, signal)
+    pcall(vim.system, { 'kill', '-' .. signal, '--', '-' .. pid })
+end
+
+---@param buf integer
+---@return nil
+local function reap_terminal(buf)
+    local pid = term_pids[buf]
+    term_pids[buf] = nil
+    if not pid then
+        return
+    end
+    kill_group(pid, 'TERM')
+    vim.defer_fn(function()
+        if vim.system({ 'kill', '-0', tostring(pid) }):wait().code == 0 then
+            kill_group(pid, 'KILL')
+        end
+    end, JOB_EXIT_TIMEOUT_MS)
+end
+
 ---@return nil
 local function stop_terminals()
     local jobs = {}
@@ -508,6 +538,10 @@ local function stop_terminals()
         if job then
             jobs[#jobs + 1] = job
             pcall(vim.fn.jobstop, job)
+        end
+        if term_pids[buf] then
+            kill_group(term_pids[buf], 'TERM')
+            term_pids[buf] = nil
         end
     end
     if #jobs > 0 then
@@ -599,6 +633,32 @@ function M.setup()
     did_setup = true
     setup_keymaps()
     local group = vim.api.nvim_create_augroup('mux-view', { clear = true })
+    vim.api.nvim_create_autocmd('TermOpen', {
+        group = group,
+        callback = function(args)
+            vim.bo[args.buf].bufhidden = 'wipe'
+            local job = vim.b[args.buf].terminal_job_id
+            local ok, pid = pcall(vim.fn.jobpid, job)
+            if ok and type(pid) == 'number' and pid > 0 then
+                term_pids[args.buf] = pid
+            end
+        end,
+    })
+    vim.api.nvim_create_autocmd({ 'BufHidden', 'BufWipeout', 'WinClosed' }, {
+        group = group,
+        callback = function()
+            vim.schedule(function()
+                for buf in pairs(term_pids) do
+                    if
+                        not vim.api.nvim_buf_is_valid(buf)
+                        or #vim.fn.win_findbuf(buf) == 0
+                    then
+                        reap_terminal(buf)
+                    end
+                end
+            end)
+        end,
+    })
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,
         callback = function(args)
