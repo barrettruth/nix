@@ -10,7 +10,8 @@ function M.sessions()
         return
     end
     vim.ui.select(require('mux.line').servers(), {
-        prompt = 'mux',
+        prompt = 'Select a session:',
+        kind = 'mux.session',
         format_item = function(entry)
             return (entry.root == current.root and '*' or '')
                 .. vim.fn.fnamemodify(entry.root, ':t')
