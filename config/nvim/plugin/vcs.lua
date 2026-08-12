@@ -31,3 +31,23 @@ require('lz.n').load({
         },
     },
 })
+
+vim.api.nvim_create_user_command('Stack', function()
+    require('stack').list()
+end, { desc = 'list the stack holding the current pull request' })
+
+-- ]s and [s are the builtin spell motions, so they stay buffer-local to guh.
+vim.api.nvim_create_autocmd('BufEnter', {
+    group = vim.api.nvim_create_augroup('stack', {}),
+    callback = function(ev)
+        if not vim.api.nvim_buf_get_name(ev.buf):match('^guh://') then
+            return
+        end
+        vim.keymap.set('n', ']s', function()
+            require('stack').walk(1)
+        end, { buffer = ev.buf, desc = 'next pull request in stack' })
+        vim.keymap.set('n', '[s', function()
+            require('stack').walk(-1)
+        end, { buffer = ev.buf, desc = 'previous pull request in stack' })
+    end,
+})
