@@ -66,9 +66,15 @@ let
           ENDPOINT="$R2_ENDPOINT"
           DATE=$(date +%Y-%m-%d)
 
-          aws s3 cp ${source} \
-            "s3://${bucket}/$DATE/$(basename ${source})" \
-            --endpoint-url "$ENDPOINT"
+          if [ -d ${source} ]; then
+            aws s3 sync ${source} \
+              "s3://${bucket}/$DATE" \
+              --endpoint-url "$ENDPOINT"
+          else
+            aws s3 cp ${source} \
+              "s3://${bucket}/$DATE/$(basename ${source})" \
+              --endpoint-url "$ENDPOINT"
+          fi
 
           CUTOFF=$(date -d '30 days ago' +%Y-%m-%d)
           aws s3 ls s3://${bucket}/ --endpoint-url "$ENDPOINT" \
