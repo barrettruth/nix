@@ -103,7 +103,7 @@ let
   agentPackages = lib.optionals codexEnabled [ pkgs.codex ] ++ [ pkgs.devin-cli ];
 
   agentSkillDirs = lib.optionals codexEnabled [ "${XDG_CONFIG_HOME}/codex/skills" ] ++ [
-    "${XDG_CONFIG_HOME}/devin/skills"
+    "${homeDirectory}/.agents/skills"
   ];
 
   codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [
@@ -315,11 +315,7 @@ let
     ${readTheme}
     ${mkSymlink "${XDG_CONFIG_HOME}/fzf/themes/$theme" "${XDG_CONFIG_HOME}/fzf/themes/theme"}
 
-    ${lib.optionalString codexEnabled "${mkDir "${XDG_CONFIG_HOME}/codex/skills"}"}
-            if [ -L "${XDG_CONFIG_HOME}/devin/skills" ]; then
-              rm -f "${XDG_CONFIG_HOME}/devin/skills"
-            fi
-            ${mkDir "${XDG_CONFIG_HOME}/devin/skills"}
+    ${lib.concatMapStringsSep "\n            " mkDir agentSkillDirs}
             for skill in ${repo}/config/skills/*/ ${repo}/.devin/skills/*/; do
               [ -f "$skill/SKILL.md" ] || continue
               name="$(basename "$skill")"
