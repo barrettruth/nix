@@ -20,6 +20,7 @@ in
       ../darwin/common/keylayout.nix
       ../darwin/common/sops.nix
       ../darwin/common/tailscale.nix
+      ../darwin/barrett/workstation.nix
       ../barrett/workstation.nix
       ../../hosts/mac/configuration.nix
       {
