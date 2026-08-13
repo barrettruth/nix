@@ -28,7 +28,6 @@ let
     BlockThirdPartyCookies = true;
     CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
     RestoreOnStartup = 1;
-    NewTabPageLocation = "chrome-extension://demmbkpegigoeiappcbliinlijmeoaop/newtab.html";
     ExtensionInstallForcelist = map (id: "${id};https://clients2.google.com/service/update2/crx") [
       # Bitwarden Password Manager
       "nngceckbapebfimnlniiiahkandclblb"
