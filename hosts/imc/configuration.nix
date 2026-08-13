@@ -13,4 +13,25 @@
     "/Applications/Microsoft Outlook.app"
     "/Applications/Mattermost.app"
   ];
+
+  barrett.mac.workspaceApps = lib.mkAfter [
+    {
+      key = "m";
+      workspace = "3";
+      path = "/Applications/Mattermost.app";
+      bundleId = "Mattermost.Desktop";
+    }
+    {
+      key = "o";
+      workspace = "4";
+      path = "/Applications/Microsoft Outlook.app";
+      bundleId = "com.microsoft.Outlook";
+    }
+    {
+      key = "z";
+      workspace = "5";
+      path = "/Applications/zoom.us.app";
+      bundleId = "us.zoom.xos";
+    }
+  ];
 }
