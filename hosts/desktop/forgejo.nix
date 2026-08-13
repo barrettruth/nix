@@ -78,7 +78,7 @@ let
   };
   forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom {
     inherit pierreForgejo;
-    barrettWebfonts = inputs.fonts.packages.${pkgs.stdenv.hostPlatform.system}.web;
+    barrettWebfonts = pkgs.barrett-webfonts or null;
   };
 
   forgejoStixTwoFontFile = pkgs.runCommand "stix-two-text.ttf" { } ''

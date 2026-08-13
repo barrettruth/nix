@@ -1,5 +1,7 @@
 { lib, inputs, ... }:
 let
+  hasFonts = inputs ? fonts;
+
   overlays = [
     inputs.devin.overlays.default
     (
@@ -77,8 +79,6 @@ let
             '';
       in
       {
-        barrett-fonts = inputs.fonts.packages.${system}.desktop;
-        barrett-webfonts = inputs.fonts.packages.${system}.web;
         direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
         google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
@@ -87,6 +87,10 @@ let
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };
+      }
+      // lib.optionalAttrs hasFonts {
+        barrett-fonts = inputs.fonts.packages.${system}.desktop;
+        barrett-webfonts = inputs.fonts.packages.${system}.web;
       }
     )
   ];
@@ -112,11 +116,10 @@ in
     {
       _module.args.pkgs = pkgs;
       packages = {
-        inherit (pkgs)
-          barrett-fonts
-          barrett-webfonts
-          neovim
-          ;
+        inherit (pkgs) neovim;
+      }
+      // lib.optionalAttrs hasFonts {
+        inherit (pkgs) barrett-fonts barrett-webfonts;
       };
     };
 }

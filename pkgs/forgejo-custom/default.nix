@@ -1,7 +1,7 @@
 {
   pkgs,
   pierreForgejo,
-  barrettWebfonts,
+  barrettWebfonts ? null,
   ...
 }:
 let
@@ -63,7 +63,9 @@ let
         cp ${noniconsFont}/dist/nonicons.woff $out/fonts/nonicons.woff
         full_to_woff2 ${noniconsFont}/dist/nonicons.ttf $out/fonts/nonicons-v1.woff2
 
-        cp -R ${barrettWebfonts}/share/barrett-webfonts/. $out/fonts/
+        ${pkgs.lib.optionalString (
+          barrettWebfonts != null
+        ) "cp -R ${barrettWebfonts}/share/barrett-webfonts/. $out/fonts/"}
 
         mkdir -p $out/fonts/stix-two
         full_to_woff2 '${pkgs.stix-two}/share/fonts/truetype/STIXTwoText[wght].ttf' \
