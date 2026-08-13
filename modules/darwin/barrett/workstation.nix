@@ -22,10 +22,33 @@ let
   };
 
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
-  rectangleApp = "/Applications/Nix Apps/Rectangle.app";
   trexApp = "/Applications/Nix Apps/TRex.app";
 
   chromeApp = config.barrett.mac.chrome.app;
+
+  aerospace = "${config.services.aerospace.package}/bin/aerospace";
+
+  aerospaceDirections = {
+    h = "left";
+    j = "down";
+    k = "up";
+    l = "right";
+    left = "left";
+    down = "down";
+    up = "up";
+    right = "right";
+  };
+
+  aerospaceWorkspaces = map toString (lib.range 1 9);
+
+  aerospaceBindings = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (key: dir: "ralt - ${key} : ${aerospace} focus ${dir}") aerospaceDirections
+    ++ lib.mapAttrsToList (
+      key: dir: "ralt + shift - ${key} : ${aerospace} move ${dir}"
+    ) aerospaceDirections
+    ++ map (n: "ralt - ${n} : ${aerospace} workspace ${n}") aerospaceWorkspaces
+    ++ map (n: "ralt + shift - ${n} : ${aerospace} move-node-to-workspace ${n}") aerospaceWorkspaces
+  );
 
   # ctl idle had no macOS analogue worth porting; caffeinate is built in.
   idleToggle = pkgs.writeShellScript "idle-toggle" ''
@@ -34,10 +57,6 @@ let
     else
       /usr/bin/caffeinate -d &
     fi
-  '';
-
-  rectangleAction = pkgs.writeShellScript "rectangle-action" ''
-    exec /usr/bin/open -g -a "${rectangleApp}" "rectangle://execute-action?name=$1"
   '';
 
   trexCapture = pkgs.writeShellScript "trex-capture" ''
@@ -101,13 +120,19 @@ in
         ralt - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
         ralt - w : ${pkgs.skhd}/bin/skhd -k "cmd - w"
 
-        ralt - return : ${rectangleAction} maximize
-        ralt - left : ${rectangleAction} left-half
-        ralt - right : ${rectangleAction} right-half
-        ralt - up : ${rectangleAction} top-half
-        ralt - down : ${rectangleAction} bottom-half
-        ralt - c : ${rectangleAction} center
+        ralt - return : ${aerospace} fullscreen
+        ralt - c : ${aerospace} layout floating tiling
+
+        ${aerospaceBindings}
       '';
+    };
+
+    services.aerospace = {
+      enable = true;
+      settings = {
+        default-root-container-layout = "tiles";
+        default-root-container-orientation = "auto";
+      };
     };
 
     launchd.user.agents.skhd.serviceConfig.ProgramArguments = lib.mkForce [
@@ -120,14 +145,6 @@ in
 
     launchd.user.agents.trex = {
       command = ''"${trexApp}/Contents/MacOS/TRex"'';
-      serviceConfig = {
-        RunAtLoad = true;
-        KeepAlive = true;
-      };
-    };
-
-    launchd.user.agents.rectangle = {
-      command = ''"${rectangleApp}/Contents/MacOS/Rectangle"'';
       serviceConfig = {
         RunAtLoad = true;
         KeepAlive = true;
@@ -228,6 +245,7 @@ in
         persistent-apps = map (app: { inherit app; }) config.barrett.mac.dock.apps;
         persistent-others = [ ];
       };
+      spaces.spans-displays = true;
       screencapture.location = screenshotDir;
       NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
       NSGlobalDomain."com.apple.swipescrolldirection" = true;
@@ -256,7 +274,6 @@ in
       lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
       ++ (with pkgs; [
         age
-        rectangle
         trex
         curl
         fd
