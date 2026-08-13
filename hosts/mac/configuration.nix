@@ -203,7 +203,7 @@ in
     harddisk = 30;
   };
 
-  fonts.packages = [ pkgs.barrett-fonts ];
+  fonts.packages = lib.optional (pkgs ? barrett-fonts) pkgs.barrett-fonts;
 
   system.activationScripts.extraActivation.text = ''
     install -d -m 0755 "/Library/Managed Preferences"

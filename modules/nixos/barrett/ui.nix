@@ -342,20 +342,30 @@ in
         ];
     };
 
-    fonts.packages = with pkgs; [
-      barrett-fonts
-      dejavu_fonts
-      freefont_ttf
-      gyre-fonts
-      liberation_ttf
-      unifont
-      noto-fonts-color-emoji
-    ];
+    fonts.packages =
+      lib.optional (pkgs ? barrett-fonts) pkgs.barrett-fonts
+      ++ (with pkgs; [
+        dejavu_fonts
+        freefont_ttf
+        gyre-fonts
+        liberation_ttf
+        unifont
+        noto-fonts-color-emoji
+      ]);
 
     fonts.fontconfig.defaultFonts = {
-      sansSerif = [ "SF Pro Display" ];
-      monospace = [ "Berkeley Mono" ];
-      serif = [ "Times New Roman" ];
+      sansSerif = [
+        "SF Pro Display"
+        "DejaVu Sans"
+      ];
+      monospace = [
+        "Berkeley Mono"
+        "Iosevka Term"
+      ];
+      serif = [
+        "Times New Roman"
+        "DejaVu Serif"
+      ];
     };
 
     environment.sessionVariables = {
