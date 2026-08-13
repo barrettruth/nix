@@ -54,6 +54,7 @@
       ];
 
       imports = [
+        inputs.nix-darwin.flakeModules.default
         ./modules/nixpkgs.nix
         ./modules/identity.nix
         ./modules/theme.nix
@@ -62,6 +63,7 @@
         ./modules/hosts/vps.nix
         ./modules/hosts/desktop.nix
         ./modules/hosts/mac.nix
+        ./modules/hosts/imc.nix
       ];
     };
 }

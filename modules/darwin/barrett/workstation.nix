@@ -25,7 +25,7 @@ let
   rectangleApp = "/Applications/Nix Apps/Rectangle.app";
   trexApp = "/Applications/Nix Apps/TRex.app";
 
-  chromeApp = "/Applications/Nix Apps/Google Chrome.app";
+  chromeApp = config.barrett.mac.chrome.app;
 
   # ctl idle had no macOS analogue worth porting; caffeinate is built in.
   idleToggle = pkgs.writeShellScript "idle-toggle" ''
@@ -49,6 +49,19 @@ in
     type = lib.types.listOf lib.types.str;
     default = [ ];
     description = "Absolute paths of the applications pinned to the Dock, in order.";
+  };
+
+  options.barrett.mac.chrome = {
+    app = lib.mkOption {
+      type = lib.types.str;
+      default = "/Applications/Nix Apps/Google Chrome.app";
+      description = "Absolute path of the Google Chrome application bundle.";
+    };
+    package = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = chromePkg;
+      description = "Chrome to install, or null when the machine already has one.";
+    };
   };
 
   config = {
@@ -181,6 +194,15 @@ in
 
       ${act.installDirMode "0755" screenshotDir}
 
+      tmp=$(mktemp)
+      awk '
+        $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
+        $0 == "# END nix-darwin tailnet"   { skip = 0; next }
+        !skip { print }
+      ' /etc/hosts >"$tmp"
+      install -m 0644 -o root -g wheel "$tmp" /etc/hosts
+      rm -f "$tmp"
+
       # The laptop prunes to +5 and the vps to +2; nix-darwin has no
       # equivalent, and determinate ships no scheduled collection, so do it
       # here. nix.enable is off, so use the determinate nix-env directly.
@@ -230,27 +252,28 @@ in
       StandardErrorPath = "/var/log/activate-system.log";
     };
 
-    environment.systemPackages = with pkgs; [
-      chromePkg
-      age
-      rectangle
-      trex
-      curl
-      fd
-      fzf
-      eza
-      zoxide
-      ghostty
-      git
-      gh
-      jq
-      just
-      neovim
-      ripgrep
-      sops
-      ssh-to-age
-      tree
-      wget
-    ];
+    environment.systemPackages =
+      lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
+      ++ (with pkgs; [
+        age
+        rectangle
+        trex
+        curl
+        fd
+        fzf
+        eza
+        zoxide
+        ghostty
+        git
+        gh
+        jq
+        just
+        neovim
+        ripgrep
+        sops
+        ssh-to-age
+        tree
+        wget
+      ]);
   };
 }

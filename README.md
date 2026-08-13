@@ -22,7 +22,8 @@ MacBook.
 flake.nix
 hosts/
 modules/
-  hosts/{desktop,laptop,mac,vps}
+  hosts/{desktop,imc,laptop,mac,vps}
+  barrett/                       cross-platform workstation
   darwin/                        nix-darwin modules
   nixos/
   devshells.nix                  project-specific development shells
@@ -53,3 +54,19 @@ dropping the import is also what stops the desktop reclaiming the name.
 - **desktop**: headless NixOS server and remote build host. Forgejo at [`forge.barrettruth.com`](https://forgejo.org/) and `finance.barrettruth.com`. Runs no compositor: `barrett.ui.enable` is off, so the Hyprland stack, desktop applications and fonts are absent and only the terminal development environment is installed.
 - **vps**: NixOS VPS. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) at `vault.barrettruth.com`, [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
 - **mac**: Apple silicon MacBook, built from `.#darwinConfigurations.mac` with `just rebuild-mac`.
+- **imc**: work MacBook, built with `just rebuild-imc`. Shares
+  `modules/darwin/barrett` with the mac and differs by what it leaves out:
+  the machine is enrolled in an MDM, so nothing here writes to
+  `/Library/Managed Preferences` or sets `networking.computerName`, and
+  neither sops nor tailscale is imported.
+
+One thing on the mac is set once per machine and cannot be declared: **a still
+image has to be chosen as the wallpaper** in Settings > Wallpaper. macOS ships
+a dynamic wallpaper, and while one is active `WallpaperAgent` renders over
+anything `NSWorkspace.setDesktopImageURL` sets, so `ctl wallpaper gen` reports
+success and changes nothing.
+
+The baremak layout is installed to `/Library/Keyboard Layouts` and enabled
+through `AppleEnabledInputSources`, so it needs no setup, but a newly enabled
+input source only reaches the menu bar after a logout.
+

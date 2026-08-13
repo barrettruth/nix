@@ -8,9 +8,19 @@ rebuild-laptop:
     @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
     nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate sudo --ask-elevate-password
 
-rebuild-mac:
-    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-mac must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
-    @system=$(nix build --no-link --print-out-paths '.#darwinConfigurations.mac.system') && \
+rebuild-mac: (_rebuild-darwin "mac")
+
+rebuild-imc: (_rebuild-darwin "imc")
+
+_rebuild-darwin host:
+    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
+    @export NIX_CONFIG="extra-experimental-features = nix-command flakes"; \
+      expected=$(nix eval --raw '.#darwinConfigurations.{{ host }}.config.barrett.user.name') && \
+      if [ "$expected" != "$(id -un)" ]; then \
+        printf '%s\n' "{{ host }} is configured for user $expected, but this machine is $(id -un)." >&2; \
+        exit 1; \
+      fi && \
+      system=$(nix build --no-link --print-out-paths '.#darwinConfigurations.{{ host }}.system') && \
       sudo -H nix-env --profile /nix/var/nix/profiles/system --set "$system" && \
       sudo -H /nix/var/nix/profiles/system/activate
 
