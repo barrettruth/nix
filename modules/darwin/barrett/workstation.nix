@@ -41,6 +41,12 @@ let
 
   aerospaceWorkspaces = map toString (lib.range 1 9);
 
+  workspaceApps = config.barrett.mac.workspaceApps;
+
+  appBindings = lib.concatMapStringsSep "\n" (
+    app: ''ralt - ${app.key} : ${aerospace} workspace ${app.workspace}; /usr/bin/open -a "${app.path}"''
+  ) workspaceApps;
+
   aerospaceBindings = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (key: dir: "ralt - ${key} : ${aerospace} focus ${dir}") aerospaceDirections
     ++ lib.mapAttrsToList (
@@ -70,6 +76,32 @@ in
     description = "Absolute paths of the applications pinned to the Dock, in order.";
   };
 
+  options.barrett.mac.workspaceApps = lib.mkOption {
+    type = lib.types.listOf (
+      lib.types.submodule {
+        options = {
+          key = lib.mkOption {
+            type = lib.types.str;
+            description = "skhd key, pressed with ralt.";
+          };
+          workspace = lib.mkOption {
+            type = lib.types.str;
+            description = "AeroSpace workspace the app is pinned to.";
+          };
+          path = lib.mkOption {
+            type = lib.types.str;
+            description = "Absolute path of the application bundle.";
+          };
+          bundleId = lib.mkOption {
+            type = lib.types.str;
+            description = "CFBundleIdentifier, matched by AeroSpace on-window-detected.";
+          };
+        };
+      }
+    );
+    default = [ ];
+  };
+
   options.barrett.mac.chrome = {
     app = lib.mkOption {
       type = lib.types.str;
@@ -87,6 +119,21 @@ in
     barrett.mac.dock.apps = [
       chromeApp
       ghosttyApp
+    ];
+
+    barrett.mac.workspaceApps = [
+      {
+        key = "t";
+        workspace = "1";
+        path = ghosttyApp;
+        bundleId = "com.mitchellh.ghostty";
+      }
+      {
+        key = "b";
+        workspace = "2";
+        path = chromeApp;
+        bundleId = "com.google.Chrome";
+      }
     ];
 
     system.stateVersion = 6;
@@ -108,8 +155,7 @@ in
     services.skhd = {
       enable = true;
       skhdConfig = ''
-        ralt - t : open -a "${ghosttyApp}"
-        ralt - b : open -a "${chromeApp}"
+        ${appBindings}
         ralt - f : open -a Finder
         ralt - o : ${trexCapture}
         ralt - i : ${idleToggle}
@@ -132,6 +178,10 @@ in
       settings = {
         default-root-container-layout = "tiles";
         default-root-container-orientation = "auto";
+        on-window-detected = map (app: {
+          "if".app-id = app.bundleId;
+          run = "move-node-to-workspace --focus-follows-window ${app.workspace}";
+        }) workspaceApps;
       };
     };
 
