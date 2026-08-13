@@ -22,7 +22,7 @@ let
   repo = "${XDG_CONFIG_HOME}/nix";
 
   sourceScripts = builtins.path {
-    path = ../../../scripts;
+    path = ../../scripts;
     name = "barrett-scripts";
   };
 
@@ -102,7 +102,7 @@ let
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
-  pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
+  pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
 
   jjConf = pkgs.writeText "jj-config" ''
     [user]
