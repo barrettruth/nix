@@ -200,7 +200,15 @@ local CLEAR_LAST_ROOT_EXPR =
 local function spawn_nvim(args, opts, cb)
     local prog = vim.fn.executable(vim.v.progpath) == 1 and vim.v.progpath
         or 'nvim'
-    local argv = vim.list_extend({ prog }, args)
+    local argv = { prog }
+    local parent = vim.v.argv
+    for i = 1, #parent - 1 do
+        if parent[i] == '--cmd' then
+            argv[#argv + 1] = '--cmd'
+            argv[#argv + 1] = parent[i + 1]
+        end
+    end
+    vim.list_extend(argv, args)
     local ok, proc = pcall(vim.system, argv, opts, cb)
     if ok then
         return proc
