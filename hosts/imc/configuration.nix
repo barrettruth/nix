@@ -22,7 +22,7 @@
       bundleId = "Mattermost.Desktop";
     }
     {
-      key = "o";
+      key = "e";
       workspace = "4";
       path = "/Applications/Microsoft Outlook.app";
       bundleId = "com.microsoft.Outlook";
