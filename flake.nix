@@ -28,11 +28,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     fonts = {
-      url = "git+ssh://git@forge.barrettruth.com/barrettruth/fonts.git";
+      url = "git+ssh://git@github.com/barrettruth/fonts.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     delta = {
-      url = "git+ssh://git@forge.barrettruth.com/barrettruth/delta.git";
+      url = "git+ssh://git@github.com/barrettruth/delta.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pierrejo = {

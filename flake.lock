@@ -32,11 +32,11 @@
         "rev": "054d2248ababd9eb39536e894dab6f809031ad1f",
         "revCount": 617,
         "type": "git",
-        "url": "ssh://git@forge.barrettruth.com/barrettruth/delta.git"
+        "url": "ssh://git@github.com/barrettruth/delta.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@forge.barrettruth.com/barrettruth/delta.git"
+        "url": "ssh://git@github.com/barrettruth/delta.git"
       }
     },
     "determinate": {
@@ -280,14 +280,14 @@
         "lastModified": 1785552023,
         "narHash": "sha256-ld5MDeyoOp9a0SaCD2+zmSY4mQe6W6vZTvfga2/ZELA=",
         "ref": "refs/heads/main",
-        "rev": "ed12179eb9537cb6e369397eb3e202dd4d9c2bf9",
+        "rev": "4d0f15f6455c3737b10df0c2babc3d13d24868c3",
         "revCount": 11,
         "type": "git",
-        "url": "ssh://git@forge.barrettruth.com/barrettruth/fonts.git"
+        "url": "ssh://git@github.com/barrettruth/fonts.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@forge.barrettruth.com/barrettruth/fonts.git"
+        "url": "ssh://git@github.com/barrettruth/fonts.git"
       }
     },
     "git-hooks-nix": {
