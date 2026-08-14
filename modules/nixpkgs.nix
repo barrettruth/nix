@@ -80,7 +80,6 @@ let
       {
         barrett-fonts = inputs.fonts.packages.${system}.desktop;
         barrett-webfonts = inputs.fonts.packages.${system}.web;
-        delta-software-sync = final.callPackage ../pkgs/delta-software-sync { };
         delta-cli = inputs.delta.packages.${system}.cli;
         direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
@@ -118,7 +117,6 @@ in
         inherit (pkgs)
           barrett-fonts
           barrett-webfonts
-          delta-software-sync
           neovim
           ;
       };
