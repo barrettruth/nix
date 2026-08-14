@@ -3,6 +3,7 @@ local dev_plugins = {
     'diffs.nvim',
     'preview.nvim',
     'ci.nvim',
+    'forge.nvim',
 }
 
 local function current_colorscheme()
@@ -39,6 +40,10 @@ return {
                 debug = false,
             }
         end,
+    },
+    {
+        'barrettruth/forge.nvim',
+        cmd = { 'Issue', 'PR' },
     },
     {
         'barrettruth/diffs.nvim',
