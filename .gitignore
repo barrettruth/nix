@@ -12,7 +12,6 @@ config/chromium/extension/theme.css
 config/chromium/extension/theme.js
 config/nvim/lazy-lock.json
 /AGENTS.md
-.codex
 !/.devin/
 /.devin/*
 !/.devin/skills/

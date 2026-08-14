@@ -88,7 +88,6 @@ TOKEN_ALIASES = {
     "browser": {"browser", "chromium"},
     "chrome": {"chromium"},
     "code": {"nvim", "neovim", "vim", "edit"},
-    "codex": {"codex", "agent", "ai"},
     "completion": {"completion", "complete", "cmp"},
     "desktop": {"desktop", "hyprland", "waybar", "dunst"},
     "forge": {"forge", "forgejo", "vps", "gitea"},

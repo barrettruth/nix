@@ -98,19 +98,9 @@ let
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
-  codexEnabled = false;
+  agentPackages = [ pkgs.devin-cli ];
 
-  agentPackages = lib.optionals codexEnabled [ pkgs.codex ] ++ [ pkgs.devin-cli ];
-
-  agentSkillDirs = lib.optionals codexEnabled [ "${XDG_CONFIG_HOME}/codex/skills" ] ++ [
-    "${homeDirectory}/.agents/skills"
-  ];
-
-  codexRuntimePackages = lib.optionals (builtins.elem "codex" (map lib.getName agentPackages)) [
-    pkgs.google-workspace-cli
-    pkgs.google-workspace-guard
-    pkgs.mgrep
-  ];
+  agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
   pytest-language-server = pkgs.callPackage ../../../pkgs/pytest-language-server.nix { };
 
@@ -242,8 +232,7 @@ let
     PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
     SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
     INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
-  }
-  // lib.optionalAttrs codexEnabled { CODEX_HOME = "${XDG_CONFIG_HOME}/codex"; };
+  };
 
   activationText = ''
         ${mkDir "${XDG_CONFIG_HOME}/zsh"}
@@ -279,16 +268,11 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
-    ${lib.optionalString codexEnabled "${mkDir "${XDG_CONFIG_HOME}/codex"}"}
             ${mkDir "${XDG_CONFIG_HOME}/clangd"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
             ${mkPrivateDir "${homeDirectory}/.gnupg"}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/sops"}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/sops/age"}
-            if [ -L "${homeDirectory}/.codex" ]; then
-              ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/.codex"
-            fi
-
             ${mkSymlink "${gitConf}" "${XDG_CONFIG_HOME}/git/config"}
             ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
             ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
@@ -306,8 +290,6 @@ let
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
             ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
             ${mkSymlink "${repo}/config/devin/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
-    ${lib.optionalString codexEnabled "${mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"}"}
-    ${lib.optionalString codexEnabled "${mkSymlink "${repo}/config/codex/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
         ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
         ${mkSymlink "${chromiumThemeJs}" "${repo}/config/chromium/extension/theme.js"}
@@ -489,7 +471,6 @@ in
           )
           ++ lib.optionals isLinux [ pkgs.psmisc ]
           ++ agentPackages
-          ++ codexRuntimePackages
           ++ [ barrettScripts ];
 
         environment.extraInit = ''

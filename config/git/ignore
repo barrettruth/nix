@@ -26,6 +26,5 @@ result
 result-*
 .direnv
 .envrc
-.codex
 .devin/
 .worktrees/
