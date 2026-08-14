@@ -31,10 +31,6 @@
       url = "git+ssh://git@github.com/barrettruth/fonts.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    delta = {
-      url = "git+ssh://git@github.com/barrettruth/delta.git";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     pierrejo = {
       url = "git+https://git.harivan.sh/harivansh-afk/pierrejo.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";

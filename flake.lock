@@ -19,26 +19,6 @@
         "type": "github"
       }
     },
-    "delta": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1781481719,
-        "narHash": "sha256-6PuTwLDj6JJs8FMeJ+hBMJJFdLrmNcOoFfDkMWIHDnY=",
-        "ref": "refs/heads/main",
-        "rev": "054d2248ababd9eb39536e894dab6f809031ad1f",
-        "revCount": 617,
-        "type": "git",
-        "url": "ssh://git@github.com/barrettruth/delta.git"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/barrettruth/delta.git"
-      }
-    },
     "determinate": {
       "inputs": {
         "determinate-nixd-aarch64-darwin": "determinate-nixd-aarch64-darwin",
@@ -547,7 +527,6 @@
     "root": {
       "inputs": {
         "codex": "codex",
-        "delta": "delta",
         "determinate": "determinate",
         "devin": "devin",
         "direnv-instant": "direnv-instant",

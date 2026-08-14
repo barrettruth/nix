@@ -415,7 +415,6 @@ in
             just
             file
             luarocks
-            delta-cli
             rustup
             uv
             python3

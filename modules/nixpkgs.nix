@@ -80,7 +80,6 @@ let
       {
         barrett-fonts = inputs.fonts.packages.${system}.desktop;
         barrett-webfonts = inputs.fonts.packages.${system}.web;
-        delta-cli = inputs.delta.packages.${system}.cli;
         direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
         google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
