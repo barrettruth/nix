@@ -56,15 +56,6 @@ let
     ++ map (n: "ralt + shift - ${n} : ${aerospace} move-node-to-workspace ${n}") aerospaceWorkspaces
   );
 
-  # ctl idle had no macOS analogue worth porting; caffeinate is built in.
-  idleToggle = pkgs.writeShellScript "idle-toggle" ''
-    if /usr/bin/pgrep -x caffeinate >/dev/null 2>&1; then
-      /usr/bin/killall caffeinate
-    else
-      /usr/bin/caffeinate -d &
-    fi
-  '';
-
   trexCapture = pkgs.writeShellScript "trex-capture" ''
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
@@ -159,7 +150,6 @@ in
         ${appBindings}
         ralt - f : open -a Finder
         ralt - o : ${trexCapture}
-        ralt - i : ${idleToggle}
 
         ralt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
         ralt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
