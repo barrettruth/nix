@@ -169,7 +169,13 @@ in
       settings = {
         default-root-container-layout = "tiles";
         default-root-container-orientation = "auto";
-        on-window-detected = map (app: {
+        on-window-detected = [
+          {
+            "if".app-id = "com.apple.finder";
+            run = "layout floating";
+          }
+        ]
+        ++ map (app: {
           "if".app-id = app.bundleId;
           run = "move-node-to-workspace --focus-follows-window ${app.workspace}";
         }) workspaceApps;
