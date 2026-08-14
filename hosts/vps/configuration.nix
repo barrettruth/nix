@@ -10,6 +10,7 @@
 }:
 {
   imports = [
+    ../../services/vaultwarden.nix
     ./finance.nix
     ./headscale.nix
     ./static-sites.nix
@@ -18,6 +19,8 @@
     (modulesPath + "/profiles/minimal.nix")
     (modulesPath + "/profiles/headless.nix")
   ];
+
+  _module.args.mkSecret = mkVpsSecret;
 
   boot.loader.grub = {
     enable = true;

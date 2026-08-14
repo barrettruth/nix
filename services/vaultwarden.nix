@@ -3,16 +3,16 @@
   pkgs,
   lib,
   identity,
-  mkDesktopSecret,
+  mkSecret,
   ...
 }:
 let
-  inherit (import ../../modules/nixos/common/service-helpers.nix { inherit pkgs lib; }) mkR2Backup;
+  inherit (import ../modules/nixos/common/service-helpers.nix { inherit pkgs lib; }) mkR2Backup;
 in
 lib.mkMerge [
   (mkR2Backup {
     name = "vaultwarden";
-    source = "/var/backup/vaultwarden/db.sqlite3";
+    source = "/var/backup/vaultwarden";
     bucket = "vaultwarden";
     environmentFile = config.sops.secrets."vaultwarden-r2-backup-env".path;
     user = "vaultwarden";
@@ -43,6 +43,6 @@ lib.mkMerge [
       };
     };
 
-    sops.secrets."vaultwarden-r2-backup-env" = mkDesktopSecret "vaultwarden-r2-backup-env" { };
+    sops.secrets."vaultwarden-r2-backup-env" = mkSecret "vaultwarden-r2-backup-env" { };
   }
 ]

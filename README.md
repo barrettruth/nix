@@ -28,14 +28,28 @@ modules/
   devshells.nix                  project-specific development shells
   theme.nix                      central palette definition
 config/                          app configs (symlinked into XDG dirs)
+services/                        services a host can adopt, see below
 scripts/                         runtime scripts
 secrets/                         sops-encrypted secrets
 pkgs/                            custom derivations
 ```
 
+## Moving a service between hosts
+
+Anything under `services/` is host-agnostic: it names its secrets through
+`mkSecret`, which each host binds to its own `mkVpsSecret`/`mkDesktopSecret` in
+`hosts/<host>/configuration.nix`. These services serve a single public hostname
+off a single database, so exactly one host may import a given one at a time.
+
+To hand a service to another host, move its import line between the two
+`configuration.nix` files, `git mv` its secrets into the new host's
+`secrets/<host>/` and `sops updatekeys` them, and repoint the DNS record. The
+desktop's DDNS derives its record list from `services.nginx.virtualHosts`, so
+dropping the import is also what stops the desktop reclaiming the name.
+
 ## Hosts
 
 - **laptop**: Dell XPS 9500 workstation.
-- **desktop**: headless NixOS server and remote build host. Vaultwarden at [`vault.barrettruth.com`](https://github.com/dani-garcia/vaultwarden), [delta](https://github.com/barrettruth/delta) at `delta.barrettruth.com`, and `finance.barrettruth.com`. Runs no compositor: `barrett.ui.enable` is off, so the Hyprland stack, desktop applications and fonts are absent and only the terminal development environment is installed.
-- **vps**: NixOS VPS. [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
+- **desktop**: headless NixOS server and remote build host. Forgejo at [`forge.barrettruth.com`](https://forgejo.org/), [delta](https://github.com/barrettruth/delta) at `delta.barrettruth.com`, and `finance.barrettruth.com`. Runs no compositor: `barrett.ui.enable` is off, so the Hyprland stack, desktop applications and fonts are absent and only the terminal development environment is installed.
+- **vps**: NixOS VPS. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) at `vault.barrettruth.com`, [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
 - **mac**: Apple silicon MacBook, built from `.#darwinConfigurations.mac` with `just rebuild-mac`.
