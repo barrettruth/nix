@@ -19,6 +19,7 @@ in
       ../darwin/common/activation.nix
       ../darwin/common/keylayout.nix
       ../darwin/common/sops.nix
+      ../darwin/common/ssh.nix
       ../darwin/common/tailscale.nix
       ../darwin/barrett/workstation.nix
       ../barrett/workstation.nix
