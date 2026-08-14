@@ -26,7 +26,6 @@
       bundleId = "com.microsoft.Outlook";
     }
     {
-      key = "z";
       workspace = "5";
       path = "/Applications/zoom.us.app";
       bundleId = "us.zoom.xos";
