@@ -85,6 +85,14 @@ in
 
   users.users.${username}.openssh.authorizedKeys.keys = identity.sshKeys;
 
+  # Remote Login is enabled on this machine alone, and macOS defaults both
+  # password paths to on. UsePAM keeps keyboard-interactive answering with a
+  # password even once PasswordAuthentication is off, so both are refused.
+  services.openssh.extraConfig = ''
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+  '';
+
   programs.ssh.knownHosts.desktop = {
     hostNames = [
       "desktop"
