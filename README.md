@@ -50,6 +50,6 @@ dropping the import is also what stops the desktop reclaiming the name.
 ## Hosts
 
 - **laptop**: Dell XPS 9500 workstation.
-- **desktop**: headless NixOS server and remote build host. Forgejo at [`forge.barrettruth.com`](https://forgejo.org/), [delta](https://github.com/barrettruth/delta) at `delta.barrettruth.com`, and `finance.barrettruth.com`. Runs no compositor: `barrett.ui.enable` is off, so the Hyprland stack, desktop applications and fonts are absent and only the terminal development environment is installed.
+- **desktop**: headless NixOS server and remote build host. Forgejo at [`forge.barrettruth.com`](https://forgejo.org/) and `finance.barrettruth.com`. Runs no compositor: `barrett.ui.enable` is off, so the Hyprland stack, desktop applications and fonts are absent and only the terminal development environment is installed.
 - **vps**: NixOS VPS. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) at `vault.barrettruth.com`, [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
 - **mac**: Apple silicon MacBook, built from `.#darwinConfigurations.mac` with `just rebuild-mac`.

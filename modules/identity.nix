@@ -8,7 +8,6 @@ let
     tailnetHosts = {
       "100.64.0.1" = [
         "desktop"
-        "delta.barrettruth.com"
         "finance.barrettruth.com"
       ];
     };

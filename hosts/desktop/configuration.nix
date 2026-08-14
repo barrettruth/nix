@@ -25,7 +25,6 @@ in
     ./web.nix
     ./forgejo.nix
     # ./static-sites.nix
-    ./delta.nix
     ./finance.nix
     ./ddns.nix
   ];
