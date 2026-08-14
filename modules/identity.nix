@@ -9,7 +9,6 @@ let
       "100.64.0.1" = [
         "desktop"
         "delta.barrettruth.com"
-        "vault.barrettruth.com"
         "finance.barrettruth.com"
       ];
     };
