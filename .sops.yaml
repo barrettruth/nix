@@ -4,6 +4,7 @@ keys:
   - &host_laptop age1e4hnk50ruclzpwunepj7w4xgk0t6ppqqu6dyresauy2shjzqpedqhw3g5p
   - &host_desktop age12tuhqxx244zygf2p349tpurp43qeecgaeyufqcft650upzptdeqqae4g7w
   - &host_mac age1hwxw4p0dqps646093pw05qr445a2lkwnzwfh9klxre3x92nkvypqwtz4qr
+  - &host_imc age1vd6hnd50wae5q883mu88rr0r64mp9dwxrrhv6edrlqpqh2vmk44ssx8mnw
 
 creation_rules:
   - path_regex: secrets/vps/[^/]+$
@@ -26,3 +27,14 @@ creation_rules:
       - age:
           - *admin
           - *host_mac
+  - path_regex: secrets/imc/[^/]+$
+    key_groups:
+      - age:
+          - *admin
+          - *host_imc
+  - path_regex: secrets/shared/[^/]+$
+    key_groups:
+      - age:
+          - *admin
+          - *host_mac
+          - *host_imc

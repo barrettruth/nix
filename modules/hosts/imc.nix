@@ -18,6 +18,9 @@ in
       inputs.determinate.darwinModules.default
       ../darwin/common/activation.nix
       ../darwin/common/keylayout.nix
+      ../darwin/common/sops.nix
+      ../darwin/common/ssh.nix
+      ../darwin/common/tailscale.nix
       ../darwin/barrett/workstation.nix
       ../barrett/workstation.nix
       ../../hosts/imc/configuration.nix

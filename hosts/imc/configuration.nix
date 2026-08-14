@@ -4,10 +4,6 @@
 
   barrett.user.name = "bruth";
 
-  # The MDM owns sshd here and turns Remote Login back on, so inbound is
-  # refused at the tailnet instead. Nothing sets
-  # users.users.bruth.openssh.authorizedKeys.keys either, which leaves
-  # /etc/ssh/nix_authorized_keys.d absent and key auth impossible.
   barrett.tailscale.shieldsUp = true;
 
   barrett.mac.chrome = {
