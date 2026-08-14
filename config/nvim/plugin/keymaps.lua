@@ -82,6 +82,13 @@ end, { desc = 'toggle wrap' })
 vim.keymap.set('n', '<leader>ic', function()
     vim.o.cmdheight = vim.o.cmdheight == 0 and 1 or 0
 end, { desc = 'toggle cmdheight' })
+vim.keymap.set('n', '<leader>i<space>', function()
+    if vim.opt.diffopt:get().iwhiteall then
+        vim.cmd('set diffopt-=iwhiteall')
+    else
+        vim.cmd('set diffopt+=iwhiteall')
+    end
+end, { desc = 'toggle diff whitespace' })
 
 if vim.fn.has('mac') == 1 then
     vim.keymap.set(
