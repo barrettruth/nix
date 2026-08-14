@@ -22,6 +22,19 @@ Host desktop
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
 
+Host laptop
+    HostName laptop.tn.barrettruth.com
+    User root
+    HostKeyAlias 100.64.0.2
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+Host mac
+    HostName mac.tn.barrettruth.com
+    User barrett
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
 Host spark
     HostName spark-1
     User barrett
