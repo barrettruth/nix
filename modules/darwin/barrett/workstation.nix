@@ -45,7 +45,7 @@ let
 
   appBindings = lib.concatMapStringsSep "\n" (
     app: ''ralt - ${app.key} : ${aerospace} workspace ${app.workspace}; /usr/bin/open -a "${app.path}"''
-  ) workspaceApps;
+  ) (lib.filter (app: app.key != null) workspaceApps);
 
   aerospaceBindings = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (key: dir: "ralt - ${key} : ${aerospace} focus ${dir}") aerospaceDirections
@@ -81,8 +81,9 @@ in
       lib.types.submodule {
         options = {
           key = lib.mkOption {
-            type = lib.types.str;
-            description = "skhd key, pressed with ralt.";
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "skhd key, pressed with ralt. Null pins the app without a binding.";
           };
           workspace = lib.mkOption {
             type = lib.types.str;

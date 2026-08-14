@@ -16,13 +16,11 @@
 
   barrett.mac.workspaceApps = lib.mkAfter [
     {
-      key = "m";
       workspace = "3";
       path = "/Applications/Mattermost.app";
       bundleId = "Mattermost.Desktop";
     }
     {
-      key = "e";
       workspace = "4";
       path = "/Applications/Microsoft Outlook.app";
       bundleId = "com.microsoft.Outlook";
