@@ -14,6 +14,7 @@ let
     hostKeys = {
       desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
       laptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILt1sOYoWNtfIjLoZ7XT/VmC5s0d/Hw8Q9GQyUUaKeIC";
+      mac = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJe7FNB2a2jjGMepkRGnzxwZtWYqr95QfcN7Moi7nSCI";
       forge-tailnet = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlaElaGlwSxKvtujoAnGWSrZWlxZRdviq3Y9TgZCLZ/";
     };
     sshKeys = [

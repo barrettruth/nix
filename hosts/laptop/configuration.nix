@@ -279,6 +279,15 @@ in
     publicKey = identity.hostKeys.desktop;
   };
 
+  programs.ssh.knownHosts.mac = {
+    hostNames = [
+      "mac"
+      "mac.${identity.tailnetDomain}"
+      "100.64.0.4"
+    ];
+    publicKey = identity.hostKeys.mac;
+  };
+
   programs.ssh.knownHosts."forge-tailnet" = {
     hostNames = [
       "[forge.barrettruth.com]:2222"

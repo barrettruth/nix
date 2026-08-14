@@ -83,6 +83,8 @@ in
         IdentitiesOnly yes
   '';
 
+  users.users.${username}.openssh.authorizedKeys.keys = identity.sshKeys;
+
   programs.ssh.knownHosts.desktop = {
     hostNames = [
       "desktop"
