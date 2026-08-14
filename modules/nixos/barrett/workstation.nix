@@ -458,7 +458,6 @@ in
             nixfmt-tree
             tea
             git-lfs
-            gemini-cli
             typst
             typstyle
             glab
