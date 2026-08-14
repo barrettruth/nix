@@ -277,6 +277,16 @@ return {
                     hsl_fn = true,
                 },
             })
+
+            vim.api.nvim_create_autocmd('BufWinEnter', {
+                group = vim.api.nvim_create_augroup('colorizer-generated', {}),
+                pattern = { 'forge://*', 'ci://*' },
+                callback = function(ev)
+                    vim.schedule(function()
+                        pcall(require('colorizer').detach_from_buffer, ev.buf)
+                    end)
+                end,
+            })
         end,
         event = 'BufReadPre',
     },
