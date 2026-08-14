@@ -5,6 +5,7 @@
   barrett.user.name = "bruth";
 
   barrett.tailscale.shieldsUp = true;
+  barrett.tailscale.useAuthKey = false;
 
   barrett.mac.chrome = {
     app = "/Applications/Google Chrome.app";
