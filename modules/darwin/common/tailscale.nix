@@ -7,23 +7,48 @@
   ...
 }:
 let
-  authKeyPath = config.sops.secrets."headscale-authkey".path;
-  shieldsUp = config.barrett.tailscale.shieldsUp;
-  shieldsFlag = lib.optionalString shieldsUp " --shields-up";
-  applyShields = lib.optionalString shieldsUp ''
+  cfg = config.barrett.tailscale;
+  loginServer = "https://headscale.${identity.domain}";
+  authKeyPath = lib.optionalString cfg.useAuthKey config.sops.secrets."headscale-authkey".path;
+  shieldsFlag = lib.optionalString cfg.shieldsUp " --shields-up";
+  applyShields = lib.optionalString cfg.shieldsUp ''
     ${pkgs.tailscale}/bin/tailscale set --shields-up=true || true
   '';
+  login =
+    if cfg.useAuthKey then
+      ''
+        for _ in $(seq 1 10); do
+          ${pkgs.tailscale}/bin/tailscale up \
+            --login-server "${loginServer}" \
+            --auth-key "file:${authKeyPath}"${shieldsFlag} && exit 0
+          sleep 15
+        done
+      ''
+    else
+      ''
+        echo "tailscaled is not logged in; run: tailscale up --login-server ${loginServer}${shieldsFlag}" >&2
+      '';
 in
 {
-  options.barrett.tailscale.shieldsUp = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = "Drop all inbound tailnet connections, leaving the node outbound-only.";
+  options.barrett.tailscale = {
+    shieldsUp = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Drop all inbound tailnet connections, leaving the node outbound-only.";
+    };
+
+    useAuthKey = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Register with a headscale preauth key rather than an interactive OIDC login.";
+    };
   };
 
   config = {
-    sops.secrets."headscale-authkey" = mkHostSecret config.networking.hostName "headscale-authkey" {
-      mode = "0400";
+    sops.secrets = lib.mkIf cfg.useAuthKey {
+      "headscale-authkey" = mkHostSecret config.networking.hostName "headscale-authkey" {
+        mode = "0400";
+      };
     };
 
     services.tailscale = {
@@ -74,13 +99,7 @@ in
           sleep 1
         done
 
-        for _ in $(seq 1 10); do
-          ${pkgs.tailscale}/bin/tailscale up \
-            --login-server "https://headscale.${identity.domain}" \
-            --auth-key "file:${authKeyPath}"${shieldsFlag} && exit 0
-          sleep 15
-        done
-
+        ${login}
         exit 1
       '';
     };
