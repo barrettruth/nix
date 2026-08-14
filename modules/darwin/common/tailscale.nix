@@ -1,71 +1,88 @@
 {
   config,
   identity,
-  mkMacSecret,
+  lib,
+  mkHostSecret,
   pkgs,
   ...
 }:
 let
   authKeyPath = config.sops.secrets."headscale-authkey".path;
+  shieldsUp = config.barrett.tailscale.shieldsUp;
+  shieldsFlag = lib.optionalString shieldsUp " --shields-up";
+  applyShields = lib.optionalString shieldsUp ''
+    ${pkgs.tailscale}/bin/tailscale set --shields-up=true || true
+  '';
 in
 {
-  sops.secrets."headscale-authkey" = mkMacSecret "headscale-authkey" {
-    mode = "0400";
+  options.barrett.tailscale.shieldsUp = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
+    description = "Drop all inbound tailnet connections, leaving the node outbound-only.";
   };
 
-  services.tailscale = {
-    enable = true;
-
-    # Tailscaled on macOS registers split DNS for its own ts.net rather than
-    # headscale's base_domain, so *.ts.barrettruth.com never reached
-    # 100.100.100.100. Headscale already sets override_local_dns and global
-    # nameservers, so it is safe to make it the sole resolver.
-    overrideLocalDns = false;
-  };
-
-  environment.etc."resolver/${identity.tailnetDomain}".text = "nameserver 100.100.100.100";
-
-  # nix-darwin's tailscaled daemon sets RunAtLoad but not KeepAlive. With
-  # overrideLocalDns it is the only resolver, so a crash would take all name
-  # resolution with it until someone noticed.
-  launchd.daemons.tailscaled.serviceConfig.KeepAlive = true;
-
-  # networking.dns is applied per entry in knownNetworkServices, so without
-  # this the resolver is never actually set and the option silently does
-  # nothing.
-  networking.knownNetworkServices = [
-    "Wi-Fi"
-    "Thunderbolt Bridge"
-  ];
-
-  launchd.daemons.tailscaled-autoconnect = {
-    serviceConfig = {
-      RunAtLoad = true;
-      KeepAlive = false;
-      StandardErrorPath = "/var/log/tailscaled-autoconnect.log";
-      StandardOutPath = "/var/log/tailscaled-autoconnect.log";
+  config = {
+    sops.secrets."headscale-authkey" = mkHostSecret config.networking.hostName "headscale-authkey" {
+      mode = "0400";
     };
-    script = ''
-      set -eu
 
-      for _ in $(seq 1 60); do
-        state=$(${pkgs.tailscale}/bin/tailscale status --json 2>/dev/null \
-          | ${pkgs.jq}/bin/jq -r '.BackendState // empty') || state=""
-        case "$state" in
-          Running) exit 0 ;;
-          NeedsLogin|Stopped) break ;;
-        esac
-        sleep 1
-      done
+    services.tailscale = {
+      enable = true;
 
-      for _ in $(seq 1 10); do
-        ${pkgs.tailscale}/bin/tailscale up \
-          --login-server "https://headscale.${identity.domain}" \
-          --auth-key "file:${authKeyPath}" && exit 0
-        sleep 15
-      done
+      # Tailscaled on macOS registers split DNS for its own ts.net rather than
+      # headscale's base_domain, so *.ts.barrettruth.com never reached
+      # 100.100.100.100. Headscale already sets override_local_dns and global
+      # nameservers, so it is safe to make it the sole resolver.
+      overrideLocalDns = false;
+    };
 
-      exit 1
-    '';
+    environment.etc."resolver/${identity.tailnetDomain}".text = "nameserver 100.100.100.100";
+
+    # nix-darwin's tailscaled daemon sets RunAtLoad but not KeepAlive. With
+    # overrideLocalDns it is the only resolver, so a crash would take all name
+    # resolution with it until someone noticed.
+    launchd.daemons.tailscaled.serviceConfig.KeepAlive = true;
+
+    # networking.dns is applied per entry in knownNetworkServices, so without
+    # this the resolver is never actually set and the option silently does
+    # nothing.
+    networking.knownNetworkServices = [
+      "Wi-Fi"
+      "Thunderbolt Bridge"
+    ];
+
+    launchd.daemons.tailscaled-autoconnect = {
+      serviceConfig = {
+        RunAtLoad = true;
+        KeepAlive = false;
+        StandardErrorPath = "/var/log/tailscaled-autoconnect.log";
+        StandardOutPath = "/var/log/tailscaled-autoconnect.log";
+      };
+      script = ''
+        set -eu
+
+        for _ in $(seq 1 60); do
+          state=$(${pkgs.tailscale}/bin/tailscale status --json 2>/dev/null \
+            | ${pkgs.jq}/bin/jq -r '.BackendState // empty') || state=""
+          case "$state" in
+            Running)
+              ${applyShields}
+              exit 0
+              ;;
+            NeedsLogin|Stopped) break ;;
+          esac
+          sleep 1
+        done
+
+        for _ in $(seq 1 10); do
+          ${pkgs.tailscale}/bin/tailscale up \
+            --login-server "https://headscale.${identity.domain}" \
+            --auth-key "file:${authKeyPath}"${shieldsFlag} && exit 0
+          sleep 15
+        done
+
+        exit 1
+      '';
+    };
   };
 }

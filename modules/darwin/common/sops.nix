@@ -13,7 +13,7 @@ in
 
   _module.args = {
     inherit mkHostSecret;
-    mkMacSecret = mkHostSecret "mac";
+    mkSharedSecret = mkHostSecret "shared";
   };
 
   sops.age = {
