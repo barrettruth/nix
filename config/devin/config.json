@@ -1,6 +1,6 @@
 {
   "agent": {
-    "model": "claude-opus-5-high-fast"
+    "model": "claude-opus-5-xhigh-fast"
   },
   "read_config_from": {
     "cursor": false,

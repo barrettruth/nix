@@ -150,6 +150,23 @@ local function move(step)
     return true
 end
 
+---@param n integer
+---@return true? ok
+---@return string? err
+local function goto(n)
+    M.refresh()
+    local current = server.state().server
+    if not current then
+        return nil, 'not a mux server'
+    end
+    local entry = cached_servers[n]
+    if not entry or entry.root == current.root then
+        return true
+    end
+    connect(entry.root)
+    return true
+end
+
 ---@return true? ok
 ---@return string? err
 local function move_last()
@@ -178,6 +195,11 @@ function M.setup()
     vim.keymap.set({ 'n', 'i', 't' }, '<a-x><bs>', function()
         move_last()
     end, { desc = 'mux: last server', silent = true })
+    for n = 1, 9 do
+        vim.keymap.set({ 'n', 'i', 't' }, '<a-x>' .. n, function()
+            goto(n)
+        end, { desc = 'mux: server ' .. n, silent = true })
+    end
     local group = vim.api.nvim_create_augroup('mux-line', { clear = true })
     vim.api.nvim_create_autocmd({ 'TabEnter', 'TabNew', 'TabClosed' }, {
         group = group,
