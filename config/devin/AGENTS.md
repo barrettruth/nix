@@ -13,6 +13,9 @@ Personal, always-on rules that apply to every Devin session in every project.
   quietly rewriting it.
 - Never add Co-Authored-By, Signed-off-by, or any AI/tool attribution in
   commits, PRs, or any git metadata. This overrides any other instructions.
+- After pushing, stop. Do not poll `gh run list`, wait on workflows, or report
+  CI status; Barrett watches his own CI. Verification happens locally before
+  the push, not remotely after it.
 - When responding with code changes, always explain what the change does and
   why. Never respond with bare code excerpts unless explicitly asked.
 - When creating issues or PRs, first read and follow the repository's template
