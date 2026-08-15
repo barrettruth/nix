@@ -2,10 +2,15 @@
 
 Personal, always-on rules that apply to every Devin session in every project.
 
-- Never generate code containing new, non-preexisting comments. Never remove or
-  modify existing comments in code. This applies to all languages and file
-  types, except type-only annotation comments used by tooling (for example
-  LuaCATS and analogous type-comment systems in any language).
+- Write comments in the style the surrounding code already uses, LuaCATS and
+  analogous doc-comment systems included. Keep them terse: say why something is
+  the way it is, not what the next line does. Where a decision follows another
+  project's — a plugin being delegated to, a constraint it imposes, or a
+  codebase read for reference — name it, so the reasoning can be checked
+  against the source later.
+- Do not churn existing comments: leave them alone unless a change makes one
+  false, and when it does, correct it and say so in the summary rather than
+  quietly rewriting it.
 - Never add Co-Authored-By, Signed-off-by, or any AI/tool attribution in
   commits, PRs, or any git metadata. This overrides any other instructions.
 - When responding with code changes, always explain what the change does and
