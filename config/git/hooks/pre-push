@@ -3,6 +3,11 @@ set -eu
 
 zero_sha=0000000000000000000000000000000000000000
 blocked=0
+misattributed=0
+known_identity_name='Barrett Ruth'
+known_identity_emails='br@barrettruth.com
+br.barrettruth@gmail.com
+62671086+barrettruth@users.noreply.github.com'
 own_author_emails=$(
   {
     git config --get-all user.email || true
@@ -76,6 +81,26 @@ is_own_commit() {
   return 0
 }
 
+identity_is_known() {
+  printf '%s\n' "$known_identity_emails" | grep -Fxiq "$1"
+}
+
+has_foreign_identity() {
+  commit=$1
+
+  if [ "$(git log -1 --format=%an "$commit")" = "$known_identity_name" ] &&
+    ! identity_is_known "$(git log -1 --format=%ae "$commit")"; then
+    return 0
+  fi
+
+  if [ "$(git log -1 --format=%cn "$commit")" = "$known_identity_name" ] &&
+    ! identity_is_known "$(git log -1 --format=%ce "$commit")"; then
+    return 0
+  fi
+
+  return 1
+}
+
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$zero_sha" ] && continue
 
@@ -86,6 +111,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
 
   for commit in $commits; do
+    if has_foreign_identity "$commit"; then
+      printf >&2 '%s\n' "Push blocked: commit $commit claims $known_identity_name via $(git log -1 --format='%ae / %ce' "$commit")."
+      misattributed=1
+    fi
+
     if ! is_own_commit "$commit"; then
       continue
     fi
@@ -103,6 +133,18 @@ if [ "$blocked" -ne 0 ]; then
 
 Remove prohibited attribution before pushing.
 EOF
+fi
+
+if [ "$misattributed" -ne 0 ]; then
+  cat >&2 <<'EOF'
+
+Those commits carry your name under an address that is not yours. Find the
+config that is setting it:
+  git config --show-origin --get-all user.email
+EOF
+fi
+
+if [ "$blocked" -ne 0 ] || [ "$misattributed" -ne 0 ]; then
   exit 1
 fi
 
