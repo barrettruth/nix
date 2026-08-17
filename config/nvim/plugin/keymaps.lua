@@ -89,6 +89,10 @@ vim.keymap.set('n', '<leader>i<space>', function()
         vim.cmd('set diffopt+=iwhiteall')
     end
 end, { desc = 'toggle diff whitespace' })
+vim.keymap.set('n', '<leader>ii', function()
+    local inline = vim.opt.diffopt:get().inline == 'none' and 'char' or 'none'
+    vim.cmd('set diffopt+=inline:' .. inline)
+end, { desc = 'toggle intra-line diff highlighting' })
 
 if vim.fn.has('mac') == 1 then
     vim.keymap.set(
