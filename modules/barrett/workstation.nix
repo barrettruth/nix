@@ -194,6 +194,7 @@ let
     FZF_CTRL_T_COMMAND = "rg --files --hidden";
     FZF_ALT_C_COMMAND = "fd --type d --hidden";
 
+    GIT_CONFIG_GLOBAL = "${XDG_CONFIG_HOME}/git/config";
     WGETRC = "${XDG_CONFIG_HOME}/wgetrc";
     LUAROCKS_CONFIG = "${XDG_CONFIG_HOME}/luarocks/config.lua";
     GRADLE_USER_HOME = "${XDG_CONFIG_HOME}/gradle";
