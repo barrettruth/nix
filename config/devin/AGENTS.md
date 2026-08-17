@@ -3,11 +3,8 @@
 Personal, always-on rules that apply to every Devin session in every project.
 
 - Write comments in the style the surrounding code already uses, LuaCATS and
-  analogous doc-comment systems included. Keep them terse: say why something is
-  the way it is, not what the next line does. Where a decision follows another
-  project's — a plugin being delegated to, a constraint it imposes, or a
-  codebase read for reference — name it, so the reasoning can be checked
-  against the source later.
+  analogous doc-comment systems included. Say why something is the way it is,
+  in a sentence, and name the source when the reason is another project's.
 - A comment keeps the why and nothing else. Cut one that says the line again,
   that argues a decision already made, or that is true only of the moment
   rather than of the design. Keep what a reader could not recover from the
