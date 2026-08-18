@@ -30,6 +30,7 @@
     }
     {
       key = "z";
+      space = "5";
       path = "/Applications/zoom.us.app";
     }
   ];
