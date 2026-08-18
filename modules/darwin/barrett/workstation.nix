@@ -155,6 +155,9 @@ let
       follow-space-thrown-windows = false;
       restore-layouts-on-launch = true;
       hide-menu-bar-icon = false;
+      enables-layout-hud = false;
+      enables-layout-hud-on-space-change = false;
+      enables-window-count-hud = false;
     }
     // lib.listToAttrs (
       map (n: lib.nameValuePair "throw-space-${toString n}" (mod2 (toString n))) (lib.range 1 9)
