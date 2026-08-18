@@ -120,8 +120,6 @@ in
       packages = {
         inherit (pkgs) neovim pytest-language-server;
       }
-      # Exposed as a flake output so `nix-update --flake amethyst` can bump the
-      # pinned version and hash; the overlay alone is not addressable.
       // lib.optionalAttrs (lib.hasSuffix "darwin" system) { inherit (pkgs) amethyst; }
       // lib.optionalAttrs hasFonts {
         inherit (pkgs) barrett-fonts barrett-webfonts;

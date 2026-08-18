@@ -30,15 +30,10 @@ let
 
   launchApps = config.barrett.mac.apps;
 
-  # Amethyst ships no CLI, so unlike aerospace it cannot be driven from skhd.
-  # Every window command lives in amethyst.yml below and skhd is left with the
-  # two jobs Amethyst has no command for: launching apps and forwarding chords.
   appBindings = lib.concatMapStringsSep "\n" (
     app: ''lalt - ${app.key} : /usr/bin/open -a "${app.path}"''
   ) (lib.filter (app: app.key != null) launchApps);
 
-  # Amethyst throws windows at native Spaces but has no command to focus one;
-  # macOS owns that chord. Forwarding keeps the whole scheme under one prefix.
   spaceBindings = lib.concatMapStringsSep "\n" (
     n: ''lalt - ${n} : ${pkgs.skhd}/bin/skhd -k "ctrl - ${n}"''
   ) (map toString (lib.range 1 9));
@@ -52,9 +47,6 @@ let
     inherit key;
   };
 
-  # Amethyst's defaults are expressed against mod1/mod2, so redefining those to
-  # bare option drags every unbound default onto the prefix, where it shadows
-  # skhd. Anything not rebound below is switched off rather than left to clash.
   disabledCommands =
     lib.genAttrs [
       "focus-main"
@@ -82,9 +74,6 @@ let
         "column"
       ];
 
-      # Carbon's RegisterEventHotKey cannot tell left option from right, so
-      # this claims both. skhd keeps lalt for the keys listed above, which are
-      # disjoint from everything bound here.
       mod1 = [ "option" ];
       mod2 = [
         "option"
@@ -93,12 +82,10 @@ let
 
       focus-ccw = mod1 "a";
       focus-cw = mod1 "f";
-      swap-ccw = mod2 "a";
-      swap-cw = mod2 "f";
+      swap-ccw = mod1 "u";
+      swap-cw = mod1 "d";
       swap-main = mod1 "enter";
 
-      # Amethyst only resizes the main pane, so h/l are the whole axis; j/k
-      # change how many windows share it.
       shrink-main = mod1 "h";
       expand-main = mod1 "l";
       decrease-main = mod1 "j";
@@ -166,10 +153,7 @@ in
       }
     );
     default = [ ];
-    description = ''
-      Applications reachable from the launch prefix. Amethyst has no notion of
-      a workspace, so unlike the aerospace setup this cannot pin an app to one.
-    '';
+    description = "Applications reachable from the launch prefix.";
   };
 
   options.barrett.mac.floatingApps = lib.mkOption {
@@ -362,8 +346,6 @@ in
         show-recents = false;
         persistent-apps = map (app: { inherit app; }) config.barrett.mac.dock.apps;
         persistent-others = [ ];
-        # Amethyst drives native Spaces, and its README requires this off:
-        # reordering Spaces by recency makes ctrl + N land somewhere else.
         mru-spaces = false;
       };
       spaces.spans-displays = true;
