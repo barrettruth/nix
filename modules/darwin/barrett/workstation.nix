@@ -38,6 +38,43 @@ let
     n: ''lalt - ${n} : ${pkgs.skhd}/bin/skhd -k "ctrl - ${n}"''
   ) (map toString (lib.range 1 9));
 
+  asUser = ''launchctl asuser "$(id -u -- ${username})" sudo --user=${username} --'';
+
+  spaceKeyCodes = [
+    18
+    19
+    20
+    21
+    23
+    22
+    26
+    28
+    25
+  ];
+
+  spaceHotkeys = lib.concatStringsSep "\n" (
+    lib.imap0 (
+      i: code:
+      let
+        id = toString (118 + i);
+        plist = pkgs.writeText "symbolic-hotkey-${id}.plist" (
+          lib.generators.toPlist { } {
+            enabled = true;
+            value = {
+              parameters = [
+                65535
+                code
+                262144
+              ];
+              type = "standard";
+            };
+          }
+        );
+      in
+      ''${asUser} /usr/bin/defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add ${id} "$(cat ${plist})"''
+    ) spaceKeyCodes
+  );
+
   mod1 = key: {
     mod = "mod1";
     inherit key;
@@ -312,6 +349,9 @@ in
 
       ${act.installDirMode "0755" "${config.barrett.user.homeDirectory}/.config/amethyst"}
       ${act.mkSymlink amethystConfig "${config.barrett.user.homeDirectory}/.config/amethyst/amethyst.yml"}
+
+      ${spaceHotkeys}
+      ${asUser} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
 
       tmp=$(mktemp)
       awk '
