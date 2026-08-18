@@ -149,7 +149,7 @@ let
       floating-is-blacklist = true;
 
       window-margins = false;
-      window-resize-step = 5;
+      window-resize-step = 2;
       focus-follows-mouse = false;
       mouse-follows-focus = false;
       follow-space-thrown-windows = true;
