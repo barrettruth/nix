@@ -14,7 +14,7 @@ BINDINGS = {
 }
 
 
-def update_preferences(path_str: str) -> None:
+def update_preferences(path_str: str, platform: str) -> None:
     prefs_path = Path(path_str)
     data = json.loads(prefs_path.read_text())
     extensions = data.setdefault("extensions", {})
@@ -22,11 +22,13 @@ def update_preferences(path_str: str) -> None:
     for key, value in list(commands.items()):
         if value.get("extension") != EXTENSION_ID:
             continue
+        if not key.startswith(f"{platform}:"):
+            continue
         shortcut = key.split(":", 1)[1]
         if BINDINGS.get(value.get("command_name")) != shortcut:
             del commands[key]
     for command_name, shortcut in BINDINGS.items():
-        commands[f"linux:{shortcut}"] = {
+        commands[f"{platform}:{shortcut}"] = {
             "command_name": command_name,
             "extension": EXTENSION_ID,
             "global": False,
@@ -50,8 +52,9 @@ def update_preferences(path_str: str) -> None:
 
 
 def main() -> int:
-    for path_str in sys.argv[1:]:
-        update_preferences(path_str)
+    platform = sys.argv[1]
+    for path_str in sys.argv[2:]:
+        update_preferences(path_str, platform)
     return 0
 
 
