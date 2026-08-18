@@ -1,12 +1,29 @@
 ---
 name: jj-stack
-description: Use for Barrett's stacked pull request workflow — his jj aliases, the `jj pr` tool, bookmarks that look odd, pull request base branches, or a stack that is not behaving. Establish real state with read-only commands, then report concisely.
+description: Use where work ships as stacked pull requests on github.com — the `jj pr` tool, pull request bases, bookmarks that look odd, or a stack that is not behaving. Establish real state with read-only commands, then report concisely.
 ---
 
 # jj-stack
 
-Barrett stacks pull requests on github.com with plain jj plus one tool. Read the
-`jj` skill for the underlying model; this covers the workflow built on top.
+Where Barrett ships through stacked pull requests on github.com, he uses plain
+jj plus one tool. Read the `jj` skill for the underlying model; this covers the
+workflow built on top.
+
+## Where this applies
+
+Confirm the repository ships that way before reaching for any of it. Open pull
+requests, `push-*` bookmarks on the remote, and a pull request template each say
+yes; a history of direct commits on trunk says the repository ships another way,
+and his nix config is one of those. There, shipping means advancing the bookmark
+the remote already tracks:
+
+```
+jj bookmark set main -r @
+jj git push -b main
+```
+
+Read "push my changes" in such a repository as exactly that pair, and stack only
+where he says so or the repository already does.
 
 ## How to answer
 
@@ -46,7 +63,7 @@ them are defined in the `jjConf` block of
 `~/.config/nix/modules/nixos/barrett/workstation.nix`, which is the source of
 truth if one looks unfamiliar.
 
-Bookmarks are generated, never named by hand. `jj git push -c` creates
+Within a stack the bookmarks are generated: `jj git push -c` creates
 `push-<change-id>`, and because change IDs survive rewrites, a pull request
 stays attached to its change through any amount of restructuring.
 
