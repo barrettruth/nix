@@ -101,7 +101,12 @@ has_foreign_identity() {
   return 1
 }
 
+# git lfs pre-push reads the same ref list from stdin, so it has to be buffered
+# rather than consumed: draining it here left the lfs check a silent no-op.
+refs=$(cat)
+
 while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$local_sha" ] || continue
   [ "$local_sha" = "$zero_sha" ] && continue
 
   if [ "$remote_sha" = "$zero_sha" ]; then
@@ -126,7 +131,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       blocked=1
     fi
   done
-done
+done <<REFS
+$refs
+REFS
 
 if [ "$blocked" -ne 0 ]; then
   cat >&2 <<'EOF'
@@ -149,4 +156,4 @@ if [ "$blocked" -ne 0 ] || [ "$misattributed" -ne 0 ]; then
 fi
 
 command -v git-lfs >/dev/null 2>&1 || { printf >&2 "\n%s\n\n" "This repository is configured for Git LFS but 'git-lfs' was not found on your path. If you no longer wish to use Git LFS, remove this hook by deleting the 'pre-push' file in the hooks directory (set by 'core.hookspath'; usually '.git/hooks')."; exit 2; }
-git lfs pre-push "$@"
+printf '%s\n' "$refs" | git lfs pre-push "$@"
