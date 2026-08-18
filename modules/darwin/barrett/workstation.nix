@@ -40,6 +40,36 @@ let
 
   asUser = ''launchctl asuser "$(id -u -- ${username})" sudo --user=${username} --'';
 
+  pinnedApps = lib.filter (app: app.space != null && app.bundleId != null) launchApps;
+
+  pinSpaces = pkgs.writeScript "pin-app-spaces" ''
+    #!${pkgs.python3}/bin/python3
+    import json, plistlib, subprocess, sys
+
+    wanted = json.loads(sys.argv[1])
+    home = subprocess.run(
+        ["/usr/bin/dscl", ".", "-read", "/Users/${username}", "NFSHomeDirectory"],
+        capture_output=True, text=True, check=True,
+    ).stdout.split()[-1]
+
+    with open(f"{home}/Library/Preferences/com.apple.spaces.plist", "rb") as fh:
+        spaces = plistlib.load(fh)["SpacesDisplayConfiguration"]["Management Data"]["Monitors"][0]["Spaces"]
+
+    for bundle, index in sorted(wanted.items()):
+        if index > len(spaces):
+            print(f"pin-app-spaces: space {index} does not exist, skipping {bundle}", file=sys.stderr)
+            continue
+        subprocess.run(
+            ["/usr/bin/defaults", "write", "com.apple.spaces", "app-bindings",
+             "-dict-add", bundle, spaces[index - 1]["uuid"]],
+            check=True,
+        )
+  '';
+
+  pinSpacesArg = builtins.toJSON (
+    lib.listToAttrs (map (app: lib.nameValuePair app.bundleId app.space) pinnedApps)
+  );
+
   spaceKeyCodes = [
     18
     19
@@ -188,6 +218,16 @@ in
           path = lib.mkOption {
             type = lib.types.str;
             description = "Absolute path of the application bundle.";
+          };
+          bundleId = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "CFBundleIdentifier, required to pin the app to a space.";
+          };
+          space = lib.mkOption {
+            type = lib.types.nullOr lib.types.int;
+            default = null;
+            description = "One-based space the app's windows open on.";
           };
         };
       }
@@ -355,6 +395,10 @@ in
 
       ${spaceHotkeys}
       ${asUser} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+
+      ${lib.optionalString (pinnedApps != [ ]) ''
+        ${asUser} ${pinSpaces} ${lib.escapeShellArg pinSpacesArg}
+      ''}
 
       tmp=$(mktemp)
       awk '
