@@ -152,7 +152,7 @@ let
       window-resize-step = 5;
       focus-follows-mouse = false;
       mouse-follows-focus = false;
-      follow-space-thrown-windows = true;
+      follow-space-thrown-windows = false;
       restore-layouts-on-launch = true;
       hide-menu-bar-icon = false;
     }
@@ -387,11 +387,17 @@ in
         persistent-apps = map (app: { inherit app; }) config.barrett.mac.dock.apps;
         persistent-others = [ ];
         mru-spaces = false;
+        expose-animation-duration = 0.0;
+        autohide-delay = 0.0;
+        autohide-time-modifier = 0.0;
+        launchanim = false;
       };
       spaces.spans-displays = true;
       screencapture.location = screenshotDir;
       NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
       NSGlobalDomain."com.apple.swipescrolldirection" = true;
+      NSGlobalDomain.NSAutomaticWindowAnimationsEnabled = false;
+      NSGlobalDomain.NSWindowResizeTime = 0.001;
       CustomUserPreferences."com.apple.loginwindow" = {
         TALLogoutSavesState = false;
         LoginwindowLaunchesRelaunchApps = false;
