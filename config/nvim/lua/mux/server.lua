@@ -103,15 +103,23 @@ local function cksum(s)
     return res.stdout:match('^(%d+)')
 end
 
+---@type table<string, string>
+local stems = {}
+
+---Memoised: a root's stem never changes, and every miss spawns cksum.
 ---@param root string
 ---@return string? stem
 ---@return string? err
 local function stem(root)
+    if stems[root] then
+        return stems[root]
+    end
     local hash, err = cksum(root)
     if not hash then
         return nil, err
     end
-    return sanitize_base(vim.fn.fnamemodify(root, ':t')) .. '-' .. hash
+    stems[root] = sanitize_base(vim.fn.fnamemodify(root, ':t')) .. '-' .. hash
+    return stems[root]
 end
 
 ---@param root string
@@ -424,25 +432,35 @@ local function saved_root(file)
     end
 end
 
----List mux servers that answer readiness probes.
+---List known mux servers: saved sessions, then live sockets not yet saved.
+---Sessions first so their sockets need no probe: probing waits on a
+---subprocess, and vim.wait() flushes the screen from the pre-refresh cache.
 ---@return mux.Server[]
 function M.list()
     local out = {}
     local seen = {}
-    local sockets = vim.fn.glob(runtime_dir() .. '/*.sock', true, true)
-    table.sort(sockets)
-    for _, socket in ipairs(sockets) do
-        if current_server and socket == current_server.socket then
-            add_server(out, seen, current_server)
-        else
-            add_server(out, seen, probe_sync(socket, LIST_PROBE_MS))
-        end
-    end
+    local known = {}
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
     table.sort(sessions)
     for _, file in ipairs(sessions) do
         local root = saved_root(file)
-        add_server(out, seen, root and paths_for(root))
+        local server = root and paths_for(root)
+        if server then
+            known[server.socket] = true
+            add_server(out, seen, server)
+        end
+    end
+    local sockets = vim.fn.glob(runtime_dir() .. '/*.sock', true, true)
+    table.sort(sockets)
+    for _, socket in ipairs(sockets) do
+        local live = current_server and socket == current_server.socket
+        if not known[socket] then
+            add_server(
+                out,
+                seen,
+                live and current_server or probe_sync(socket, LIST_PROBE_MS)
+            )
+        end
     end
     return out
 end
