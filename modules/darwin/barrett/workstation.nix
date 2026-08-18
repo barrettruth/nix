@@ -31,7 +31,13 @@ let
   launchApps = config.barrett.mac.apps;
 
   appBindings = lib.concatMapStringsSep "\n" (
-    app: ''lalt - ${app.key} : /usr/bin/open -a "${app.path}"''
+    app:
+    let
+      switch = lib.optionalString (
+        app.space != null
+      ) ''${pkgs.skhd}/bin/skhd -k "ctrl - ${app.space}"; '';
+    in
+    ''lalt - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"''
   ) (lib.filter (app: app.key != null) launchApps);
 
   spaceBindings = lib.concatMapStringsSep "\n" (
@@ -188,6 +194,11 @@ in
           path = lib.mkOption {
             type = lib.types.str;
             description = "Absolute path of the application bundle.";
+          };
+          space = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Space to focus before opening. Null opens in place.";
           };
         };
       }
