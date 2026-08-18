@@ -26,34 +26,116 @@ let
 
   chromeApp = config.barrett.mac.chrome.app;
 
-  aerospace = "${config.services.aerospace.package}/bin/aerospace";
+  amethystApp = "${pkgs.amethyst}/Applications/Amethyst.app";
 
-  aerospaceDirections = {
-    h = "left";
-    j = "down";
-    k = "up";
-    l = "right";
-    left = "left";
-    down = "down";
-    up = "up";
-    right = "right";
+  launchApps = config.barrett.mac.apps;
+
+  # Amethyst ships no CLI, so unlike aerospace it cannot be driven from skhd.
+  # Every window command lives in amethyst.yml below and skhd is left with the
+  # two jobs Amethyst has no command for: launching apps and forwarding chords.
+  appBindings = lib.concatMapStringsSep "\n" (
+    app: ''lalt - ${app.key} : /usr/bin/open -a "${app.path}"''
+  ) (lib.filter (app: app.key != null) launchApps);
+
+  # Amethyst throws windows at native Spaces but has no command to focus one;
+  # macOS owns that chord. Forwarding keeps the whole scheme under one prefix.
+  spaceBindings = lib.concatMapStringsSep "\n" (
+    n: ''lalt - ${n} : ${pkgs.skhd}/bin/skhd -k "ctrl - ${n}"''
+  ) (map toString (lib.range 1 9));
+
+  mod1 = key: {
+    mod = "mod1";
+    inherit key;
+  };
+  mod2 = key: {
+    mod = "mod2";
+    inherit key;
   };
 
-  aerospaceWorkspaces = map toString (lib.range 1 9);
+  # Amethyst's defaults are expressed against mod1/mod2, so redefining those to
+  # bare option drags every unbound default onto the prefix, where it shadows
+  # skhd. Anything not rebound below is switched off rather than left to clash.
+  disabledCommands =
+    lib.genAttrs [
+      "focus-main"
+      "select-tall-layout"
+      "select-wide-layout"
+      "select-fullscreen-layout"
+      "select-column-layout"
+      "toggle-focus-follows-mouse"
+      "increase-window-max-count"
+      "decrease-window-max-count"
+    ] (_: false)
+    // lib.listToAttrs (
+      lib.concatMap (n: [
+        (lib.nameValuePair "focus-screen-${toString n}" false)
+        (lib.nameValuePair "throw-screen-${toString n}" false)
+      ]) (lib.range 1 5)
+    );
 
-  workspaceApps = config.barrett.mac.workspaceApps;
+  amethystConfig = (pkgs.formats.yaml { }).generate "amethyst.yml" (
+    {
+      layouts = [
+        "tall"
+        "wide"
+        "fullscreen"
+        "column"
+      ];
 
-  appBindings = lib.concatMapStringsSep "\n" (
-    app: ''ralt - ${app.key} : ${aerospace} workspace ${app.workspace}; /usr/bin/open -a "${app.path}"''
-  ) (lib.filter (app: app.key != null) workspaceApps);
+      # Carbon's RegisterEventHotKey cannot tell left option from right, so
+      # this claims both. skhd keeps lalt for the keys listed above, which are
+      # disjoint from everything bound here.
+      mod1 = [ "option" ];
+      mod2 = [
+        "option"
+        "shift"
+      ];
 
-  aerospaceBindings = lib.concatStringsSep "\n" (
-    lib.mapAttrsToList (key: dir: "ralt - ${key} : ${aerospace} focus ${dir}") aerospaceDirections
-    ++ lib.mapAttrsToList (
-      key: dir: "ralt + shift - ${key} : ${aerospace} move ${dir}"
-    ) aerospaceDirections
-    ++ map (n: "ralt - ${n} : ${aerospace} workspace ${n}") aerospaceWorkspaces
-    ++ map (n: "ralt + shift - ${n} : ${aerospace} move-node-to-workspace ${n}") aerospaceWorkspaces
+      focus-ccw = mod1 "a";
+      focus-cw = mod1 "f";
+      swap-ccw = mod2 "a";
+      swap-cw = mod2 "f";
+      swap-main = mod1 "enter";
+
+      # Amethyst only resizes the main pane, so h/l are the whole axis; j/k
+      # change how many windows share it.
+      shrink-main = mod1 "h";
+      expand-main = mod1 "l";
+      decrease-main = mod1 "j";
+      increase-main = mod1 "k";
+
+      cycle-layout = mod1 "space";
+      cycle-layout-backward = mod2 "space";
+      toggle-float = mod1 "c";
+      toggle-tiling = mod2 "t";
+      display-current-layout = mod1 "i";
+
+      focus-screen-ccw = mod1 ",";
+      focus-screen-cw = mod1 ".";
+      swap-screen-ccw = mod2 ",";
+      swap-screen-cw = mod2 ".";
+
+      throw-space-left = mod2 "left";
+      throw-space-right = mod2 "right";
+
+      reevaluate-windows = mod2 "r";
+      relaunch-amethyst = mod2 "z";
+
+      floating = config.barrett.mac.floatingApps;
+      floating-is-blacklist = true;
+
+      window-margins = false;
+      window-resize-step = 5;
+      focus-follows-mouse = false;
+      mouse-follows-focus = false;
+      follow-space-thrown-windows = true;
+      restore-layouts-on-launch = true;
+      hide-menu-bar-icon = false;
+    }
+    // lib.listToAttrs (
+      map (n: lib.nameValuePair "throw-space-${toString n}" (mod2 (toString n))) (lib.range 1 9)
+    )
+    // disabledCommands
   );
 
   trexCapture = pkgs.writeShellScript "trex-capture" ''
@@ -67,31 +149,33 @@ in
     description = "Absolute paths of the applications pinned to the Dock, in order.";
   };
 
-  options.barrett.mac.workspaceApps = lib.mkOption {
+  options.barrett.mac.apps = lib.mkOption {
     type = lib.types.listOf (
       lib.types.submodule {
         options = {
           key = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "skhd key, pressed with ralt. Null pins the app without a binding.";
-          };
-          workspace = lib.mkOption {
-            type = lib.types.str;
-            description = "AeroSpace workspace the app is pinned to.";
+            description = "skhd key, pressed with lalt. Null pins the app without a binding.";
           };
           path = lib.mkOption {
             type = lib.types.str;
             description = "Absolute path of the application bundle.";
           };
-          bundleId = lib.mkOption {
-            type = lib.types.str;
-            description = "CFBundleIdentifier, matched by AeroSpace on-window-detected.";
-          };
         };
       }
     );
     default = [ ];
+    description = ''
+      Applications reachable from the launch prefix. Amethyst has no notion of
+      a workspace, so unlike the aerospace setup this cannot pin an app to one.
+    '';
+  };
+
+  options.barrett.mac.floatingApps = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = "CFBundleIdentifiers Amethyst leaves floating rather than tiling.";
   };
 
   options.barrett.mac.chrome = {
@@ -113,20 +197,18 @@ in
       ghosttyApp
     ];
 
-    barrett.mac.workspaceApps = [
+    barrett.mac.apps = [
       {
         key = "t";
-        workspace = "1";
         path = ghosttyApp;
-        bundleId = "com.mitchellh.ghostty";
       }
       {
         key = "b";
-        workspace = "2";
         path = chromeApp;
-        bundleId = "com.google.Chrome";
       }
     ];
+
+    barrett.mac.floatingApps = [ "com.apple.finder" ];
 
     system.stateVersion = 6;
     system.primaryUser = username;
@@ -148,37 +230,23 @@ in
       enable = true;
       skhdConfig = ''
         ${appBindings}
-        ralt - f : open -a Finder
-        ralt - o : ${trexCapture}
+        ${spaceBindings}
+        lalt - n : open -a Finder
+        lalt - o : ${trexCapture}
 
-        ralt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
-        ralt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
-        ralt - 0x32 : ${pkgs.skhd}/bin/skhd -k "cmd - 0x32"
-        ralt - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
-        ralt - w : ${pkgs.skhd}/bin/skhd -k "cmd - w"
-
-        ralt - return : ${aerospace} fullscreen
-        ralt - c : ${aerospace} layout floating tiling
-
-        ${aerospaceBindings}
+        lalt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
+        lalt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
+        lalt - 0x32 : ${pkgs.skhd}/bin/skhd -k "cmd - 0x32"
+        lalt - q : ${pkgs.skhd}/bin/skhd -k "cmd - w"
+        lalt + shift - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
       '';
     };
 
-    services.aerospace = {
-      enable = true;
-      settings = {
-        default-root-container-layout = "tiles";
-        default-root-container-orientation = "auto";
-        on-window-detected = [
-          {
-            "if".app-id = "com.apple.finder";
-            run = "layout floating";
-          }
-        ]
-        ++ map (app: {
-          "if".app-id = app.bundleId;
-          run = "move-node-to-workspace --focus-follows-window ${app.workspace}";
-        }) workspaceApps;
+    launchd.user.agents.amethyst = {
+      command = ''"${amethystApp}/Contents/MacOS/Amethyst"'';
+      serviceConfig = {
+        RunAtLoad = true;
+        KeepAlive = true;
       };
     };
 
@@ -258,6 +326,9 @@ in
 
       ${act.installDirMode "0755" screenshotDir}
 
+      ${act.installDirMode "0755" "${config.barrett.user.homeDirectory}/.config/amethyst"}
+      ${act.mkSymlink amethystConfig "${config.barrett.user.homeDirectory}/.config/amethyst/amethyst.yml"}
+
       tmp=$(mktemp)
       awk '
         $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
@@ -291,6 +362,9 @@ in
         show-recents = false;
         persistent-apps = map (app: { inherit app; }) config.barrett.mac.dock.apps;
         persistent-others = [ ];
+        # Amethyst drives native Spaces, and its README requires this off:
+        # reordering Spaces by recency makes ctrl + N land somewhere else.
+        mru-spaces = false;
       };
       spaces.spans-displays = true;
       screencapture.location = screenshotDir;
@@ -321,6 +395,7 @@ in
       lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
       ++ (with pkgs; [
         age
+        amethyst
         trex
         curl
         fd
