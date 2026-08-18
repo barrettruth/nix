@@ -17,22 +17,19 @@
     "/Applications/Mattermost.app"
   ];
 
-  barrett.mac.workspaceApps = lib.mkAfter [
+  barrett.mac.apps = lib.mkAfter [
     {
       key = "m";
-      workspace = "3";
       path = "/Applications/Mattermost.app";
-      bundleId = "Mattermost.Desktop";
     }
     {
-      workspace = "4";
       path = "/Applications/Microsoft Outlook.app";
-      bundleId = "com.microsoft.Outlook";
     }
     {
-      workspace = "5";
       path = "/Applications/zoom.us.app";
-      bundleId = "us.zoom.xos";
     }
   ];
+
+  # Zoom's call windows resize themselves and fight the tiler.
+  barrett.mac.floatingApps = lib.mkAfter [ "us.zoom.xos" ];
 }
