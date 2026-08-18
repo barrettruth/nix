@@ -31,13 +31,7 @@ let
   launchApps = config.barrett.mac.apps;
 
   appBindings = lib.concatMapStringsSep "\n" (
-    app:
-    let
-      switch = lib.optionalString (
-        app.space != null
-      ) ''${pkgs.skhd}/bin/skhd -k "ctrl - ${app.space}"; '';
-    in
-    ''lalt - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"''
+    app: ''lalt - ${app.key} : /usr/bin/open -a "${app.path}"''
   ) (lib.filter (app: app.key != null) launchApps);
 
   spaceBindings = lib.concatMapStringsSep "\n" (
@@ -194,11 +188,6 @@ in
           path = lib.mkOption {
             type = lib.types.str;
             description = "Absolute path of the application bundle.";
-          };
-          space = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Space to focus before opening. Null opens in place.";
           };
         };
       }
@@ -412,6 +401,7 @@ in
       NSGlobalDomain."com.apple.swipescrolldirection" = true;
       NSGlobalDomain.NSAutomaticWindowAnimationsEnabled = false;
       NSGlobalDomain.NSWindowResizeTime = 0.001;
+      CustomUserPreferences."com.apple.dock".workspaces-auto-swoosh = true;
       CustomUserPreferences."com.apple.loginwindow" = {
         TALLogoutSavesState = false;
         LoginwindowLaunchesRelaunchApps = false;
