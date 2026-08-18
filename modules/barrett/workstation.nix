@@ -102,8 +102,6 @@ let
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
-  pytest-language-server = pkgs.callPackage ../../pkgs/pytest-language-server.nix { };
-
   jjConf = pkgs.writeText "jj-config" ''
     [user]
     name = "${identity.fullName}"
