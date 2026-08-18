@@ -182,9 +182,9 @@ def _server_root(socket: str) -> Path | None:
 def socket_for_root(root: Path, *, spawn: bool = True) -> str:
     """The project's mux Neovim server socket for `root`.
 
-    Tries $NVIM (the fast path when run inside that server's terminal), then the
-    live `mux list`, then spawns one with `mux ensure` (unless spawn=False).
-    Raises MuxError if none can be found/created.
+    Tries $NVIM, the fast path when run inside that server's terminal, then the
+    deterministic socket path, probing it to confirm the server there is this
+    project's. Raises MuxError when neither answers.
     """
     target = normalize_path(root)
 

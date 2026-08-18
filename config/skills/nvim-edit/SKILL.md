@@ -42,14 +42,13 @@ resolve the target to concrete path(s) and pass them.
 - A zero exit is success — stop. Re-open or inspect the editor only if Barrett
   says the editor state is wrong.
 - On failure, report the helper's stderr exactly enough to identify the mux root
-  or server problem; do not guess or retry with direct `nvim --server` commands.
+  or server problem, and stop there.
 
 ## Rules
 
-- Navigation only: do not edit, run tests, commit, push, open PRs, mutate
-  remotes, or kill/restart a running Neovim.
-- Always use the helper for opening; do not bypass it with direct
-  `nvim --server ... --remote` calls.
+- Navigation only: do not edit, run tests, commit, push, open PRs, or mutate
+  remotes. Inspecting, driving or restarting the session is `mux`.
+- Always use the helper for opening.
 - If no file matches, say so — don't open an unrelated fallback.
 - `--dry-run` only to preview resolution or report ambiguity instead of opening.
 
