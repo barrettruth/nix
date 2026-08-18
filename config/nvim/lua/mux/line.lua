@@ -24,8 +24,13 @@ local function apply_visibility()
     local file = server.state().runtime_dir .. '/mux-bar'
     local hide = vim.fn.filereadable(file) == 1
         and vim.fn.readfile(file)[1] == 'hide'
+    local showtabline = hide and 0 or 2
     vim.o.tabline = TABLINE_EXPR
-    vim.o.showtabline = hide and 0 or 2
+    -- Assigning 'showtabline' runs its handler even when unchanged, reaching
+    -- win_fix_scroll() outside the guard goto_tabpage_tp() sets.
+    if vim.o.showtabline ~= showtabline then
+        vim.o.showtabline = showtabline
+    end
 end
 
 ---@return string[]
