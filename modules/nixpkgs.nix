@@ -80,6 +80,7 @@ let
       in
       {
         amethyst = final.callPackage ../pkgs/amethyst { };
+        instant-space-switcher = final.callPackage ../pkgs/instant-space-switcher { };
         direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
         google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
@@ -120,7 +121,9 @@ in
       packages = {
         inherit (pkgs) neovim pytest-language-server;
       }
-      // lib.optionalAttrs (lib.hasSuffix "darwin" system) { inherit (pkgs) amethyst; }
+      // lib.optionalAttrs (lib.hasSuffix "darwin" system) {
+        inherit (pkgs) amethyst instant-space-switcher;
+      }
       // lib.optionalAttrs hasFonts {
         inherit (pkgs) barrett-fonts barrett-webfonts;
       };
