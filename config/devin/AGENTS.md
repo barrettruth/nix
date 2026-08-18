@@ -2,14 +2,12 @@
 
 Personal, always-on rules that apply to every Devin session in every project.
 
-- Write comments in the style the surrounding code already uses, LuaCATS and
-  analogous doc-comment systems included. Say why something is the way it is,
-  in a sentence, and name the source when the reason is another project's.
-- A comment keeps the why and nothing else. Cut one that says the line again,
-  that argues a decision already made, or that is true only of the moment
-  rather than of the design. Keep what a reader could not recover from the
-  code: a constraint the API imposes, a Vim or Neovim gotcha, why the obvious
-  alternative fails.
+- Write comments in the style the file already uses, LuaCATS and analogous
+  doc-comment systems included: a file with no comments takes none. A comment
+  carries the why in a sentence — a constraint the API imposes, a Vim or
+  Neovim gotcha, why the obvious alternative fails — names the source when the
+  reason is another project's, and never restates the code, re-argues a
+  settled decision, or records the moment rather than the design.
 - Do not churn existing comments: leave them alone unless a change makes one
   false, and when it does, correct it and say so in the summary rather than
   quietly rewriting it. Establish what is yours with `git blame` before an
