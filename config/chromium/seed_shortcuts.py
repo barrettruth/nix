@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-EXTENSION_ID = "demmbkpegigoeiappcbliinlijmeoaop"
+EXTENSION_ID = "mkkfkigeooommanfhjihnemocokgpmjk"
 BINDINGS = {
     "toggle-overlay": "Ctrl+Period",
     "toggle-overlay-new-tab": "Ctrl+Shift+Period",

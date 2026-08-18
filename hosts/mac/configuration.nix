@@ -36,6 +36,15 @@ let
       # React Developer Tools
       "fmkadmapgofadopljbjfkapdkoienihi"
     ];
+    # Midnight drives Emulation.setAutoDarkModeOverride over chrome.debugger,
+    # and Chrome shows "started debugging this browser" on every page for any
+    # extension that is not policy installed. normal_installed suppresses that
+    # the same way force_installed does, while still allowing the extension to
+    # be turned off to load an unpacked build during development.
+    ExtensionSettings.${identity.midnight.extensionId} = {
+      installation_mode = "normal_installed";
+      update_url = identity.midnight.updateUrl;
+    };
   };
 
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
