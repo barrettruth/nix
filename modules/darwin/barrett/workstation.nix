@@ -228,6 +228,23 @@ let
   trexCapture = pkgs.writeShellScript "trex-capture" ''
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
+
+  # Chrome holds Preferences in memory and rewrites it on exit, so seeding a
+  # running browser is silently undone. Skipped rather than lost.
+  seedChromeShortcuts = pkgs.writeShellScript "seed-chrome-shortcuts" ''
+    set -eu
+    if /usr/bin/pgrep -qf "Google Chrome.app/Contents/MacOS/Google Chrome"; then
+      echo "seed-chrome-shortcuts: chrome is running, skipping" >&2
+      exit 0
+    fi
+    for profile in "$HOME/Library/Application Support/Google/Chrome/Default" \
+                   "$HOME/Library/Application Support/Google/Chrome/Profile "*; do
+      [ -f "$profile/Preferences" ] || continue
+      ${pkgs.python3}/bin/python3 \
+        "${config.barrett.user.homeDirectory}/.config/nix/config/chromium/seed_shortcuts.py" \
+        mac "$profile/Preferences"
+    done
+  '';
 in
 {
   options.barrett.mac.dock.apps = lib.mkOption {
@@ -427,6 +444,8 @@ in
       ${lib.optionalString (pinnedApps != [ ]) ''
         ${asUser} ${pinSpaces} ${lib.escapeShellArg pinSpacesArg}
       ''}
+
+      ${asUser} ${seedChromeShortcuts} || true
 
       tmp=$(mktemp)
       awk '

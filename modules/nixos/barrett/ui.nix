@@ -609,7 +609,7 @@ in
       for profile in "${XDG_CONFIG_HOME}"/chromium/Default "${XDG_CONFIG_HOME}"/chromium/Profile\ *; do
         prefs="$profile/Preferences"
         [ -f "$prefs" ] || continue
-        ${runAsUser} ${pkgs.python3}/bin/python "${configRoot}/chromium/seed_shortcuts.py" "$prefs"
+        ${runAsUser} ${pkgs.python3}/bin/python "${configRoot}/chromium/seed_shortcuts.py" linux "$prefs"
       done
 
       [ -L ${homeDirectory}/.zshenv ] && ${runAsUser} ${pkgs.coreutils}/bin/rm ${homeDirectory}/.zshenv || true
