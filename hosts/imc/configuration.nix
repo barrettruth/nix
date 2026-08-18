@@ -4,6 +4,12 @@
 
   barrett.user.name = "bruth";
 
+  barrett.user.gitEmail = "Barrett.Ruth@imc.com";
+  barrett.user.personalGitDirs = [
+    "~/dev/"
+    "~/.config/nix/"
+  ];
+
   barrett.tailscale.shieldsUp = true;
   barrett.tailscale.useAuthKey = false;
 
