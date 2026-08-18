@@ -79,6 +79,7 @@ let
             '';
       in
       {
+        amethyst = final.callPackage ../pkgs/amethyst { };
         direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
         google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
         google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
@@ -87,6 +88,7 @@ let
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };
+        pytest-language-server = final.callPackage ../pkgs/pytest-language-server.nix { };
       }
       // lib.optionalAttrs hasFonts {
         barrett-fonts = inputs.fonts.packages.${system}.desktop;
@@ -116,8 +118,11 @@ in
     {
       _module.args.pkgs = pkgs;
       packages = {
-        inherit (pkgs) neovim;
+        inherit (pkgs) neovim pytest-language-server;
       }
+      # Exposed as a flake output so `nix-update --flake amethyst` can bump the
+      # pinned version and hash; the overlay alone is not addressable.
+      // lib.optionalAttrs (lib.hasSuffix "darwin" system) { inherit (pkgs) amethyst; }
       // lib.optionalAttrs hasFonts {
         inherit (pkgs) barrett-fonts barrett-webfonts;
       };
