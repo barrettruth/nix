@@ -282,8 +282,6 @@ in
       home = config.barrett.user.homeDirectory;
     };
 
-    nix.enable = false;
-
     programs.zsh.enable = true;
 
     barrett.workstation.enable = true;
@@ -355,9 +353,8 @@ in
       serviceConfig.RunAtLoad = true;
     };
 
-    # nix.enable is off, so nix.gc is never emitted: everything under
-    # managedConfig is gated on it, which is also why nix.settings would be
-    # silently dropped here. Determinate ships no collection of its own.
+    # nix.gc prunes by age alone, and the count matters as much here as it does
+    # on the laptop, so the schedule is its own rather than nix-darwin's.
     launchd.daemons.nix-gc = {
       serviceConfig.StartCalendarInterval = [
         {
@@ -410,8 +407,7 @@ in
       rm -f "$tmp"
 
       # The laptop prunes to +5 and the vps to +2; nix-darwin has no
-      # equivalent, and determinate ships no scheduled collection, so do it
-      # here. nix.enable is off, so use the determinate nix-env directly.
+      # equivalent, so do it here.
       /nix/var/nix/profiles/default/bin/nix-env \
         --profile /nix/var/nix/profiles/system --delete-generations +5
     '';
