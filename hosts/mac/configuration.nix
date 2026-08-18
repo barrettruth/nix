@@ -55,6 +55,8 @@ in
 
   barrett.user.name = username;
 
+  barrett.mac.determinateInstalled = true;
+
   system.activationScripts.extraActivation.text = ''
     install -d -m 0755 "/Library/Managed Preferences"
     if ! cmp -s ${chromePolicyPlist} "/Library/Managed Preferences/com.google.Chrome.plist"; then
