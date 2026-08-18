@@ -6,18 +6,18 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "pytest-language-server";
-  version = "0.21.0";
+  version = "0.24.0";
 
   src = fetchFromGitHub {
     owner = "bellini666";
     repo = "pytest-language-server";
     rev = "v${version}";
-    hash = "sha256-Vvr4TGt5QZL1Ypw1zBSzkv+5JT4fxHayHpIbVTFwO9I=";
+    hash = "sha256-wYrnO4kx1HBbyfX3vajYsJ71eSZRLUJycq4qwClCMDY=";
   };
 
   doCheck = false;
 
-  cargoHash = "sha256-E4KcGqMRUvmSK93ALzqzlE+MJoxMQUZnJofW3eWVicU=";
+  cargoHash = "sha256-MljBI2wDuywgwuLjPoRjaTq46zGHbL5/2LhAMbzKx3c=";
 
   meta = {
     description = "Language Server Protocol implementation for pytest";
