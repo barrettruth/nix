@@ -35,7 +35,7 @@ let
   ) (lib.filter (app: app.key != null) launchApps);
 
   spaceBindings = lib.concatMapStringsSep "\n" (
-    n: "lalt - ${n} : ${pkgs.instant-space-switcher}/bin/isscli index ${n}"
+    n: ''lalt - ${n} : ${pkgs.skhd}/bin/skhd -k "ctrl - ${n}"''
   ) (map toString (lib.range 1 9));
 
   asUser = ''launchctl asuser "$(id -u -- ${username})" sudo --user=${username} --'';
@@ -427,7 +427,6 @@ in
       ++ (with pkgs; [
         age
         amethyst
-        instant-space-switcher
         trex
         curl
         fd
