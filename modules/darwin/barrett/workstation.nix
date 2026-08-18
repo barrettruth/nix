@@ -31,12 +31,42 @@ let
   launchApps = config.barrett.mac.apps;
 
   appBindings = lib.concatMapStringsSep "\n" (
-    app: ''lalt - ${app.key} : /usr/bin/open -a "${app.path}"''
+    app:
+    let
+      record = lib.optionalString (app.space != null) "${spaceRecord} ${toString app.space}; ";
+    in
+    ''lalt - ${app.key} : ${record}/usr/bin/open -a "${app.path}"''
   ) (lib.filter (app: app.key != null) launchApps);
 
-  spaceBindings = lib.concatMapStringsSep "\n" (
-    n: ''lalt - ${n} : ${pkgs.skhd}/bin/skhd -k "ctrl - ${n}"''
-  ) (map toString (lib.range 1 9));
+  # macOS exposes no supported way to read the focused space: the plist copy is
+  # only flushed at logout and CGSGetActiveSpace is private. The space we last
+  # sent the user to is tracked here instead, which is exact for these bindings
+  # and blind to ctrl-arrow, swipe and Mission Control.
+  spaceState = "${config.barrett.user.homeDirectory}/.local/state/space";
+
+  spaceRecord = pkgs.writeShellScript "space-record" ''
+    set -eu
+    current=$(cat "${spaceState}" 2>/dev/null || echo 1)
+    if [ "$current" != "$1" ]; then
+      printf '%s\n' "$current" >"${spaceState}.prev"
+      printf '%s\n' "$1" >"${spaceState}"
+    fi
+  '';
+
+  spaceGoto = pkgs.writeShellScript "space-goto" ''
+    set -eu
+    ${spaceRecord} "$1"
+    exec ${pkgs.skhd}/bin/skhd -k "ctrl - $1"
+  '';
+
+  spaceBack = pkgs.writeShellScript "space-back" ''
+    set -eu
+    exec ${spaceGoto} "$(cat "${spaceState}.prev" 2>/dev/null || echo 1)"
+  '';
+
+  spaceBindings = lib.concatMapStringsSep "\n" (n: "lalt - ${n} : ${spaceGoto} ${n}") (
+    map toString (lib.range 1 9)
+  );
 
   asUser = ''launchctl asuser "$(id -u -- ${username})" sudo --user=${username} --'';
 
@@ -293,6 +323,7 @@ in
       skhdConfig = ''
         ${appBindings}
         ${spaceBindings}
+        lalt - backspace : ${spaceBack}
         lalt - n : open -a Finder
         lalt - o : ${trexCapture}
 
