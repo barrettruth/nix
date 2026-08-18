@@ -13,6 +13,7 @@
     ../../services/vaultwarden.nix
     ./finance.nix
     ./headscale.nix
+    ./midnight-extension.nix
     ./static-sites.nix
     ./disk-config.nix
     ./hardware-configuration.nix

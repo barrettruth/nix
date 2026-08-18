@@ -1,4 +1,9 @@
-{ inputs, identity, ... }:
+{
+  inputs,
+  identity,
+  themeGenerators,
+  ...
+}:
 {
   flake.nixosConfigurations.vps = inputs.nixpkgs.lib.nixosSystem {
     modules = [
@@ -9,6 +14,6 @@
       ../nixos/common/sops.nix
       { nixpkgs.hostPlatform = "x86_64-linux"; }
     ];
-    specialArgs = { inherit identity inputs; };
+    specialArgs = { inherit identity inputs themeGenerators; };
   };
 }

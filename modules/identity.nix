@@ -11,6 +11,11 @@ let
         "finance.barrettruth.com"
       ];
     };
+    midnight = {
+      extensionId = "mkkfkigeooommanfhjihnemocokgpmjk";
+      updateUrl = "https://www.${domain}/ext/update.xml";
+      crxUrl = "https://www.${domain}/ext/midnight.crx";
+    };
     hostKeys = {
       desktop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGvo/W4vhLlW9ZVtxbFE2qzkG/SfR2zC2ZIsnfw6AEI";
       laptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILt1sOYoWNtfIjLoZ7XT/VmC5s0d/Hw8Q9GQyUUaKeIC";
