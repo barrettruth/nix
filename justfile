@@ -8,7 +8,7 @@ rebuild-laptop:
     @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
     nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate sudo --ask-elevate-password
 
-pinned_packages := "amethyst pytest-language-server"
+pinned_packages := "pytest-language-server"
 
 update:
     @export NIX_CONFIG="extra-experimental-features = nix-command flakes"; \

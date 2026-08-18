@@ -26,174 +26,28 @@ let
 
   chromeApp = config.barrett.mac.chrome.app;
 
-  amethystApp = "${pkgs.amethyst}/Applications/Amethyst.app";
-
   launchApps = config.barrett.mac.apps;
 
+  aerospace = "${config.services.aerospace.package}/bin/aerospace";
+
+  workspaces = map toString (lib.range 1 9);
+
   appBindings = lib.concatMapStringsSep "\n" (
-    app: ''lalt - ${app.key} : /usr/bin/open -a "${app.path}"''
+    app:
+    let
+      switch = lib.optionalString (app.space != null) "${aerospace} workspace ${toString app.space}; ";
+    in
+    ''lalt - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"''
   ) (lib.filter (app: app.key != null) launchApps);
 
-  spaceBindings = lib.concatMapStringsSep "\n" (
-    n: ''lalt - ${n} : ${pkgs.skhd}/bin/skhd -k "ctrl - ${n}"''
-  ) (map toString (lib.range 1 9));
+  aerospaceBindings = lib.concatStringsSep "\n" (
+    map (n: "lalt - ${n} : ${aerospace} workspace ${n}") workspaces
+    ++ map (n: "lalt + shift - ${n} : ${aerospace} move-node-to-workspace ${n}") workspaces
+  );
 
   asUser = ''launchctl asuser "$(id -u -- ${username})" sudo --user=${username} --'';
 
   pinnedApps = lib.filter (app: app.space != null && app.bundleId != null) launchApps;
-
-  pinSpaces = pkgs.writeScript "pin-app-spaces" ''
-    #!${pkgs.python3}/bin/python3
-    import json, plistlib, subprocess, sys
-
-    wanted = json.loads(sys.argv[1])
-    home = subprocess.run(
-        ["/usr/bin/dscl", ".", "-read", "/Users/${username}", "NFSHomeDirectory"],
-        capture_output=True, text=True, check=True,
-    ).stdout.split()[-1]
-
-    with open(f"{home}/Library/Preferences/com.apple.spaces.plist", "rb") as fh:
-        spaces = plistlib.load(fh)["SpacesDisplayConfiguration"]["Management Data"]["Monitors"][0]["Spaces"]
-
-    for bundle, index in sorted(wanted.items()):
-        if index > len(spaces):
-            print(f"pin-app-spaces: space {index} does not exist, skipping {bundle}", file=sys.stderr)
-            continue
-        subprocess.run(
-            ["/usr/bin/defaults", "write", "com.apple.spaces", "app-bindings",
-             "-dict-add", bundle, spaces[index - 1]["uuid"]],
-            check=True,
-        )
-  '';
-
-  pinSpacesArg = builtins.toJSON (
-    lib.listToAttrs (map (app: lib.nameValuePair app.bundleId app.space) pinnedApps)
-  );
-
-  spaceKeyCodes = [
-    18
-    19
-    20
-    21
-    23
-    22
-    26
-    28
-    25
-  ];
-
-  spaceHotkeys = lib.concatStringsSep "\n" (
-    lib.imap0 (
-      i: code:
-      let
-        id = toString (118 + i);
-        plist = pkgs.writeText "symbolic-hotkey-${id}.plist" (
-          lib.generators.toPlist { } {
-            enabled = true;
-            value = {
-              parameters = [
-                65535
-                code
-                262144
-              ];
-              type = "standard";
-            };
-          }
-        );
-      in
-      ''${asUser} /usr/bin/defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add ${id} "$(cat ${plist})"''
-    ) spaceKeyCodes
-  );
-
-  mod1 = key: {
-    mod = "mod1";
-    inherit key;
-  };
-  mod2 = key: {
-    mod = "mod2";
-    inherit key;
-  };
-
-  disabledCommands =
-    lib.genAttrs [
-      "focus-main"
-      "select-tall-layout"
-      "select-wide-layout"
-      "select-fullscreen-layout"
-      "select-column-layout"
-      "toggle-focus-follows-mouse"
-      "increase-window-max-count"
-      "decrease-window-max-count"
-    ] (_: false)
-    // lib.listToAttrs (
-      lib.concatMap (n: [
-        (lib.nameValuePair "focus-screen-${toString n}" false)
-        (lib.nameValuePair "throw-screen-${toString n}" false)
-      ]) (lib.range 1 5)
-    );
-
-  amethystConfig = (pkgs.formats.yaml { }).generate "amethyst.yml" (
-    {
-      layouts = [
-        "tall"
-        "wide"
-        "fullscreen"
-        "column"
-      ];
-
-      mod1 = [ "option" ];
-      mod2 = [
-        "option"
-        "shift"
-      ];
-
-      focus-ccw = mod1 "a";
-      focus-cw = mod1 "f";
-      swap-ccw = mod1 "u";
-      swap-cw = mod1 "d";
-      swap-main = mod1 "enter";
-
-      shrink-main = mod1 "h";
-      expand-main = mod1 "l";
-      decrease-main = mod1 "j";
-      increase-main = mod1 "k";
-
-      cycle-layout = mod1 "space";
-      cycle-layout-backward = mod2 "space";
-      toggle-float = mod1 "c";
-      toggle-tiling = mod2 "t";
-      display-current-layout = mod1 "i";
-
-      focus-screen-ccw = mod1 ",";
-      focus-screen-cw = mod1 ".";
-      swap-screen-ccw = mod2 ",";
-      swap-screen-cw = mod2 ".";
-
-      throw-space-left = mod2 "left";
-      throw-space-right = mod2 "right";
-
-      reevaluate-windows = mod2 "r";
-      relaunch-amethyst = mod2 "z";
-
-      floating = config.barrett.mac.floatingApps;
-      floating-is-blacklist = true;
-
-      window-margins = false;
-      window-resize-step = 2;
-      focus-follows-mouse = false;
-      mouse-follows-focus = false;
-      follow-space-thrown-windows = true;
-      restore-layouts-on-launch = true;
-      hide-menu-bar-icon = false;
-      enables-layout-hud = false;
-      enables-layout-hud-on-space-change = false;
-      enables-window-count-hud = false;
-    }
-    // lib.listToAttrs (
-      map (n: lib.nameValuePair "throw-space-${toString n}" (mod2 (toString n))) (lib.range 1 9)
-    )
-    // disabledCommands
-  );
 
   trexCapture = pkgs.writeShellScript "trex-capture" ''
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
@@ -239,12 +93,12 @@ in
           bundleId = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "CFBundleIdentifier, required to pin the app to a space.";
+            description = "CFBundleIdentifier, required to pin the app to a workspace.";
           };
           space = lib.mkOption {
             type = lib.types.nullOr lib.types.int;
             default = null;
-            description = "One-based space the app's windows open on.";
+            description = "AeroSpace workspace the app's windows open on.";
           };
         };
       }
@@ -256,7 +110,7 @@ in
   options.barrett.mac.floatingApps = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];
-    description = "CFBundleIdentifiers Amethyst leaves floating rather than tiling.";
+    description = "CFBundleIdentifiers left floating rather than tiled.";
   };
 
   options.barrett.mac.chrome = {
@@ -309,23 +163,56 @@ in
       enable = true;
       skhdConfig = ''
         ${appBindings}
-        ${spaceBindings}
         lalt - n : open -a Finder
         lalt - o : ${trexCapture}
 
-        lalt - tab : ${pkgs.skhd}/bin/skhd -k "cmd - tab"
+        lalt - a : ${aerospace} focus --boundaries-action wrap-around-the-workspace dfs-next
+        lalt - f : ${aerospace} focus --boundaries-action wrap-around-the-workspace dfs-prev
+        lalt - u : ${aerospace} swap --wrap-around dfs-prev
+        lalt - d : ${aerospace} swap --wrap-around dfs-next
+
+        lalt - h : ${aerospace} resize width -50
+        lalt - l : ${aerospace} resize width +50
+        lalt - j : ${aerospace} resize height +50
+        lalt - k : ${aerospace} resize height -50
+        lalt - 0x18 : ${aerospace} balance-sizes
+
+        lalt - return : ${aerospace} fullscreen
+        lalt - c : ${aerospace} layout floating tiling
+        lalt - space : ${aerospace} layout tiles accordion
+        lalt + shift - space : ${aerospace} layout horizontal vertical
+
+        lalt - 0x2B : ${aerospace} focus-monitor prev
+        lalt - 0x2F : ${aerospace} focus-monitor next
+        lalt + shift - 0x2B : ${aerospace} move-node-to-monitor prev
+        lalt + shift - 0x2F : ${aerospace} move-node-to-monitor next
+
+        lalt - tab : ${aerospace} workspace-back-and-forth
+        lalt + shift - r : ${aerospace} flatten-workspace-tree
+
+        ${aerospaceBindings}
+
         lalt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
         lalt - 0x32 : ${pkgs.skhd}/bin/skhd -k "cmd - 0x32"
-        lalt - q : ${pkgs.skhd}/bin/skhd -k "cmd - w"
+        lalt - q : ${aerospace} close
         lalt + shift - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
       '';
     };
 
-    launchd.user.agents.amethyst = {
-      command = ''"${amethystApp}/Contents/MacOS/Amethyst"'';
-      serviceConfig = {
-        RunAtLoad = true;
-        KeepAlive = true;
+    services.aerospace = {
+      enable = true;
+      settings = {
+        default-root-container-layout = "tiles";
+        default-root-container-orientation = "auto";
+        on-window-detected =
+          map (id: {
+            "if".app-id = id;
+            run = "layout floating";
+          }) config.barrett.mac.floatingApps
+          ++ map (app: {
+            "if".app-id = app.bundleId;
+            run = "move-node-to-workspace ${toString app.space}";
+          }) pinnedApps;
       };
     };
 
@@ -404,16 +291,6 @@ in
 
       ${act.installDirMode "0755" screenshotDir}
 
-      ${act.installDirMode "0755" "${config.barrett.user.homeDirectory}/.config/amethyst"}
-      ${act.mkSymlink amethystConfig "${config.barrett.user.homeDirectory}/.config/amethyst/amethyst.yml"}
-
-      ${spaceHotkeys}
-      ${asUser} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
-
-      ${lib.optionalString (pinnedApps != [ ]) ''
-        ${asUser} ${pinSpaces} ${lib.escapeShellArg pinSpacesArg}
-      ''}
-
       ${asUser} ${seedChromeShortcuts} || true
 
       tmp=$(mktemp)
@@ -448,7 +325,6 @@ in
         show-recents = false;
         persistent-apps = map (app: { inherit app; }) config.barrett.mac.dock.apps;
         persistent-others = [ ];
-        mru-spaces = false;
         expose-animation-duration = 0.0;
         autohide-delay = 0.0;
         autohide-time-modifier = 0.0;
@@ -460,7 +336,6 @@ in
       NSGlobalDomain."com.apple.swipescrolldirection" = true;
       NSGlobalDomain.NSAutomaticWindowAnimationsEnabled = false;
       NSGlobalDomain.NSWindowResizeTime = 0.001;
-      CustomUserPreferences."com.apple.dock".workspaces-auto-swoosh = true;
       CustomUserPreferences."com.apple.loginwindow" = {
         TALLogoutSavesState = false;
         LoginwindowLaunchesRelaunchApps = false;
@@ -486,7 +361,6 @@ in
       lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
       ++ (with pkgs; [
         age
-        amethyst
         trex
         curl
         fd
