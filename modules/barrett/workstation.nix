@@ -186,7 +186,7 @@ let
     TERMINAL = "ghostty";
     TERM = "xterm-ghostty";
     TERMINFO = "${XDG_DATA_HOME}/terminfo";
-    BROWSER = if isDarwin then "google-chrome-stable" else "chromium";
+    BROWSER = if isDarwin then "open" else "chromium";
     LESSHISTFILE = "-";
     BARRETT_NIX_CONFIG_DIR = "${repo}/config";
     FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
