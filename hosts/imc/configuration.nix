@@ -30,6 +30,5 @@
     }
   ];
 
-  # Zoom's call windows resize themselves and fight the tiler.
   barrett.mac.floatingApps = lib.mkAfter [ "us.zoom.xos" ];
 }

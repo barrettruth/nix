@@ -8,14 +8,8 @@ rebuild-laptop:
     @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
     nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate sudo --ask-elevate-password
 
-# Packages pinned to an upstream release that `nix flake update` cannot reach,
-# and that expose a version nix-update can resolve. Each must be a flake
-# output; the overlay alone is not addressable by attribute.
 pinned_packages := "amethyst pytest-language-server"
 
-# Bring every pin forward: flake inputs first, then the derivations that carry
-# their own version and hash. forgejo-custom and forgejo-cm6-langs are rev- and
-# npm-pinned deliberately and are left alone.
 update:
     @export NIX_CONFIG="extra-experimental-features = nix-command flakes"; \
       nix flake update && \
