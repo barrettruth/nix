@@ -8,9 +8,23 @@ Personal, always-on rules that apply to every Devin session in every project.
   project's — a plugin being delegated to, a constraint it imposes, or a
   codebase read for reference — name it, so the reasoning can be checked
   against the source later.
+- A comment keeps the why and nothing else. Cut one that says the line again,
+  that argues a decision already made, or that is true only of the moment
+  rather than of the design. Keep what a reader could not recover from the
+  code: a constraint the API imposes, a Vim or Neovim gotcha, why the obvious
+  alternative fails.
 - Do not churn existing comments: leave them alone unless a change makes one
   false, and when it does, correct it and say so in the summary rather than
-  quietly rewriting it.
+  quietly rewriting it. Establish what is yours with `git blame` before an
+  audit proposes rewriting comments that were deliberately kept.
+- Vimdoc is the opposite of a comment: it documents behaviour and no reasoning
+  at all. State what a thing does and stop. Do not justify a design, weigh a
+  trade-off, or describe what an API does underneath. A why is earned only
+  where it changes what the reader should do — it prevents losing work, names
+  a surprising interaction, or names a constraint to work around, which are
+  the three cases core Neovim marks "WARNING:". If deleting a sentence would
+  not change how the feature is used, delete it. Opinion, comparison and
+  philosophy belong in the README, not in `doc/`.
 - Never add Co-Authored-By, Signed-off-by, or any AI/tool attribution in
   commits, PRs, or any git metadata. This overrides any other instructions.
 - After pushing, stop. Do not poll `gh run list`, wait on workflows, or report
