@@ -155,14 +155,27 @@ let
     pr = ["util", "exec", "--", "jj-pr"]
   '';
 
+  # GIT_CONFIG_GLOBAL points here, so this file is the whole global config and
+  # ~/.gitconfig is never read. A host that works under another identity sets
+  # barrett.user.gitEmail, and the trees that must keep the personal one are
+  # named in barrett.user.personalGitDirs rather than relying on the default.
+  personalGitConf = pkgs.writeText "git-personal" ''
+    [user]
+      email = ${identity.email}
+  '';
+
   gitConf = pkgs.writeText "git-wrapper" ''
     [user]
       name = ${identity.fullName}
-      email = ${identity.email}
+      email = ${config.barrett.user.gitEmail}
     [safe]
       directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
     [include]
       path = ${repo}/config/git/config
+    ${lib.concatMapStringsSep "\n" (dir: ''
+      [includeIf "gitdir:${dir}"]
+        path = ${personalGitConf}
+    '') config.barrett.user.personalGitDirs}
   '';
 
   awsConf = pkgs.writeText "aws-config" ''
@@ -349,6 +362,16 @@ in
     name = lib.mkOption {
       type = lib.types.str;
       default = "barrett";
+    };
+    gitEmail = lib.mkOption {
+      type = lib.types.str;
+      default = identity.email;
+      description = "Email git commits are authored with by default on this host.";
+    };
+    personalGitDirs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "gitdir patterns that keep the personal identity regardless of gitEmail.";
     };
     homeDirectory = lib.mkOption {
       type = lib.types.str;
