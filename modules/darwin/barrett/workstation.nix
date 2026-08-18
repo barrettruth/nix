@@ -327,7 +327,6 @@ in
         persistent-others = [ ];
         expose-animation-duration = 0.0;
         autohide-delay = 0.0;
-        autohide-time-modifier = 0.0;
         launchanim = false;
         # macOS ships Quick Note (14) on the bottom-right corner; 1 is the
         # no-op action, which is how the corner is switched off.
