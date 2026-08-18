@@ -6,6 +6,11 @@ Host github.com
     Port 443
     User git
 
+Host gitlab.com
+    HostName altssh.gitlab.com
+    Port 443
+    User git
+
 Host jetson-nano
     HostName 100.95.16.119
     User charlie
