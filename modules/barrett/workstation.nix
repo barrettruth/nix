@@ -318,6 +318,14 @@ let
               ) agentSkillDirs}
             done
 
+            ${lib.concatMapStringsSep "\n            " (dir: ''
+              for link in ${dir}/*; do
+                if [ -L "$link" ] && [ ! -e "$link" ]; then
+                  ${runAsUser} ${pkgs.coreutils}/bin/rm "$link"
+                fi
+              done
+            '') agentSkillDirs}
+
             ${mkDir "${XDG_CONFIG_HOME}/aws"}
             ${mkSymlink "${awsConf}" "${XDG_CONFIG_HOME}/aws/config"}
 
