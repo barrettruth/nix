@@ -152,7 +152,7 @@ let
       window-resize-step = 5;
       focus-follows-mouse = false;
       mouse-follows-focus = false;
-      follow-space-thrown-windows = false;
+      follow-space-thrown-windows = true;
       restore-layouts-on-launch = true;
       hide-menu-bar-icon = false;
       enables-layout-hud = false;
