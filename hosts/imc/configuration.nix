@@ -19,13 +19,15 @@
 
   barrett.mac.apps = lib.mkAfter [
     {
-      key = "m";
+      key = "s";
       path = "/Applications/Mattermost.app";
     }
     {
+      key = "m";
       path = "/Applications/Microsoft Outlook.app";
     }
     {
+      key = "z";
       path = "/Applications/zoom.us.app";
     }
   ];
