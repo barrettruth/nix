@@ -1,12 +1,9 @@
 default:
     @just --list
 
-rebuild-desktop:
-    nixos-rebuild switch --no-reexec --flake .#desktop --target-host desktop --build-host desktop
+rebuild-desktop: (_rebuild-nixos "desktop" "--target-host" "desktop" "--build-host" "desktop")
 
-rebuild-laptop:
-    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild-laptop must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
-    nixos-rebuild switch --no-reexec --flake .#laptop --build-host desktop-builder --elevate sudo --ask-elevate-password
+rebuild-laptop: (_rebuild-nixos "laptop" "--build-host" "desktop-builder" "--elevate" "sudo" "--ask-elevate-password")
 
 pinned_packages := "pytest-language-server"
 
@@ -34,13 +31,17 @@ _rebuild-darwin host:
       sudo -H nix-env --profile /nix/var/nix/profiles/system --set "$system" && \
       sudo -H /nix/var/nix/profiles/system/activate
 
-rebuild-vps:
-    @export NIX_SSHOPTS="-o ControlMaster=auto -o ControlPath=/tmp/nixos-rebuild-vps-%C -o ControlPersist=180 -o ConnectTimeout=20 -o ServerAliveInterval=15"; \
-    if command -v nixos-rebuild >/dev/null 2>&1; then \
-      nixos-rebuild switch --no-reexec --flake .#vps --target-host vps --build-host vps; \
-    else \
-      nix run nixpkgs#nixos-rebuild -- switch --no-reexec --flake .#vps --target-host vps --build-host vps; \
-    fi
+rebuild-vps: (_rebuild-nixos "vps" "--target-host" "vps" "--build-host" "vps")
+
+_rebuild-nixos host +args:
+    @if [ "$(id -u)" -eq 0 ]; then printf '%s\n' 'rebuild must run unprivileged; sudo is only for activation.' >&2; exit 1; fi
+    @export NIX_CONFIG="extra-experimental-features = nix-command flakes"; \
+      export NIX_SSHOPTS="-o ControlMaster=auto -o ControlPath=/tmp/nixos-rebuild-{{ host }}-%C -o ControlPersist=180 -o ConnectTimeout=20 -o ServerAliveInterval=15"; \
+      if command -v nixos-rebuild >/dev/null 2>&1; then \
+        nixos-rebuild switch --no-reexec --flake '.#{{ host }}' {{ args }}; \
+      else \
+        nix run nixpkgs#nixos-rebuild -- switch --no-reexec --flake '.#{{ host }}' {{ args }}; \
+      fi
 
 _python-scripts:
    @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
