@@ -114,17 +114,6 @@ in
     openssh.authorizedKeys.keys = identity.sshKeys;
   };
 
-  systemd.user.slices.rbuild = {
-    description = "rbuild remote build resource pool";
-    sliceConfig = {
-      CPUQuota = desktopBuildPool.cpuQuota;
-      MemoryMax = desktopBuildPool.memoryMax;
-      TasksMax = desktopBuildPool.tasksMax;
-    };
-  };
-
-  environment.systemPackages = [ pkgs.rsync ];
-
   nix.settings.trusted-users = [
     "root"
     "nixremote"
