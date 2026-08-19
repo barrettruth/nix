@@ -1,3 +1,5 @@
+vim.loader.enable()
+
 vim.g.mapleader = ' '
 
 vim.g.loaded_2html_plugin = true
