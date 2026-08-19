@@ -37,12 +37,12 @@ let
       "fmkadmapgofadopljbjfkapdkoienihi"
     ];
     # Midnight drives Emulation.setAutoDarkModeOverride over chrome.debugger,
-    # and Chrome shows "started debugging this browser" on every page for any
-    # extension that is not policy installed. normal_installed suppresses that
-    # the same way force_installed does, while still allowing the extension to
-    # be turned off to load an unpacked build during development.
+    # and Chrome suppresses the "started debugging this browser" warning only
+    # for a policy location. normal_installed lands at kExternalPrefDownload,
+    # which is not one, so it warns on every attach; force_installed is the
+    # only mode that silences it, and gives up being able to disable it.
     ExtensionSettings.${identity.midnight.extensionId} = {
-      installation_mode = "normal_installed";
+      installation_mode = "force_installed";
       update_url = identity.midnight.updateUrl;
     };
   };
