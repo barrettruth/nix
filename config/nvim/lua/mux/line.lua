@@ -158,7 +158,7 @@ end
 ---@param n integer
 ---@return true? ok
 ---@return string? err
-local function goto(n)
+local function move_to(n)
     M.refresh()
     local current = server.state().server
     if not current then
@@ -202,7 +202,7 @@ function M.setup()
     end, { desc = 'mux: last server', silent = true })
     for n = 1, 9 do
         vim.keymap.set({ 'n', 'i', 't' }, '<a-x>' .. n, function()
-            goto(n)
+            move_to(n)
         end, { desc = 'mux: server ' .. n, silent = true })
     end
     local group = vim.api.nvim_create_augroup('mux-line', { clear = true })
