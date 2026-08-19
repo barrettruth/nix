@@ -203,6 +203,13 @@ let
     LESSHISTFILE = "-";
     BARRETT_NIX_CONFIG_DIR = "${repo}/config";
     FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
+    FZF_DEFAULT_OPTS = lib.concatStringsSep " " [
+      "--bind=ctrl-a:select-all"
+      "--bind=ctrl-f:half-page-down"
+      "--bind=ctrl-b:half-page-up"
+      "--no-scrollbar"
+      "--no-info"
+    ];
     FZF_DEFAULT_COMMAND = "rg --files --hidden";
     FZF_CTRL_T_COMMAND = "rg --files --hidden";
     FZF_ALT_C_COMMAND = "fd --type d --hidden";

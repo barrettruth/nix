@@ -14,6 +14,12 @@ return {
                 no_header_i = true,
             },
             fzf_colors = true,
+            keymap = {
+                fzf = {
+                    true,
+                    ['ctrl-a'] = 'select-all',
+                },
+            },
             grep = {
                 no_header_i = true,
                 no_esc = true,
@@ -85,10 +91,12 @@ return {
                     git_icons = false,
                 },
                 worktrees = {
-                    fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
-                        '%-%-bind=ctrl%-a:select%-all',
-                        ''
-                    ),
+                    keymap = {
+                        fzf = {
+                            true,
+                            ['ctrl-a'] = 'beginning-of-line',
+                        },
+                    },
                     actions = {
                         ['ctrl-d'] = {
                             fn = actions.git_worktree_del,
@@ -97,10 +105,12 @@ return {
                     },
                 },
                 branches = {
-                    fzf_args = (vim.env.FZF_DEFAULT_OPTS or ''):gsub(
-                        '%-%-bind=ctrl%-a:select%-all',
-                        ''
-                    ),
+                    keymap = {
+                        fzf = {
+                            true,
+                            ['ctrl-a'] = 'beginning-of-line',
+                        },
+                    },
                     actions = {
                         ['ctrl-d'] = {
                             fn = actions.git_branch_del,
