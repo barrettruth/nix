@@ -12,12 +12,20 @@ from typing import Protocol, TypedDict, cast
 
 FIELD = "\x1f"
 RECORD = "\x1e"
-TEMPLATES = (
+PER_PAGE = 100
+GITHUB_TEMPLATES = (
     ".github/pull_request_template.md",
     ".github/PULL_REQUEST_TEMPLATE.md",
     "docs/pull_request_template.md",
     "pull_request_template.md",
 )
+GITLAB_TEMPLATES = (
+    ".gitlab/merge_request_templates/Default.md",
+    ".gitlab/merge_request_templates/default.md",
+)
+GITHUB_FIELDS = {"base": "--base", "title": "--title"}
+GITLAB_FIELDS = {"base": "--target-branch", "title": "--title"}
+HOSTS = {"github.com": "github", "gitlab.com": "gitlab"}
 
 
 class StackError(Exception):
@@ -45,6 +53,13 @@ class GhPull(TypedDict):
     title: str
 
 
+class GlabMr(TypedDict):
+    iid: int
+    source_branch: str
+    target_branch: str
+    title: str
+
+
 class Forge(Protocol):
     def open_pulls(self) -> list[PullRequest]: ...
 
@@ -60,6 +75,7 @@ class Forge(Protocol):
 class Arguments(argparse.Namespace):
     revset: str = "ready()"
     dry_run: bool = False
+    forge: str | None = None
 
 
 def echo(command: list[str]) -> None:
@@ -172,13 +188,13 @@ def drift(pull: PullRequest, change: Change, base: str) -> dict[str, str]:
     return {key: value for key, value in wanted.items() if current[key] != value}
 
 
-def scaffold() -> list[str]:
+def find_template(candidates: tuple[str, ...]) -> Path | None:
     root = jj("workspace", "root").strip()
-    for candidate in TEMPLATES:
+    for candidate in candidates:
         template = Path(root) / candidate
         if template.is_file():
-            return ["--body-file", str(template)]
-    return ["--body", ""]
+            return template
+    return None
 
 
 def remote_url() -> str:
@@ -231,22 +247,84 @@ class GitHub:
     def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
         command = ["gh", "pr", "create", "--head", head, "--base", base]
         command += ["--title", change["title"]]
-        run(command + scaffold(), dry_run=dry_run)
+        template = find_template(GITHUB_TEMPLATES)
+        body = ["--body-file", str(template)] if template else ["--body", ""]
+        run(command + body, dry_run=dry_run)
 
     def update(
         self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
     ) -> None:
         command = ["gh", "pr", "edit", str(pull["number"])]
         for key, value in fields.items():
-            command += [f"--{key}", value]
+            command += [GITHUB_FIELDS[key], value]
         run(command, dry_run=dry_run)
 
 
-def detect_forge() -> Forge:
-    host, _, _ = parse_slug(remote_url())
-    if host != "github.com":
-        raise StackError(f"only github.com is supported, origin is {host}")
-    return GitHub()
+class GitLab:
+    def __init__(self, url: str) -> None:
+        self.url: str = url
+
+    def _command(self, args: list[str]) -> list[str]:
+        return ["glab", *args, "--repo", self.url]
+
+    def open_pulls(self) -> list[PullRequest]:
+        pulls: list[PullRequest] = []
+        page = 1
+        while True:
+            raw = capture(
+                self._command(
+                    [
+                        "mr",
+                        "list",
+                        "--output",
+                        "json",
+                        "--per-page",
+                        str(PER_PAGE),
+                        "--page",
+                        str(page),
+                    ]
+                )
+            )
+            payload = cast(list[GlabMr], json.loads(raw or "[]"))
+            page_pulls: list[PullRequest] = [
+                {
+                    "number": item["iid"],
+                    "head": item["source_branch"],
+                    "base": item["target_branch"],
+                    "title": item["title"],
+                }
+                for item in payload
+            ]
+            pulls += page_pulls
+            if len(payload) < PER_PAGE:
+                return pulls
+            page += 1
+
+    def create(self, change: Change, head: str, base: str, *, dry_run: bool) -> None:
+        command = ["mr", "create", "--source-branch", head, "--target-branch", base]
+        command += ["--title", change["title"], "--yes"]
+        template = find_template(GITLAB_TEMPLATES)
+        body = template.read_text() if template else ""
+        run(self._command(command + ["--description", body]), dry_run=dry_run)
+
+    def update(
+        self, pull: PullRequest, fields: dict[str, str], *, dry_run: bool
+    ) -> None:
+        command = ["mr", "update", str(pull["number"]), "--yes"]
+        for key, value in fields.items():
+            command += [GITLAB_FIELDS[key], value]
+        run(self._command(command), dry_run=dry_run)
+
+
+def detect_forge(override: str | None) -> Forge:
+    url = remote_url()
+    host, _, _ = parse_slug(url)
+    kind = override or HOSTS.get(host)
+    if kind is None:
+        raise StackError(
+            f"cannot tell which forge {host} is; pass --forge github or --forge gitlab"
+        )
+    return GitHub() if kind == "github" else GitLab(url)
 
 
 def parse_arguments() -> Arguments:
@@ -256,6 +334,11 @@ def parse_arguments() -> Arguments:
     )
     _ = parser.add_argument("--revset", default="ready()", help="changes to publish")
     _ = parser.add_argument("--dry-run", action="store_true", help="show commands only")
+    _ = parser.add_argument(
+        "--forge",
+        choices=sorted(set(HOSTS.values())),
+        help="override forge detection for a self-hosted remote",
+    )
     return cast(Arguments, parser.parse_args())
 
 
@@ -268,11 +351,12 @@ def main() -> int:
         return 0
     linearize(changes)
 
+    forge = detect_forge(args.forge)
+
     repair(changes, dry_run=args.dry_run)
     run(["jj", "git", "push", "-c", args.revset], dry_run=args.dry_run)
     run(["jj", "git", "push", "--deleted"], dry_run=args.dry_run)
 
-    forge = detect_forge()
     existing = {pull["head"]: pull for pull in forge.open_pulls()}
     base = trunk_bookmark()
 
