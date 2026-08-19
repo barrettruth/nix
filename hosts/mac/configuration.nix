@@ -72,6 +72,7 @@ in
       chrometmp=$(mktemp "/Library/Managed Preferences/.com.google.Chrome.plist.XXXXXX")
       install -m 0644 ${chromePolicyPlist} "$chrometmp"
       mv -f "$chrometmp" "/Library/Managed Preferences/com.google.Chrome.plist"
+      killall cfprefsd || true
     fi
 
     tmp=$(mktemp)
