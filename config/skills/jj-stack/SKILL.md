@@ -1,13 +1,13 @@
 ---
 name: jj-stack
-description: Use where work ships as stacked pull requests on github.com — the `jj pr` tool, pull request bases, bookmarks that look odd, or a stack that is not behaving. Establish real state with read-only commands, then report concisely.
+description: Use where work ships as stacked pull requests or merge requests on github.com or gitlab.com — the `jj pr` tool, pull request bases, bookmarks that look odd, or a stack that is not behaving. Establish real state with read-only commands, then report concisely.
 ---
 
 # jj-stack
 
-Where Barrett ships through stacked pull requests on github.com, he uses plain
-jj plus one tool. Read the `jj` skill for the underlying model; this covers the
-workflow built on top.
+Where Barrett ships through stacked pull requests, on github.com or gitlab.com,
+he uses plain jj plus one tool. Read the `jj` skill for the underlying model;
+this covers the workflow built on top.
 
 ## Where this applies
 
@@ -60,7 +60,7 @@ jj pr                  make GitHub match
 map one-to-one onto the open pull requests, `jj h` the project history. Long
 forms are `stack`, `sync`, `restack`, `up`, `sdiff`, `spatch`, `hist`. All of
 them are defined in the `jjConf` block of
-`~/.config/nix/modules/nixos/barrett/workstation.nix`, which is the source of
+`~/.config/nix/modules/barrett/workstation.nix`, which is the source of
 truth if one looks unfamiliar.
 
 Within a stack the bookmarks are generated: `jj git push -c` creates
@@ -76,16 +76,32 @@ computed fresh each run, so there is no stored state and nothing to reconcile.
 `jj pr` (`~/.config/nix/scripts/jj-pr`) enforces the invariant, pushes, then
 creates missing pull requests, corrects stale bases and titles, and lets deleted
 branches close their own. It echoes every command it runs, and `--dry-run` shows
-the plan without touching anything.
+the plan without touching anything. It resolves the forge before it writes, so
+an unusable remote cannot leave repaired bookmarks pushed behind a failure.
 
 Titles track the change description, since a split leaves them describing the
 wrong diff. Bodies are Barrett's — written once at creation from the repo
 template if there is one, and left alone afterwards.
 
 `jj pr` reports rather than guesses when the stack forks, when a change has no
-bookmark, or when the remote is not github.com. Each of those means the correct
-base is genuinely unknown, and a wrong base shows reviewers the wrong diff
-without any visible sign.
+bookmark, or when it cannot tell what the origin host is running. The first two
+mean the correct base is genuinely unknown, and a wrong base shows reviewers the
+wrong diff without any visible sign.
+
+## GitHub and GitLab
+
+The forge comes from the origin host: `gh` for github.com, `glab` for
+gitlab.com. Everything above the forge call is plain jj and behaves identically
+on both, so only the last step differs. A self-hosted host is never guessed —
+pass `--forge github` or `--forge gitlab`, which addresses the host in the
+origin URL rather than the public one.
+
+On GitLab the vocabulary shifts but the workflow does not: merge requests, `iid`
+rather than number, and `--target-branch` where GitHub says base. Bodies come
+from `.gitlab/merge_request_templates/Default.md`, which `jj pr` reads itself
+because the API, unlike the web UI, does not apply that template. Deleting a
+source branch closes its merge request, so squash and abandon settle exactly as
+they do on GitHub.
 
 ## What each operation costs
 
@@ -112,7 +128,7 @@ one change wearing two. Both are repaired by restoring the invariant.
 |---|---|---|
 | "Bookmark already exists" on push | `jj s` — a split split the name from the ID | `jj pr` |
 | a change shows two bookmarks | `jj bookmark list` | `jj pr` |
-| a pull request shows more diff than its change | `gh pr view <n> --json baseRefName` | `jj pr` |
+| a pull request shows more diff than its change | `gh pr view <n> --json baseRefName`, or `glab mr view <n> --output json` | `jj pr` |
 | a pull request stayed open after squash or abandon | `jj bookmark list` for the deletion | `jj git push --deleted`, or `jj pr` |
 | changes above `@` did not reach the remote | bare `jj git push` covers `remote_bookmarks()..@` only | `jj up` |
 | a new bookmark was declined on push | creating one needs `-b`, `-c`, `--named` or `--all` | `jj up` |
