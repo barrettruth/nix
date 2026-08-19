@@ -43,7 +43,7 @@ return {
     },
     {
         'barrettruth/forge.nvim',
-        cmd = { 'Issue', 'PR' },
+        cmd = { 'Issue', 'PR', },
     },
     {
         'barrettruth/diffs.nvim',
