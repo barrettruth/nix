@@ -6,8 +6,6 @@ vim.api.nvim_set_hl(0, 'HighlightUndo', { link = 'IncSearch', default = true })
 for _, key in ipairs({ 'u', '<c-r>', 'U' }) do
     vim.keymap.set('n', key, function()
         local count = vim.v.count == 0 and '' or tostring(vim.v.count)
-        -- A buffer that cannot change has nothing to highlight, and wrapping
-        -- the key there reports Vim's own E21 as a lua error with a traceback.
         if not vim.bo.modifiable then
             vim.api.nvim_feedkeys(count .. vim.keycode(key), 'n', false)
             return
@@ -42,8 +40,6 @@ for _, key in ipairs({ 'u', '<c-r>', 'U' }) do
                 return true
             end,
         })
-        -- Always stop listening. When the undo fails the callback never fires,
-        -- and an attach left armed highlights whatever changes the buffer next.
         local ok, err = pcall(
             vim.cmd.normal,
             { args = { count .. vim.keycode(key) }, bang = true }
