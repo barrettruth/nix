@@ -56,7 +56,6 @@
             pkgs.gettext
             pkgs.curl
             pkgs.git
-            pkgs.gcc
             pkgs.pkg-config
             pkgs.unzip
             pkgs.stylua
@@ -64,15 +63,17 @@
             pkgs.ts_query_ls
             pkgs.fish
             pkgs.gdb
-            pkgs.inotify-tools
             pkgs.xdg-utils
             pkgs.nodejs
-            pkgs.attr
-            pkgs.acl
             pkgs.perlPackages.Appcpanminus
             (pkgs.python3.withPackages (ps: [
               ps.pynvim
             ]))
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+            pkgs.inotify-tools
+            pkgs.attr
+            pkgs.acl
           ];
         };
       };
