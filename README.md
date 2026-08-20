@@ -39,6 +39,6 @@ pkgs/                            custom derivations
 
 - **laptop**: Dell XPS 9500 workstation.
 - **desktop**: headless NixOS server and remote build host. Forgejo at [`forge.barrettruth.com`](https://forgejo.org/) and `finance.barrettruth.com`.
-- **vps**: NixOS VPS. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) at `vault.barrettruth.com`, [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and the static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com` redirect to GitHub.
+- **vps**: NixOS VPS. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) at `vault.barrettruth.com`, [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and a miscellany of static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com`.
 - **mac**: Apple silicon MacBook
 - **imc**: work MacBook at [IMC](https://imc.com)
