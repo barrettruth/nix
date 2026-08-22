@@ -103,6 +103,19 @@ because the API, unlike the web UI, does not apply that template. Deleting a
 source branch closes its merge request, so squash and abandon settle exactly as
 they do on GitHub.
 
+## Waiting on CI
+
+| forge | command |
+|---|---|
+| github | `gh pr checks <n> --watch --fail-fast` |
+| gitlab | `glab ci status --wait` |
+
+Both block until the run settles and exit non-zero when it fails, so start one
+with a long timeout and read it once. Add `--required` on GitHub to ignore
+advisory checks. Never loop on status: each call costs a turn, and the
+non-watching form of `gh pr checks` exits 8 while checks are merely pending,
+which reads as failure.
+
 ## What each operation costs
 
 | intent | command | bookmark repair | base drift |
