@@ -10,9 +10,10 @@ let
   cfg = config.barrett.tailscale;
   loginServer = "https://headscale.${identity.domain}";
   authKeyPath = lib.optionalString cfg.useAuthKey config.sops.secrets."headscale-authkey".path;
-  shieldsFlag = lib.optionalString cfg.shieldsUp " --shields-up";
-  applyShields = lib.optionalString cfg.shieldsUp ''
-    ${pkgs.tailscale}/bin/tailscale set --shields-up=true || true
+  shieldsUp = lib.boolToString cfg.shieldsUp;
+  shieldsFlag = " --shields-up=${shieldsUp}";
+  applyShields = ''
+    ${pkgs.tailscale}/bin/tailscale set --shields-up=${shieldsUp} || true
   '';
   login =
     if cfg.useAuthKey then
