@@ -25,7 +25,6 @@ local term_pids = {}
 local views = {
     edit = {},
     vcs = { restore = true },
-    ai = { restore = true, terminal = true },
     zsh = { restore = true, terminal = true },
 }
 
@@ -133,18 +132,13 @@ local function find(name)
 end
 
 ---@param name string
----@param restoring boolean
 ---@return nil
-local function materialize(name, restoring)
+local function materialize(name)
     local cwd = root()
     if name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
     elseif name == 'vcs' then
         pcall(vim.cmd, 'Git|only')
-    elseif name == 'ai' then
-        local cmd = restoring and { 'devin', '--continue' } or { 'devin' }
-        vim.fn.jobstart(cmd, { term = true, cwd = cwd })
-        restore_terminal_focus()
     elseif name == 'zsh' then
         vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = cwd })
         restore_terminal_focus()
@@ -161,7 +155,7 @@ local function create(name, enter)
     tab_view[tp] = name
     local win = vim.api.nvim_tabpage_get_win(tp)
     vim.api.nvim_win_call(win, function()
-        materialize(name, false)
+        materialize(name)
     end)
     mark_dirty(name)
     return win, tp
@@ -331,7 +325,7 @@ function M.restore(names)
     if not names then
         local tp = vim.api.nvim_get_current_tabpage()
         tab_view[tp] = 'edit'
-        materialize('edit', false)
+        materialize('edit')
         require('mux.session').mark_dirty()
         start_direnv()
         return
@@ -344,7 +338,7 @@ function M.restore(names)
     for tp, name in pairs(tab_view) do
         if type(name) == 'string' and views[name].restore then
             vim.api.nvim_set_current_tabpage(tp)
-            materialize(name, true)
+            materialize(name)
         end
     end
     vim.api.nvim_set_current_tabpage(cur)
@@ -453,7 +447,7 @@ local function cleanup_task(buf)
         pcall(vim.api.nvim_set_current_tabpage, tp)
         if #vim.api.nvim_list_tabpages() <= 1 then
             tab_view[tp] = 'edit'
-            materialize('edit', false)
+            materialize('edit')
         else
             pcall(vim.cmd, 'tabclose')
         end
@@ -569,7 +563,6 @@ local function setup_keymaps()
     for _, entry in ipairs({
         { key = 'e', name = 'edit' },
         { key = 'v', name = 'vcs' },
-        { key = 'a', name = 'ai' },
         { key = 'z', name = 'zsh' },
     }) do
         map(prefix .. entry.key, function()
