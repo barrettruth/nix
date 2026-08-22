@@ -4,6 +4,7 @@
   jq,
   themeCss,
   themeJs,
+  version,
   updateUrl ? null,
 }:
 
@@ -16,19 +17,25 @@ let
     filter = path: _: !(lib.hasSuffix "/theme.css" path || lib.hasSuffix "/theme.js" path);
   };
 in
-runCommand "midnight-extension"
+runCommand "midnight-extension-${version}"
   {
-    nativeBuildInputs = lib.optional (updateUrl != null) jq;
+    nativeBuildInputs = [ jq ];
   }
   ''
     cp -R --no-preserve=mode,ownership ${source} $out
     install -m 0644 ${themeCss} $out/theme.css
     install -m 0644 ${themeJs} $out/theme.js
+
+    edit() {
+      jq "$@" $out/manifest.json >$out/manifest.json.tmp
+      mv $out/manifest.json.tmp $out/manifest.json
+    }
+
+    edit --arg version ${lib.escapeShellArg version} '.version = $version'
+
     ${lib.optionalString (updateUrl != null) ''
       # Chrome takes the update url for the first install from policy, but
       # every later check reads it out of the packed manifest.
-      jq --arg url ${lib.escapeShellArg updateUrl} '.update_url = $url' \
-        $out/manifest.json >$out/manifest.json.tmp
-      mv $out/manifest.json.tmp $out/manifest.json
+      edit --arg url ${lib.escapeShellArg updateUrl} '.update_url = $url'
     ''}
   ''

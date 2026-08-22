@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   identity,
   themeGenerators,
   mkSecret,
@@ -14,14 +15,13 @@ let
   stateDir = "/var/lib/midnight-crx";
   crxName = "midnight.crx";
 
-  # The update manifest has to advertise the version inside the CRX, so both
-  # read the same manifest.json. Bumping it there is what makes an installed
-  # copy update.
-  version = (lib.importJSON ../../config/chromium/extension/manifest.json).version;
+  stamp = inputs.self.lastModified;
+  version = "1.${toString (stamp / 86400)}.${toString (lib.mod stamp 86400 / 2)}";
 
   extension = pkgs.callPackage ../../pkgs/midnight-extension {
     themeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
     themeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
+    inherit version;
     inherit (midnight) updateUrl;
   };
 
