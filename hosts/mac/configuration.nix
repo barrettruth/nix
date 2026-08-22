@@ -96,8 +96,6 @@ in
       /Library/Google/Chrome/CloudManagementEnrollmentToken
   '';
 
-  users.users.${username}.openssh.authorizedKeys.keys = identity.sshKeys;
-
   services.openssh.extraConfig = ''
     PasswordAuthentication no
     KbdInteractiveAuthentication no

@@ -1,8 +1,24 @@
-{ config, identity, ... }:
+{
+  config,
+  identity,
+  pkgs,
+  act,
+  ...
+}:
 let
   homeDirectory = config.barrett.user.homeDirectory;
+
+  authorizedKeys = pkgs.writeText "authorized_keys" (
+    builtins.concatStringsSep "\n" identity.sshKeys + "\n"
+  );
 in
 {
+  system.activationScripts.extraActivation.text = ''
+    ${act.installDirMode "0700" "${homeDirectory}/.ssh"}
+    ${pkgs.coreutils}/bin/install -m 0600 -o ${config.barrett.user.name} -g ${act.group} \
+      ${authorizedKeys} "${homeDirectory}/.ssh/authorized_keys"
+  '';
+
   programs.ssh.extraConfig = ''
     Host forge.barrettruth.com git.barrettruth.com
         HostName 100.64.0.1
