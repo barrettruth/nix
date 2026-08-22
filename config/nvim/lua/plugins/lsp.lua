@@ -56,60 +56,6 @@ return {
     },
     {
         'yioneko/nvim-vtsls',
-        after = function()
-            require('vtsls').config({
-                on_attach = function(_, bufnr)
-                    vim.keymap.set(
-                        'n',
-                        'gD',
-                        vim.cmd.VtsExec('goto_source_definition'),
-                        { buffer = bufnr, desc = 'goto source definition' }
-                    )
-                end,
-                settings = {
-                    typescript = {
-                        inlayHints = {
-                            parameterNames = { enabled = 'literals' },
-                            parameterTypes = { enabled = true },
-                            variableTypes = { enabled = true },
-                            propertyDeclarationTypes = { enabled = true },
-                            functionLikeReturnTypes = { enabled = true },
-                            enumMemberValues = { enabled = true },
-                        },
-                    },
-                },
-                handlers = {
-                    ['textDocument/publishDiagnostics'] = function(
-                        _,
-                        result,
-                        ctx
-                    )
-                        if not result.diagnostics then
-                            return
-                        end
-
-                        local idx = 1
-                        while idx <= #result.diagnostics do
-                            local entry = result.diagnostics[idx]
-
-                            if
-                                vim.tbl_contains({ 80001, 80006 }, entry.code)
-                            then
-                                table.remove(result.diagnostics, idx)
-                            else
-                                idx = idx + 1
-                            end
-                        end
-
-                        vim.lsp.diagnostic.on_publish_diagnostics(
-                            _,
-                            result,
-                            ctx
-                        )
-                    end,
-                },
-            })
-        end,
     },
     {
         'mrcjkb/rustaceanvim',
