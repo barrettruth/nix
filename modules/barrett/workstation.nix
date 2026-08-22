@@ -21,18 +21,6 @@ let
   XDG_CACHE_HOME = "${homeDirectory}/.cache";
   repo = "${XDG_CONFIG_HOME}/nix";
 
-  sourceScripts = builtins.path {
-    path = ../../scripts;
-    name = "barrett-scripts";
-  };
-
-  barrettScripts = pkgs.runCommand "barrett-scripts" { } ''
-    mkdir -p $out/bin
-    for script in ${sourceScripts}/*; do
-      ln -s "$script" "$out/bin/$(basename "$script")"
-    done
-  '';
-
   scriptsPath = "${repo}/scripts";
 
   inherit (act) runAsUser mkSymlink;
@@ -486,8 +474,7 @@ in
             ]
           )
           ++ lib.optionals isLinux [ pkgs.psmisc ]
-          ++ agentPackages
-          ++ [ barrettScripts ];
+          ++ agentPackages;
 
         environment.extraInit = ''
           export PATH="${scriptsPath}:${homeDirectory}/.local/bin:$PATH"
