@@ -66,57 +66,10 @@ whisper_idle_timeout() {
   esac
 }
 
-grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
-grayscale_state_file="$grayscale_state_dir/grayscale"
-grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
-grayscale_shader_dir="${BARRETT_NIX_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nix/config}/hypr/shaders"
-grayscale_read_state() {
-  state="$(cat "$grayscale_state_file" 2>/dev/null || true)"
-  case "$state" in
-  on) printf '%s\n' on ;;
-  *) printf '%s\n' off ;;
-  esac
-}
-
-grayscale_write_state() {
-  mkdir -p "$grayscale_state_dir"
-  printf '%s\n' "$1" >"$grayscale_state_file"
-}
-
-grayscale_target() {
-  case "$1" in
-  on) printf '%s\n' "$grayscale_shader_dir/grayscale.frag" ;;
-  *) printf '%s\n' "$grayscale_shader_dir/pass-through.frag" ;;
-  esac
-}
-
-grayscale_apply_runtime() {
-  target="$(grayscale_target "$(grayscale_read_state)")"
-  [ -f "$target" ] || {
-    echo "ctl: missing shader: $target" >&2
-    exit 1
-  }
-  mkdir -p "$grayscale_state_dir"
-  ln -sfnT "$target" "$grayscale_shader_file"
-  if [ "${XDG_CURRENT_DESKTOP:-}" = "Hyprland" ]; then
-    hyprctl eval "hl.config({ decoration = { screen_shader = \"$target\" } })" >/dev/null
-  fi
-}
-
-grayscale_on() {
-  grayscale_write_state on
-  grayscale_apply_runtime
-}
-
-grayscale_off() {
-  grayscale_write_state off
-  grayscale_apply_runtime
-}
-
 case "$(uname)" in
 Darwin)
   case "$1" in
-  screenshot | keyboard | audio | battery | brightness | volume | wifi | media | clip | power | dictate | grayscale)
+  screenshot | keyboard | audio | battery | brightness | volume | wifi | media | clip | power | dictate)
     echo "ctl: $1 is linux-only" >&2
     exit 1
     ;;
@@ -1064,35 +1017,8 @@ dictate)
   dictation_save_state "$session" "$!" "$audio"
   dictation_unlock
   ;;
-grayscale)
-  case "${2:-toggle}" in
-  toggle)
-    require notify-send
-    if [ "$(grayscale_read_state)" = on ]; then
-      grayscale_off
-      notify-send -a ctl -t 2500 "Grayscale" "Off"
-    else
-      grayscale_on
-      notify-send -a ctl -t 2500 "Grayscale" "On"
-    fi
-    ;;
-  on)
-    grayscale_on
-    ;;
-  off)
-    grayscale_off
-    ;;
-  state)
-    grayscale_read_state
-    ;;
-  *)
-    echo "Usage: ctl grayscale [toggle|state|on|off]" >&2
-    exit 1
-    ;;
-  esac
-  ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|grayscale|clip|dictate}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|clip|dictate}" >&2
   exit 1
   ;;
 esac

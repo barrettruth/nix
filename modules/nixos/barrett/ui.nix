@@ -122,12 +122,6 @@ let
     hl.env("HYPRCURSOR_THEME", "macOS")
     hl.env("GSK_RENDERER", "ngl")
 
-    hl.config({
-        decoration = {
-            screen_shader = "${XDG_STATE_HOME}/hypr/screen-shader.frag",
-        },
-    })
-
     hl.on("hyprland.start", function()
         hl.exec_cmd("${hyprSessionEnv}/bin/hypr-session-env import")
     end)
@@ -380,7 +374,6 @@ in
       ${mkDir "${XDG_CACHE_HOME}"}
       ${mkDir "${XDG_CONFIG_HOME}/hypr"}
       ${mkDir "${XDG_CONFIG_HOME}/hypr/themes"}
-      ${mkDir "${XDG_STATE_HOME}/hypr"}
       ${mkDir "${XDG_CONFIG_HOME}/xkb"}
       ${mkDir "${XDG_CONFIG_HOME}/xkb/symbols"}
       ${mkDir "${XDG_CONFIG_HOME}/waybar"}
@@ -436,19 +429,6 @@ in
           [ -L "$dest/$name" ] || ${runAsUser} ${pkgs.coreutils}/bin/ln -sf "$f" "$dest/$name"
         done
       fi
-
-      if [ ! -s "${XDG_STATE_HOME}/hypr/grayscale" ]; then
-        tmp="$(mktemp)"
-        printf '%s\n' off > "$tmp"
-        install -Dm644 -o ${username} -g users "$tmp" "${XDG_STATE_HOME}/hypr/grayscale"
-        rm -f "$tmp"
-      fi
-      grayscale="$(cat "${XDG_STATE_HOME}/hypr/grayscale" 2>/dev/null)" || grayscale="off"
-      case "$grayscale" in
-        on) screen_shader="${configRoot}/hypr/shaders/grayscale.frag" ;;
-        *) screen_shader="${configRoot}/hypr/shaders/pass-through.frag" ;;
-      esac
-      ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
 
       wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
       wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"
