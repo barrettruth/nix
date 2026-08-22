@@ -1,10 +1,6 @@
-vim.o.autoread = true
 vim.o.autowrite = true
-vim.o.autocomplete = false
 
 vim.o.breakindent = true
-
-vim.o.cmdheight = 1
 
 vim.opt.completeopt = { 'menuone', 'noselect', 'noinsert', 'fuzzy', 'popup' }
 
@@ -81,8 +77,6 @@ vim.o.splitkeep = 'screen'
 
 vim.o.splitbelow = true
 vim.o.splitright = true
-
-vim.o.startofline = false
 
 vim.o.swapfile = false
 
