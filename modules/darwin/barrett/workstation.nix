@@ -26,6 +26,8 @@ let
 
   aerospace = "${config.services.aerospace.package}/bin/aerospace";
 
+  scripts = config.barrett.workstation.scriptsPath;
+
   workspaces = map toString (lib.range 1 9);
 
   appBindings = lib.concatMapStringsSep "\n" (
@@ -160,7 +162,9 @@ in
       skhdConfig = ''
         ${appBindings}
         lalt - n : open -a Finder
-        lalt - o : ${trexCapture}
+
+        ralt - o : ${trexCapture}
+        ralt - t : ${scripts}/theme
 
         lalt - a : ${aerospace} focus --boundaries-action wrap-around-the-workspace dfs-next
         lalt - f : ${aerospace} focus --boundaries-action wrap-around-the-workspace dfs-prev
