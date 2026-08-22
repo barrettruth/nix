@@ -43,18 +43,23 @@ _rebuild-nixos host +args:
         nix run nixpkgs#nixos-rebuild -- switch --no-reexec --flake '.#{{ host }}' {{ args }}; \
       fi
 
-_python-scripts:
-   @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
+lint_paths := "'scripts/**' 'modules/**'"
+format_paths := "'scripts/**' 'modules/**' 'config/**'"
+
+_python-scripts paths=lint_paths:
+   @git ls-files {{ paths }} | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
+        case "$file" in *.py) printf '%s\n' "$file"; continue ;; esac; \
         shebang=$(sed -n '1p' "$file"); \
         case "$shebang" in \
             "#!"*python*) printf '%s\n' "$file" ;; \
         esac; \
     done
 
-_shell-scripts:
-    @git ls-files 'scripts/**' 'modules/**' | while IFS= read -r file; do \
+_shell-scripts paths=lint_paths:
+    @git ls-files {{ paths }} | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
+        case "$file" in *.py) continue ;; esac; \
         shebang=$(sed -n '1p' "$file"); \
         case "$shebang" in \
             "#!"*python*) ;; \
@@ -64,8 +69,8 @@ _shell-scripts:
 
 format:
     nix fmt -- --ci
-    just _shell-scripts | xargs -r shfmt -i 2 -d
-    just _python-scripts | xargs -r black --check
+    just _shell-scripts "{{ format_paths }}" | xargs -r shfmt -i 2 -d
+    just _python-scripts "{{ format_paths }}" | xargs -r black --check
     stylua --check config/nvim
 
 lint:
