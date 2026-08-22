@@ -156,16 +156,8 @@ toggle) toggle_bar ;;
 show) show_bar ;;
 hide) hide_bar ;;
 apply-theme) apply_theme ;;
-sync-theme) sync_theme ;;
-state)
-  if ! is_running; then
-    printf '%s\n' stopped
-    exit 0
-  fi
-  read_state 2>/dev/null || printf '%s\n' unknown
-  ;;
 *)
-  printf '%s\n' "usage: waybarctl {toggle|show|hide|apply-theme|sync-theme|state}" >&2
+  printf '%s\n' "usage: waybarctl {toggle|show|hide|apply-theme}" >&2
   exit 1
   ;;
 esac
