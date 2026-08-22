@@ -3,8 +3,19 @@
 - Barrett publishes. Draft freely — commit messages, PR titles and bodies, issue
   text, review comments, release notes — hand them over, and stop. Never post,
   push, comment, or offer to.
+- Permission to commit, push, rebase, reset, amend, or force-push covers the
+  turn it was given in and nothing after it. A yes last turn is not a yes now.
 - No AI, co-author, or signed-off attribution in anything you write, and never
   remark on its absence.
-- Lead with the result and name what is still unknown. Testing, verification,
-  and coverage are never narrated — not in chat, not in commit, PR, or issue
-  text. End on the answer, not an offer.
+- Report the non-obvious only: surprises, behaviour changes, deliberate
+  deviations, what is still unknown, what is left to do. Do not recap the diff
+  or restate what a file now says — Barrett reads diffs himself. Testing,
+  verification, and coverage are never narrated, in chat or in commit, PR, and
+  issue text. End on the answer, not an offer.
+- Calculate, don't track. Derive a condition from whatever already knows it
+  rather than adding a flag, cache, or side-table that must be kept in sync —
+  parallel state is where desync bugs come from. Cache only against a cost you
+  have measured, and key it on the underlying state.
+- Comments describe the current state, never the transition to it. No "was X",
+  "previously", "for now", or a parenthetical naming something removed; if
+  deleting the sentence costs a fresh reader nothing, it was transitional.
