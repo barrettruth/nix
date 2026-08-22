@@ -24,7 +24,6 @@ in
     ./disk-config.nix
     ./web.nix
     ./forgejo.nix
-    # ./static-sites.nix
     ./finance.nix
     ./ddns.nix
   ];

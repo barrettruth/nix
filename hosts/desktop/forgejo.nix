@@ -186,60 +186,9 @@ let
     </div>
     {{end}}
   '';
-  # forgejoMutableAssetProxy = {
-  #   proxyPass = "http://127.0.0.1:3000";
-  #   extraConfig = ''
-  #     proxy_hide_header Cache-Control;
-  #     add_header Cache-Control $forgejo_asset_cache_control always;
-  #   '';
-  # };
-  # forgejoStatsAssetProxy = {
-  #   proxyPass = "http://127.0.0.1:3000";
-  #   extraConfig = ''
-  #     proxy_hide_header Cache-Control;
-  #     add_header Cache-Control "public, max-age=900" always;
-  #   '';
-  # };
-  # forgejoImmutableAssetProxy = {
-  #   proxyPass = "http://127.0.0.1:3000";
-  #   extraConfig = ''
-  #     proxy_hide_header Cache-Control;
-  #     add_header Cache-Control "public, max-age=31536000, immutable" always;
-  #   '';
-  # };
 in
 {
   imports = [ pierreForgejo.nixosModule ];
-
-  services.nginx = {
-    appendHttpConfig = ''
-      map $arg_v $forgejo_asset_cache_control {
-        default "public, max-age=21600";
-        "~.+" "public, max-age=31536000, immutable";
-      }
-    '';
-    # virtualHosts."forge.${identity.domain}" = {
-    #   enableACME = true;
-    #   forceSSL = true;
-    #   locations = {
-    #     "/".proxyPass = "http://127.0.0.1:3000";
-    #     "= /assets/css/barrett-forgejo.css" = forgejoMutableAssetProxy;
-    #     "= /assets/css/pierre-forgejo.css" = forgejoMutableAssetProxy;
-    #     "= /assets/github-repo-stats.json" = forgejoStatsAssetProxy;
-    #     "= /assets/js/barrett-forgejo.js" = forgejoMutableAssetProxy;
-    #     "= /assets/js/pierre-forgejo.js" = forgejoMutableAssetProxy;
-    #     "= /manifest.json" = forgejoMutableAssetProxy;
-    #     "~* ^/assets/fonts/.*\\.(?:ttf|otf|woff|woff2)$" = forgejoImmutableAssetProxy;
-    #     "~* ^/assets/.*\\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico)$" = forgejoMutableAssetProxy;
-    #     "~* ^/avatars/[0-9a-f]+$" = forgejoImmutableAssetProxy;
-    #   };
-    # };
-    # virtualHosts."git.${identity.domain}" = {
-    #   enableACME = true;
-    #   forceSSL = true;
-    #   locations."/".return = "301 https://forge.${identity.domain}$request_uri";
-    # };
-  };
 
   sops.secrets =
     let
