@@ -8,6 +8,3 @@
 - Lead with the result and name what is still unknown. Testing, verification,
   and coverage are never narrated — not in chat, not in commit, PR, or issue
   text. End on the answer, not an offer.
-- Never name the skill you loaded; the UI already shows it.
-- These files are Barrett's. Do not append learnings to AGENTS.md, restructure
-  rules, or author skills unasked.
