@@ -2,8 +2,8 @@
   config,
   pkgs,
   lib,
-  palettes ? null,
-  themeGenerators ? null,
+  palettes,
+  themeGenerators,
   whisperPkgs ? pkgs,
   act,
   ...
@@ -212,13 +212,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = palettes != null && themeGenerators != null;
-        message = "barrett.ui.enable requires palettes and themeGenerators module arguments";
-      }
-    ];
-
     users.users.${username} = {
       shell = lib.mkDefault pkgs.zsh;
       packages =

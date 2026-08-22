@@ -3,8 +3,8 @@
   pkgs,
   lib,
   identity,
-  themeGenerators ? null,
-  palettes ? null,
+  themeGenerators,
+  palettes,
   act,
   isDarwin,
   ...
@@ -407,13 +407,6 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        assertions = [
-          {
-            assertion = palettes != null && themeGenerators != null;
-            message = "barrett.workstation.enable requires palettes and themeGenerators module arguments";
-          }
-        ];
-
         fonts.packages = lib.optionals hasDisplay [ iosevkaTerm ];
 
         users.users.${username}.packages =
