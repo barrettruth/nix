@@ -7,6 +7,31 @@
     "windsurf": false,
     "claude": false
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.config/nix/config/devin/hooks/repo-env.py\" session",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^exec$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.config/nix/config/devin/hooks/repo-env.py\" command-not-found",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
   "shell": {
     "setup_complete": true
   },
