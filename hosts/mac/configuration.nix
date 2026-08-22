@@ -1,7 +1,9 @@
 {
+  config,
   lib,
   pkgs,
   identity,
+  mkHostSecret,
   ...
 }:
 let
@@ -36,15 +38,7 @@ let
       # React Developer Tools
       "fmkadmapgofadopljbjfkapdkoienihi"
     ];
-    # Midnight drives Emulation.setAutoDarkModeOverride over chrome.debugger,
-    # and Chrome suppresses the "started debugging this browser" warning only
-    # for a policy location. normal_installed lands at kExternalPrefDownload,
-    # which is not one, so it warns on every attach; force_installed is the
-    # only mode that silences it, and gives up being able to disable it.
-    ExtensionSettings.${identity.midnight.extensionId} = {
-      installation_mode = "force_installed";
-      update_url = identity.midnight.updateUrl;
-    };
+    PolicyListMultipleSourceMergeList = [ "ExtensionInstallForcelist" ];
   };
 
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
@@ -84,6 +78,19 @@ in
     } >"$tmp"
     install -m 0644 -o root -g wheel "$tmp" /etc/hosts
     rm -f "$tmp"
+  '';
+
+  sops.secrets."chrome-enrollment-token" =
+    mkHostSecret config.networking.hostName "chrome-enrollment-token"
+      {
+        mode = "0400";
+      };
+
+  system.activationScripts.postActivation.text = lib.mkOrder 1600 ''
+    install -d -m 0755 -o root -g wheel /Library/Google/Chrome
+    install -m 0644 -o root -g wheel \
+      ${config.sops.secrets."chrome-enrollment-token".path} \
+      /Library/Google/Chrome/CloudManagementEnrollmentToken
   '';
 
   users.users.${username}.openssh.authorizedKeys.keys = identity.sshKeys;

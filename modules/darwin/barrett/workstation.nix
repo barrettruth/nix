@@ -15,11 +15,7 @@ let
   rightCommand = hidKeyboardUsage 231;
   f18 = hidKeyboardUsage 109;
 
-  chromeFlags = [ "--silent-debugger-extension-api" ];
-
-  chromePkg = pkgs.google-chrome.override {
-    commandLineArgs = lib.concatStringsSep " " chromeFlags;
-  };
+  chromePkg = pkgs.google-chrome;
 
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   trexApp = "/Applications/Nix Apps/TRex.app";
@@ -350,7 +346,7 @@ in
     };
 
     launchd.user.agents.google-chrome = {
-      command = ''/usr/bin/open -a "${chromeApp}" --args ${lib.concatStringsSep " " chromeFlags}'';
+      command = ''/usr/bin/open -a "${chromeApp}"'';
       serviceConfig.RunAtLoad = true;
     };
 
