@@ -43,7 +43,7 @@ def ensure_staged(
         die("nothing staged and no --stage paths given (never use git add -A)")
     paths = [str(muxlib.normalize_path(p)) for p in stage]
     if not dry_run:
-        muxlib.maybe_output(["git", "-C", str(root), "add", "--", *paths])
+        _ = muxlib.maybe_output(["git", "-C", str(root), "add", "--", *paths])
         if muxlib.git_rc(root, "diff", "--cached", "--quiet") != 1:
             die("staging produced no changes; check the --stage paths")
     return False, paths
@@ -54,22 +54,22 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         prog="commit-window",
         description="Draft a fugitive commit in the mux vcs view, unfocused.",
     )
-    p.add_argument(
+    _ = p.add_argument(
         "-F", "--file", default=None, help="read message from file ('-' = stdin)"
     )
-    p.add_argument(
+    _ = p.add_argument(
         "-m", "--message", action="append", default=None, help="message line(s)"
     )
-    p.add_argument(
+    _ = p.add_argument(
         "--stage", nargs="*", default=[], help="files to stage iff nothing is staged"
     )
-    p.add_argument(
+    _ = p.add_argument(
         "--root", type=Path, default=None, help="base repo (default: current project)"
     )
-    p.add_argument(
+    _ = p.add_argument(
         "--target", default=None, help="branch or worktree the changes live in"
     )
-    p.add_argument(
+    _ = p.add_argument(
         "-n",
         "--dry-run",
         action="store_true",

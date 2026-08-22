@@ -39,7 +39,7 @@ def openssl(args: list[str], stdin: bytes | None = None) -> bytes:
         ["openssl", *args], input=stdin, capture_output=True, check=False
     )
     if result.returncode != 0:
-        sys.stderr.write(result.stderr.decode(errors="replace"))
+        _ = sys.stderr.write(result.stderr.decode(errors="replace"))
         raise SystemExit(f"openssl {args[0]} failed with {result.returncode}")
     return result.stdout
 
@@ -100,10 +100,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Pack an unpacked extension directory into a signed CRX3 archive."
     )
-    parser.add_argument("--key", required=True, help="PEM private key to sign with")
-    parser.add_argument("--source", help="unpacked extension directory")
-    parser.add_argument("--output", help="path to write the .crx to")
-    parser.add_argument(
+    _ = parser.add_argument("--key", required=True, help="PEM private key to sign with")
+    _ = parser.add_argument("--source", help="unpacked extension directory")
+    _ = parser.add_argument("--output", help="path to write the .crx to")
+    _ = parser.add_argument(
         "--print-id",
         action="store_true",
         help="print the extension id the key produces and exit",
@@ -119,7 +119,7 @@ def main() -> None:
 
     crx = build_crx(args.key, args.source)
     with open(args.output, "wb") as handle:
-        handle.write(crx)
+        _ = handle.write(crx)
 
 
 if __name__ == "__main__":

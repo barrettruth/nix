@@ -165,13 +165,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Open the current checkout's changes in mux review UI."
     )
-    parser.add_argument("--repo", type=Path, default=Path.cwd())
-    parser.add_argument("--base", default=None)
-    parser.add_argument(
+    _ = parser.add_argument("--repo", type=Path, default=Path.cwd())
+    _ = parser.add_argument("--base", default=None)
+    _ = parser.add_argument(
         "--layout", choices=["unified", "stacked", "split"], default="unified"
     )
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--json", action="store_true")
+    _ = parser.add_argument("--dry-run", action="store_true")
+    _ = parser.add_argument("--json", action="store_true")
     return parser.parse_args(argv)
 
 

@@ -5,41 +5,81 @@ One-off. Delete this file once imc is working.
 Brings gmail, gdrive and gcalendar MCP servers up on imc. Run every command **on
 imc** unless a step says otherwise.
 
-Refresh tokens are minted locally on imc and never leave the machine that owns
-them. The only things copied from `mac` are the OAuth *client* files, which
-Google classifies as non-confidential for Desktop-type clients.
+Nothing is copied from `mac` — it is unreachable from imc, see step 0. The OAuth
+client credentials come from the Cloud console; refresh tokens are minted locally
+and never leave the machine that owns them.
 
-## 0. On mac, not imc
+## 0. Do not try to ssh to mac
 
-Enable inbound ssh, and turn it back off when this is done:
-
-    System Settings > General > Sharing > Remote Login
-
-`mac` is `100.64.0.4` on the tailnet.
+It cannot work. GlobalProtect's Endpoint Traffic Policy Enforcement kills any
+connection that bypasses the corporate tunnel — imc completes the TCP handshake
+over tailscale and then RSTs its own socket ~12µs later, on every port, which
+surfaces as `Bad file descriptor`. That is the control working as intended. No
+files are copied from mac; everything below is fetched or generated locally.
 
 ## 1. Rebuild first
 
-Activation creates `~/.config/devin`, which step 3 writes into.
+Activation creates `~/.config/devin`, which step 2 writes into.
 
     just rebuild-imc
 
-## 2. Pull the OAuth client files from mac
+## 2. Get the OAuth client credentials
 
-    mkdir -p ~/.gmail-mcp ~/.config/mcp-google ~/.config/mcp-gdrive \
-             ~/.config/google-calendar-mcp
+Download them straight from Google rather than copying from another machine.
+These are Desktop-app client credentials, which Google treats as
+non-confidential.
 
-    scp mac:.gmail-mcp/gcp-oauth.keys.json            ~/.gmail-mcp/
-    scp mac:.config/mcp-google/client_id              ~/.config/mcp-google/
-    scp mac:.config/mcp-google/client_secret          ~/.config/mcp-google/
-    scp mac:.config/mcp-google/gcp-oauth.keys.json    ~/.config/mcp-google/
-    scp mac:.config/mcp-gdrive/gcp-oauth.keys.json    ~/.config/mcp-gdrive/
-    scp mac:.config/devin/mcp_config.json             ~/.config/devin/
+1. Open the Cloud console credentials page for project `devin-mcp-gmail`:
+   https://console.cloud.google.com/apis/credentials?project=devin-mcp-gmail
+2. Under **OAuth 2.0 Client IDs**, find the Desktop client and download its
+   JSON.
+3. Place it and derive the rest:
 
-    chmod 600 ~/.gmail-mcp/* ~/.config/mcp-google/* ~/.config/mcp-gdrive/* \
-              ~/.config/devin/mcp_config.json
+```
+mkdir -p ~/.gmail-mcp ~/.config/mcp-google ~/.config/mcp-gdrive \
+         ~/.config/google-calendar-mcp ~/.config/devin
 
-Do **not** copy `credentials.json`, `.gdrive-server-credentials.json` or
-`tokens.json`. Those are the refresh tokens; step 4 mints imc's own.
+cp ~/Downloads/client_secret_*.json ~/.gmail-mcp/gcp-oauth.keys.json
+cp ~/.gmail-mcp/gcp-oauth.keys.json ~/.config/mcp-google/gcp-oauth.keys.json
+cp ~/.gmail-mcp/gcp-oauth.keys.json ~/.config/mcp-gdrive/gcp-oauth.keys.json
+
+python3 -c "
+import json, os
+k = json.load(open(os.path.expanduser('~/.gmail-mcp/gcp-oauth.keys.json')))['installed']
+for name, val in (('client_id', k['client_id']), ('client_secret', k['client_secret'])):
+    p = os.path.expanduser('~/.config/mcp-google/' + name)
+    open(p, 'w').write(val)
+    os.chmod(p, 0o600)
+print('wrote client_id and client_secret')
+"
+```
+
+4. Write the MCP server config. The client secret is inlined because Devin does
+   not expand `${file:...}` in OAuth fields:
+
+```
+python3 - <<'EOF'
+import json, os
+k = json.load(open(os.path.expanduser('~/.gmail-mcp/gcp-oauth.keys.json')))['installed']
+home = os.path.expanduser('~')
+cfg = {"mcpServers": {
+  "gmail": {"command": "npx", "args": ["-y", "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"]},
+  "gdrive": {"command": "npx", "args": ["-y", "@isaacphi/mcp-gdrive@0.2.0"],
+             "env": {"CLIENT_ID": k["client_id"], "CLIENT_SECRET": k["client_secret"],
+                     "GDRIVE_CREDS_DIR": home + "/.config/mcp-gdrive"}},
+  "gcalendar": {"command": "npx", "args": ["-y", "@cocal/google-calendar-mcp@2.6.2", "start"],
+                "env": {"GOOGLE_OAUTH_CREDENTIALS": home + "/.config/mcp-google/gcp-oauth.keys.json"}},
+}}
+p = home + '/.config/devin/mcp_config.json'
+json.dump(cfg, open(p, 'w'), indent=2)
+os.chmod(p, 0o600)
+print('wrote', p)
+EOF
+
+chmod 600 ~/.gmail-mcp/* ~/.config/mcp-google/* ~/.config/mcp-gdrive/*
+```
+
+Refresh tokens are never copied between machines; step 4 mints imc's own.
 
 ## 3. Write the minting script
 
@@ -155,7 +195,7 @@ credential from startup — kill it and let Devin respawn:
 
 ## 6. Clean up
 
-Turn Remote Login back off on mac, then delete this file and commit the deletion.
+Delete this file and commit the deletion.
 
 ## Why the scopes look like this
 

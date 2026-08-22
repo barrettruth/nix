@@ -12,7 +12,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Print the mux Neovim server socket for a project."
     )
-    parser.add_argument("--root", help="repo root; defaults to the cwd's")
+    _ = parser.add_argument("--root", help="repo root; defaults to the cwd's")
     args = parser.parse_args()
 
     root = muxlib.normalize_path(args.root) if args.root else muxlib.current_root()

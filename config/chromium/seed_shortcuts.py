@@ -47,7 +47,7 @@ def update_preferences(path_str: str, platform: str) -> None:
             "suggested_key": "",
             "was_assigned": True,
         }
-    prefs_path.write_text(json.dumps(data, separators=(",", ":")))
+    _ = prefs_path.write_text(json.dumps(data, separators=(",", ":")))
 
 
 def main() -> int:
