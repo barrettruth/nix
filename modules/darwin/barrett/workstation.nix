@@ -3,11 +3,13 @@
   lib,
   pkgs,
   act,
+  themeGenerators,
   ...
 }:
 let
   username = config.barrett.user.name;
-  screenshotDir = "${config.barrett.user.homeDirectory}/Pictures/Screenshots";
+  homeDirectory = config.barrett.user.homeDirectory;
+  screenshotDir = "${homeDirectory}/Pictures/Screenshots";
 
   hidKeyboardUsage = usage: 30064771072 + usage;
   capsLock = hidKeyboardUsage 57;
@@ -20,7 +22,16 @@ let
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   trexApp = "/Applications/Nix Apps/TRex.app";
 
-  chromeApp = config.barrett.mac.chrome.app;
+  chrome = config.barrett.mac.chrome;
+  chromeApp = chrome.app;
+
+  midnightExtension = pkgs.callPackage ../../../pkgs/midnight-extension {
+    themeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
+    themeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
+    version = "1.0";
+  };
+
+  unpackedDir = "${homeDirectory}/.config/chromium/extension";
 
   launchApps = config.barrett.mac.apps;
 
@@ -121,6 +132,16 @@ in
       type = lib.types.nullOr lib.types.package;
       default = chromePkg;
       description = "Chrome to install, or null when the machine already has one.";
+    };
+    flags = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Switches the login agent passes on a cold start.";
+    };
+    unpackedMidnight = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Stage Midnight for a manual unpacked load, for hosts that cannot reach a policy location.";
     };
   };
 
@@ -291,6 +312,11 @@ in
 
       ${act.installDirMode "0755" screenshotDir}
 
+      ${lib.optionalString chrome.unpackedMidnight ''
+        ${act.installDirMode "0755" "${homeDirectory}/.config/chromium"}
+        ${act.mkSymlink "${midnightExtension}" unpackedDir}
+      ''}
+
       ${asUser} ${seedChromeShortcuts} || true
 
       tmp=$(mktemp)
@@ -350,7 +376,9 @@ in
     };
 
     launchd.user.agents.google-chrome = {
-      command = ''/usr/bin/open -a "${chromeApp}"'';
+      command =
+        ''/usr/bin/open -a "${chromeApp}"''
+        + lib.optionalString (chrome.flags != [ ]) " --args ${lib.concatStringsSep " " chrome.flags}";
       serviceConfig.RunAtLoad = true;
     };
 

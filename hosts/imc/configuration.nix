@@ -16,6 +16,8 @@
   barrett.mac.chrome = {
     app = "/Applications/Google Chrome.app";
     package = null;
+    flags = [ "--silent-debugger-extension-api" ];
+    unpackedMidnight = true;
   };
 
   barrett.mac.dock.apps = lib.mkAfter [
