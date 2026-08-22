@@ -247,7 +247,6 @@ let
     BOTO_CONFIG = "${XDG_CONFIG_HOME}/boto/config";
     PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
     SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
-    INPUTRC = "${XDG_CONFIG_HOME}/readline/inputrc";
   };
 
   activationText = ''
