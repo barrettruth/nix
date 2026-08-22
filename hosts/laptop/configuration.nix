@@ -125,11 +125,6 @@ in
     ];
   };
 
-  # programs.hyprland = {
-  #   enable = true;
-  #   portalPackage = pkgs.xdg-desktop-portal-hyprland;
-  # };
-
   hardware.bluetooth.enable = true;
 
   services.keyd = {

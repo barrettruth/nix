@@ -248,9 +248,6 @@ in
           brightnessctl
           glib.bin
           (mpv.override { youtubeSupport = false; })
-          # signal-desktop
-          # telegram-desktop
-          # element-desktop
         ])
         ++ [
           chromium
