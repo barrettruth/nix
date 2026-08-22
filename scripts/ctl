@@ -129,33 +129,13 @@ screenshot)
   dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
   mkdir -p "$dir"
   file="$dir/$(openssl rand -hex 10)-$(date +'%Y-%m-%d_%H-%M-%S').png"
-  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-    require grim slurp wl-copy
-    grim -g "$(slurp)" "$file" && wl-copy <"$file"
-  else
-    require maim xclip
-    maim -s "$file" && xclip -selection clipboard -t image/png -i "$file" &
-  fi
+  require grim slurp wl-copy
+  grim -g "$(slurp)" "$file" && wl-copy <"$file"
   ;;
 keyboard)
   case "$2" in
   next)
-    if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-      if [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
-        hyprctl switchxkblayout current next
-      elif [ "$XDG_CURRENT_DESKTOP" = "sway" ]; then
-        swaymsg input type:keyboard xkb_switch_layout next
-      fi
-    else
-      layout="$(setxkbmap -query | awk '/layout/{print $2}')"
-      variant="$(setxkbmap -query | awk '/variant/{print $2}')"
-      case "$layout:$variant" in
-      us:) setxkbmap -layout us -variant dvorak ;;
-      us:dvorak) setxkbmap -layout us -variant colemak_dh ;;
-      us:colemak_dh) setxkbmap -layout baremak ;;
-      *) setxkbmap -layout us ;;
-      esac
-    fi
+    hyprctl switchxkblayout current next
     ;;
   pick)
     require fuzzel jq
@@ -697,18 +677,11 @@ def get_resolution() -> tuple[int, int]:
         except Exception:
             pass
     elif "WAYLAND_DISPLAY" in os.environ:
-        desktop: str = os.environ.get("XDG_CURRENT_DESKTOP", "")
         try:
-            if desktop == "Hyprland":
-                output = subprocess.check_output(
-                    "hyprctl monitors -j | jq -r '.[] | select(.focused==true) | .width, .height' | paste -sd x -",
-                    shell=True,
-                ).decode().strip()
-            elif desktop == "sway":
-                output = subprocess.check_output(
-                    "swaymsg -t get_outputs -r | jq -r '.[] | select(.active==true) | .current_mode.width,.current_mode.height' | paste -sd x -",
-                    shell=True,
-                ).decode().strip()
+            output = subprocess.check_output(
+                "hyprctl monitors -j | jq -r '.[] | select(.focused==true) | .width, .height' | paste -sd x -",
+                shell=True,
+            ).decode().strip()
         except Exception:
             pass
     return tuple(map(int, output.split("x")))
