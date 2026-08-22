@@ -331,14 +331,7 @@ let
 
             ${mkDir "${XDG_CONFIG_HOME}/aws"}
             ${mkSymlink "${awsConf}" "${XDG_CONFIG_HOME}/aws/config"}
-
-            for link in ${homeDirectory}/.nix-profile ${homeDirectory}/.nix-defexpr; do
-              [ -L "$link" ] && [ ! -e "$link" ] && ${runAsUser} ${pkgs.coreutils}/bin/rm "$link"
-            done
-
-            if [ "$(readlink "${XDG_DATA_HOME}/fonts" 2>/dev/null || true)" = "${repo}/fonts" ]; then
-              ${runAsUser} ${pkgs.coreutils}/bin/rm "${XDG_DATA_HOME}/fonts"
-            fi  '';
+  '';
 
   direnvCachePrune = pkgs.writeShellScript "direnv-cache-prune" ''
     set -euo pipefail
