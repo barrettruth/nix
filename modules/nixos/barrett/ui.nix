@@ -24,7 +24,7 @@ let
     path = ../../../config/xkb/baremak;
     name = "xkb-baremak";
   };
-  inherit (config.barrett.workstation) useHomeRepo scriptsPath;
+  inherit (config.barrett.workstation) useHomeRepo;
   configRoot = if useHomeRepo then "${repo}/config" else sourceConfig;
 
   wayland = import ../desktop/wayland.nix { inherit pkgs; };
@@ -172,84 +172,6 @@ let
     }
   '';
 
-  hyprlockConf = pkgs.writeText "hyprlock-conf" ''
-    general {
-      hide_cursor = true
-      grace = 0
-    }
-
-    background {
-      monitor =
-      path = ${homeDirectory}/Pictures/Screensavers/lock.jpg
-    }
-
-    animations {
-      enabled = false
-    }
-
-    input-field {
-      monitor =
-      size = 600, 50
-      outline_thickness = 0
-      dots_text_format = *
-      dots_size = 0.9
-      dots_spacing = 0.3
-      dots_center = true
-      outer_color = rgba(00000000)
-      inner_color = rgba(00000000)
-      font_color = rgb(ffffff)
-      font_family = Berkeley Mono
-      check_color = rgb(98c379)
-      fail_color = rgb(ff6b6b)
-      fail_text = $FAIL
-      rounding = 0
-      placeholder_text =
-      position = 0, 0
-      halign = center
-      valign = center
-    }
-  '';
-
-  hypridleLockCmd = pkgs.writeShellScriptBin "hypridle-lock" ''
-    set -e
-    export PATH=${
-      lib.makeBinPath [
-        pkgs.coreutils
-        pkgs.hyprland
-        pkgs.jq
-        pkgs.nix
-      ]
-    }
-    export BARRETT_NIX_CONFIG_DIR=${configRoot}
-    ${scriptsPath}/ctl wallpaper lock
-    exec ${pkgs.hyprlock}/bin/hyprlock
-  '';
-
-  hypridleConf = pkgs.writeText "hypridle-conf" ''
-    general {
-      lock_cmd = ${hypridleLockCmd}/bin/hypridle-lock
-      after_sleep_cmd = ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
-    }
-
-    listener {
-      timeout = 300
-      on-timeout = ${pkgs.systemd}/bin/loginctl lock-session
-    }
-
-    listener {
-      timeout = 600
-      on-timeout = ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
-      on-resume = ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
-    }
-
-    ${lib.optionalString cfg.idle.suspend ''
-      listener {
-        timeout = 3600
-        on-timeout = ${pkgs.systemd}/bin/systemctl suspend
-      }
-    ''}
-  '';
-
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
@@ -287,10 +209,6 @@ in
       ];
       default = "generic";
     };
-    idle.suspend = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -306,9 +224,7 @@ in
       packages =
         (with pkgs; [
           dconf
-          hyprlock
           hyprpaper
-          hypridle
           hyprland
           waybar
           fuzzel
@@ -385,8 +301,6 @@ in
       '';
     };
 
-    security.pam.services.hyprlock = { };
-
     xdg.portal = {
       enable = true;
       extraPortals = with pkgs; [
@@ -426,14 +340,6 @@ in
       description = "Hyprpaper wallpaper daemon";
       serviceConfig = waylandGate.serviceConfig // {
         ExecStart = wrapWaylandExec "${pkgs.hyprpaper}/bin/hyprpaper";
-      };
-    };
-
-    systemd.user.services.hypridle = waylandGate // {
-      description = "Hypridle idle daemon";
-      wantedBy = lib.mkForce [ ];
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = wrapWaylandExec "${pkgs.hypridle}/bin/hypridle";
       };
     };
 
@@ -531,7 +437,7 @@ in
 
 
 
-      for stale in hyprland.conf theme.conf themes/midnight.conf themes/daylight.conf themes/theme.conf; do
+      for stale in hyprland.conf hypridle.conf hyprlock.conf theme.conf themes/midnight.conf themes/daylight.conf themes/theme.conf; do
         if [ -L "${XDG_CONFIG_HOME}/hypr/$stale" ]; then
           ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${XDG_CONFIG_HOME}/hypr/$stale"
         fi
@@ -547,8 +453,6 @@ in
       ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.lua"}
       ${mkSymlink "${configRoot}/xkb/baremak" "${XDG_CONFIG_HOME}/xkb/symbols/baremak"}
       ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
-      ${mkSymlink "${hypridleConf}" "${XDG_CONFIG_HOME}/hypr/hypridle.conf"}
-      ${mkSymlink "${hyprlockConf}" "${XDG_CONFIG_HOME}/hypr/hyprlock.conf"}
 
       ${mkSymlink "${waybarThemes}/midnight.css" "${XDG_CONFIG_HOME}/waybar/themes/midnight.css"}
       ${mkSymlink "${waybarThemes}/daylight.css" "${XDG_CONFIG_HOME}/waybar/themes/daylight.css"}
@@ -601,6 +505,8 @@ in
         *) screen_shader="${configRoot}/hypr/shaders/pass-through.frag" ;;
       esac
       ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$screen_shader" "${XDG_STATE_HOME}/hypr/screen-shader.frag"
+
+      ${runAsUser} ${pkgs.coreutils}/bin/rm -f "${homeDirectory}/Pictures/Screensavers/lock.jpg"
 
       wp_themed="${homeDirectory}/Pictures/Screensavers/wallpaper-$theme.jpg"
       wp_link="${homeDirectory}/Pictures/Screensavers/wallpaper.jpg"

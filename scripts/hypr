@@ -102,7 +102,6 @@ case "$cmd" in
   ;;
 exit)
   require hyprctl
-  pkill hypridle
   pkill hyprpaper
   hyprctl dispatch 'hl.dsp.exit()'
   exit 0
