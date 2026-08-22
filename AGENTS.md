@@ -45,3 +45,10 @@ offline desktop.
   those machines keep resolving it to the dead host.
 - Each service serves one public hostname off one database, so exactly one host
   may import a given `services/` file at a time.
+- sudo on the macs is TouchID-gated. Just run the command — the prompt is
+  approved at the machine. Do not stop and hand privileged commands back.
+- nix-darwin silently ignores `users.users.<name>.openssh.authorizedKeys.keys`;
+  it is a NixOS option. `hosts/mac/configuration.nix` sets it, so the
+  `PasswordAuthentication no` half of that config applied while the keys half
+  never did, leaving no `~/.ssh/authorized_keys` and inbound ssh impossible.
+  The file is currently written by hand and will not survive a fresh machine.
