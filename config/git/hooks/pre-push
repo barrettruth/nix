@@ -103,7 +103,7 @@ has_foreign_identity() {
 
 refs=$(cat)
 
-while read -r local_ref local_sha remote_ref remote_sha; do
+while read -r _ local_sha _ remote_sha; do
   [ -n "$local_sha" ] || continue
   [ "$local_sha" = "$zero_sha" ] && continue
 

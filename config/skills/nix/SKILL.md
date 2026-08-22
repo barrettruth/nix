@@ -50,11 +50,14 @@ while edits inside an existing one are live.
 | `stylua --check`, `lua-language-server --check` | `config/nvim` |
 | `deadnix --fail --no-lambda-pattern-names` | dead nix bindings |
 
-Gotcha: `format` enumerates `format_paths` (`scripts/**`, `modules/**`,
-`config/**`) while `lint` keeps the narrower `lint_paths`. Helpers under
-`config/**` — skill scripts, git hooks, devin hooks — are formatted but not
-shellchecked or type-checked. Run `shellcheck`, `ty`, and `basedpyright` on them
-by hand until the lint set widens.
+Both steps enumerate the same `paths` (`scripts/**`, `modules/**`, `config/**`,
+`pkgs/**`), picking up shell and python by extension or shebang, so skill
+scripts, git hooks and devin hooks are covered too.
+
+basedpyright reads `pyrightconfig.json` at the root: `strict`, pinned to python
+3.11, with `config/skills/_lib` on `extraPaths` so the skill scripts' runtime
+`sys.path` insert of `muxlib` resolves. ty has no equivalent, which is why those
+imports keep a `# ty: ignore[unresolved-import]`.
 
 ## Layout
 

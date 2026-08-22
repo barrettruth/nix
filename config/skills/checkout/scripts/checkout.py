@@ -280,7 +280,7 @@ def print_result(data: dict[str, Any], as_json: bool) -> None:
         return
     if not data.get("ok", True):
         print(data.get("error", "checkout failed"), file=sys.stderr)
-        candidates = data.get("candidates") or []
+        candidates: list[str] = data.get("candidates") or []
         if candidates:
             print("candidates:", file=sys.stderr)
             for candidate in candidates:
