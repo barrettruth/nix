@@ -39,6 +39,8 @@ let
       "fmkadmapgofadopljbjfkapdkoienihi"
     ];
     PolicyListMultipleSourceMergeList = [ "ExtensionInstallForcelist" ];
+    NTPFooterManagementNoticeEnabled = false;
+    NTPFooterExtensionAttributionEnabled = false;
   };
 
   chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
