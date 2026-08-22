@@ -444,6 +444,7 @@ in
             pandoc
             pytest-language-server
             ruff
+            tailwindcss-language-server
             tinymist
             vtsls
             vscode-langservers-extracted
