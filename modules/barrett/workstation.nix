@@ -140,6 +140,8 @@ let
     up = ["git", "push", "-c", "ready()"]
     u = ["up"]
     pr = ["util", "exec", "--", "jj-pr"]
+    g = ["git"]
+    d = ["describe"]
   '';
 
   personalGitConf = pkgs.writeText "git-personal" ''
