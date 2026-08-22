@@ -254,6 +254,8 @@ let
         ${mkSymlink "${fzfThemes}/midnight" "${XDG_CONFIG_HOME}/fzf/themes/midnight"}
         ${mkSymlink "${fzfThemes}/daylight" "${XDG_CONFIG_HOME}/fzf/themes/daylight"}
             ${mkDir "${XDG_CONFIG_HOME}"}
+            ${mkDir "${homeDirectory}/.local"}
+            ${mkDir "${homeDirectory}/.local/bin"}
             ${mkDir "${XDG_DATA_HOME}"}
             ${mkDir "${XDG_STATE_HOME}"}
             ${mkDir "${XDG_CACHE_HOME}"}
