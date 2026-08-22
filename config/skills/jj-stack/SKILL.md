@@ -5,7 +5,7 @@ description: Use where work ships as stacked pull requests or merge requests on 
 
 # jj-stack
 
-Where Barrett ships through stacked pull requests, on github.com or gitlab.com,
+Where work ships through stacked pull requests, on github.com or gitlab.com,
 he uses plain jj plus one tool. Read the `jj` skill for the underlying model;
 this covers the workflow built on top.
 
@@ -33,7 +33,7 @@ what fixes it.
 
 - One command fixes it, give the command and one sentence saying what it does.
 - Several steps or a real tradeoff, say so in a line first, then lay it out.
-- A question is a request to understand. Investigate, report, hand Barrett the
+- A question is a request to understand. Investigate, report, hand over the
   command. When he asks for the change to be made, make it.
 
 ## When the workflow is at fault
@@ -80,7 +80,7 @@ the plan without touching anything. It resolves the forge before it writes, so
 an unusable remote cannot leave repaired bookmarks pushed behind a failure.
 
 Titles track the change description, since a split leaves them describing the
-wrong diff. Bodies are Barrett's — written once at creation from the repo
+wrong diff. Bodies are the user's — written once at creation from the repo
 template if there is one, and left alone afterwards.
 
 `jj pr` reports rather than guesses when the stack forks, when a change has no

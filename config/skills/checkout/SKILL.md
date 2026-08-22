@@ -5,19 +5,19 @@ description: Resolve vague branch/worktree requests into canonical local checkou
 
 # checkout
 
-Resolve Barrett's vague checkout target into a canonical local branch or worktree,
+Resolve a vague checkout target into a canonical local branch or worktree,
 then use the helper to inspect, resolve, or prepare that checkout.
 
 ## Flow
 
-1. Start from the current shell project unless Barrett names another repo.
+1. Start from the current shell project unless another repo is named.
 2. Gather local facts once:
 
 ```sh
 python3 ~/.config/nix/config/skills/checkout/scripts/checkout.py inspect --json
 ```
 
-3. Use those facts to resolve Barrett's phrase to exactly one canonical target:
+3. Use those facts to resolve the phrase to exactly one canonical target:
    an absolute worktree path or an exact local branch name.
 4. If multiple local candidates fit, ask which one he means.
 5. For a read-only answer, run `resolve`. For checkout preparation, run `ensure`.

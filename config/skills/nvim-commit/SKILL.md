@@ -1,12 +1,12 @@
 ---
 name: nvim-commit
-description: Use when Barrett asks to commit — "commit this", "make/write a commit", "commit these changes", or `/nvim-commit`. Drafts a commit message that mirrors THIS repo's own history and Barrett's voice, then opens it pre-filled in the mux `vcs` window (fugitive commit buffer, unfocused) for him to review and `:wq`. Not for PRs, pushes, merges, or code review.
+description: Use when asked to commit — "commit this", "make/write a commit", "commit these changes", or `/nvim-commit`. Drafts a commit message that mirrors THIS repo's own history and the user's voice, then opens it pre-filled in the mux `vcs` window (fugitive commit buffer, unfocused) for the user to review and `:wq`. Not for PRs, pushes, merges, or code review.
 ---
 
 # nvim-commit
 
 Draft a commit message into a fugitive commit buffer in the mux `vcs` view,
-left unfocused for Barrett to review and `:wq`. The helper does the nvim work;
+left unfocused for the user to review and `:wq`. The helper does the nvim work;
 your job is the message and which files to stage.
 
 ## Message — mirror the repo, not a fixed convention
@@ -65,7 +65,7 @@ branch checked out elsewhere (e.g. one reviewed via `nvim-review`), add
 ## Rules
 
 - Stage only named paths; never `git add -A` / `git add .`.
-- Never push, open/edit PRs, merge, or run `git commit` yourself — Barrett `:wq`s.
+- Never push, open/edit PRs, merge, or run `git commit` yourself — the user `:wq`s.
 - Never focus the `vcs` window. Report the helper's one-line result and stop on a
   zero exit.
 - No AI/assistant/co-author/signed-off attribution, ever (hook-enforced).

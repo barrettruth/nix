@@ -10,9 +10,9 @@ Open the current checkout's changes in mux for review. The `vcs` view gets
 
 ## Scope
 
-This skill assumes the current checkout is the one Barrett wants to review. It
+This skill assumes the current checkout is the one to review. It
 never checks out branches, creates worktrees, stashes, stages, commits, pushes,
-fetches, or changes remotes. If Barrett names another branch or worktree, resolve
+fetches, or changes remotes. If the request names another branch or worktree, resolve
 that with `/checkout` first, then run this from that checkout.
 
 ## Run
