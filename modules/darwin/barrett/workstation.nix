@@ -63,6 +63,19 @@ let
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
 
+  spotlightClipboard = pkgs.writeText "spotlight-clipboard.applescript" ''
+    tell application "System Events"
+      if (count windows of process "Spotlight") = 0 then
+        key code 49 using command down
+        repeat 60 times
+          if (count windows of process "Spotlight") > 0 then exit repeat
+          delay 0.02
+        end repeat
+      end if
+      key code 21 using command down
+    end tell
+  '';
+
   seedChromeShortcuts = pkgs.writeShellScript "seed-chrome-shortcuts" ''
     set -eu
     if /usr/bin/pgrep -qf "Google Chrome.app/Contents/MacOS/Google Chrome"; then
@@ -189,6 +202,7 @@ in
         ${appBindings}
         lalt - n : open -a Finder
 
+        ralt - c : /usr/bin/osascript ${spotlightClipboard}
         ralt - o : ${trexCapture}
         ralt - t : ${scripts}/theme
 
