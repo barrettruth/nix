@@ -63,17 +63,33 @@ let
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
 
-  spotlightClipboard = pkgs.writeText "spotlight-clipboard.applescript" ''
-    tell application "System Events"
-      if (count windows of process "Spotlight") = 0 then
-        key code 49 using command down
-        repeat 60 times
-          if (count windows of process "Spotlight") > 0 then exit repeat
-          delay 0.02
-        end repeat
-      end if
-      key code 21 using command down
-    end tell
+  spotlightClipboard = pkgs.writeText "spotlight-clipboard.js" ''
+    ObjC.import('AppKit');
+
+    const chord =
+      $.NSEventModifierFlagShift |
+      $.NSEventModifierFlagControl |
+      $.NSEventModifierFlagOption |
+      $.NSEventModifierFlagCommand;
+
+    const events = Application('System Events');
+    const spotlight = events.processes['Spotlight'];
+
+    function settle(ready, tries) {
+      for (let i = 0; i < tries; i++) {
+        if (ready()) return true;
+        $.NSThread.sleepForTimeInterval(0.02);
+      }
+      return ready();
+    }
+
+    if (settle(() => ($.NSEvent.modifierFlags & chord) === 0, 50)) {
+      if (spotlight.windows.length === 0) {
+        events.keyCode(49, { using: 'command down' });
+        settle(() => spotlight.windows.length > 0, 60);
+      }
+      events.keyCode(21, { using: 'command down' });
+    }
   '';
 
   seedChromeShortcuts = pkgs.writeShellScript "seed-chrome-shortcuts" ''
@@ -202,7 +218,7 @@ in
         ${appBindings}
         lalt - n : open -a Finder
 
-        ralt - c : /usr/bin/osascript ${spotlightClipboard}
+        ralt - c : /usr/bin/osascript -l JavaScript ${spotlightClipboard}
         ralt - o : ${trexCapture}
         ralt - t : ${scripts}/theme
 
