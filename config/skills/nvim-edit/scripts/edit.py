@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Iterable
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-import muxlib  # noqa: E402
+import muxlib  # noqa: E402  # ty: ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
 
 HOME = Path.home()
 DEFAULT_LIMIT = 8
@@ -532,7 +532,7 @@ def resolve_files(root: Path, query_parts: list[str], limit: int) -> list[Candid
 
 def resolved_files(
     root: Path, candidates: list[Candidate]
-) -> tuple[list[str], list[dict]]:
+) -> tuple[list[str], list[dict[str, str | int]]]:
     files = [c.path for c in candidates if c.path != root]
     items = [
         {"filename": str(c.path), "lnum": 1, "col": 1, "text": ""}

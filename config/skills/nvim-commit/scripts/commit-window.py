@@ -7,12 +7,13 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-import muxlib  # noqa: E402
+import muxlib  # noqa: E402  # ty: ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
 
 
-def die(message: str):
+def die(message: str) -> NoReturn:
     print(f"commit-window: {message}", file=sys.stderr)
     raise SystemExit(2)
 
@@ -36,7 +37,9 @@ def read_message(args: argparse.Namespace) -> list[str]:
     return text.split("\n")
 
 
-def ensure_staged(root: Path, stage: list[str], dry_run: bool) -> tuple[bool, list[str]]:
+def ensure_staged(
+    root: Path, stage: list[str], dry_run: bool
+) -> tuple[bool, list[str]]:
     already = muxlib.git_rc(root, "diff", "--cached", "--quiet") == 1
     if already:
         return True, []
@@ -55,12 +58,27 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         prog="commit-window",
         description="Draft a fugitive commit in the mux vcs view, unfocused.",
     )
-    p.add_argument("-F", "--file", default=None, help="read message from file ('-' = stdin)")
-    p.add_argument("-m", "--message", action="append", default=None, help="message line(s)")
-    p.add_argument("--stage", nargs="*", default=[], help="files to stage iff nothing is staged")
-    p.add_argument("--root", type=Path, default=None, help="base repo (default: current project)")
-    p.add_argument("--target", default=None, help="branch or worktree the changes live in")
-    p.add_argument("-n", "--dry-run", action="store_true", help="print the plan; do not stage/touch nvim")
+    p.add_argument(
+        "-F", "--file", default=None, help="read message from file ('-' = stdin)"
+    )
+    p.add_argument(
+        "-m", "--message", action="append", default=None, help="message line(s)"
+    )
+    p.add_argument(
+        "--stage", nargs="*", default=[], help="files to stage iff nothing is staged"
+    )
+    p.add_argument(
+        "--root", type=Path, default=None, help="base repo (default: current project)"
+    )
+    p.add_argument(
+        "--target", default=None, help="branch or worktree the changes live in"
+    )
+    p.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="print the plan; do not stage/touch nvim",
+    )
     return p.parse_args(argv)
 
 
@@ -93,7 +111,9 @@ def main(argv: list[str]) -> int:
     if not res.get("ok"):
         die(res.get("error", "commit driver failed"))
     note = "reused staged" if already else f"staged {len(staged)} file(s)"
-    print(f'commit-window: vcs ready — {note}; drafted "{res.get("subject", message[0])}"')
+    print(
+        f'commit-window: vcs ready — {note}; drafted "{res.get("subject", message[0])}"'
+    )
     return 0
 
 
