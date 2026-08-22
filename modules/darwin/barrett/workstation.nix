@@ -319,15 +319,6 @@ in
 
       ${asUser} ${seedChromeShortcuts} || true
 
-      tmp=$(mktemp)
-      awk '
-        $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
-        $0 == "# END nix-darwin tailnet"   { skip = 0; next }
-        !skip { print }
-      ' /etc/hosts >"$tmp"
-      install -m 0644 -o root -g wheel "$tmp" /etc/hosts
-      rm -f "$tmp"
-
       /nix/var/nix/profiles/default/bin/nix-env \
         --profile /nix/var/nix/profiles/system --delete-generations +5
     '';

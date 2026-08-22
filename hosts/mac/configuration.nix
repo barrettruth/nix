@@ -70,7 +70,11 @@ in
 
     tmp=$(mktemp)
     {
-      cat /etc/hosts
+      awk '
+        $0 == "# BEGIN nix-darwin tailnet" { skip = 1; next }
+        $0 == "# END nix-darwin tailnet"   { skip = 0; next }
+        !skip { print }
+      ' /etc/hosts
       echo "# BEGIN nix-darwin tailnet"
       echo "${tailnetHostsBlock}"
       echo "# END nix-darwin tailnet"
