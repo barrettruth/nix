@@ -268,7 +268,7 @@ def ensure(repo: Path, target: str, dry_run: bool) -> dict[str, Any]:
         resolved["dry_run"] = True
         return resolved
     base.mkdir(parents=True, exist_ok=True)
-    run(root, "worktree", "add", str(path), resolved["branch"], check=True)
+    _ = run(root, "worktree", "add", str(path), resolved["branch"], check=True)
     out = resolve(path, str(path))
     out["created"] = True
     return out
@@ -304,15 +304,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="checkout")
     sub = parser.add_subparsers(dest="command", required=True)
     inspect_cmd = sub.add_parser("inspect")
-    inspect_cmd.add_argument("--repo", type=Path, default=Path.cwd())
-    inspect_cmd.add_argument("--json", action="store_true")
+    _ = inspect_cmd.add_argument("--repo", type=Path, default=Path.cwd())
+    _ = inspect_cmd.add_argument("--json", action="store_true")
     for name in ["resolve", "ensure"]:
         cmd = sub.add_parser(name)
-        cmd.add_argument("--repo", type=Path, default=Path.cwd())
-        cmd.add_argument("--target", required=True)
-        cmd.add_argument("--json", action="store_true")
+        _ = cmd.add_argument("--repo", type=Path, default=Path.cwd())
+        _ = cmd.add_argument("--target", required=True)
+        _ = cmd.add_argument("--json", action="store_true")
         if name == "ensure":
-            cmd.add_argument("--dry-run", action="store_true")
+            _ = cmd.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
 

@@ -580,20 +580,22 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         prog="edit",
         description="Populate the mux edit window from a natural-language file target.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "-n", "--dry-run", action="store_true", help="print the resolved files"
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "-l", "--limit", type=int, default=None, help="maximum files to populate"
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--root",
         type=Path,
         default=None,
         help="repo root (default: current mux project)",
     )
-    parser.add_argument("--line", type=positive_int, default=None, help="1-based line")
-    parser.add_argument(
+    _ = parser.add_argument(
+        "--line", type=positive_int, default=None, help="1-based line"
+    )
+    _ = parser.add_argument(
         "--column", type=positive_int, default=None, help="1-based column"
     )
     known, rest = parser.parse_known_args(argv)
