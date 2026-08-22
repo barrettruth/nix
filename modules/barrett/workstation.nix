@@ -155,10 +155,6 @@ let
     pr = ["util", "exec", "--", "jj-pr"]
   '';
 
-  # GIT_CONFIG_GLOBAL points here, so this file is the whole global config and
-  # ~/.gitconfig is never read. A host that works under another identity sets
-  # barrett.user.gitEmail, and the trees that must keep the personal one are
-  # named in barrett.user.personalGitDirs rather than relying on the default.
   personalGitConf = pkgs.writeText "git-personal" ''
     [user]
       email = ${identity.email}
@@ -585,9 +581,6 @@ in
       (lib.optionalAttrs isDarwin {
         environment.variables = sessionVariables;
 
-        # macOS has no XDG_RUNTIME_DIR. TMPDIR is the closest analogue: per
-        # user, already 0700, and cleaned by the system. Anything expecting
-        # the linux /run/user/$UID falls back to it.
         environment.extraInit = ''
           export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-$TMPDIR}"
         '';

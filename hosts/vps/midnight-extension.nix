@@ -30,9 +30,6 @@ in
 {
   sops.secrets."midnight-crx-key" = mkSecret "midnight-crx-key" { };
 
-  # Signing happens here rather than in a derivation because the key is the
-  # extension's identity: a store path would be world readable, and losing the
-  # key means every installed copy has to be reinstalled under a new id.
   systemd.services.midnight-crx = {
     description = "Sign and publish the Midnight extension CRX";
     wantedBy = [ "multi-user.target" ];
@@ -68,8 +65,6 @@ in
         application/x-chrome-extension crx;
         application/xml xml;
       }
-      # Chrome polls the update manifest every few hours and must not be told
-      # to hold a stale one, or a bumped version never reaches the browser.
       add_header Cache-Control "no-cache" always;
     '';
   };

@@ -54,23 +54,13 @@ in
     services.tailscale = {
       enable = true;
 
-      # Tailscaled on macOS registers split DNS for its own ts.net rather than
-      # headscale's base_domain, so *.ts.barrettruth.com never reached
-      # 100.100.100.100. Headscale already sets override_local_dns and global
-      # nameservers, so it is safe to make it the sole resolver.
       overrideLocalDns = false;
     };
 
     environment.etc."resolver/${identity.tailnetDomain}".text = "nameserver 100.100.100.100";
 
-    # nix-darwin's tailscaled daemon sets RunAtLoad but not KeepAlive. With
-    # overrideLocalDns it is the only resolver, so a crash would take all name
-    # resolution with it until someone noticed.
     launchd.daemons.tailscaled.serviceConfig.KeepAlive = true;
 
-    # networking.dns is applied per entry in knownNetworkServices, so without
-    # this the resolver is never actually set and the option silently does
-    # nothing.
     networking.knownNetworkServices = [
       "Wi-Fi"
       "Thunderbolt Bridge"

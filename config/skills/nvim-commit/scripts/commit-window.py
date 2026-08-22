@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-# Stage (only named paths) and draft a fugitive commit in the mux `vcs` view,
-# left unfocused for Barrett to review and `:wq`. Git/staging live here; the
-# view + buffer work lives in Lua (mux.skills.commit), reached via muxlib.
-
 import argparse
 import sys
 from pathlib import Path

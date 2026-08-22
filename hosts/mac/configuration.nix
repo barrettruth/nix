@@ -47,9 +47,6 @@ let
     lib.generators.toPlist { escape = true; } chromePolicies
   );
 
-  # nix-darwin has no networking.hosts. Without these the public A records
-  # win, and they point at an address that does not answer, so every
-  # request to a self-hosted service stalls until it times out.
   tailnetHostsBlock = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (ip: names: "${ip} ${lib.concatStringsSep " " names}") identity.tailnetHosts
   );
@@ -97,9 +94,6 @@ in
 
   users.users.${username}.openssh.authorizedKeys.keys = identity.sshKeys;
 
-  # Remote Login is enabled on this machine alone, and macOS defaults both
-  # password paths to on. UsePAM keeps keyboard-interactive answering with a
-  # password even once PasswordAuthentication is off, so both are refused.
   services.openssh.extraConfig = ''
     PasswordAuthentication no
     KbdInteractiveAuthentication no

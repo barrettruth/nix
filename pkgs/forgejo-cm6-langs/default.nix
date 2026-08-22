@@ -19,11 +19,6 @@ let
   inherit (forgejo) version vendorHash;
   legacyModesVersion = "6.5.0";
 
-  # forgejo already depends on @codemirror/language; legacy-modes is the only
-  # missing package, and it is a leaf. Fetching the tarball and dropping it
-  # into node_modules avoids regenerating the lockfile, which previously
-  # required a networked fixed-output derivation whose hash moved with every
-  # npm version.
   legacyModes = fetchurl {
     url = "https://registry.npmjs.org/@codemirror/legacy-modes/-/legacy-modes-${legacyModesVersion}.tgz";
     hash = "sha256-NarHMgm6lGRLB21eke8AOQn7ezOyo9A2uMXP/bG3JtM=";
@@ -33,7 +28,6 @@ let
     pname = "forgejo-frontend-with-cm6-langs";
     inherit version nodejs;
     src = forgejo.src;
-    # reuse forgejo's own dependency set: the lockfile is untouched
     inherit (forgejo) npmDeps;
     patches = frontendPatches;
 
