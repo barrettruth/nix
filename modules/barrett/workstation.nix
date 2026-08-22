@@ -477,6 +477,7 @@ in
             nixfmt-tree
             tea
             git-lfs
+            git-filter-repo
             typst
             typstyle
             glab
