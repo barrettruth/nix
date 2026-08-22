@@ -80,10 +80,6 @@ let
       in
       {
         direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
-        google-workspace-cli = inputs.googleworkspace-cli.packages.${system}.default;
-        google-workspace-guard = final.callPackage ../pkgs/google-workspace-guard {
-          gws = final.google-workspace-cli;
-        };
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };

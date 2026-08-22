@@ -22,10 +22,6 @@
       url = "github:charliemeyer2000/devin-cli-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    googleworkspace-cli = {
-      url = "github:googleworkspace/cli/a3768d0e82ad83cca2da97724e46bea4ff0e6dbd";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     fonts = {
       url = "git+ssh://git@github.com/barrettruth/fonts.git";
       inputs.nixpkgs.follows = "nixpkgs";
