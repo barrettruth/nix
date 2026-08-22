@@ -91,6 +91,7 @@ let
     keybind = super+shift+l=increase_font_size:1
     keybind = super+c=unbind
     keybind = super+v=unbind
+    keybind = super+t=unbind
   '';
 
   ghosttyConfig = if isDarwin then "${ghosttyDarwinConf}" else "${repo}/config/ghostty/config";
