@@ -10,7 +10,7 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from collections.abc import Iterable
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
 import muxlib  # noqa: E402  # ty: ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
@@ -408,7 +408,7 @@ def score_file(
         score += 10
         hits.append("basename")
 
-    if any(token in path_tokens for token in {"test", "spec"}):
+    if any(token in path_tokens for token in ("test", "spec")):
         if "test" in expanded or "spec" in expanded:
             score += 7
         else:
