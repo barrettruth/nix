@@ -5,11 +5,11 @@
       "src": "https://github.com/monaqa/dial.nvim"
     },
     "fzf-lua": {
-      "rev": "28440c741e927592877514fba3db21eb188caec8",
+      "rev": "05e44d38de0a79c11fba5f7bf8138791b1dbdd1e",
       "src": "https://github.com/ibhagwan/fzf-lua"
     },
     "gitsigns.nvim": {
-      "rev": "31d6fb2d618bca1482b9f274751ead5f03461408",
+      "rev": "5be654f2232c10ddcad19c1607a67b6b4b78fc29",
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
     "guard-collection": {
@@ -33,11 +33,11 @@
       "src": "https://github.com/saecki/live-rename.nvim"
     },
     "lz.n": {
-      "rev": "339b1d35c9999134c91a1067685bc65695afc1c1",
+      "rev": "5144815893aab0bae3dc3ed25c24bc6ccf888f87",
       "src": "https://github.com/lumen-oss/lz.n"
     },
     "mini.ai": {
-      "rev": "2f763720771e192bdf9d2e25bfae339930ba4231",
+      "rev": "25248c6aa002391936a6200f12d1466015987133",
       "src": "https://github.com/echasnovski/mini.ai"
     },
     "mini.bracketed": {
@@ -57,7 +57,7 @@
       "src": "https://github.com/catgoose/nvim-colorizer.lua"
     },
     "nvim-lspconfig": {
-      "rev": "7ab79bb1b57160a537f427ac8a6026102f12b701",
+      "rev": "221c43884319e791519f0d6c94a7f2fbcd653278",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-surround": {
@@ -93,7 +93,7 @@
       "src": "https://github.com/tpope/vim-characterize"
     },
     "vim-eunuch": {
-      "rev": "e86bb794a1c10a2edac130feb0ea590a00d03f1e",
+      "rev": "929490937745cd96130d3e7948f762f0aa403314",
       "src": "https://github.com/tpope/vim-eunuch"
     },
     "vim-fugitive": {
@@ -113,7 +113,7 @@
       "src": "https://github.com/tpope/vim-sleuth"
     },
     "vim-ug": {
-      "rev": "3733002412f14abcbe7368968fe6f026b0dd7076",
+      "rev": "5cb3bbf6a5d5c1abd4ab1a999d991f9b6365b499",
       "src": "https://github.com/justinmk/vim-ug"
     }
   }
