@@ -53,9 +53,11 @@ local enabled = {
     'pytest_lsp',
     'lua_ls',
     'ruff',
+    'tailwindcss',
     'tinymist',
     'ts_query_ls',
     'vimdoc_ls',
+    'vtsls',
 }
 
 for _, server in ipairs(enabled) do

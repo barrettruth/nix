@@ -4,7 +4,9 @@ vim.pack.add({
 
 vim.pack.add({
     'https://github.com/folke/lazydev.nvim',
+    'https://github.com/mrcjkb/rustaceanvim',
     'https://github.com/saecki/live-rename.nvim',
+    'https://github.com/yioneko/nvim-vtsls',
 }, { load = function() end })
 
 return {
@@ -54,7 +56,6 @@ return {
     },
     {
         'yioneko/nvim-vtsls',
-        enabled = false,
         after = function()
             require('vtsls').config({
                 on_attach = function(_, bufnr)
@@ -112,7 +113,6 @@ return {
     },
     {
         'mrcjkb/rustaceanvim',
-        enabled = false,
         ft = 'rust',
         before = function()
             vim.g.rustaceanvim = {
@@ -144,7 +144,7 @@ return {
                     end,
                     default_settings = {
                         ['rust-analyzer'] = {
-                            checkOnSave = {
+                            check = {
                                 overrideCommand = {
                                     'cargo',
                                     'clippy',
