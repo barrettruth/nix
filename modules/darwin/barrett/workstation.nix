@@ -45,8 +45,9 @@ let
     app:
     let
       switch = lib.optionalString (app.space != null) "${aerospace} workspace ${toString app.space}; ";
+      args = lib.optionalString (app.args != [ ]) " --args ${lib.concatStringsSep " " app.args}";
     in
-    ''lalt - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"''
+    ''lalt - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"${args}''
   ) (lib.filter (app: app.key != null) launchApps);
 
   aerospaceBindings = lib.concatStringsSep "\n" (
@@ -109,6 +110,11 @@ in
             default = null;
             description = "AeroSpace workspace the app's windows open on.";
           };
+          args = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Arguments the binding passes, which LaunchServices only honours on a cold start.";
+          };
         };
       }
     );
@@ -159,6 +165,7 @@ in
       {
         key = "b";
         path = chromeApp;
+        args = chrome.flags;
       }
     ];
 
