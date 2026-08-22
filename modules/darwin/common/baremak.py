@@ -89,8 +89,6 @@ KEYSYM: dict[str, str] = {
     "question": "?",
 }
 
-# us(colemak_dh) leaves these at their qwerty positions; baremak does not
-# override them, so they carry no third level and fall back to levels 1-2.
 US_FALLBACK: dict[str, tuple[str, str]] = {
     "TLDE": ("`", "~"),
     "AE01": ("1", "!"),

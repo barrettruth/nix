@@ -63,8 +63,6 @@ let
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
 
-  # Chrome holds Preferences in memory and rewrites it on exit, so seeding a
-  # running browser is silently undone. Skipped rather than lost.
   seedChromeShortcuts = pkgs.writeShellScript "seed-chrome-shortcuts" ''
     set -eu
     if /usr/bin/pgrep -qf "Google Chrome.app/Contents/MacOS/Google Chrome"; then
@@ -285,8 +283,6 @@ in
       serviceConfig.RunAtLoad = true;
     };
 
-    # nix.gc prunes by age alone, and the count matters as much here as it does
-    # on the laptop, so the schedule is its own rather than nix-darwin's.
     launchd.daemons.nix-gc = {
       serviceConfig.StartCalendarInterval = [
         {
@@ -310,11 +306,8 @@ in
     fonts.packages = lib.optional (pkgs ? barrett-fonts) pkgs.barrett-fonts;
 
     system.activationScripts.extraActivation.text = ''
-      # power.sleep drives systemsetup, which only writes the AC profile.
-      # The battery profile keeps macOS defaults of 1 and 2 minutes.
       /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10 lessbright 0
 
-      # login(1) prints "Last login:" unless this exists.
       install -m 0644 -o ${username} -g staff /dev/null "${config.barrett.user.homeDirectory}/.hushlogin"
 
       ${act.installDirMode "0755" screenshotDir}
@@ -335,18 +328,10 @@ in
       install -m 0644 -o root -g wheel "$tmp" /etc/hosts
       rm -f "$tmp"
 
-      # The laptop prunes to +5 and the vps to +2; nix-darwin has no
-      # equivalent, so do it here.
       /nix/var/nix/profiles/default/bin/nix-env \
         --profile /nix/var/nix/profiles/system --delete-generations +5
     '';
 
-    # No nix-darwin option exists for the ambient light sensor, so write the
-    # domain directly. It is the "Automatically adjust brightness" toggle in
-    # System Settings > Displays.
-    # The domain must be an absolute path: CustomSystemPreferences emits a bare
-    # `defaults write <domain>` as root, which would land in
-    # /var/root/Library/Preferences rather than the system-wide location.
     system.defaults.CustomSystemPreferences."/Library/Preferences/com.apple.iokit.AmbientLightSensor" =
       {
         "Automatic Display Enabled" = false;
@@ -361,8 +346,6 @@ in
         expose-animation-duration = 0.0;
         autohide-delay = 0.0;
         launchanim = false;
-        # macOS ships Quick Note (14) on the bottom-right corner; 1 is the
-        # no-op action, which is how the corner is switched off.
         wvous-br-corner = 1;
       };
       spaces.spans-displays = true;

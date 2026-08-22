@@ -9,9 +9,6 @@
 }:
 
 let
-  # theme.css and theme.js exist in the working tree as symlinks into the
-  # store, written by activation, so they are dropped here and re-materialised
-  # as real files: the CRX is a zip, which would otherwise capture the links.
   source = lib.cleanSourceWith {
     src = ../../config/chromium/extension;
     filter = path: _: !(lib.hasSuffix "/theme.css" path || lib.hasSuffix "/theme.js" path);
@@ -34,8 +31,6 @@ runCommand "midnight-extension-${version}"
     edit --arg version ${lib.escapeShellArg version} '.version = $version'
 
     ${lib.optionalString (updateUrl != null) ''
-      # Chrome takes the update url for the first install from policy, but
-      # every later check reads it out of the packed manifest.
       edit --arg url ${lib.escapeShellArg updateUrl} '.update_url = $url'
     ''}
   ''

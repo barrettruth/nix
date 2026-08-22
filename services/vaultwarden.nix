@@ -36,9 +36,6 @@ lib.mkMerge [
       forceSSL = true;
       locations."/" = {
         proxyPass = "http://127.0.0.1:8222";
-        # /notifications/hub is a websocket; without the upgrade headers
-        # nginx turns it into a plain GET, which falls through to a 404 and
-        # leaves clients with no live sync.
         proxyWebsockets = true;
       };
     };

@@ -122,7 +122,6 @@
     options = "";
   };
 
-  # Keep only the current VPS system generation and one rollback generation.
   system.activationScripts.pruneVpsSystemGenerations.text = ''
     if [ -e /nix/var/nix/profiles/system ]; then
       ${config.nix.package}/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +2

@@ -101,8 +101,6 @@ has_foreign_identity() {
   return 1
 }
 
-# git lfs pre-push reads the same ref list from stdin, so it has to be buffered
-# rather than consumed: draining it here left the lfs check a silent no-op.
 refs=$(cat)
 
 while read -r local_ref local_sha remote_ref remote_sha; do
