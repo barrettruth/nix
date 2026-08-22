@@ -114,11 +114,10 @@ condition; `MISSING` means the grant is not durable and something is wrong.
 
 Run them one at a time — they all bind port 3000.
 
-Gmail. Read-only is the recommended scope on a corporate-managed machine; see
-the note at the bottom before choosing:
+Gmail. Full mailbox — read, send, permanent delete, filters:
 
     python3 /tmp/gauth.py ~/.gmail-mcp/credentials.json \
-        'https://www.googleapis.com/auth/gmail.readonly'
+        'https://mail.google.com/'
 
 Drive:
 
@@ -169,8 +168,7 @@ pairs restricted `drive` with sensitive `spreadsheets`.
 
 If a consent screen 500s, that is the cause. It is not an outage.
 
-`https://mail.google.com/` is full mailbox access, including permanent delete,
-and the token does not expire. On a corporate-managed device that means disk
-imaging, MDM and IT recovery all reach your personal mail. `gmail.readonly`
-above keeps the blast radius small. Use `https://mail.google.com/` only if you
-genuinely need to send or delete from imc, and understand the tradeoff.
+`https://mail.google.com/` already covers the Gmail settings endpoints
+(`settings/filters`, `settings/sendAs`, `settings/vacation`), so do not add
+`gmail.settings.basic` — it grants nothing extra and tips the request over the
+one-restricted-scope limit.
