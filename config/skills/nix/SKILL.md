@@ -1,6 +1,6 @@
 ---
 name: nix
-description: Use when working in Barrett's nix configuration at ~/.config/nix — rebuilding a host, editing a module or package, running the repo's checks, or when an edit to a dotfile appears to have had no effect. Establish real state with read-only commands, then report concisely.
+description: Use when working in the nix configuration at ~/.config/nix — rebuilding a host, editing a module or package, running the repo's checks, or when an edit to a dotfile appears to have had no effect. Establish real state with read-only commands, then report concisely.
 ---
 
 # nix

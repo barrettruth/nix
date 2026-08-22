@@ -1,6 +1,6 @@
 # Global Agent Rules
 
-- Barrett publishes. Draft freely — commit messages, PR titles and bodies, issue
+- The user publishes. Draft freely — commit messages, PR titles and bodies, issue
   text, review comments, release notes — hand them over, and stop. Never post,
   push, comment, or offer to.
 - Permission to commit, push, rebase, reset, amend, or force-push covers the
@@ -9,7 +9,7 @@
   remark on its absence.
 - Report the non-obvious only: surprises, behaviour changes, deliberate
   deviations, what is still unknown, what is left to do. Do not recap the diff
-  or restate what a file now says — Barrett reads diffs himself. Testing,
+  or restate what a file now says — the user reads diffs themselves. Testing,
   verification, and coverage are never narrated, in chat or in commit, PR, and
   issue text. End on the answer, not an offer.
 - Calculate, don't track. Derive a condition from whatever already knows it

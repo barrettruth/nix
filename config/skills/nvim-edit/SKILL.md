@@ -1,6 +1,6 @@
 ---
 name: nvim-edit
-description: Use when Barrett asks to open, show, or pull up file(s) in his editor — e.g. "open in my editor", "open in nvim/neovim", "pull this up", or "populate the mux edit window" — resolving a natural-language file target. Editor navigation only; do not edit file contents.
+description: Use when asked to open, show, or pull up file(s) in the editor — e.g. "open in my editor", "open in nvim/neovim", "pull this up", or "populate the mux edit window" — resolving a natural-language file target. Editor navigation only; do not edit file contents.
 ---
 
 # nvim-edit
@@ -14,7 +14,7 @@ resolve the target to concrete path(s) and pass them.
 
 - Resolve the target mux project first. By default the helper targets the cwd's
   git/jj root and opens files in that project's `edit` view.
-- If Barrett names or clearly implies a different checkout, repo, PR, branch, or
+- If the request names or clearly implies a different checkout, repo, PR, branch, or
   worktree, pass that repo root with `--root <repo-root>` instead of relying on
   the shell cwd.
 - If opening a generated or temporary file related to another repo, keep the temp
@@ -26,7 +26,7 @@ resolve the target to concrete path(s) and pass them.
   `git ls-files` directly.
 - Filter before sampling: "a random file containing X" means find files
   containing X, then pick one.
-- Singular phrasing ("a random file") populates one file unless Barrett asks for
+- Singular phrasing ("a random file") populates one file unless asked for
   more.
 - For one resolved file, extract an explicit position from natural language or
   pasted locations and pass it as 1-based `--line <n>` plus optional
@@ -39,7 +39,7 @@ resolve the target to concrete path(s) and pass them.
 
 - Minimal: before opening, name the file(s) and why in a sentence or two; say
   nothing about resolver steps or the helper.
-- A zero exit is success — stop. Re-open or inspect the editor only if Barrett
+- A zero exit is success — stop. Re-open or inspect the editor only if the user
   says the editor state is wrong.
 - On failure, report the helper's stderr exactly enough to identify the mux root
   or server problem, and stop there.

@@ -18,20 +18,20 @@ Recover one exact local Devin CLI session without disturbing other Devin process
 
 ## Flow
 
-1. Resolve the target to one exact session ID. Use an ID supplied by Barrett directly. If he supplies only a title or description, run `devin list --format json` and continue only when it identifies one unique session; otherwise ask which session he means.
+1. Resolve the target to one exact session ID. Use an ID supplied directly. If only a title or description is supplied, run `devin list --format json` and continue only when it identifies one unique session; otherwise ask which session is meant.
 2. Inspect the exact session lock:
 
 ```sh
 recover status <session-id> --json
 ```
 
-3. If Barrett asked to inspect only, report the status without releasing it. If he asked to recover, kill, unlock, or resume that exact session, run:
+3. If asked to inspect only, report the status without releasing it. If asked to recover, kill, unlock, or resume that exact session, run:
 
 ```sh
 recover release <session-id> --json
 ```
 
-4. If release succeeds, respond with the returned slash command so Barrett can switch the current CLI to the recovered session:
+4. If release succeeds, respond with the returned slash command so you can switch the current CLI to the recovered session:
 
 ```text
 /resume <session-id>
