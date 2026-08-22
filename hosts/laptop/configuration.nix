@@ -67,8 +67,6 @@ in
 
   i18n.defaultLocale = "en_US.UTF-8";
 
-  security.pam.services.hyprlock = { };
-
   security.doas = {
     enable = true;
     extraRules = [

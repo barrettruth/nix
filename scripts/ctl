@@ -70,40 +70,6 @@ grayscale_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 grayscale_state_file="$grayscale_state_dir/grayscale"
 grayscale_shader_file="$grayscale_state_dir/screen-shader.frag"
 grayscale_shader_dir="${BARRETT_NIX_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/nix/config}/hypr/shaders"
-idle_runtime_dir="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}/ctl-$(id -u)}/idle"
-idle_toggle_lock="$idle_runtime_dir/toggle.lock"
-idle_toggle_timestamp="$idle_runtime_dir/toggle.timestamp"
-
-idle_toggle_allowed() {
-  require flock
-  mkdir -p "$idle_runtime_dir"
-  exec 8>"$idle_toggle_lock" || exit 1
-  flock 8 || exit 1
-  now="$(date +%s)"
-  last="$(cat "$idle_toggle_timestamp" 2>/dev/null || true)"
-  printf '%s\n' "$now" >"$idle_toggle_timestamp"
-  case "$last" in
-  '' | *[!0-9]*) return 0 ;;
-  esac
-  [ $((now - last)) -ge 5 ]
-}
-
-idle_read_state() {
-  if systemctl --user is-active --quiet hypridle.service; then
-    printf '%s\n' on
-  else
-    printf '%s\n' off
-  fi
-}
-
-idle_on() {
-  systemctl --user start hypridle.service
-}
-
-idle_off() {
-  systemctl --user stop hypridle.service
-}
-
 grayscale_read_state() {
   state="$(cat "$grayscale_state_file" 2>/dev/null || true)"
   case "$state" in
@@ -150,7 +116,7 @@ grayscale_off() {
 case "$(uname)" in
 Darwin)
   case "$1" in
-  screenshot | keyboard | audio | battery | brightness | volume | wifi | media | clip | power | dictate | idle | grayscale)
+  screenshot | keyboard | audio | battery | brightness | volume | wifi | media | clip | power | dictate | grayscale)
     echo "ctl: $1 is linux-only" >&2
     exit 1
     ;;
@@ -855,60 +821,6 @@ def render_contours(elevation: Image.Image, W: int, H: int, bg: Rgb, line_color:
     return img.resize((W, H), Image.LANCZOS)
 
 
-def lock() -> None:
-    W, H = get_resolution()
-    UNIT: int = 16
-    grid_w = W // UNIT
-    grid_h = H // UNIT
-
-    bg_color = tuple(random.randint(0, 255) for _ in range(3))
-    img = Image.new("RGB", (W, H), bg_color)
-    draw = ImageDraw.Draw(img)
-
-    MU = 0.8
-    SIGMA = 0.7
-    SCALE_FACTOR = 1.8
-
-    S: set[tuple[int, int]] = {(x, y) for x in range(grid_w) for y in range(grid_h)}
-    N: int = len(S)
-
-    while S:
-        if random.random() < 1 / N:
-            break
-        gx, gy = S.pop()
-        w_units = max(
-            1,
-            min(
-                grid_w - gx,
-                int(round(random.lognormvariate(MU, SIGMA) * SCALE_FACTOR)),
-            ),
-        )
-        h_units = max(
-            1,
-            min(
-                grid_h - gy,
-                int(round(random.lognormvariate(MU, SIGMA) * SCALE_FACTOR)),
-            ),
-        )
-        color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-        dx = random.choice([1, -1])
-        dy = random.choice([1, -1])
-
-        gx_end = gx + dx * (w_units - 1)
-        gy_end = gy + dy * (h_units - 1)
-
-        x0, x1 = sorted([gx, gx_end])
-        y0, y1 = sorted([gy, gy_end])
-
-        draw.rectangle(
-            [x0 * UNIT, y0 * UNIT, (x1 + 1) * UNIT - 1, (y1 + 1) * UNIT - 1],
-            fill=color,
-        )
-
-    img.save(f"{DIR}/lock.jpg", quality=95)
-
-
 def gen() -> None:
     W, H = get_resolution()
     tiles_x = math.ceil(W / TILE_SIZE)
@@ -961,32 +873,27 @@ def gen() -> None:
 
 
 cmd: str | None = sys.argv[1] if len(sys.argv) > 1 else None
-if cmd == "lock":
-    if sys.platform != "darwin":
-        lock()
-elif cmd == "gen":
+if cmd == "gen":
     gen()
 else:
-    print("Usage: ctl wallpaper {gen|lock}", file=sys.stderr)
+    print("Usage: ctl wallpaper gen", file=sys.stderr)
     sys.exit(1)
 PYTHON
   nix-shell -p 'python3.withPackages (ps: [ ps.pillow ])' --run "python3 \"$_wp\" \"$2\""
   status=$?
   [ "$status" -eq 0 ] || exit "$status"
-  if [ "$2" = gen ]; then
-    case "$(uname)" in
-    Linux)
-      if systemctl --user is-active --quiet hyprpaper 2>/dev/null; then
-        systemctl --user restart hyprpaper >/dev/null 2>&1 || true
-      fi
-      ;;
-    Darwin)
-      wp_theme="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || wp_theme=midnight
-      [ -n "$wp_theme" ] || wp_theme=midnight
-      theme "$wp_theme" >/dev/null 2>&1 || true
-      ;;
-    esac
-  fi
+  case "$(uname)" in
+  Linux)
+    if systemctl --user is-active --quiet hyprpaper 2>/dev/null; then
+      systemctl --user restart hyprpaper >/dev/null 2>&1 || true
+    fi
+    ;;
+  Darwin)
+    wp_theme="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || wp_theme=midnight
+    [ -n "$wp_theme" ] || wp_theme=midnight
+    theme "$wp_theme" >/dev/null 2>&1 || true
+    ;;
+  esac
   ;;
 clip)
   require fuzzel cliphist wl-copy
@@ -1022,14 +929,12 @@ clip)
   ;;
 power)
   require fuzzel
-  lock="󰌾   Lock"
   suspend="󰒲   Suspend"
   logout="󰍃   Logout"
   reboot="󰜉   Reboot"
   shutdown="󰐥   Shutdown"
-  chosen="$(printf '%s\n' "$lock" "$suspend" "$logout" "$reboot" "$shutdown" | fuzzel --dmenu --hide-prompt --lines=5 --width=20 --no-icons)"
+  chosen="$(printf '%s\n' "$suspend" "$logout" "$reboot" "$shutdown" | fuzzel --dmenu --hide-prompt --lines=4 --width=20 --no-icons)"
   case "$chosen" in
-  "$lock") hyprlock ;;
   "$suspend") systemctl suspend ;;
   "$logout") hyprctl dispatch 'hl.dsp.exit()' ;;
   "$reboot") systemctl reboot ;;
@@ -1186,34 +1091,6 @@ dictate)
   dictation_save_state "$session" "$!" "$audio"
   dictation_unlock
   ;;
-idle)
-  case "${2:-toggle}" in
-  toggle)
-    idle_toggle_allowed || exit 0
-    require notify-send
-    if systemctl --user is-active --quiet hypridle.service; then
-      idle_off
-      notify-send -a ctl -t 2500 "Idle Manager" "Off"
-    else
-      idle_on
-      notify-send -a ctl -t 2500 "Idle Manager" "On"
-    fi
-    ;;
-  on)
-    idle_on
-    ;;
-  off)
-    idle_off
-    ;;
-  state)
-    idle_read_state
-    ;;
-  *)
-    echo "Usage: ctl idle [toggle|state|on|off]" >&2
-    exit 1
-    ;;
-  esac
-  ;;
 grayscale)
   case "${2:-toggle}" in
   toggle)
@@ -1242,7 +1119,7 @@ grayscale)
   esac
   ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|idle|grayscale|clip|dictate}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|grayscale|clip|dictate}" >&2
   exit 1
   ;;
 esac

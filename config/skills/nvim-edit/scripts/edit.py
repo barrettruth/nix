@@ -92,7 +92,7 @@ TOKEN_ALIASES = {
     "desktop": {"desktop", "hyprland", "waybar", "dunst"},
     "forge": {"forge", "forgejo", "vps", "gitea"},
     "gpg": {"gpg", "gnupg", "gpgagent"},
-    "hypr": {"hypr", "hyprland", "hypridle", "hyprlock", "hyprpaper"},
+    "hypr": {"hypr", "hyprland", "hyprpaper"},
     "neovim": {"neovim", "nvim", "vim"},
     "nix": {"nix", "nixos", "flake"},
     "shell": {"shell", "zsh", "bash"},

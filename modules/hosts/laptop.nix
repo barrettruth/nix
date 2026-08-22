@@ -30,7 +30,6 @@ in
         {
           barrett.workstation.enable = true;
           barrett.ui.enable = true;
-          barrett.ui.idle.suspend = true;
           barrett.ui.gpu = "nvidia-prime";
           programs.direnv.enable = true;
           programs.direnv.enableZshIntegration = false;

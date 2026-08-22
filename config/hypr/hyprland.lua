@@ -84,17 +84,9 @@ hl.animation({ leaf = "borderangle", enabled = false })
 
 hl.gesture({ fingers = 3, direction = "pinch", action = "cursor_zoom", zoom_level = "1", mode = "live" })
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
-hl.gesture({
-	fingers = 3,
-	direction = "down",
-	action = function()
-		hl.dispatch(hl.dsp.exec_cmd("ctl wallpaper lock && hyprlock"))
-	end,
-})
 
 hl.on("hyprland.start", function()
 	hl.exec_cmd("ctl wallpaper gen")
-	hl.exec_cmd("ctl wallpaper lock")
 	hl.exec_cmd("hypr spawnfocus --ws 1 $TERMINAL -e nvim -c 'Mux ~/.config/nix'")
 	hl.exec_cmd("hypr spawnfocus --ws 2 $BROWSER")
 end)
@@ -145,7 +137,6 @@ hl.define_submap("scripts", "reset", function()
 	hl.bind("A", hl.dsp.exec_cmd("ctl audio sink"))
 	hl.bind("C", hl.dsp.exec_cmd("ctl clip"))
 	hl.bind("G", hl.dsp.exec_cmd("ctl grayscale"))
-	hl.bind("I", hl.dsp.exec_cmd("ctl idle"), { release = true })
 	hl.bind("K", hl.dsp.exec_cmd("ctl keyboard next"))
 	hl.bind("M", hl.dsp.exec_cmd("ctl media"))
 	hl.bind("P", hl.dsp.exec_cmd("ctl power"))
