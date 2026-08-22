@@ -33,9 +33,7 @@ let
     done
   '';
 
-  inherit (cfg) useHomeRepo;
-
-  scriptsPath = if useHomeRepo then "${repo}/scripts" else "${barrettScripts}/bin";
+  scriptsPath = "${repo}/scripts";
 
   inherit (act) runAsUser mkSymlink;
 
@@ -379,16 +377,13 @@ in
     };
     homeDirectory = lib.mkOption {
       type = lib.types.str;
+      readOnly = true;
+      internal = true;
       default = (if isDarwin then "/Users/" else "/home/") + config.barrett.user.name;
     };
   };
 
   options.barrett.workstation.enable = lib.mkEnableOption "Barrett workstation extras";
-
-  options.barrett.workstation.useHomeRepo = lib.mkOption {
-    type = lib.types.bool;
-    default = true;
-  };
 
   options.barrett.workstation.scriptsPath = lib.mkOption {
     type = lib.types.str;

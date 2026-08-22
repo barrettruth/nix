@@ -18,14 +18,11 @@ let
   XDG_STATE_HOME = "${homeDirectory}/.local/state";
   XDG_CACHE_HOME = "${homeDirectory}/.cache";
   repo = "${XDG_CONFIG_HOME}/nix";
-  sourceRoot = ../../..;
-  sourceConfig = "${sourceRoot}/config";
   xkbBaremak = builtins.path {
     path = ../../../config/xkb/baremak;
     name = "xkb-baremak";
   };
-  inherit (config.barrett.workstation) useHomeRepo;
-  configRoot = if useHomeRepo then "${repo}/config" else sourceConfig;
+  configRoot = "${repo}/config";
 
   wayland = import ../desktop/wayland.nix { inherit pkgs; };
   inherit (wayland)
@@ -114,19 +111,6 @@ let
     DUNSTDAYLIGHT
   '';
 
-  waybarConfig = pkgs.writeText "waybar-config" (
-    builtins.replaceStrings [ "$HOME/.config/nix" ] [ "${sourceRoot}" ] (
-      builtins.readFile (sourceRoot + "/config/waybar/config.jsonc")
-    )
-  );
-  waybarConfigFile = if useHomeRepo then "${configRoot}/waybar/config.jsonc" else waybarConfig;
-
-  chromiumExtension = pkgs.runCommand "chromium-extension" { } ''
-    cp -R --no-preserve=mode,ownership ${sourceConfig}/chromium/extension $out
-    ln -sfnT ${chromiumThemeCss} $out/theme.css
-    ln -sfnT ${chromiumThemeJs} $out/theme.js
-  '';
-
   fuzzelConf = pkgs.writeText "fuzzel-wrapper" ''
     include=${XDG_CONFIG_HOME}/fuzzel/themes/theme.ini
     include=${configRoot}/fuzzel/fuzzel.ini
@@ -171,9 +155,6 @@ let
       path = ${homeDirectory}/Pictures/Screensavers/wallpaper.jpg
     }
   '';
-
-  chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
-  chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
   chromiumArgs = [
     "--ozone-platform=wayland"
@@ -416,12 +397,6 @@ in
 
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
       ${mkSymlink "${repo}/config/electron-flags.conf" "${XDG_CONFIG_HOME}/electron-flags.conf"}
-      ${lib.optionalString (!useHomeRepo) ''
-        if [ ! -e "${repo}" ] && [ ! -L "${repo}" ]; then
-          ${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "${sourceRoot}" "${repo}"
-        fi
-      ''}
-
       ${mkSymlink "${hyprThemes}/midnight.lua" "${XDG_CONFIG_HOME}/hypr/themes/midnight.lua"}
       ${mkSymlink "${hyprThemes}/daylight.lua" "${XDG_CONFIG_HOME}/hypr/themes/daylight.lua"}
       ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.lua"}
@@ -430,7 +405,7 @@ in
 
       ${mkSymlink "${waybarThemes}/midnight.css" "${XDG_CONFIG_HOME}/waybar/themes/midnight.css"}
       ${mkSymlink "${waybarThemes}/daylight.css" "${XDG_CONFIG_HOME}/waybar/themes/daylight.css"}
-      ${mkSymlink "${waybarConfigFile}" "${XDG_CONFIG_HOME}/waybar/config"}
+      ${mkSymlink "${configRoot}/waybar/config.jsonc" "${XDG_CONFIG_HOME}/waybar/config"}
       ${mkSymlink "${configRoot}/waybar/style.css" "${XDG_CONFIG_HOME}/waybar/style.css"}
 
       ${mkSymlink "${fuzzelThemes}/midnight.ini" "${XDG_CONFIG_HOME}/fuzzel/themes/midnight.ini"}
@@ -444,11 +419,6 @@ in
       ${mkSymlink "${zathuraThemes}/midnight" "${XDG_CONFIG_HOME}/zathura/themes/midnight"}
       ${mkSymlink "${zathuraThemes}/daylight" "${XDG_CONFIG_HOME}/zathura/themes/daylight"}
       ${mkSymlink "${configRoot}/zathura/zathurarc" "${XDG_CONFIG_HOME}/zathura/zathurarc"}
-
-      ${lib.optionalString (!useHomeRepo) ''
-        ${mkDir "${XDG_CONFIG_HOME}/chromium"}
-        ${mkSymlink "${chromiumExtension}" "${XDG_CONFIG_HOME}/chromium/extension"}
-      ''}
 
       ${readTheme}
       ${mkSymlink "${XDG_CONFIG_HOME}/hypr/themes/$theme.lua" "${XDG_CONFIG_HOME}/hypr/themes/theme.lua"}
