@@ -25,15 +25,20 @@ Activation creates `~/.config/devin`, which step 2 writes into.
 
 ## 2. Get the OAuth client credentials
 
-Download them straight from Google rather than copying from another machine.
-These are Desktop-app client credentials, which Google treats as
-non-confidential.
+Google no longer lets you view or download the secret of an *existing* OAuth
+client -- "Viewing and downloading client secrets is no longer available." The
+JSON is offered once, at creation. So create a fresh Desktop client rather than
+trying to recover the old one; a second Desktop client on the same project is
+free and does not disturb the existing one.
 
 1. Open the Cloud console credentials page for project `devin-mcp-gmail`:
    https://console.cloud.google.com/apis/credentials?project=devin-mcp-gmail
-2. Under **OAuth 2.0 Client IDs**, find the Desktop client and download its
-   JSON.
-3. Place it and derive the rest:
+2. **+ Create credentials** > **OAuth client ID** > Application type
+   **Desktop app**. Name it `imc`.
+3. In the dialog that appears on creation, click **Download JSON**. This is the
+   only chance -- reopening the client later will not offer it again. Save it to
+   `~/Downloads`.
+4. Place it and derive the rest:
 
 ```
 mkdir -p ~/.gmail-mcp ~/.config/mcp-google ~/.config/mcp-gdrive \
@@ -54,7 +59,7 @@ print('wrote client_id and client_secret')
 "
 ```
 
-4. Write the MCP server config. The client secret is inlined because Devin does
+5. Write the MCP server config. The client secret is inlined because Devin does
    not expand `${file:...}` in OAuth fields:
 
 ```
