@@ -43,10 +43,9 @@ _rebuild-nixos host +args:
         nix run nixpkgs#nixos-rebuild -- switch --no-reexec --flake '.#{{ host }}' {{ args }}; \
       fi
 
-lint_paths := "'scripts/**' 'modules/**'"
-format_paths := "'scripts/**' 'modules/**' 'config/**'"
+paths := "'scripts/**' 'modules/**' 'config/**' 'pkgs/**'"
 
-_python-scripts paths=lint_paths:
+_python-scripts:
    @git ls-files {{ paths }} | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
         case "$file" in *.py) printf '%s\n' "$file"; continue ;; esac; \
@@ -56,7 +55,7 @@ _python-scripts paths=lint_paths:
         esac; \
     done
 
-_shell-scripts paths=lint_paths:
+_shell-scripts:
     @git ls-files {{ paths }} | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
         case "$file" in *.py) continue ;; esac; \
@@ -69,8 +68,8 @@ _shell-scripts paths=lint_paths:
 
 format:
     nix fmt -- --ci
-    just _shell-scripts "{{ format_paths }}" | xargs -r shfmt -i 2 -d
-    just _python-scripts "{{ format_paths }}" | xargs -r black --check
+    just _shell-scripts | xargs -r shfmt -i 2 -d
+    just _python-scripts | xargs -r black --check
     stylua --check config/nvim
 
 lint:
@@ -78,7 +77,7 @@ lint:
     lua-language-server --check config/nvim --configpath "$(pwd)/config/nvim/.luarc.json" --checklevel=Warning
     just _shell-scripts | xargs -r shellcheck
     just _python-scripts | xargs -r ty check
-    just _python-scripts | xargs -r basedpyright --pythonversion 3.11
+    just _python-scripts | xargs -r basedpyright
 
 ci: format lint
     @:

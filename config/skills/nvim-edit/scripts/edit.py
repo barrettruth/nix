@@ -13,7 +13,7 @@ from pathlib import Path
 from collections.abc import Iterable
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-import muxlib  # noqa: E402  # ty: ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
+import muxlib  # noqa: E402  # ty: ignore[unresolved-import]
 
 HOME = Path.home()
 DEFAULT_LIMIT = 8
@@ -178,7 +178,7 @@ def rel(root: Path, path: Path) -> str:
 
 
 def tokenize(value: str) -> list[str]:
-    return [token.lower() for token in TOKEN_RE.findall(value)]
+    return [match[0].lower() for match in TOKEN_RE.finditer(value)]
 
 
 def query_tokens(query: str) -> list[str]:

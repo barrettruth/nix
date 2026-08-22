@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_lib"))
-import muxlib  # noqa: E402  # ty: ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
+import muxlib  # noqa: E402  # ty: ignore[unresolved-import]
 
 JUNK_TOP = {
     ".git",
