@@ -2,7 +2,6 @@ import json
 import sys
 from pathlib import Path
 
-
 EXTENSION_ID = "mkkfkigeooommanfhjihnemocokgpmjk"
 BINDINGS = {
     "toggle-overlay": "Ctrl+Period",
