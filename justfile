@@ -64,7 +64,7 @@ format:
 
 lint:
     git ls-files '*.nix' | xargs deadnix --fail --no-lambda-pattern-names
-    lua-language-server --check config/nvim --configpath "$(pwd)/config/nvim/.luarc.json" --checklevel=Warning
+    export VIMRUNTIME="$(nvim --clean --headless -c 'lua io.write(vim.env.VIMRUNTIME)' -c 'qa!')" && test -d "$VIMRUNTIME" && lua-language-server --check config/nvim --configpath "$(pwd)/config/nvim/.luarc.json" --checklevel=Warning
     just _shell-scripts | xargs -r shellcheck
     just _python-scripts | xargs -r ty check
     just _python-scripts | xargs -r basedpyright

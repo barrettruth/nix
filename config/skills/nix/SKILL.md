@@ -56,6 +56,11 @@ Both steps enumerate the same `paths` (`scripts/**`, `modules/**`, `config/**`,
 `pkgs/**`), picking up shell and python by extension or shebang, so skill
 scripts, git hooks and devin hooks are covered too.
 
+lua-language-server only resolves `vim.*` when `VIMRUNTIME` is set, so `lint`
+derives it from whichever `nvim` is on PATH. Bare, that is the local nightly
+build; in `.#ci` it is the `neovim-unwrapped` the shell pins, which lags and so
+under-reports deprecations rather than inventing them.
+
 basedpyright reads `pyrightconfig.json` at the root: `strict`, pinned to python
 3.11, with `config/skills/_lib` on `extraPaths` so the skill scripts' runtime
 `sys.path` insert of `muxlib` resolves. ty has no equivalent, which is why those

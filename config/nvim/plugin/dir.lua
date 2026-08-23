@@ -28,6 +28,7 @@ vim.api.nvim_set_decoration_provider(ns, {
                 ephemeral = true,
             })
         end
+        ---@diagnostic disable-next-line: return-type-mismatch
         return row + 1
     end,
 })
