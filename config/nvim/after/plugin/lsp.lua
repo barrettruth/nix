@@ -51,6 +51,7 @@ local enabled = {
     'mdx_analyzer',
     'jsonls',
     'lua_ls',
+    'ocamllsp',
     'ruff',
     'tailwindcss',
     'tinymist',

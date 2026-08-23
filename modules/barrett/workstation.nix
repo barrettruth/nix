@@ -413,6 +413,12 @@ in
             rustup
             uv
             python3
+            ocaml
+            dune
+            ocamlformat
+            ocamlPackages.ocaml-lsp
+            ocamlPackages.utop
+            ocamlPackages.odoc
             bash-language-server
             basedpyright
             clang-tools
