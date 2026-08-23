@@ -4,7 +4,7 @@ local TIMEOUT_MS = 2000
 
 function M.load()
     local root = vim.fs.root(vim.fn.getcwd(), '.envrc')
-    if not root or (vim.env.DIRENV_DIR or ''):sub(2) == root then
+    if not root or vim.env.DIRENV_DIR == '-' .. root then
         return
     end
 
@@ -18,25 +18,20 @@ function M.load()
     local result
 
     local function finish()
-        local ok, env = false, nil
-        if result.code == 0 then
-            ok, env = pcall(vim.json.decode, result.stdout or '')
-        end
-        ok = ok and type(env) == 'table'
-
+        local failed = result.code ~= 0
         local loaded = false
-        for key, value in pairs(ok and env or {}) do
+        for key, value in pairs(failed and {} or vim.json.decode(result.stdout)) do
             vim.env[key] = value ~= vim.NIL and value or nil
             loaded = loaded or not vim.startswith(key, 'DIRENV_')
         end
 
         if progress.id then
-            progress.status = ok and 'success' or 'error'
+            progress.status = failed and 'error' or 'success'
             vim.api.nvim_echo({}, false, progress)
         end
 
         local level, msg = vim.log.levels.WARN, nil
-        if not ok then
+        if failed then
             msg = ('%s failed (exit %d)'):format(name, result.code)
         elseif not loaded then
             msg = ('%s is blocked, run direnv allow'):format(name)
