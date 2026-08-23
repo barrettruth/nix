@@ -59,6 +59,22 @@ let
 
   pinnedApps = lib.filter (app: app.space != null && app.bundleId != null) launchApps;
 
+  agentName =
+    path:
+    lib.toLower (builtins.replaceStrings [ " " ] [ "-" ] (lib.removeSuffix ".app" (baseNameOf path)));
+
+  autostartAgents = lib.listToAttrs (
+    map (
+      app:
+      lib.nameValuePair (agentName app.path) {
+        command =
+          ''/usr/bin/open -a "${app.path}"''
+          + lib.optionalString (app.args != [ ]) " --args ${lib.concatStringsSep " " app.args}";
+        serviceConfig.RunAtLoad = true;
+      }
+    ) (lib.filter (app: app.autostart) launchApps)
+  );
+
   trexCapture = pkgs.writeShellScript "trex-capture" ''
     exec /usr/bin/open -a "${trexApp}" "trex://capture"
   '';
@@ -142,6 +158,11 @@ in
             default = [ ];
             description = "Arguments the binding passes, which LaunchServices only honours on a cold start.";
           };
+          autostart = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Open the app at login, so its windows are already on `space`.";
+          };
         };
       }
     );
@@ -190,6 +211,7 @@ in
         path = ghosttyApp;
         space = 1;
         bundleId = "com.mitchellh.ghostty";
+        autostart = true;
       }
       {
         key = "b";
@@ -197,6 +219,7 @@ in
         args = chrome.flags;
         space = 2;
         bundleId = "com.google.Chrome";
+        autostart = true;
       }
     ];
 
@@ -276,19 +299,28 @@ in
       };
     };
 
-    launchd.user.agents.skhd.serviceConfig.ProgramArguments = lib.mkForce [
-      "/bin/sh"
-      "-c"
-      "/bin/wait4path /nix/store && exec ${pkgs.skhd}/bin/skhd -c ${
-        config.environment.etc."skhdrc".source
-      }"
-    ];
+    launchd.user.agents = autostartAgents // {
+      skhd.serviceConfig.ProgramArguments = lib.mkForce [
+        "/bin/sh"
+        "-c"
+        "/bin/wait4path /nix/store && exec ${pkgs.skhd}/bin/skhd -c ${
+          config.environment.etc."skhdrc".source
+        }"
+      ];
 
-    launchd.user.agents.trex = {
-      command = ''"${trexApp}/Contents/MacOS/TRex"'';
-      serviceConfig = {
-        RunAtLoad = true;
-        KeepAlive = true;
+      trex = {
+        command = ''"${trexApp}/Contents/MacOS/TRex"'';
+        serviceConfig = {
+          RunAtLoad = true;
+          KeepAlive = true;
+        };
+      };
+
+      keyboard-mapping = {
+        command = "/usr/bin/hidutil property --set '${
+          builtins.toJSON { UserKeyMapping = config.system.keyboard.userKeyMapping; }
+        }'";
+        serviceConfig.RunAtLoad = true;
       };
     };
 
@@ -308,13 +340,6 @@ in
           HIDKeyboardModifierMappingDst = f18;
         }
       ];
-    };
-
-    launchd.user.agents.keyboard-mapping = {
-      command = "/usr/bin/hidutil property --set '${
-        builtins.toJSON { UserKeyMapping = config.system.keyboard.userKeyMapping; }
-      }'";
-      serviceConfig.RunAtLoad = true;
     };
 
     launchd.daemons.nix-gc = {
@@ -383,18 +408,6 @@ in
         TALLogoutSavesState = false;
         LoginwindowLaunchesRelaunchApps = false;
       };
-    };
-
-    launchd.user.agents.ghostty = {
-      command = ''/usr/bin/open -a "${ghosttyApp}"'';
-      serviceConfig.RunAtLoad = true;
-    };
-
-    launchd.user.agents.google-chrome = {
-      command =
-        ''/usr/bin/open -a "${chromeApp}"''
-        + lib.optionalString (chrome.flags != [ ]) " --args ${lib.concatStringsSep " " chrome.flags}";
-      serviceConfig.RunAtLoad = true;
     };
 
     launchd.daemons.activate-system.serviceConfig = {
