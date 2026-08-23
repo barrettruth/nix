@@ -298,6 +298,14 @@ function M.setup()
         group = group,
         callback = close_if_source_hidden,
     })
+    vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufReadPost' }, {
+        group = group,
+        callback = function(args)
+            if M.is_cp_path(vim.api.nvim_buf_get_name(args.buf)) then
+                vim.diagnostic.enable(false, { bufnr = args.buf })
+            end
+        end,
+    })
 
     vim.api.nvim_create_user_command('CP', function(opts)
         local arg = opts.args
