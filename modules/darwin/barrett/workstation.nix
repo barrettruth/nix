@@ -188,11 +188,15 @@ in
       {
         key = "t";
         path = ghosttyApp;
+        space = 1;
+        bundleId = "com.mitchellh.ghostty";
       }
       {
         key = "b";
         path = chromeApp;
         args = chrome.flags;
+        space = 2;
+        bundleId = "com.google.Chrome";
       }
     ];
 
