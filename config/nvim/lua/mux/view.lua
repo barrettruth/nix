@@ -194,6 +194,20 @@ function M.open(name)
     return true
 end
 
+---Switch to an existing tab, whether or not it holds a user view.
+---@param tab integer
+---@return true? ok
+---@return string? err
+function M.focus(tab)
+    if not vim.api.nvim_tabpage_is_valid(tab) then
+        return nil, 'unknown tab'
+    end
+    vim.api.nvim_set_current_tabpage(tab)
+    restore_terminal_focus()
+    mark_dirty(tab_view[tab] or false)
+    return true
+end
+
 ---Run a callback inside a user view, then restore focus.
 ---@generic T
 ---@param name string
