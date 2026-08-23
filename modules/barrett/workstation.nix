@@ -278,6 +278,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
             ${mkDir "${XDG_CONFIG_HOME}/clangd"}
+            ${mkDir "${XDG_DATA_HOME}/nvim/site"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
             ${mkPrivateDir "${homeDirectory}/.gnupg"}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/sops"}
@@ -300,6 +301,8 @@ let
             ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
             ${mkSymlink "${repo}/config/devin/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
+            ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
+            ${mkSymlink "${pkgs.neovim.treesitter}/queries" "${XDG_DATA_HOME}/nvim/site/queries"}
         ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
         ${mkSymlink "${chromiumThemeJs}" "${repo}/config/chromium/extension/theme.js"}
 
