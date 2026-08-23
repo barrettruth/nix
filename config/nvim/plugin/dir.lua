@@ -17,6 +17,7 @@ vim.api.nvim_set_decoration_provider(ns, {
             vim.api.nvim_buf_set_extmark(buf, ns, row, #name, {
                 virt_text = { { char, 'Dimmed' } },
                 virt_text_pos = 'overlay',
+                hl_mode = 'combine',
                 ephemeral = true,
             })
         end
@@ -25,6 +26,7 @@ vim.api.nvim_set_decoration_provider(ns, {
             vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
                 virt_text = { { '-> ' .. target, 'Dimmed' } },
                 virt_text_pos = 'eol',
+                hl_mode = 'combine',
                 ephemeral = true,
             })
         end
