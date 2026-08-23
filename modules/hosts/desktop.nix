@@ -16,7 +16,6 @@ in
   flake.nixosConfigurations.desktop = inputs.nixpkgs.lib.nixosSystem {
     modules = [
       inputs.determinate.nixosModules.default
-      inputs.direnv-instant.nixosModules.direnv-instant
       inputs.disko.nixosModules.disko
       ../../hosts/desktop/configuration.nix
       ../nixos/barrett
@@ -36,13 +35,6 @@ in
           programs.direnv.settings.global = {
             hide_env_diff = true;
             log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
-          };
-          programs.direnv-instant = {
-            enable = true;
-            package = pkgs.direnv-instant;
-            enableBashIntegration = false;
-            enableFishIntegration = false;
-            enableZshIntegration = true;
           };
           nixpkgs.hostPlatform = platform;
           nixpkgs.overlays = overlays;
