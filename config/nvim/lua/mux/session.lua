@@ -4,7 +4,6 @@ local SAVE_DEBOUNCE_MS = 3000
 local dirty = false
 local restoring = false
 local saving = false
-local holds = 0
 local save_timer
 local did_setup = false
 
@@ -51,27 +50,7 @@ function M.mark_dirty()
         return
     end
     dirty = true
-    if holds == 0 then
-        schedule_save()
-    end
-end
-
----Pause autosave while transient UI makes the tab graph unsavable.
----@return fun()
-function M.hold()
-    holds = holds + 1
-    stop_save_timer()
-    local released = false
-    return function()
-        if released then
-            return
-        end
-        released = true
-        holds = math.max(holds - 1, 0)
-        if holds == 0 and dirty then
-            schedule_save()
-        end
-    end
+    schedule_save()
 end
 
 ---Persist the current user view layout to the server session file.
@@ -81,9 +60,6 @@ function M.save()
     local server, err = current()
     if not server then
         return nil, err
-    end
-    if holds > 0 then
-        return nil, 'session save held'
     end
     dirty = false
     stop_save_timer(true)
