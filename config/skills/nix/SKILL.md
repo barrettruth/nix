@@ -21,8 +21,10 @@ Never invoke `darwin-rebuild` or `nixos-rebuild` directly. The recipes refuse to
 run as root and abort when the host's configured `barrett.user.name` is not the
 current user; both mistakes are expensive to unwind.
 
-`just update` bumps flake inputs *and* runs `nix-update` for every package in
-`pinned_packages`. A bare `nix flake update` does only half the job.
+Nothing bumps flake inputs on a schedule. Run `nix flake update` by hand, and
+keep the resulting `flake.lock` change in a commit of its own — a colocated jj
+repo snapshots the working copy on every command, so a stray lockfile rewrite is
+absorbed into whatever change is checked out.
 
 ## When an edit appears to do nothing
 

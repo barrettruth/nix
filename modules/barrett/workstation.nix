@@ -418,7 +418,6 @@ in
             lua-language-server
             mdx-language-server
             pandoc
-            pytest-language-server
             ruff
             tailwindcss-language-server
             tinymist
@@ -518,25 +517,6 @@ in
           text = activationText;
         };
 
-        systemd.user.services.nix-flake-update = {
-          description = "Update nix flake inputs";
-          unitConfig.ConditionPathIsDirectory = "%h/.config/nix";
-          serviceConfig = {
-            Type = "oneshot";
-            WorkingDirectory = "%h/.config/nix";
-            ExecStart = "${pkgs.nix}/bin/nix flake update";
-          };
-        };
-
-        systemd.user.timers.nix-flake-update = {
-          description = "Auto-update nix flake inputs";
-          wantedBy = [ "timers.target" ];
-          timerConfig = {
-            OnCalendar = "daily";
-            Persistent = true;
-          };
-        };
-
         systemd.user.services.direnv-cache-prune = {
           description = "Prune stale direnv and nix-direnv caches";
           serviceConfig = {
@@ -565,20 +545,6 @@ in
         system.activationScripts.postActivation.text = activationText;
 
         launchd.user.agents = {
-          nix-flake-update = {
-            script = ''
-              [ -d "$HOME/.config/nix" ] || exit 0
-              cd "$HOME/.config/nix"
-              exec /nix/var/nix/profiles/default/bin/nix flake update
-            '';
-            serviceConfig.StartCalendarInterval = [
-              {
-                Hour = 3;
-                Minute = 0;
-              }
-            ];
-          };
-
           direnv-cache-prune = {
             script = "exec ${direnvCachePrune}";
             serviceConfig.StartCalendarInterval = [
