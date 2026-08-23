@@ -30,7 +30,7 @@
           ];
         };
         ci = pkgs.mkShell {
-          packages = commonPackages;
+          packages = commonPackages ++ [ pkgs.neovim-unwrapped ];
         };
         neovim = pkgs.mkShell {
           packages = [
