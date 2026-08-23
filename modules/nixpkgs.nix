@@ -79,7 +79,6 @@ let
             '';
       in
       {
-        direnv-instant = inputs.direnv-instant.packages.${system}.direnv-instant;
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };
