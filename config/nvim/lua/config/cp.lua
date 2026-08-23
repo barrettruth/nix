@@ -2,7 +2,11 @@ local M = {}
 
 M.root = vim.fs.normalize('~/dev/cp')
 M.root_pattern = '^' .. vim.pesc(M.root) .. '/'
-M.template = vim.fs.joinpath(M.root, 'template.cc')
+
+local languages = {
+    cpp = { ext = '.cc', solve = '^%s*void%s+solve%(%).*{%s*$' },
+    python = { ext = '.py', solve = '^%s*def%s+solve%(%).*:%s*$' },
+}
 
 local modes = { run = true, debug = true }
 local active = {}
@@ -11,6 +15,13 @@ local active = {}
 ---@param level? integer
 local function notify(msg, level)
     vim.notify('[cp]: ' .. msg, level or vim.log.levels.INFO)
+end
+
+---@return { ext: string, solve: string }?
+---@return string
+local function default_language()
+    local name = (vim.g.cp or {}).language or 'python'
+    return languages[name], tostring(name)
 end
 
 ---@param path string?
@@ -158,8 +169,9 @@ local function close_if_source_hidden()
     end)
 end
 
+---@param lang { ext: string, solve: string }
 ---@return boolean
-local function populate_template_if_empty()
+local function populate_template_if_empty(lang)
     if
         vim.api.nvim_buf_line_count(0) ~= 1
         or vim.api.nvim_get_current_line() ~= ''
@@ -167,7 +179,8 @@ local function populate_template_if_empty()
         return false
     end
 
-    local ok, lines = pcall(vim.fn.readfile, M.template)
+    local template = vim.fs.joinpath(M.root, 'template' .. lang.ext)
+    local ok, lines = pcall(vim.fn.readfile, template)
     if not ok then
         notify('failed to read template', vim.log.levels.ERROR)
         return false
@@ -176,10 +189,11 @@ local function populate_template_if_empty()
     return true
 end
 
-local function go_to_solve()
+---@param lang { ext: string, solve: string }
+local function go_to_solve(lang)
     local line
     for lnum, text in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
-        if text:match('^%s*void%s+solve%(%).*{%s*$') then
+        if text:match(lang.solve) then
             line = lnum
             break
         end
@@ -195,20 +209,24 @@ local function go_to_solve()
 end
 
 ---@param problem string
+---@param lang { ext: string, solve: string }
 ---@return string?
-local function normalize_problem(problem)
-    local base = problem:gsub('%.cc$', '')
+local function normalize_problem(problem, lang)
+    local base = problem:gsub(vim.pesc(lang.ext) .. '$', '')
     if not base:match('^[%w_-]+$') then
         notify('invalid problem name: ' .. problem, vim.log.levels.ERROR)
         return
     end
-    return base .. '.cc'
+    return base .. lang.ext
 end
 
 local function complete_problem(arg_lead)
     local items = { 'run', 'debug' }
-    for _, file in ipairs(vim.fn.glob('*.cc', false, true)) do
-        items[#items + 1] = vim.fn.fnamemodify(file, ':r')
+    local lang = default_language()
+    if lang then
+        for _, file in ipairs(vim.fn.glob('*' .. lang.ext, false, true)) do
+            items[#items + 1] = vim.fn.fnamemodify(file, ':r')
+        end
     end
     return vim.tbl_filter(function(item)
         return vim.startswith(item, arg_lead)
@@ -223,7 +241,13 @@ function M.open_problem(problem)
         return
     end
 
-    local file = normalize_problem(problem)
+    local lang, name = default_language()
+    if not lang then
+        notify('unknown language: ' .. name, vim.log.levels.ERROR)
+        return
+    end
+
+    local file = normalize_problem(problem, lang)
     if not file then
         return
     end
@@ -233,11 +257,11 @@ function M.open_problem(problem)
 
     close_output()
     vim.cmd.edit(vim.fn.fnameescape(file))
-    if populate_template_if_empty() then
+    if populate_template_if_empty(lang) then
         vim.cmd.write()
         vim.cmd.edit()
     end
-    go_to_solve()
+    go_to_solve(lang)
 end
 
 ---@param mode? 'run'|'debug'
@@ -254,8 +278,11 @@ function M.run(mode)
         notify('not in ~/dev/cp', vim.log.levels.ERROR)
         return
     end
-    if vim.bo.filetype ~= 'cpp' then
-        notify('only C++ files are supported', vim.log.levels.ERROR)
+    if not languages[vim.bo.filetype] then
+        notify(
+            'unsupported filetype: ' .. vim.bo.filetype,
+            vim.log.levels.ERROR
+        )
         return
     end
     if vim.bo.modified then
