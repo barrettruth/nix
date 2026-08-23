@@ -83,7 +83,6 @@ let
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };
-        pytest-language-server = final.callPackage ../pkgs/pytest-language-server.nix { };
       }
       // lib.optionalAttrs hasFonts {
         barrett-fonts = inputs.fonts.packages.${system}.desktop;
@@ -113,7 +112,7 @@ in
     {
       _module.args.pkgs = pkgs;
       packages = {
-        inherit (pkgs) neovim pytest-language-server;
+        inherit (pkgs) neovim;
       }
       // lib.optionalAttrs hasFonts {
         inherit (pkgs) barrett-fonts barrett-webfonts;

@@ -50,7 +50,6 @@ local enabled = {
     'nixd',
     'mdx_analyzer',
     'jsonls',
-    'pytest_lsp',
     'lua_ls',
     'ruff',
     'tailwindcss',

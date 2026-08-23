@@ -5,16 +5,6 @@ rebuild-desktop: (_rebuild-nixos "desktop" "--target-host" "desktop" "--build-ho
 
 rebuild-laptop: (_rebuild-nixos "laptop" "--build-host" "desktop-builder" "--elevate" "sudo" "--ask-elevate-password")
 
-pinned_packages := "pytest-language-server"
-
-update:
-    @export NIX_CONFIG="extra-experimental-features = nix-command flakes"; \
-      nix flake update && \
-      for pkg in {{ pinned_packages }}; do \
-        printf '==> %s\n' "$pkg"; \
-        nix run nixpkgs#nix-update -- --flake --version=stable "$pkg" || exit 1; \
-      done
-
 rebuild-mac: (_rebuild-darwin "mac")
 
 rebuild-imc: (_rebuild-darwin "imc")
