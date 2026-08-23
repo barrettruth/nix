@@ -81,7 +81,7 @@ local function run_terminal(mode, source_buf, source, dir)
         or vim.o.columns
     vim.cmd('rightbelow vsplit')
     vim.cmd.enew()
-    vim.api.nvim_win_set_width(0, math.max(1, math.floor(source_width * 0.35)))
+    vim.api.nvim_win_resize(0, math.max(1, math.floor(source_width * 0.35)), -1)
 
     local buf = vim.api.nvim_get_current_buf()
     active.source_buf = source_buf
@@ -95,7 +95,7 @@ local function run_terminal(mode, source_buf, source, dir)
 
     local chan = vim.api.nvim_open_term(buf, {})
     vim.api.nvim_create_autocmd('BufWipeout', {
-        buffer = buf,
+        buf = buf,
         once = true,
         callback = function()
             if active.output_buf == buf then

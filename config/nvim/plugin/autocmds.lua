@@ -14,12 +14,12 @@ vim.api.nvim_create_autocmd('TermOpen', {
         vim.b[args.buf].term_insert = not normal
         if not normal then
             vim.keymap.set('n', 'G', 'Gi', {
-                buffer = args.buf,
+                buf = args.buf,
                 desc = 'jump to end, resume terminal',
             })
         end
         vim.keymap.set('t', '<c-u>', [[<c-\><c-n><c-u>]], {
-            buffer = args.buf,
+            buf = args.buf,
             desc = 'scroll up half-page',
         })
         vim.api.nvim_buf_attach(args.buf, false, {
@@ -191,13 +191,13 @@ vim.api.nvim_create_autocmd('FileType', {
             'n',
             '<leader>x',
             ':.source<cr>',
-            { buffer = ev.buf, desc = 'eval current line' }
+            { buf = ev.buf, desc = 'eval current line' }
         )
         vim.keymap.set(
             'x',
             '<leader>x',
             ':source<cr>',
-            { buffer = ev.buf, desc = 'eval selection' }
+            { buf = ev.buf, desc = 'eval selection' }
         )
     end,
     group = aug,
