@@ -11,7 +11,7 @@ require('gitsigns').setup({
     on_attach = function(buf)
         vim.keymap.set('n', 'Un', function()
             require('gitsigns').blame_line({ full = true })
-        end, { buffer = buf, desc = 'preview line blame' })
+        end, { buf = buf, desc = 'preview line blame' })
     end,
 })
 
@@ -45,9 +45,9 @@ vim.api.nvim_create_autocmd('BufEnter', {
         end
         vim.keymap.set('n', ']s', function()
             require('stack').walk(1)
-        end, { buffer = ev.buf, desc = 'next pull request in stack' })
+        end, { buf = ev.buf, desc = 'next pull request in stack' })
         vim.keymap.set('n', '[s', function()
             require('stack').walk(-1)
-        end, { buffer = ev.buf, desc = 'previous pull request in stack' })
+        end, { buf = ev.buf, desc = 'previous pull request in stack' })
     end,
 })

@@ -34,16 +34,16 @@ return {
 
             vim.api.nvim_create_autocmd('LspAttach', {
                 callback = function(o)
-                    local clients = vim.lsp.get_clients({ buffer = o.buf })
-                    for _, client in ipairs(clients) do
-                        if client:supports_method('textDocument/rename') then
-                            vim.keymap.set(
-                                'n',
-                                'grn',
-                                live_rename.rename,
-                                { buffer = o.buf, desc = 'rename symbol' }
-                            )
-                        end
+                    local client = vim.lsp.get_client_by_id(o.data.client_id)
+                    if
+                        client and client:supports_method('textDocument/rename')
+                    then
+                        vim.keymap.set(
+                            'n',
+                            'grn',
+                            live_rename.rename,
+                            { buf = o.buf, desc = 'rename symbol' }
+                        )
                     end
                 end,
                 group = vim.api.nvim_create_augroup(
@@ -73,19 +73,19 @@ return {
                             'n',
                             '\\Rc',
                             '<cmd>RustLsp codeAction<cr>',
-                            { buffer = bufnr, desc = 'rust code action' }
+                            { buf = bufnr, desc = 'rust code action' }
                         )
                         vim.keymap.set(
                             'n',
                             '\\Rm',
                             '<cmd>RustLsp expandMacro<cr>',
-                            { buffer = bufnr, desc = 'rust expand macro' }
+                            { buf = bufnr, desc = 'rust expand macro' }
                         )
                         vim.keymap.set(
                             'n',
                             '\\Ro',
                             '<cmd>RustLsp openCargo<cr>',
-                            { buffer = bufnr, desc = 'rust open cargo' }
+                            { buf = bufnr, desc = 'rust open cargo' }
                         )
                     end,
                     default_settings = {
