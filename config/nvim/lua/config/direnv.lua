@@ -24,33 +24,32 @@ function M.load()
         end
         ok = ok and type(env) == 'table'
 
-        if progress.id then
-            progress.status = ok and 'success' or 'error'
-            vim.api.nvim_echo({
-                { (ok and 'loaded ' or 'failed ') .. name },
-            }, true, progress)
+        local loaded = false
+        if ok then
+            for key, value in pairs(env) do
+                vim.env[key] = value ~= vim.NIL and value or nil
+                loaded = loaded or not vim.startswith(key, 'DIRENV_')
+            end
         end
+        local blocked = ok and next(env) ~= nil and not loaded
+
+        progress.status = ok and 'success' or 'error'
+        local outcome = (not ok and 'failed ')
+            or (blocked and 'blocked ')
+            or 'loaded '
+        vim.api.nvim_echo({ { outcome .. name } }, true, progress)
 
         if not ok then
             vim.notify(
                 ('direnv: %s failed (exit %d)'):format(name, result.code),
                 vim.log.levels.WARN
             )
-            return
-        end
-
-        local loaded = false
-        for key, value in pairs(env) do
-            vim.env[key] = value ~= vim.NIL and value or nil
-            loaded = loaded or not vim.startswith(key, 'DIRENV_')
-        end
-
-        if next(env) and not loaded then
+        elseif blocked then
             vim.notify(
                 ('direnv: %s is blocked, run direnv allow'):format(name),
                 vim.log.levels.WARN
             )
-        elseif loaded and progress.id then
+        elseif progress.id then
             vim.notify(
                 'direnv: environment loaded, :restart to apply',
                 vim.log.levels.WARN
