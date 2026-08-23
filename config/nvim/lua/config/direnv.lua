@@ -1,6 +1,6 @@
 local M = {}
 
-local TIMEOUT_MS = 500
+local TIMEOUT_MS = 2000
 
 function M.load()
     local root = vim.fs.root(vim.fn.getcwd(), '.envrc')
@@ -8,29 +8,76 @@ function M.load()
         return
     end
 
-    local done = false
+    local name = vim.fn.fnamemodify(root, ':t')
+    local progress = {
+        kind = 'progress',
+        source = 'direnv',
+        title = 'direnv',
+        status = 'running',
+    }
+    local result
+
+    local function finish()
+        local ok, env = false, nil
+        if result.code == 0 then
+            ok, env = pcall(vim.json.decode, result.stdout or '')
+        end
+        ok = ok and type(env) == 'table'
+
+        if progress.id then
+            progress.status = ok and 'success' or 'error'
+            vim.api.nvim_echo({
+                { (ok and 'loaded ' or 'failed ') .. name },
+            }, false, progress)
+        end
+
+        if not ok then
+            vim.notify(
+                ('direnv: %s failed (exit %d)'):format(name, result.code),
+                vim.log.levels.WARN
+            )
+            return
+        end
+
+        local loaded = false
+        for key, value in pairs(env) do
+            vim.env[key] = value ~= vim.NIL and value or nil
+            loaded = loaded or not vim.startswith(key, 'DIRENV_')
+        end
+
+        if next(env) and not loaded then
+            vim.notify(
+                ('direnv: %s is blocked, run direnv allow'):format(name),
+                vim.log.levels.WARN
+            )
+        elseif loaded and progress.id then
+            vim.notify(
+                'direnv: environment loaded, :restart to apply',
+                vim.log.levels.WARN
+            )
+        end
+    end
+
     vim.system({ 'direnv', 'export', 'json' }, {
         cwd = root,
         env = { DIRENV_LOG_FORMAT = '' },
         text = true,
-    }, function(result)
-        vim.schedule(function()
-            done = true
-            if result.code ~= 0 then
-                return
-            end
-            local ok, env = pcall(vim.json.decode, result.stdout or '')
-            if not ok or type(env) ~= 'table' then
-                return
-            end
-            for key, value in pairs(env) do
-                vim.env[key] = value ~= vim.NIL and value or nil
-            end
-        end)
+    }, function(completed)
+        result = completed
+        if progress.id then
+            vim.schedule(finish)
+        end
     end)
+
     vim.wait(TIMEOUT_MS, function()
-        return done
-    end)
+        return result ~= nil
+    end, nil, true)
+    if result then
+        finish()
+    else
+        progress.id =
+            vim.api.nvim_echo({ { 'loading ' .. name } }, false, progress)
+    end
 end
 
 function M.setup()
