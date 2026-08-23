@@ -4,6 +4,8 @@ local view = require('mux.view')
 local M = {}
 
 local TABLINE_EXPR = "%!v:lua.require'mux.line'.render()"
+local VIEW_CLICK = "v:lua.require'mux.line'.on_view"
+local SESSION_CLICK = "v:lua.require'mux.line'.on_session"
 
 ---@type mux.Server[]
 local cached_servers = {}
@@ -33,14 +35,27 @@ local function apply_visibility()
     end
 end
 
+---@param minwid integer
+---@param func string
+---@param group string
+---@param text string
+---@return string
+local function segment(minwid, func, group, text)
+    -- Labels are path tails, where a '%' would otherwise open a tabline item
+    -- and swallow or end the click region.
+    local label = text:gsub('%%', '%%%%')
+    return ('%%%d@%s@%%#%s#%s%%*%%X'):format(minwid, func, group, label)
+end
+
 ---@return string[]
 local function view_segments()
     local parts = {}
     for _, entry in ipairs(view.list()) do
-        parts[#parts + 1] = ('%%#%s#%s%s%%*'):format(
+        parts[#parts + 1] = segment(
+            entry.tab,
+            VIEW_CLICK,
             entry.current and 'TabLineSel' or 'TabLine',
-            entry.current and '*' or '',
-            entry.label
+            (entry.current and '*' or '') .. entry.label
         )
     end
     return parts
@@ -50,15 +65,15 @@ end
 local function session_segments()
     local current = server.state().server
     local parts = {}
-    for _, entry in ipairs(cached_servers) do
+    for i, entry in ipairs(cached_servers) do
         local name = vim.fn.fnamemodify(entry.root, ':t')
         if name ~= '' then
             local selected = current and current.root == entry.root
-            local group = selected and 'TabLineSel' or 'TabLine'
-            parts[#parts + 1] = ('%%#%s#%s%s%%*'):format(
-                group,
-                selected and '*' or '',
-                name
+            parts[#parts + 1] = segment(
+                i,
+                SESSION_CLICK,
+                selected and 'TabLineSel' or 'TabLine',
+                (selected and '*' or '') .. name
             )
         end
     end
@@ -128,6 +143,26 @@ local function connect(root)
             vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
         end
     end)
+end
+
+---Tabline click handler for a view segment.
+---@param tab integer
+---@return nil
+function M.on_view(tab)
+    view.focus(tab)
+end
+
+---Tabline click handler for a session segment. Indexes the servers the
+---segment was rendered from: a fresh list may have shifted under the label.
+---@param index integer
+---@return nil
+function M.on_session(index)
+    local current = server.state().server
+    local entry = cached_servers[index]
+    if not entry or (current and entry.root == current.root) then
+        return
+    end
+    connect(entry.root)
 end
 
 ---@param step integer
