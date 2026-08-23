@@ -119,6 +119,10 @@ let
     [remotes.origin]
     auto-track-bookmarks = 'exact:"main" | exact:"master"'
 
+    [experimental-advance-branches]
+    enabled-branches = ["glob:*"]
+    disabled-branches = ["glob:push-*"]
+
     [revset-aliases]
     "stack()" = "reachable(@, mutable())"
     "ready()" = 'stack() & ~empty() & ~description(exact:"")'
