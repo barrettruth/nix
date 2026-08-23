@@ -28,7 +28,7 @@ function M.load()
             progress.status = ok and 'success' or 'error'
             vim.api.nvim_echo({
                 { (ok and 'loaded ' or 'failed ') .. name },
-            }, false, progress)
+            }, true, progress)
         end
 
         if not ok then
@@ -76,7 +76,7 @@ function M.load()
         finish()
     else
         progress.id =
-            vim.api.nvim_echo({ { 'loading ' .. name } }, false, progress)
+            vim.api.nvim_echo({ { 'loading ' .. name } }, true, progress)
     end
 end
 
