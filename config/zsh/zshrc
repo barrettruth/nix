@@ -1,4 +1,5 @@
 alias g=git
+alias mux='nvim -c Mux'
 alias nv=nvim
 
 autoload -U compinit && compinit -d "$XDG_STATE_HOME/zcompdump" -u
