@@ -217,19 +217,6 @@ function M.state()
     }
 end
 
----Return deterministic socket and session paths for a root.
----@param root string
----@return mux.Server? paths
----@return string? err
-function M.paths(root)
-    local real, err = validate_root(root)
-    if not real then
-        return nil, err
-    end
-
-    return paths_for(real)
-end
-
 ---Serialize this server's readiness and identity for remote probes.
 ---@return string
 function M.probe()
@@ -581,20 +568,24 @@ function M.list()
 
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
     table.sort(sessions)
+
     for _, file in ipairs(sessions) do
         local root = saved_root(file)
         local server = root and paths_for(root)
+
         if server then
             known[server.socket] = true
             add_server(out, seen, server)
         end
     end
+
     local sockets = vim.fn.glob(runtime_dir() .. '/*.sock', true, true)
     vim.list_extend(
         sockets,
         vim.fn.glob(runtime_dir() .. '/*/*.sock', true, true)
     )
     table.sort(sockets)
+
     for _, socket in ipairs(sockets) do
         local live = current_server and socket == current_server.socket
 
@@ -610,45 +601,6 @@ function M.list()
     end
 
     return out
-end
-
----@param path string
----@param root string
----@return boolean
-local function contains(path, root)
-    if path == root then
-        return true
-    end
-
-    return vim.startswith(path, root .. '/')
-end
-
----Find the most specific known mux server containing a path.
----@param path string
----@return mux.Server? server
----@return string? err
-function M.find(path)
-    if type(path) ~= 'string' or path == '' then
-        return nil, 'empty path'
-    end
-
-    local real = vim.uv.fs_realpath(path)
-        or vim.uv.fs_realpath(vim.fn.fnamemodify(path, ':h'))
-    if not real then
-        return nil, 'invalid path: ' .. path
-    end
-
-    local best
-    for _, server in ipairs(M.list()) do
-        if
-            contains(real, server.root)
-            and (not best or #server.root > #best.root)
-        then
-            best = server
-        end
-    end
-
-    return best
 end
 
 ---@param root string
@@ -757,6 +709,7 @@ function M.ensure(root, cb)
     pcall(vim.fn.mkdir, runtime_dir(), 'p')
     pcall(vim.fn.mkdir, state_dir(), 'p')
     pending[real] = { callbacks = { cb } }
+
     local proc, spawn_err = spawn_nvim({
         '--headless',
         '--listen',
@@ -768,6 +721,7 @@ function M.ensure(root, cb)
         stdout = false,
         stderr = false,
     })
+
     if not proc then
         finish_pending(real, nil, spawn_err)
         return
@@ -805,6 +759,7 @@ function M.ensure(root, cb)
             entry2.timer = vim.uv.new_timer()
             entry2.timer:start(READY_POLL_MS, 0, poll)
         end
+
         socket_listening_async(paths.socket, function(listening)
             if not listening then
                 reschedule()
