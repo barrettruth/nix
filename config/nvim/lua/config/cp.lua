@@ -188,9 +188,6 @@ local function size_column(output_win, input_win)
         -1,
         math.max(1, math.floor(total * 0.35))
     )
-    vim.wo[output_win].winfixwidth = true
-    vim.wo[input_win].winfixwidth = true
-    vim.wo[input_win].winfixheight = true
 end
 
 ---@param output_win integer
@@ -255,6 +252,7 @@ local function ensure_column(source)
             open_column(cols.source or cols.others[1] or saved_win, source)
     end
 
+    size_column(output_win, input_win)
     reset_output(output_win, source)
     retarget_input(input_win, source)
 
@@ -429,17 +427,6 @@ function M.setup()
     vim.api.nvim_create_autocmd({ 'BufWinLeave', 'BufWipeout', 'WinClosed' }, {
         group = group,
         callback = close_if_orphaned,
-    })
-    vim.api.nvim_create_autocmd('VimResized', {
-        group = group,
-        callback = function()
-            for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
-                local cols = column(tp)
-                if cols.output and cols.input then
-                    size_column(cols.output, cols.input)
-                end
-            end
-        end,
     })
     vim.api.nvim_create_autocmd('BufLeave', {
         group = group,
