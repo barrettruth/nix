@@ -192,7 +192,7 @@ end
 
 ---@param output_win integer
 ---@param input_win integer
-local function fix_column(output_win, input_win)
+local function size_column(output_win, input_win)
     local total = vim.api.nvim_win_get_height(output_win)
         + vim.api.nvim_win_get_height(input_win)
     vim.api.nvim_win_resize(
@@ -217,7 +217,7 @@ local function attach_input(output_win, source)
     vim.api.nvim_set_current_win(output_win)
     vim.cmd('belowright split ' .. vim.fn.fnameescape(input_path(source)))
     local input_win = vim.api.nvim_get_current_win()
-    fix_column(output_win, input_win)
+    size_column(output_win, input_win)
     return input_win
 end
 
@@ -227,7 +227,7 @@ local function attach_output(input_win)
     vim.api.nvim_set_current_win(input_win)
     vim.cmd('aboveleft split')
     local output_win = vim.api.nvim_get_current_win()
-    fix_column(output_win, input_win)
+    size_column(output_win, input_win)
     return output_win
 end
 
@@ -496,6 +496,17 @@ function M.setup()
     vim.api.nvim_create_autocmd({ 'BufWinLeave', 'BufWipeout', 'WinClosed' }, {
         group = group,
         callback = close_if_orphaned,
+    })
+    vim.api.nvim_create_autocmd('VimResized', {
+        group = group,
+        callback = function()
+            for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+                local cols = column(tp)
+                if cols.output and cols.input then
+                    size_column(cols.output, cols.input)
+                end
+            end
+        end,
     })
     vim.api.nvim_create_autocmd('BufLeave', {
         group = group,
