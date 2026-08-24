@@ -146,6 +146,7 @@ let
     pr = ["util", "exec", "--", "jj-pr"]
     g = ["git"]
     d = ["describe"]
+    rb = ["rebase"]
   '';
 
   personalGitConf = pkgs.writeText "git-personal" ''
