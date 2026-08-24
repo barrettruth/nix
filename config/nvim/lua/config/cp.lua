@@ -470,7 +470,7 @@ function M.setup()
             return complete_problem(arg_lead)
         end,
     })
-    vim.keymap.set('n', '<leader>c', function()
+    vim.keymap.set('n', '<leader>r', function()
         M.run('run')
     end, { desc = 'run CP problem' })
     vim.keymap.set('n', '<leader>d', function()
