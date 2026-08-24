@@ -349,8 +349,8 @@ local function probe_async(socket, timeout, cb)
         end
         done = true
         if timer then
-            pcall(timer.stop, timer)
-            pcall(timer.close, timer)
+            timer:stop()
+            timer:close()
         end
         vim.schedule(function()
             cb(server, err)
@@ -406,11 +406,9 @@ local function socket_listening_async(socket, cb)
             return
         end
         done = true
-        pcall(timer.stop, timer)
-        pcall(timer.close, timer)
-        pcall(function()
-            pipe:close()
-        end)
+        timer:stop()
+        timer:close()
+        pipe:close()
         vim.schedule(function()
             cb(alive)
         end)
@@ -555,8 +553,8 @@ local function finish_pending(root, server, err)
         return
     end
     if entry.timer then
-        pcall(entry.timer.stop, entry.timer)
-        pcall(entry.timer.close, entry.timer)
+        entry.timer:stop()
+        entry.timer:close()
     end
     for _, cb in ipairs(entry.callbacks) do
         local ok, cb_err = pcall(cb, server, err)
@@ -658,8 +656,8 @@ function M.ensure(root, cb)
         if entry.timer then
             local timer = entry.timer
             entry.timer = nil
-            pcall(timer.stop, timer)
-            pcall(timer.close, timer)
+            timer:stop()
+            timer:close()
         end
         if vim.uv.now() - started >= READY_TIMEOUT_MS then
             pcall(proc.kill, proc, 15)

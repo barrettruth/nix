@@ -22,10 +22,10 @@ local function stop_save_timer(close)
     if not timer then
         return
     end
-    pcall(timer.stop, timer)
+    timer:stop()
     if close then
         save_timer = nil
-        pcall(timer.close, timer)
+        timer:close()
     end
 end
 
