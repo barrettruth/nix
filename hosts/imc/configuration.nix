@@ -16,6 +16,8 @@ let
     "${homeDirectory}/dev"
   ];
 
+  brews = [ "imc/core/imc-claude" ];
+
   casks = [
     "imc/core/ark"
     "jdk-zulu@11"
@@ -43,7 +45,7 @@ in
   barrett.tailscale.useAuthKey = false;
 
   homebrew = {
-    inherit casks;
+    inherit brews casks;
     enable = true;
     onActivation.cleanup = "none";
     taps = [
