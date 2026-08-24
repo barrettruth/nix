@@ -29,8 +29,6 @@ local function apply_visibility()
         and vim.fn.readfile(file)[1] == 'hide'
     local showtabline = hide and 0 or 2
     vim.o.tabline = TABLINE_EXPR
-    -- Assigning 'showtabline' runs its handler even when unchanged, reaching
-    -- win_fix_scroll() outside the guard goto_tabpage_tp() sets.
     if vim.o.showtabline ~= showtabline then
         vim.o.showtabline = showtabline
     end
@@ -42,8 +40,6 @@ end
 ---@param text string
 ---@return string
 local function segment(minwid, func, group, text)
-    -- Labels are path tails, where a '%' would otherwise open a tabline item
-    -- and swallow or end the click region.
     local label = text:gsub('%%', '%%%%')
 
     return ('%%%d@%s@%%#%s#%s%%*%%X'):format(minwid, func, group, label)
