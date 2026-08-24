@@ -8,8 +8,6 @@ local languages = {
     python = { ext = '.py', solve = '^%s*def%s+solve%(%).*:%s*$' },
 }
 
-local modes = { run = true, debug = true }
-
 ---@class cp.Column
 ---@field source? integer
 ---@field output? integer
@@ -449,14 +447,8 @@ function M.open_problem(problem)
     ensure_column(vim.api.nvim_buf_get_name(0))
 end
 
----@param mode? 'run'|'debug'
+---@param mode 'run'|'debug'
 function M.run(mode)
-    mode = mode or 'run'
-    if not modes[mode] then
-        notify('unknown mode: ' .. mode, vim.log.levels.ERROR)
-        return
-    end
-
     local source = resolve_source()
     if not source then
         local name = vim.api.nvim_buf_get_name(0)
@@ -535,9 +527,9 @@ function M.setup()
     })
 
     vim.api.nvim_create_user_command('CP', function(opts)
-        local arg = opts.args
-        if arg == '' or modes[arg] then
-            M.run(arg ~= '' and arg or 'run')
+        local arg = opts.args == '' and 'run' or opts.args
+        if arg == 'run' or arg == 'debug' then
+            M.run(arg)
         else
             M.open_problem(arg)
         end
@@ -550,6 +542,9 @@ function M.setup()
     vim.keymap.set('n', '<leader>c', function()
         M.run('run')
     end, { desc = 'run CP problem' })
+    vim.keymap.set('n', '<leader>d', function()
+        M.run('debug')
+    end, { desc = 'debug CP problem' })
 end
 
 return M
