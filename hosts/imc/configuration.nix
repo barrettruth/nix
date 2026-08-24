@@ -10,6 +10,8 @@ let
 
   javaVersion = "17";
 
+  devenvHost = "${config.barrett.user.name}-devschool.trading.imc.intra";
+
   spotlightExcluded = [
     "${homeDirectory}/.m2"
     "${homeDirectory}/Library/Caches"
@@ -39,6 +41,19 @@ in
   barrett.user.extraGitConfig = ''
     [http]
       emptyAuth = true
+  '';
+  barrett.user.extraSshConfig = ''
+    Include ${homeDirectory}/.colima/ssh_config
+
+    Host devschool ${devenvHost}
+      HostName ${devenvHost}
+      User ${config.barrett.user.name}
+      IdentityFile ${homeDirectory}/.ssh/devenv_private_key
+      Port 22
+      StrictHostKeyChecking no
+      CheckHostIP no
+      UserKnownHostsFile /dev/null
+      Compression yes
   '';
 
   barrett.tailscale.shieldsUp = true;

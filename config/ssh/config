@@ -1,4 +1,4 @@
-Include /Users/bruth/.colima/ssh_config
+Include config.d/*.conf
 
 Host *
     AddKeysToAgent yes
