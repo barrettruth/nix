@@ -1,8 +1,12 @@
 local M = {}
 
-local RESOLVE_MS = 30000
-local FORWARD_MS = 15000
+local RESOLVE_MS = 10000
+local FORWARD_MS = 10000
 local PROBE_MS = 2000
+
+---Without this a host that is merely unreachable spends the whole budget inside
+---connect(), and every wait here blocks the editor.
+local CONNECT_TIMEOUT = 'ConnectTimeout=5'
 
 local ENSURE = [[cd -- %s && nvim --headless -c 'lua local d, r = false, nil; ]]
     .. [[require("mux.server").ensure(vim.fn.getcwd(), function(s, e) r = s or { error = e }; d = true end); ]]
@@ -15,7 +19,7 @@ local ENSURE = [[cd -- %s && nvim --headless -c 'lua local d, r = false, nil; ]]
 ---@return string? stdout
 ---@return string? err
 local function ssh(host, args, timeout)
-    local argv = { 'ssh', '-o', 'BatchMode=yes', host }
+    local argv = { 'ssh', '-o', 'BatchMode=yes', '-o', CONNECT_TIMEOUT, host }
     vim.list_extend(argv, args)
     local res = vim.system(argv, { text = true }):wait(timeout)
     if not res then
@@ -109,6 +113,8 @@ function M.ensure(host, path, cb)
             '-N',
             '-o',
             'BatchMode=yes',
+            '-o',
+            CONNECT_TIMEOUT,
             '-o',
             'ExitOnForwardFailure=yes',
             '-o',
