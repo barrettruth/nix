@@ -189,10 +189,10 @@ function M.call(name, fn)
     end
     local ok, result = pcall(vim.api.nvim_win_call, win, fn)
     if vim.api.nvim_tabpage_is_valid(saved_tab) then
-        pcall(vim.api.nvim_set_current_tabpage, saved_tab)
+        vim.api.nvim_set_current_tabpage(saved_tab)
     end
     if vim.api.nvim_win_is_valid(saved_win) then
-        pcall(vim.api.nvim_set_current_win, saved_win)
+        vim.api.nvim_set_current_win(saved_win)
     end
     restore_terminal_focus()
     if not ok then
@@ -229,7 +229,7 @@ function M.close()
             and vim.bo[buf].buftype == 'terminal'
             and #vim.fn.win_findbuf(buf) == 0
         then
-            pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            vim.api.nvim_buf_delete(buf, { force = true })
         end
     end
     mark_dirty(name)
@@ -362,20 +362,20 @@ local function cleanup_terminal(buf)
                     end
                 end
                 if has_terminal then
-                    pcall(vim.api.nvim_win_close, win, true)
+                    vim.api.nvim_win_close(win, true)
                 elseif #user_tabpages() <= 1 then
                     retire_session()
                     return
                 else
-                    pcall(vim.api.nvim_set_current_tabpage, tp)
-                    pcall(vim.cmd, 'tabclose')
+                    vim.api.nvim_set_current_tabpage(tp)
+                    vim.cmd('tabclose')
                     tab_view[tp] = nil
                 end
             end
         end
     end
     if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
-        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        vim.api.nvim_buf_delete(buf, { force = true })
     end
     require('mux.session').mark_dirty()
 end
