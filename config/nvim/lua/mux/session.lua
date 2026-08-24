@@ -1,6 +1,5 @@
 local M = {}
 
-local SAVE_DEBOUNCE_MS = 3000
 local dirty = false
 local restoring = false
 local saving = false
@@ -36,7 +35,7 @@ local function schedule_save()
     stop_save_timer()
     save_timer = save_timer or vim.uv.new_timer()
     save_timer:start(
-        SAVE_DEBOUNCE_MS,
+        3000,
         0,
         vim.schedule_wrap(function()
             if dirty then
@@ -68,15 +67,18 @@ function M.save()
 
     dirty = false
     stop_save_timer(true)
+
     local labels = {}
     for _, entry in ipairs(require('mux.view').list()) do
         if entry.persist ~= nil then
             labels[#labels + 1] = entry.persist or false
         end
     end
+
     vim.g.Mux = vim.json.encode({ root = server.root, tabs = labels })
     local dir = vim.fn.fnamemodify(server.session, ':h')
     local mk_ok = pcall(vim.fn.mkdir, dir, 'p')
+
     if not mk_ok then
         return nil, 'failed to create session directory: ' .. dir
     end

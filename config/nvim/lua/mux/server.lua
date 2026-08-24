@@ -1047,6 +1047,7 @@ function M.setup(root)
     require('mux.session').setup()
     require('mux.view').setup()
     require('mux.line').setup()
+
     local ok, rerr = require('mux.session').restore()
     if not ok and rerr ~= 'no session' then
         setup_error = rerr
