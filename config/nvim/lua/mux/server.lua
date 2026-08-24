@@ -746,7 +746,16 @@ function M.attach(target_server, cb, clear_last)
             callback = connect,
         })
     end
-    push_peers(target_server.socket, function()
+    push_peers(target_server.socket, function(push_err)
+        -- A UI that connects to an address nothing answers exits the process,
+        -- so an unreachable target has to fail here rather than at :connect.
+        if push_err then
+            cb(
+                nil,
+                ('cannot reach %s: %s'):format(target_server.root, push_err)
+            )
+            return
+        end
         if not current then
             connect_when_ready()
             return
