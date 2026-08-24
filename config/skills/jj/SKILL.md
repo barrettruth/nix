@@ -55,28 +55,28 @@ history. Reach for `-r '::trunk()'` when the question is about what landed.
 
 ## Revsets worth knowing
 
-| revset | is |
-|---|---|
-| `@`, `@-`, `@--` | working copy and its ancestors |
-| `::x` / `x::` | ancestors / descendants of x, inclusive |
-| `a..b` | in b, not in a |
-| `trunk()` | the remote default branch, correct even when local `main` is stale |
-| `mutable()` | everything jj will let you rewrite |
-| `reachable(@, mutable())` | the connected body of unpushed work around `@` |
-| `heads(x)` / `roots(x)` | tips / bases of a set |
-| `description(substring:"…")` | match on message text |
+| revset                       | is                                                                 |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `@`, `@-`, `@--`             | working copy and its ancestors                                     |
+| `::x` / `x::`                | ancestors / descendants of x, inclusive                            |
+| `a..b`                       | in b, not in a                                                     |
+| `trunk()`                    | the remote default branch, correct even when local `main` is stale |
+| `mutable()`                  | everything jj will let you rewrite                                 |
+| `reachable(@, mutable())`    | the connected body of unpushed work around `@`                     |
+| `heads(x)` / `roots(x)`      | tips / bases of a set                                              |
+| `description(substring:"…")` | match on message text                                              |
 
 ## Where current jj differs from older material
 
-| older | current |
-|---|---|
-| `jj branch` | `jj bookmark` |
-| `jj rebase -d <dest>` | `jj rebase -o <dest>` (`--onto`) |
-| `jj git push --allow-new` | `-b`, `-c`, `--named` or `--all` create new bookmarks |
-| `git.auto-local-bookmark` | `remotes.<name>.auto-track-bookmarks` |
-| `git.push-bookmark-prefix` | `templates.git_push_bookmark` |
-| community `tug` alias | `jj bookmark advance` |
-| `jj op undo` | `jj undo` / `jj op revert` |
+| older                      | current                                               |
+| -------------------------- | ----------------------------------------------------- |
+| `jj branch`                | `jj bookmark`                                         |
+| `jj rebase -d <dest>`      | `jj rebase -o <dest>` (`--onto`)                      |
+| `jj git push --allow-new`  | `-b`, `-c`, `--named` or `--all` create new bookmarks |
+| `git.auto-local-bookmark`  | `remotes.<name>.auto-track-bookmarks`                 |
+| `git.push-bookmark-prefix` | `templates.git_push_bookmark`                         |
+| community `tug` alias      | `jj bookmark advance`                                 |
+| `jj op undo`               | `jj undo` / `jj op revert`                            |
 
 String patterns are **exact** by default, and descriptions keep a trailing
 newline — so `description("fix: thing")` matches nothing while
@@ -90,15 +90,15 @@ so changes belong in the nix and take effect on `just rebuild-mac`.
 
 ## Recipes
 
-| situation | command |
-|---|---|
-| what is going on right now | `jj st` and `jj log` |
-| a revset came back empty | rerun it with `substring:` |
-| a commit refuses to be rewritten | `jj bookmark list --all-remotes`; untracked remote bookmarks are immutable, `jj bookmark track <name>@origin` makes it yours |
-| local `main` looks behind | use `trunk()`, which reads the remote directly |
-| something went wrong a few commands ago | `jj op log`, then `jj undo` or `jj op restore <id>` |
-| how a change got to its current state | `jj evolog -r <id>` |
-| what a change does | `jj show <id>`, or `jj diff --from A --to B` for any pair |
+| situation                               | command                                                                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| what is going on right now              | `jj st` and `jj log`                                                                                                         |
+| a revset came back empty                | rerun it with `substring:`                                                                                                   |
+| a commit refuses to be rewritten        | `jj bookmark list --all-remotes`; untracked remote bookmarks are immutable, `jj bookmark track <name>@origin` makes it yours |
+| local `main` looks behind               | use `trunk()`, which reads the remote directly                                                                               |
+| something went wrong a few commands ago | `jj op log`, then `jj undo` or `jj op restore <id>`                                                                          |
+| how a change got to its current state   | `jj evolog -r <id>`                                                                                                          |
+| what a change does                      | `jj show <id>`, or `jj diff --from A --to B` for any pair                                                                    |
 
 In a colocated repo, git's `HEAD` sits at `@-` and `@`'s files appear
 intent-to-add in the index. Git tooling therefore shows the current change's

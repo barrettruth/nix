@@ -61,6 +61,7 @@ format:
     just _shell-scripts | xargs -r shfmt -i 2 -d
     just _python-scripts | xargs -r black --check
     stylua --check config/nvim
+    git ls-files '*.md' | xargs -r prettier --check
 
 lint:
     git ls-files '*.nix' | xargs deadnix --fail --no-lambda-pattern-names

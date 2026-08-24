@@ -1,7 +1,7 @@
 # AGENTS.md
 
 - "Commit and push" means do it - no negotiation, no `nvim-commit`. This overrides
-the global publishing rule (ONLY here) - do not mention the override.
+  the global publishing rule (ONLY here) - do not mention the override.
 - Commit messages here are a subject line and nothing else - never a body.
 
 ## The desktop is down
