@@ -199,6 +199,7 @@ local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
 local SET_LAST_ROOT_EXPR = "execute('let g:mux_last_root = ' . string(%s))"
 local CLEAR_LAST_ROOT_EXPR =
     "luaeval('(function(root) if vim.g.mux_last_root == root then vim.g.mux_last_root = nil end return true end)(_A)', %s)"
+local SET_PEERS_EXPR = "execute('let g:mux_peers = ' . string(%s))"
 
 ---@param args string[]
 ---@param opts table
@@ -254,6 +255,43 @@ local function set_remote_last_root(socket, root, cb, clear)
             cb(err)
         end)
     end
+end
+
+---Hand a target the caller's view of every server, addressed as the caller
+---reaches them: a socket path only resolves on the machine that owns it, and
+---`:connect` is performed by the UI client rather than the server it runs on.
+---@param socket string
+---@param cb fun(err?: string)
+local function push_peers(socket, cb)
+    local expr = SET_PEERS_EXPR:format(vim.fn.string(vim.json.encode(M.list())))
+    local proc, err = spawn_nvim({
+        '--server',
+        socket,
+        '--remote-expr',
+        expr,
+    }, { text = true, stdout = true, stderr = true }, function(res)
+        vim.schedule(function()
+            cb(res.code == 0 and nil or vim.trim(res.stderr or ''))
+        end)
+    end)
+    if not proc then
+        vim.schedule(function()
+            cb(err)
+        end)
+    end
+end
+
+---@return mux.Server[]
+local function peers()
+    local raw = vim.g.mux_peers
+    if type(raw) ~= 'string' or raw == '' then
+        return {}
+    end
+    local ok, decoded = pcall(vim.json.decode, raw)
+    if not ok or type(decoded) ~= 'table' then
+        return {}
+    end
+    return decoded
 end
 
 ---@param stdout string?
@@ -434,14 +472,19 @@ local function saved_root(file)
     end
 end
 
----List known mux servers: saved sessions, then live sockets not yet saved.
----Sessions first so their sockets need no probe: probing waits on a
----subprocess, and vim.wait() flushes the screen from the pre-refresh cache.
+---List known mux servers: peers the connecting UI told us about, then saved
+---sessions, then live sockets not yet saved. Peers rank first because only the
+---UI client's own addresses are ones it can reach; sessions precede sockets so
+---their sockets need no probe, probing waiting on a subprocess and vim.wait()
+---flushing the screen from the pre-refresh cache.
 ---@return mux.Server[]
 function M.list()
     local out = {}
     local seen = {}
     local known = {}
+    for _, peer in ipairs(peers()) do
+        add_server(out, seen, peer)
+    end
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
     table.sort(sessions)
     for _, file in ipairs(sessions) do
@@ -673,55 +716,72 @@ function M.ensure(root, cb)
     poll()
 end
 
----Connect this UI to a mux root, recording the current root on the target.
+---Connect this UI to a running server, recording the current root on it.
+---@param target_server mux.Server
+---@param cb? fun(ok?: true, err?: string)
+---@param clear_last? boolean
+---@return nil
+function M.attach(target_server, cb, clear_last)
+    cb = cb or function() end
+    local current = current_server
+    if current and current.root == target_server.root then
+        cb(true)
+        return
+    end
+    local function connect()
+        -- A UI that is not itself a mux server was started only to reach one,
+        -- and the server it detaches from has nothing else to end it.
+        local ok, connect_err = pcall(
+            vim.cmd,
+            ('connect%s %s'):format(
+                current and '' or '!',
+                vim.fn.fnameescape(target_server.socket)
+            )
+        )
+        if not ok then
+            cb(nil, tostring(connect_err))
+            return
+        end
+        cb(true)
+    end
+    local function connect_when_ready()
+        if #vim.api.nvim_list_uis() > 0 then
+            connect()
+            return
+        end
+        vim.api.nvim_create_autocmd('UIEnter', {
+            group = vim.api.nvim_create_augroup(
+                'mux-connect',
+                { clear = true }
+            ),
+            once = true,
+            callback = connect,
+        })
+    end
+    push_peers(target_server.socket, function()
+        if not current then
+            connect_when_ready()
+            return
+        end
+        set_remote_last_root(target_server.socket, current.root, function()
+            connect_when_ready()
+        end, clear_last)
+    end)
+end
+
+---Start or reuse the server for a root, then connect this UI to it.
 ---@param root string
 ---@param cb? fun(ok?: true, err?: string)
 ---@param clear_last? boolean
 ---@return nil
 function M.connect(root, cb, clear_last)
     cb = cb or function() end
-    local current = current_server
     M.ensure(root, function(target_server, ensure_err)
         if not target_server then
             cb(nil, ensure_err)
             return
         end
-        if current and current.root == target_server.root then
-            cb(true)
-            return
-        end
-        local function connect()
-            local ok, connect_err = pcall(
-                vim.cmd,
-                'connect ' .. vim.fn.fnameescape(target_server.socket)
-            )
-            if not ok then
-                cb(nil, tostring(connect_err))
-                return
-            end
-            cb(true)
-        end
-        local function connect_when_ready()
-            if #vim.api.nvim_list_uis() > 0 then
-                connect()
-                return
-            end
-            vim.api.nvim_create_autocmd('UIEnter', {
-                group = vim.api.nvim_create_augroup(
-                    'mux-connect',
-                    { clear = true }
-                ),
-                once = true,
-                callback = connect,
-            })
-        end
-        if current and current.root ~= target_server.root then
-            set_remote_last_root(target_server.socket, current.root, function()
-                connect_when_ready()
-            end, clear_last)
-            return
-        end
-        connect_when_ready()
+        M.attach(target_server, cb, clear_last)
     end)
 end
 
