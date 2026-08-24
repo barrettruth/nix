@@ -1,4 +1,15 @@
-{ lib, ... }:
+{ config, lib, ... }:
+let
+  javaVersion = "17";
+
+  casks = [
+    "imc/core/ark"
+    "jdk-zulu@11"
+    "jdk-zulu@17"
+    "jdk-zulu@21"
+    "jdk-zulu@22"
+  ];
+in
 {
   networking.hostName = "imc";
 
@@ -12,6 +23,25 @@
 
   barrett.tailscale.shieldsUp = true;
   barrett.tailscale.useAuthKey = false;
+
+  homebrew = {
+    inherit casks;
+    enable = true;
+    onActivation.cleanup = "none";
+    taps = [
+      {
+        name = "imc/core";
+        clone_target = "https://gitlab.trading.imc.intra/all/homebrew-imc";
+        trusted = true;
+      }
+    ];
+  };
+
+  environment.systemPath = lib.mkOrder 1100 [ "${config.homebrew.prefix}/bin" ];
+
+  environment.extraInit = lib.optionalString (lib.elem "jdk-zulu@${javaVersion}" casks) ''
+    export JAVA_HOME="$(/usr/libexec/java_home -v ${javaVersion})"
+  '';
 
   barrett.mac.chrome = {
     app = "/Applications/Google Chrome.app";
