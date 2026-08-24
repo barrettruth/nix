@@ -21,6 +21,24 @@ local function since(started)
     return math.floor((vim.uv.hrtime() - started) / 1e6)
 end
 
+---@return fun(status: 'running'|'success'|'failed', fmt: string, ...: any)
+local function progress()
+    local state = { kind = 'progress', source = 'mux', title = 'mux' }
+
+    return function(status, fmt, ...)
+        state.status = status
+        state.id = vim.api.nvim_echo(
+            { { fmt:format(...) } },
+            status ~= 'running',
+            state
+        )
+
+        if #vim.api.nvim_list_uis() > 0 then
+            vim.cmd.redraw({ bang = true })
+        end
+    end
+end
+
 local CONNECT_TIMEOUT = 'ConnectTimeout=5'
 
 local ENSURE = [[cd -- %s && nvim --headless -c 'lua local d, r = false, nil; ]]
@@ -97,7 +115,7 @@ end
 ---@param socket string
 ---@param remote_socket string
 ---@return string? err
-local function forward(host, socket, remote_socket)
+local function forward(host, socket, remote_socket, report)
     local started = vim.uv.hrtime()
     local spec = ('%s:%s'):format(socket, remote_socket)
     local shared = {
@@ -116,6 +134,7 @@ local function forward(host, socket, remote_socket)
 
     local argv = vim.list_extend(vim.deepcopy(shared), control(host))
     vim.list_extend(argv, { '-O', 'forward', '-L', spec, host })
+    report('running', '%s forwarding', host)
     local res = vim.system(argv, { text = true }):wait(FORWARD_MS)
 
     if res and res.code == 0 then
@@ -136,6 +155,7 @@ local function forward(host, socket, remote_socket)
         spec,
         host,
     })
+    report('running', '%s forwarding without multiplexing', host)
     local fallback = vim.system(own, { text = true }):wait(FORWARD_MS)
 
     if fallback and fallback.code == 0 then
@@ -157,11 +177,14 @@ end
 function M.ensure(host, path, cb)
     local server = require('mux.server')
     local started = vim.uv.hrtime()
+    local report = progress()
     log('%s ensure %s', host, path)
+    report('running', '%s resolving %s', host, path)
     local out, err = ssh(host, { ENSURE:format(shell_quote(path)) }, RESOLVE_MS)
 
     if not out then
         log('%s resolve failed %dms: %s', host, since(started), err)
+        report('failed', '%s %s', host, err)
         cb(nil, err)
         return
     end
@@ -170,12 +193,14 @@ function M.ensure(host, path, cb)
 
     if not ok or type(remote) ~= 'table' then
         log('%s resolve failed %dms: no answer', host, since(started))
+        report('failed', '%s gave no answer', host)
         cb(nil, ('%s gave no answer for %s'):format(host, path))
         return
     end
 
     if remote.error then
         log('%s resolve failed %dms: %s', host, since(started), remote.error)
+        report('failed', '%s %s', host, remote.error)
         cb(nil, ('%s: %s'):format(host, remote.error))
         return
     end
@@ -198,9 +223,10 @@ function M.ensure(host, path, cb)
     if not server.socket_listening(socket) then
         vim.fn.mkdir(dir, 'p')
         vim.fn.delete(socket)
-        local ferr = forward(host, socket, remote.socket)
+        local ferr = forward(host, socket, remote.socket, report)
 
         if ferr then
+            report('failed', '%s %s', host, ferr)
             cb(nil, ('cannot forward %s: %s'):format(host, ferr))
             return
         end
@@ -211,6 +237,7 @@ function M.ensure(host, path, cb)
             end, 100)
         then
             log('%s forward never answered %s', host, socket)
+            report('failed', '%s forwarded but never answered', host)
             cb(nil, ('%s forwarded but never answered'):format(host))
             return
         end
@@ -218,6 +245,7 @@ function M.ensure(host, path, cb)
         log('%s forward reused %s', host, socket)
     end
 
+    report('success', '%s %s', host, remote.root)
     cb({
         root = remote.root,
         session = remote.session,
