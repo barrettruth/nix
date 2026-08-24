@@ -12,6 +12,28 @@ local cached_servers = {}
 
 local redraw_pending = false
 
+local WATCH_MS = 150
+
+---@type uv.uv_fs_event_t[]
+local watchers = {}
+local watch_timer = assert(vim.uv.new_timer())
+local watched = ''
+
+---The sorted names every session is known by.
+---@return string
+local function listing()
+    local state = server.state()
+    local names = vim.fn.glob(state.runtime_dir .. '/*.sock', true, true)
+    vim.list_extend(
+        names,
+        vim.fn.glob(state.runtime_dir .. '/*/*.sock', true, true)
+    )
+    vim.list_extend(names, vim.fn.glob(state.state_dir .. '/*.vim', true, true))
+    table.sort(names)
+
+    return table.concat(names, '\n')
+end
+
 ---@return mux.Server[]
 function M.servers()
     local servers = server.list()
@@ -253,10 +275,51 @@ local function move_last()
     return nil, 'no server for ' .. root
 end
 
+---@return nil
+local function on_listing_change()
+    local names = listing()
+
+    if names == watched then
+        return
+    end
+
+    watched = names
+    M.refresh()
+end
+
+---Follow the directories a session appears in.
+---@return nil
+local function watch()
+    local state = server.state()
+
+    for _, handle in ipairs(watchers) do
+        pcall(handle.stop, handle)
+    end
+
+    watchers = {}
+    watched = listing()
+
+    for _, dir in ipairs({ state.runtime_dir, state.state_dir }) do
+        pcall(vim.fn.mkdir, dir, 'p')
+        local handle = vim.uv.new_fs_event()
+
+        if handle then
+            handle:start(dir, {}, function()
+                watch_timer:stop()
+                watch_timer:start(WATCH_MS, 0, function()
+                    vim.schedule(on_listing_change)
+                end)
+            end)
+            watchers[#watchers + 1] = handle
+        end
+    end
+end
+
 ---Install mux line visibility and redraw autocmds.
 ---@return nil
 function M.setup()
     apply_visibility()
+    watch()
     for lhs, step in pairs({ ['<a-x>['] = -1, ['<a-x>]'] = 1 }) do
         vim.keymap.set({ 'n', 'i', 't' }, lhs, function()
             move(step * vim.v.count1)
