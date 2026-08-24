@@ -8,4 +8,9 @@ vim.filetype.add({
         ['.ocamlformat'] = 'conf',
         dunstrc = 'dosini',
     },
+    pattern = {
+        ['.*%.in'] = function(path)
+            return require('config.cp').is_cp_path(path) and 'cpinput' or nil
+        end,
+    },
 })
