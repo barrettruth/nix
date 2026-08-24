@@ -3,13 +3,21 @@ local M = {}
 M.root = vim.fs.normalize('~/dev/cp')
 M.root_pattern = '^' .. vim.pesc(M.root) .. '/'
 
+local OUTPUT_WIDTH = 0.35
+local INPUT_HEIGHT = 0.3
+
 local languages = {
     cpp = { ext = '.cc', solve = '^%s*void%s+solve%(%).*{%s*$' },
     python = { ext = '.py', solve = '^%s*def%s+solve%(%).*:%s*$' },
 }
 
 local modes = { run = true, debug = true }
-local active = {}
+
+---@class cp.Column
+---@field source? integer
+---@field output? integer
+---@field input? integer
+---@field others integer[]
 
 ---@param msg string
 ---@param level? integer
@@ -30,21 +38,287 @@ function M.is_cp_path(path)
     return path ~= nil and path ~= '' and vim.fs.relpath(M.root, path) ~= nil
 end
 
-local function close_output()
-    local job = active.job
-    active.job = nil
-    if job and job > 0 then
+---@param source string
+---@return string
+local function input_path(source)
+    return vim.fn.fnamemodify(source, ':r') .. '.in'
+end
+
+---@param path string
+---@return boolean
+local function is_input_path(path)
+    return M.is_cp_path(path) and path:sub(-3) == '.in'
+end
+
+---@param input string
+---@return string?
+local function source_for_input(input)
+    local stem = vim.fn.fnamemodify(input, ':r')
+    for _, lang in pairs(languages) do
+        if vim.fn.filereadable(stem .. lang.ext) == 1 then
+            return stem .. lang.ext
+        end
+    end
+end
+
+---@param source string
+---@return string
+local function ensure_input(source)
+    local path = input_path(source)
+    if vim.fn.filereadable(path) == 0 then
+        vim.fn.writefile({}, path)
+    end
+    return path
+end
+
+---@param path string
+---@return integer?
+local function loaded_buf(path)
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_get_name(buf) == path then
+            return buf
+        end
+    end
+end
+
+---@param path string
+local function write_path(path)
+    local buf = loaded_buf(path)
+    if buf and vim.bo[buf].modified then
+        vim.api.nvim_buf_call(buf, function()
+            vim.cmd.write()
+        end)
+    end
+end
+
+---@param a integer
+---@param b integer
+---@return boolean
+local function below_right(a, b)
+    local ap = vim.api.nvim_win_get_position(a)
+    local bp = vim.api.nvim_win_get_position(b)
+    return ap[2] > bp[2] or (ap[2] == bp[2] and ap[1] > bp[1])
+end
+
+---@param tp? integer
+---@return cp.Column
+local function column(tp)
+    tp = tp or vim.api.nvim_get_current_tabpage()
+    local cur = vim.api.nvim_get_current_win()
+    local cols = { others = {} }
+    local wins, inputs = {}, {}
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+        if vim.api.nvim_win_get_config(win).relative == '' then
+            wins[#wins + 1] = win
+            local buf = vim.api.nvim_win_get_buf(win)
+            if vim.b[buf].cp_output then
+                cols.output = win
+            elseif is_input_path(vim.api.nvim_buf_get_name(buf)) then
+                inputs[#inputs + 1] = win
+            end
+        end
+    end
+    for _, win in ipairs(inputs) do
+        if not cols.input or below_right(win, cols.input) then
+            cols.input = win
+        end
+    end
+    for _, win in ipairs(wins) do
+        if win ~= cols.output and win ~= cols.input then
+            cols.others[#cols.others + 1] = win
+            local buf = vim.api.nvim_win_get_buf(win)
+            if
+                languages[vim.bo[buf].filetype]
+                and M.is_cp_path(vim.api.nvim_buf_get_name(buf))
+                and (not cols.source or win == cur)
+            then
+                cols.source = win
+            end
+        end
+    end
+    return cols
+end
+
+---@param buf integer
+local function stop_job(buf)
+    local job = vim.b[buf].cp_job
+    if job then
+        vim.b[buf].cp_job = nil
         pcall(vim.fn.jobstop, job)
     end
+end
 
-    local buf = active.output_buf
-    active.output_buf = nil
-    active.source_buf = nil
-    if buf and vim.api.nvim_buf_is_valid(buf) then
-        for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-            pcall(vim.api.nvim_win_close, win, true)
+---@param cols cp.Column
+local function close_column(cols)
+    if cols.output then
+        local buf = vim.api.nvim_win_get_buf(cols.output)
+        stop_job(buf)
+        pcall(vim.api.nvim_win_close, cols.output, true)
+        if vim.api.nvim_buf_is_valid(buf) then
+            pcall(vim.api.nvim_buf_delete, buf, { force = true })
         end
-        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+    if cols.input then
+        pcall(vim.api.nvim_win_close, cols.input, true)
+    end
+end
+
+local function close_if_orphaned()
+    vim.schedule(function()
+        for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+            local cols = column(tp)
+            if (cols.output or cols.input) and #cols.others == 0 then
+                close_column(cols)
+            end
+        end
+    end)
+end
+
+---@param win integer
+---@param source string
+---@return integer buf
+---@return integer chan
+local function reset_output(win, source)
+    local old = vim.api.nvim_win_get_buf(win)
+    if vim.b[old].cp_output then
+        stop_job(old)
+    end
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].bufhidden = 'wipe'
+    vim.bo[buf].buflisted = false
+    vim.bo[buf].swapfile = false
+    vim.b[buf].cp_output = true
+    vim.b[buf].cp_source = source
+    vim.b[buf].term_normal = true
+    vim.b[buf].term_insert = false
+    vim.api.nvim_win_set_buf(win, buf)
+    return buf, vim.api.nvim_open_term(buf, {})
+end
+
+---@param output_win integer
+---@param input_win integer
+local function fix_column(output_win, input_win)
+    local total = vim.api.nvim_win_get_height(output_win)
+        + vim.api.nvim_win_get_height(input_win)
+    vim.api.nvim_win_resize(
+        output_win,
+        math.max(1, math.floor(vim.o.columns * OUTPUT_WIDTH)),
+        -1
+    )
+    vim.api.nvim_win_resize(
+        input_win,
+        -1,
+        math.max(1, math.floor(total * INPUT_HEIGHT))
+    )
+    vim.wo[output_win].winfixwidth = true
+    vim.wo[input_win].winfixwidth = true
+    vim.wo[input_win].winfixheight = true
+end
+
+---@param output_win integer
+---@param source string
+---@return integer input_win
+local function attach_input(output_win, source)
+    vim.api.nvim_set_current_win(output_win)
+    vim.cmd('belowright split ' .. vim.fn.fnameescape(input_path(source)))
+    local input_win = vim.api.nvim_get_current_win()
+    fix_column(output_win, input_win)
+    return input_win
+end
+
+---@param input_win integer
+---@return integer output_win
+local function attach_output(input_win)
+    vim.api.nvim_set_current_win(input_win)
+    vim.cmd('aboveleft split')
+    local output_win = vim.api.nvim_get_current_win()
+    fix_column(output_win, input_win)
+    return output_win
+end
+
+---@param source_win integer
+---@param source string
+---@return integer output_win
+---@return integer input_win
+local function open_column(source_win, source)
+    vim.api.nvim_set_current_win(source_win)
+    vim.cmd('rightbelow vsplit')
+    local output_win = vim.api.nvim_get_current_win()
+    return output_win, attach_input(output_win, source)
+end
+
+---@param win integer
+---@param source string
+local function retarget_input(win, source)
+    local path = input_path(source)
+    if vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win)) == path then
+        return
+    end
+    vim.api.nvim_win_call(win, function()
+        vim.cmd.edit(vim.fn.fnameescape(path))
+    end)
+end
+
+---@param source string
+---@return integer buf
+---@return integer chan
+local function ensure_column(source)
+    local saved_win = vim.api.nvim_get_current_win()
+    local saved_view = vim.fn.winsaveview()
+    ensure_input(source)
+
+    local cols = column()
+    local output_win, input_win = cols.output, cols.input
+    if output_win and not input_win then
+        input_win = attach_input(output_win, source)
+    elseif input_win and not output_win then
+        output_win = attach_output(input_win)
+    elseif not output_win then
+        output_win, input_win =
+            open_column(cols.source or cols.others[1] or saved_win, source)
+    end
+
+    local buf, chan = reset_output(output_win, source)
+    retarget_input(input_win, source)
+
+    if vim.api.nvim_win_is_valid(saved_win) then
+        vim.api.nvim_set_current_win(saved_win)
+        vim.fn.winrestview(saved_view)
+    end
+    return buf, chan
+end
+
+---@return string?
+local function resolve_source()
+    local cols = column()
+    if cols.source then
+        return vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(cols.source))
+    end
+    if cols.output then
+        return vim.b[vim.api.nvim_win_get_buf(cols.output)].cp_source
+    end
+    if cols.input then
+        return source_for_input(
+            vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(cols.input))
+        )
+    end
+end
+
+local function restore_column()
+    local cols = column()
+    if cols.output or not cols.input then
+        return
+    end
+    local source = resolve_source()
+    if not source then
+        return
+    end
+    local saved_win = vim.api.nvim_get_current_win()
+    local saved_view = vim.fn.winsaveview()
+    reset_output(attach_output(cols.input), source)
+    if vim.api.nvim_win_is_valid(saved_win) then
+        vim.api.nvim_set_current_win(saved_win)
+        vim.fn.winrestview(saved_view)
     end
 end
 
@@ -76,97 +350,6 @@ local function output_handler(chan)
         end
         term_send(chan, table.concat(lines, '\n'))
     end
-end
-
----@param mode 'run'|'debug'
----@param source_buf integer
----@param source string
----@param dir string
-local function run_terminal(mode, source_buf, source, dir)
-    local source_win = vim.api.nvim_get_current_win()
-    local source_view = vim.fn.winsaveview()
-
-    close_output()
-    local source_width = vim.api.nvim_win_is_valid(source_win)
-            and vim.api.nvim_win_get_width(source_win)
-        or vim.o.columns
-    vim.cmd('rightbelow vsplit')
-    vim.cmd.enew()
-    vim.api.nvim_win_resize(0, math.max(1, math.floor(source_width * 0.35)), -1)
-
-    local buf = vim.api.nvim_get_current_buf()
-    active.source_buf = source_buf
-    active.output_buf = buf
-    vim.b[buf].cp_source = source
-    vim.b[buf].term_normal = true
-    vim.b[buf].term_insert = false
-    vim.bo[buf].bufhidden = 'wipe'
-    vim.bo[buf].buflisted = false
-    vim.bo[buf].swapfile = false
-
-    local chan = vim.api.nvim_open_term(buf, {})
-    vim.api.nvim_create_autocmd('BufWipeout', {
-        buf = buf,
-        once = true,
-        callback = function()
-            if active.output_buf == buf then
-                active.output_buf = nil
-                active.source_buf = nil
-                if active.job then
-                    pcall(vim.fn.jobstop, active.job)
-                    active.job = nil
-                end
-            end
-        end,
-    })
-
-    if vim.api.nvim_win_is_valid(source_win) then
-        vim.api.nvim_set_current_win(source_win)
-        vim.fn.winrestview(source_view)
-    end
-
-    local file = vim.fn.fnamemodify(source, ':t')
-    local cmd = { 'just', mode, file }
-    local action = mode == 'debug' and 'debugging' or 'compiling'
-    notify(action .. '...')
-    local job
-    job = vim.fn.jobstart(cmd, {
-        cwd = dir,
-        stdout_buffered = false,
-        stderr_buffered = false,
-        on_stdout = output_handler(chan),
-        on_stderr = output_handler(chan),
-        on_exit = function(_, code)
-            vim.schedule(function()
-                if active.job == job then
-                    active.job = nil
-                    notify(
-                        'exited with code ' .. code,
-                        code == 0 and vim.log.levels.INFO
-                            or vim.log.levels.ERROR
-                    )
-                end
-            end)
-        end,
-    })
-    if job > 0 then
-        active.job = job
-    end
-end
-
-local function close_if_source_hidden()
-    vim.schedule(function()
-        if
-            active.source_buf
-            and active.output_buf
-            and (
-                not vim.api.nvim_buf_is_valid(active.source_buf)
-                or #vim.fn.win_findbuf(active.source_buf) == 0
-            )
-        then
-            close_output()
-        end
-    end)
 end
 
 ---@param lang { ext: string, solve: string }
@@ -251,17 +434,22 @@ function M.open_problem(problem)
     if not file then
         return
     end
+
+    local cols = column()
+    vim.api.nvim_set_current_win(
+        cols.source or cols.others[1] or vim.api.nvim_get_current_win()
+    )
     if vim.bo.modified then
         vim.cmd.write()
     end
 
-    close_output()
     vim.cmd.edit(vim.fn.fnameescape(file))
     if populate_template_if_empty(lang) then
         vim.cmd.write()
         vim.cmd.edit()
     end
     go_to_solve(lang)
+    ensure_column(vim.api.nvim_buf_get_name(0))
 end
 
 ---@param mode? 'run'|'debug'
@@ -272,31 +460,73 @@ function M.run(mode)
         return
     end
 
-    local source_buf = vim.api.nvim_get_current_buf()
-    local source = vim.api.nvim_buf_get_name(source_buf)
-    if not M.is_cp_path(source) then
-        notify('not in ~/dev/cp', vim.log.levels.ERROR)
-        return
-    end
-    if not languages[vim.bo.filetype] then
+    local source = resolve_source()
+    if not source then
+        local name = vim.api.nvim_buf_get_name(0)
         notify(
-            'unsupported filetype: ' .. vim.bo.filetype,
+            M.is_cp_path(name) and ('unsupported filetype: ' .. vim.bo.filetype)
+                or 'not in ~/dev/cp',
             vim.log.levels.ERROR
         )
         return
     end
-    if vim.bo.modified then
-        vim.cmd.write()
-    end
 
-    run_terminal(mode, source_buf, source, vim.fn.fnamemodify(source, ':h'))
+    write_path(source)
+    write_path(input_path(source))
+
+    local buf, chan = ensure_column(source)
+    local cmd = { 'just', mode, vim.fn.fnamemodify(source, ':t') }
+    local action = mode == 'debug' and 'debugging' or 'compiling'
+    notify(action .. '...')
+    local job = vim.fn.jobstart(cmd, {
+        cwd = vim.fn.fnamemodify(source, ':h'),
+        stdout_buffered = false,
+        stderr_buffered = false,
+        on_stdout = output_handler(chan),
+        on_stderr = output_handler(chan),
+        on_exit = function(_, code)
+            vim.schedule(function()
+                if vim.api.nvim_buf_is_valid(buf) and vim.b[buf].cp_job then
+                    vim.b[buf].cp_job = nil
+                    notify(
+                        'exited with code ' .. code,
+                        code == 0 and vim.log.levels.INFO
+                            or vim.log.levels.ERROR
+                    )
+                end
+            end)
+        end,
+    })
+    if job > 0 then
+        vim.b[buf].cp_job = job
+    end
 end
 
 function M.setup()
     local group = vim.api.nvim_create_augroup('Cp', { clear = true })
     vim.api.nvim_create_autocmd({ 'BufWinLeave', 'BufWipeout', 'WinClosed' }, {
         group = group,
-        callback = close_if_source_hidden,
+        callback = close_if_orphaned,
+    })
+    vim.api.nvim_create_autocmd('BufLeave', {
+        group = group,
+        pattern = '*.in',
+        callback = function(args)
+            if
+                vim.bo[args.buf].modified
+                and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
+            then
+                vim.api.nvim_buf_call(args.buf, function()
+                    vim.cmd.write()
+                end)
+            end
+        end,
+    })
+    vim.api.nvim_create_autocmd('SessionLoadPost', {
+        group = group,
+        callback = function()
+            vim.schedule(restore_column)
+        end,
     })
     vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufReadPost' }, {
         group = group,
