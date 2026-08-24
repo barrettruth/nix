@@ -1,7 +1,8 @@
 # nvim
 
-- Comment in the style the file already uses, LuaCATS and analogous doc-comment
-  systems included: a file with no comments takes none.
+- Comment in the style the file already uses (if none/very few - match that), LuaCATS and analogous doc-comment
+  systems included: a file with no comments (excluding builtin docstring
+  comments) takes none.
 - A comment carries the why in a sentence — a constraint the API imposes, a Vim
   or Neovim gotcha, why the obvious alternative fails — and names the source
   when the reason is another project's. It never restates the code, re-argues a
