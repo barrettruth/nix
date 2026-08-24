@@ -27,14 +27,14 @@
 
   barrett.mac.apps = lib.mkAfter [
     {
-      key = "s";
+      key = "m";
       space = 8;
       bundleId = "Mattermost.Desktop";
       path = "/Applications/Mattermost.app";
       autostart = true;
     }
     {
-      key = "m";
+      key = "o";
       space = 9;
       bundleId = "com.microsoft.Outlook";
       path = "/Applications/Microsoft Outlook.app";
