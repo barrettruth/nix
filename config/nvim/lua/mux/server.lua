@@ -909,6 +909,15 @@ function M.connect(root, cb, clear_last)
     end)
 end
 
+---Name a server the way the tabline shows it.
+---@param server mux.Server
+---@return string
+function M.label(server)
+    local name = vim.fn.fnamemodify(server.root, ':t')
+
+    return server.host and ('%s:%s'):format(server.host, name) or name
+end
+
 ---@param root string
 ---@return mux.Server? peer
 local function peer_for(root)
@@ -925,12 +934,11 @@ local function hand_off(server)
     local attached = #vim.api.nvim_list_uis() > 0
     local peer = peer_for(server.root)
     local address = peer and peer.socket
+    local name = peer and M.label(peer) or server.root
 
     if attached and not address then
         vim.notify(
-            ('mux: cannot restart %s: no address its UI can reach'):format(
-                server.root
-            ),
+            ('mux: cannot restart %s: no address to hand its UI'):format(name),
             vim.log.levels.ERROR
         )
         return
@@ -962,8 +970,8 @@ local function hand_off(server)
         pcall(vim.fn.serverstart, server.socket)
         vim.notify(
             ('mux: cannot restart %s: %s'):format(
-                server.root,
-                spawn_err or 'replacement never listened'
+                name,
+                spawn_err or 'replacement never answered'
             ),
             vim.log.levels.ERROR
         )
@@ -983,12 +991,6 @@ local function hand_off(server)
     end
 
     if attached then
-        local name = vim.fn.fnamemodify(server.root, ':t')
-
-        if peer and peer.host then
-            name = ('%s:%s'):format(peer.host, name)
-        end
-
         carry[#carry + 1] = RESTARTED_EXPR:format(
             vim.fn.string(('mux: %s restarted'):format(name))
         )
@@ -1014,7 +1016,7 @@ local function hand_off(server)
             pcall(vim.fn.serverstart, server.socket)
             vim.notify(
                 ('mux: cannot restart %s: %s'):format(
-                    server.root,
+                    name,
                     tostring(connect_err)
                 ),
                 vim.log.levels.ERROR

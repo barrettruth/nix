@@ -540,7 +540,7 @@ local function setup_keymaps()
                     or vim.trim(result.stdout or '') ~= 'true'
                 then
                     vim.notify(
-                        'mux: failed to reload ' .. entry.root,
+                        ('mux: cannot restart %s'):format(server.label(entry)),
                         vim.log.levels.ERROR
                     )
                 end
