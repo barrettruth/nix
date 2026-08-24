@@ -52,10 +52,16 @@ end
 
 local function retire_session()
     local server = require('mux.server')
-    local last = server.state().last_root
+    local state = server.state()
+    local last = state.last_root
     local ok, err = require('mux.session').delete()
+
     if not ok then
         return nil, err
+    end
+
+    if state.server then
+        vim.fn.serverstop(state.server.socket)
     end
 
     local function exit(connected)
