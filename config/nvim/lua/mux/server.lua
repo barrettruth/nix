@@ -557,15 +557,21 @@ end
 ---sessions, then live sockets not yet saved. Peers rank first because only the
 ---UI client's own addresses are ones it can reach; sessions precede sockets so
 ---their sockets need no probe, probing waiting on a subprocess and vim.wait()
----flushing the screen from the pre-refresh cache.
+---flushing the screen from the pre-refresh cache. A peer is a snapshot that
+---outlives the server it names, so its address must still be there; a session
+---and a socket are removed by the server that owned them.
 ---@return mux.Server[]
 function M.list()
     local out = {}
     local seen = {}
     local known = {}
+
     for _, peer in ipairs(peers()) do
-        add_server(out, seen, peer)
+        if vim.uv.fs_stat(peer.socket) then
+            add_server(out, seen, peer)
+        end
     end
+
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
     table.sort(sessions)
     for _, file in ipairs(sessions) do

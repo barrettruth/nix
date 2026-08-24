@@ -145,11 +145,18 @@ end
 
 ---@param entry mux.Server
 local function connect(entry)
-    server.attach(entry, function(ok, err)
+    local function done(ok, err)
         if not ok then
             vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
         end
-    end)
+    end
+
+    if vim.uv.fs_stat(entry.socket) then
+        server.attach(entry, done)
+        return
+    end
+
+    server.connect(entry.root, done)
 end
 
 ---Tabline click handler for a view segment.
