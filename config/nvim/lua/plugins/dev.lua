@@ -105,7 +105,7 @@ return {
     },
     {
         'barrettruth/preview.nvim',
-        ft = { 'typst', 'tex', 'markdown' },
+        ft = { 'typst', 'markdown' },
         before = function()
             vim.g.preview = {
                 debug = false,
@@ -116,30 +116,11 @@ return {
                             .. '.html'
                     end,
                 },
-                typst = { open = { 'zathura' } },
+                typst = {
+                    open = { vim.fn.has('mac') == 1 and 'open' or 'zathura' },
+                },
                 plantuml = true,
                 mermaid = true,
-                latex = {
-                    open = { 'zathura' },
-                    args = function(ctx)
-                        local dir = vim.fn.fnamemodify(ctx.file, ':h')
-                            .. '/build'
-                        vim.fn.mkdir(dir, 'p')
-                        return {
-                            '-pdf',
-                            '-interaction=nonstopmode',
-                            '-output-directory=' .. dir,
-                            '-pdflatex=pdflatex -file-line-error %O %S',
-                            ctx.file,
-                        }
-                    end,
-                    output = function(ctx)
-                        return vim.fn.fnamemodify(ctx.file, ':h')
-                            .. '/build/'
-                            .. vim.fn.fnamemodify(ctx.file, ':t:r')
-                            .. '.pdf'
-                    end,
-                },
             }
         end,
         keys = {
