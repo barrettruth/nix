@@ -907,10 +907,117 @@ function M.connect(root, cb, clear_last)
     end)
 end
 
+---@param root string
+---@return string? socket
+local function peer_address(root)
+    for _, peer in ipairs(peers()) do
+        if peer.root == root then
+            return peer.socket
+        end
+    end
+end
+
+---@param server mux.Server
+---@return nil
+local function hand_off(server)
+    local attached = #vim.api.nvim_list_uis() > 0
+    local address = peer_address(server.root)
+
+    if attached and not address then
+        vim.notify(
+            ('mux: cannot restart %s: no address its UI can reach'):format(
+                server.root
+            ),
+            vim.log.levels.ERROR
+        )
+        return
+    end
+
+    vim.fn.serverstop(server.socket)
+    local proc, spawn_err = spawn_nvim({
+        '--headless',
+        '--listen',
+        server.socket,
+        ('+lua require("mux.server").setup(%q)'):format(server.root),
+    }, {
+        cwd = server.root,
+        detach = true,
+        stdout = false,
+        stderr = false,
+    })
+
+    if
+        not proc
+        or not vim.wait(READY_TIMEOUT_MS, function()
+            return socket_listening(server.socket)
+        end, READY_POLL_MS)
+    then
+        if proc then
+            pcall(proc.kill, proc, 15)
+        end
+
+        pcall(vim.fn.serverstart, server.socket)
+        vim.notify(
+            ('mux: cannot restart %s: %s'):format(
+                server.root,
+                spawn_err or 'replacement never listened'
+            ),
+            vim.log.levels.ERROR
+        )
+        return
+    end
+
+    local carry = {}
+
+    if vim.g.mux_peers then
+        carry[#carry + 1] =
+            SET_PEERS_EXPR:format(vim.fn.string(vim.g.mux_peers))
+    end
+
+    if vim.g.mux_last_root then
+        carry[#carry + 1] =
+            SET_LAST_ROOT_EXPR:format(vim.fn.string(vim.g.mux_last_root))
+    end
+
+    for _, expr in ipairs(carry) do
+        local handoff = spawn_nvim({
+            '--server',
+            server.socket,
+            '--remote-expr',
+            expr,
+        }, { text = true })
+        if handoff then
+            handoff:wait(READY_TIMEOUT_MS)
+        end
+    end
+
+    if attached then
+        local ok, connect_err =
+            pcall(vim.cmd.connect, vim.fn.fnameescape(address))
+        if not ok then
+            vim.notify(
+                ('mux: cannot restart %s: %s'):format(
+                    server.root,
+                    tostring(connect_err)
+                ),
+                vim.log.levels.ERROR
+            )
+            return
+        end
+    end
+
+    vim.cmd.qall({ bang = true })
+end
+
 ---Save the user session before restarting this mux server.
 ---@return true? ok
 ---@return string? err
 function M.reload()
+    local server = current_server
+    if not server then
+        return nil, setup_error or 'not a mux server'
+    end
+
     local session = require('mux.session')
     local ok, err = session.save()
     if not ok then
@@ -918,14 +1025,14 @@ function M.reload()
     end
 
     vim.schedule(function()
-        vim.cmd.restart({ '+qall!', bang = true })
+        hand_off(server)
     end)
 
     return true
 end
 
 ---Initialize this process as the mux server for `root`.
----`:restart` replays argv, so the root outlives any `:cd` the session makes.
+---The root is baked into the respawn, so it outlives any `:cd` the session makes.
 ---@param root string
 ---@return true? ok
 ---@return string? err
