@@ -11,8 +11,15 @@ local numberless_ft = {
 
 ---@param buf integer
 ---@return boolean
+local function columnless(buf)
+    return vim.bo[buf].buftype == 'terminal'
+        or vim.bo[buf].filetype == 'cpinput'
+end
+
+---@param buf integer
+---@return boolean
 local function numbers_off(buf)
-    if vim.bo[buf].buftype == 'terminal' then
+    if columnless(buf) then
         return true
     end
     if numberless_ft[vim.bo[buf].filetype] then
@@ -45,7 +52,7 @@ function M.render()
         return ''
     end
 
-    if vim.bo.buftype == 'terminal' then
+    if columnless(0) then
         return ''
     end
 
