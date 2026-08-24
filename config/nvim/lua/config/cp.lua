@@ -472,6 +472,8 @@ function M.setup()
         callback = function(args)
             if M.is_cp_path(vim.api.nvim_buf_get_name(args.buf)) then
                 vim.diagnostic.enable(false, { bufnr = args.buf })
+                vim.b[args.buf].minicompletion_config =
+                    { delay = { signature = 10000000 } }
             end
         end,
     })
