@@ -39,8 +39,11 @@ A few lines is the right length. He knows jj — name the mechanism and move on.
 - Every command is an operation. `jj op log` lists them; `jj undo` and
   `jj op restore <id>` reverse any of them, including working-copy snapshots.
   This is the general answer to "I broke something".
-- **Bookmarks** are jj's branches. They stay put as you commit, and move with the
-  change they point at when it is rewritten.
+- **Bookmarks** are jj's branches. They move with the change they point at when
+  it is rewritten, and `experimental-advance-branches` (on here, except
+  `push-*`) walks a bookmark at `@-` forward whenever a child of `@` is created.
+  So commit with `jj commit`; `jj describe` only rewords and leaves the bookmark
+  where it was.
 
 ## Reading `jj log`
 
