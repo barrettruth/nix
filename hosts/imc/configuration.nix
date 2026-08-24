@@ -124,6 +124,10 @@ in
       bundleId = "us.zoom.xos";
       path = "/Applications/zoom.us.app";
     }
+    {
+      path = "/Applications/DevEnv.app";
+      autostart = true;
+    }
   ];
 
   barrett.mac.floatingApps = lib.mkAfter [ "us.zoom.xos" ];
