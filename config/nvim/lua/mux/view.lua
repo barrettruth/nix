@@ -58,9 +58,9 @@ local function retire_session()
     end
     local function exit(connected)
         if not connected and #vim.api.nvim_list_uis() > 0 then
-            vim.cmd('detach')
+            vim.cmd.detach()
         end
-        vim.cmd('qall!')
+        vim.cmd.qall({ bang = true })
     end
     if root then
         server.connect(root, exit, true)
@@ -104,7 +104,10 @@ local function materialize(name)
     if name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
     elseif name == 'vcs' then
-        pcall(vim.cmd, 'Git|only')
+        pcall(function()
+            vim.cmd.Git()
+            vim.cmd.only()
+        end)
     elseif name == 'zsh' then
         vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = cwd })
         restore_terminal_focus()
@@ -218,7 +221,7 @@ function M.close()
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
         bufs[#bufs + 1] = vim.api.nvim_win_get_buf(win)
     end
-    local ok = pcall(vim.cmd, 'tabclose')
+    local ok = pcall(vim.cmd.tabclose)
     if not ok then
         return nil, 'failed to close view'
     end
@@ -368,7 +371,7 @@ local function cleanup_terminal(buf)
                     return
                 else
                     vim.api.nvim_set_current_tabpage(tp)
-                    vim.cmd('tabclose')
+                    vim.cmd.tabclose()
                     tab_view[tp] = nil
                 end
             end
