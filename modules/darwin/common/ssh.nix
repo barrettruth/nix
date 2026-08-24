@@ -19,7 +19,7 @@ in
       ${authorizedKeys} "${homeDirectory}/.ssh/authorized_keys"
   '';
 
-  programs.ssh.extraConfig = ''
+  barrett.user.extraSshConfig = ''
     Host forge.barrettruth.com git.barrettruth.com
         HostName 100.64.0.1
         Port 2222
