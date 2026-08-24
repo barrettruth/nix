@@ -3,9 +3,6 @@ local M = {}
 M.root = vim.fs.normalize('~/dev/cp')
 M.root_pattern = '^' .. vim.pesc(M.root) .. '/'
 
-local OUTPUT_WIDTH = 0.35
-local INPUT_HEIGHT = 0.3
-
 local languages = {
     cpp = { ext = '.cc', solve = '^%s*void%s+solve%(%).*{%s*$' },
     python = { ext = '.py', solve = '^%s*def%s+solve%(%).*:%s*$' },
@@ -202,13 +199,13 @@ local function fix_column(output_win, input_win)
         + vim.api.nvim_win_get_height(input_win)
     vim.api.nvim_win_resize(
         output_win,
-        math.max(1, math.floor(vim.o.columns * OUTPUT_WIDTH)),
+        math.max(1, math.floor(vim.o.columns * 0.35)),
         -1
     )
     vim.api.nvim_win_resize(
         input_win,
         -1,
-        math.max(1, math.floor(total * INPUT_HEIGHT))
+        math.max(1, math.floor(total * 0.35))
     )
     vim.wo[output_win].winfixwidth = true
     vim.wo[input_win].winfixwidth = true
