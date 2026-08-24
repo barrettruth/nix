@@ -722,13 +722,10 @@ function M.attach(target_server, cb, clear_last)
     local function connect()
         -- A UI that is not itself a mux server was started only to reach one,
         -- and the server it detaches from has nothing else to end it.
-        local ok, connect_err = pcall(
-            vim.cmd,
-            ('connect%s %s'):format(
-                current and '' or '!',
-                vim.fn.fnameescape(target_server.socket)
-            )
-        )
+        local ok, connect_err = pcall(vim.cmd.connect, {
+            vim.fn.fnameescape(target_server.socket),
+            bang = not current,
+        })
         if not ok then
             cb(nil, tostring(connect_err))
             return
@@ -786,7 +783,7 @@ function M.reload()
         return nil, err
     end
     vim.schedule(function()
-        vim.cmd('restart! +qall!')
+        vim.cmd.restart({ '+qall!', bang = true })
     end)
     return true
 end

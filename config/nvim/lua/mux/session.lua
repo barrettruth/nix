@@ -76,8 +76,10 @@ function M.save()
         return nil, 'failed to create session directory: ' .. dir
     end
     saving = true
-    local ok =
-        pcall(vim.cmd, 'mksession! ' .. vim.fn.fnameescape(server.session))
+    local ok = pcall(
+        vim.cmd.mksession,
+        { vim.fn.fnameescape(server.session), bang = true }
+    )
     saving = false
     if not ok then
         return nil, 'failed to write session: ' .. server.session
@@ -117,8 +119,10 @@ function M.restore()
         return nil, 'no session'
     end
     restoring = true
-    local ok =
-        pcall(vim.cmd, 'silent! source ' .. vim.fn.fnameescape(server.session))
+    local ok = pcall(vim.cmd.source, {
+        vim.fn.fnameescape(server.session),
+        mods = { silent = true, emsg_silent = true },
+    })
     if not ok then
         restoring = false
         return nil, 'failed to restore session: ' .. server.session
