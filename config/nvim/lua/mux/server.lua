@@ -935,13 +935,14 @@ function M.setup(root)
     end
 
     setup_started = true
-    local root, err = validate_root(root)
-    if not root then
+    local real, err = validate_root(root)
+
+    if not real then
         setup_error = err
         return nil, err
     end
 
-    local server, serr = server_for(root, vim.v.servername)
+    local server, serr = server_for(real, vim.v.servername)
     if not server then
         setup_error = serr
         return nil, serr
