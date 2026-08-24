@@ -33,6 +33,7 @@ local did_setup = false
 ---@return string
 local function root()
     local state = require('mux.server').state()
+
     return (state.server and state.server.root) or vim.fn.getcwd()
 end
 
@@ -56,17 +57,21 @@ local function retire_session()
     if not ok then
         return nil, err
     end
+
     local function exit(connected)
         if not connected and #vim.api.nvim_list_uis() > 0 then
             vim.cmd.detach()
         end
+
         vim.cmd.qall({ bang = true })
     end
+
     if root then
         server.connect(root, exit, true)
     else
         exit()
     end
+
     return true
 end
 
@@ -83,7 +88,9 @@ local function restore_terminal_focus()
     then
         return false
     end
+
     pcall(vim.cmd.startinsert)
+
     return true
 end
 
@@ -101,6 +108,7 @@ end
 ---@return nil
 local function materialize(name)
     local cwd = root()
+
     if name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
     elseif name == 'vcs' then
@@ -127,6 +135,7 @@ local function create(name, enter)
         materialize(name)
     end)
     mark_dirty(name)
+
     return win, tp
 end
 
@@ -139,11 +148,14 @@ function M.ensure(name)
     if not views[name] then
         return nil, nil, 'unknown view: ' .. tostring(name)
     end
+
     local tp = find(name)
     if tp then
         return vim.api.nvim_tabpage_get_win(tp), tp
     end
+
     local win, created = create(name, false)
+
     return win, created
 end
 
@@ -155,11 +167,14 @@ function M.open(name)
     if not win then
         return nil, err
     end
+
     if tp and vim.api.nvim_tabpage_is_valid(tp) then
         vim.api.nvim_set_current_tabpage(tp)
     end
+
     restore_terminal_focus()
     mark_dirty(name)
+
     return true
 end
 
@@ -171,9 +186,11 @@ function M.focus(tab)
     if not vim.api.nvim_tabpage_is_valid(tab) then
         return nil, 'unknown tab'
     end
+
     vim.api.nvim_set_current_tabpage(tab)
     restore_terminal_focus()
     mark_dirty(tab_view[tab] or false)
+
     return true
 end
 
@@ -190,18 +207,25 @@ function M.call(name, fn)
     if not win then
         return nil, err
     end
+
     local ok, result = pcall(vim.api.nvim_win_call, win, fn)
+
     if vim.api.nvim_tabpage_is_valid(saved_tab) then
         vim.api.nvim_set_current_tabpage(saved_tab)
     end
+
     if vim.api.nvim_win_is_valid(saved_win) then
         vim.api.nvim_set_current_win(saved_win)
     end
+
     restore_terminal_focus()
+
     if not ok then
         return nil, tostring(result)
     end
+
     mark_dirty(name)
+
     return result
 end
 
@@ -214,9 +238,11 @@ function M.close()
     if name == nil then
         name = false
     end
+
     if #user_tabpages() <= 1 then
         return retire_session()
     end
+
     local bufs = {}
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
         bufs[#bufs + 1] = vim.api.nvim_win_get_buf(win)
@@ -225,6 +251,7 @@ function M.close()
     if not ok then
         return nil, 'failed to close view'
     end
+
     tab_view[tp] = nil
     for _, buf in ipairs(bufs) do
         if
@@ -236,6 +263,7 @@ function M.close()
         end
     end
     mark_dirty(name)
+
     return true
 end
 
@@ -245,6 +273,7 @@ end
 ---@return nil
 function M.restore(names)
     tab_view = {}
+
     if not names then
         local tp = vim.api.nvim_get_current_tabpage()
         tab_view[tp] = 'edit'
@@ -252,6 +281,7 @@ function M.restore(names)
         require('mux.session').mark_dirty()
         return
     end
+
     for i, tp in ipairs(vim.api.nvim_list_tabpages()) do
         local name = names[i]
         tab_view[tp] = name and views[name] and name or false
@@ -275,12 +305,15 @@ local function default_buf_label(buf)
     if name == '' then
         return '[No Name]'
     end
+
     if vim.bo[buf].buftype == 'help' then
         return vim.fn.fnamemodify(name, ':t')
     end
+
     if vim.bo[buf].buftype ~= '' then
         return name
     end
+
     return vim.fn.pathshorten(vim.fn.fnamemodify(name, ':~'), 1)
 end
 
@@ -297,6 +330,7 @@ local function default_tab_label(tp)
         local config = vim.api.nvim_win_get_config(other)
         if config.relative == '' and config.focusable ~= false then
             count = count + 1
+
             if vim.bo[vim.api.nvim_win_get_buf(other)].modified then
                 modified = true
             end
@@ -304,6 +338,7 @@ local function default_tab_label(tp)
     end
     local prefix = count > 1 and tostring(count) or ''
     prefix = modified and (prefix .. '+') or prefix
+
     return prefix ~= '' and (prefix .. ' ' .. label) or label
 end
 
@@ -316,6 +351,7 @@ function M.list()
     for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
         local view_name = tab_view[tp]
         local entry
+
         if view_name and views[view_name] then
             entry = {
                 kind = 'view',
@@ -334,6 +370,7 @@ function M.list()
                 current = tp == cur,
             }
         end
+
         out[#out + 1] = entry
         labels[entry.label] = (labels[entry.label] or 0) + 1
     end
@@ -344,6 +381,7 @@ function M.list()
                 .. entry.label
         end
     end
+
     return out
 end
 
@@ -364,6 +402,7 @@ local function cleanup_terminal(buf)
                         break
                     end
                 end
+
                 if has_terminal then
                     vim.api.nvim_win_close(win, true)
                 elseif #user_tabpages() <= 1 then
@@ -377,9 +416,11 @@ local function cleanup_terminal(buf)
             end
         end
     end
+
     if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
         vim.api.nvim_buf_delete(buf, { force = true })
     end
+
     require('mux.session').mark_dirty()
 end
 
@@ -398,9 +439,11 @@ end
 local function reap_terminal(buf)
     local pid = term_pids[buf]
     term_pids[buf] = nil
+
     if not pid then
         return
     end
+
     kill_group(pid, 'TERM')
     vim.defer_fn(function()
         if vim.system({ 'kill', '-0', tostring(pid) }):wait().code == 0 then
@@ -418,11 +461,13 @@ local function stop_terminals()
             jobs[#jobs + 1] = job
             pcall(vim.fn.jobstop, job)
         end
+
         if term_pids[buf] then
             kill_group(term_pids[buf], 'TERM')
             term_pids[buf] = nil
         end
     end
+
     if #jobs > 0 then
         vim.fn.jobwait(jobs, JOB_EXIT_TIMEOUT_MS)
     end
@@ -477,6 +522,7 @@ local function setup_keymaps()
         if not current then
             return
         end
+
         for _, entry in ipairs(server.list()) do
             if
                 entry.socket ~= current.socket
@@ -510,6 +556,7 @@ function M.setup()
     if did_setup then
         return
     end
+
     did_setup = true
     setup_keymaps()
     local group = vim.api.nvim_create_augroup('mux-view', { clear = true })

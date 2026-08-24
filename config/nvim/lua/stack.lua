@@ -14,6 +14,7 @@ end
 ---@return integer?
 local function current_pr()
     local name = vim.api.nvim_buf_get_name(0)
+
     return tonumber(name:match('^guh://[^/]+/[^/]+/%a+/(%d+)$'))
 end
 
@@ -45,6 +46,7 @@ local function current_branch()
     if jj.code ~= 0 then
         return nil
     end
+
     return vim.trim(jj.stdout):match('^[^%s*]+')
 end
 
@@ -71,11 +73,13 @@ local function fetch(on_done)
                 )
                 return
             end
+
             local ok, prs = pcall(vim.json.decode, out.stdout)
             if not ok or type(prs) ~= 'table' then
                 notify('could not read gh output', vim.log.levels.ERROR)
                 return
             end
+
             on_done(prs)
         end)
     end)
@@ -96,10 +100,12 @@ local function chain(prs, number)
         by_head[pr.headRefName] = pr
         children[pr.baseRefName] = children[pr.baseRefName] or {}
         table.insert(children[pr.baseRefName], pr)
+
         if pr.number == number then
             start = pr
         end
     end
+
     if not start then
         return nil, ('#%d is not an open pull request here'):format(number)
     end
@@ -116,6 +122,7 @@ local function chain(prs, number)
         if not next_up then
             break
         end
+
         if #next_up > 1 then
             local ns = vim.tbl_map(function(pr)
                 return '#' .. pr.number
@@ -126,6 +133,7 @@ local function chain(prs, number)
                     table.concat(ns, ', ')
                 )
         end
+
         above = next_up[1]
         table.insert(ordered, above)
     end
@@ -166,6 +174,7 @@ function M.list()
                 end
             end
         end
+
         if not number then
             notify('no pull request here', vim.log.levels.WARN)
             return

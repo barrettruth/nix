@@ -45,7 +45,9 @@ local function runtime_dir()
             base = '/run/user/' .. vim.uv.getuid()
         end
     end
+
     base = base:gsub('/+$', '')
+
     return base .. '/mux'
 end
 
@@ -61,6 +63,7 @@ local function host_of(socket)
     if dir == runtime_dir() then
         return nil
     end
+
     return vim.fn.fnamemodify(dir, ':t')
 end
 
@@ -77,6 +80,7 @@ local function within_sun_path(socket)
                 limit
             )
     end
+
     return socket
 end
 
@@ -94,17 +98,21 @@ local function validate_root(root)
     if type(root) ~= 'string' or root == '' then
         return nil, 'empty root'
     end
+
     local real = vim.uv.fs_realpath(root)
     if not real then
         return nil, 'invalid root: ' .. root
     end
+
     local stat = vim.uv.fs_stat(real)
     if not stat or stat.type ~= 'directory' then
         return nil, 'not a directory: ' .. real
     end
+
     if not has_marker(real) then
         return nil, 'invalid root: ' .. real
     end
+
     return real
 end
 
@@ -116,6 +124,7 @@ local function sanitize_base(base)
     if base == '' then
         return 'project'
     end
+
     return base
 end
 
@@ -127,6 +136,7 @@ local function cksum(s)
     if not res or res.code ~= 0 or not res.stdout then
         return nil, 'cksum failed'
     end
+
     return res.stdout:match('^(%d+)')
 end
 
@@ -141,11 +151,14 @@ local function stem(root)
     if stems[root] then
         return stems[root]
     end
+
     local hash, err = cksum(root)
     if not hash then
         return nil, err
     end
+
     stems[root] = sanitize_base(vim.fn.fnamemodify(root, ':t')) .. '-' .. hash
+
     return stems[root]
 end
 
@@ -157,6 +170,7 @@ local function paths_for(root)
     if not name then
         return nil, err
     end
+
     return {
         root = root,
         socket = runtime_dir() .. '/' .. name .. '.sock',
@@ -173,6 +187,7 @@ local function server_for(root, socket)
     if not paths then
         return nil, err
     end
+
     return {
         root = root,
         session = paths.session,
@@ -204,6 +219,7 @@ function M.paths(root)
     if not real then
         return nil, err
     end
+
     return paths_for(real)
 end
 
@@ -213,12 +229,14 @@ function M.probe()
     if not setup_started then
         return vim.json.encode({ ok = false, error = 'not a mux server' })
     end
+
     if not ready then
         return vim.json.encode({
             ok = false,
             error = setup_error or 'not ready',
         })
     end
+
     return vim.json.encode({ ok = true, server = current_server })
 end
 
@@ -250,6 +268,7 @@ local function spawn_nvim(args, opts, cb)
     if ok then
         return proc
     end
+
     if prog ~= 'nvim' then
         argv[1] = 'nvim'
         ok, proc = pcall(vim.system, argv, opts, cb)
@@ -257,6 +276,7 @@ local function spawn_nvim(args, opts, cb)
             return proc
         end
     end
+
     return nil, tostring(proc)
 end
 
@@ -279,6 +299,7 @@ local function set_remote_last_root(socket, root, cb, clear)
                 cb()
                 return
             end
+
             cb(vim.trim(res.stderr or ''))
         end)
     end)
@@ -304,6 +325,7 @@ local function push_peers(target, cb)
     then
         list[#list + 1] = target
     end
+
     local expr = SET_PEERS_EXPR:format(vim.fn.string(vim.json.encode(list)))
     local proc, err = spawn_nvim({
         '--server',
@@ -316,6 +338,7 @@ local function push_peers(target, cb)
                 cb()
                 return
             end
+
             cb(vim.trim(res.stderr or ''))
         end)
     end)
@@ -329,6 +352,7 @@ end
 ---@return mux.Server[]
 local function peers()
     local raw = vim.g.mux_peers
+
     return raw and vim.json.decode(raw) or {}
 end
 
@@ -341,14 +365,17 @@ local function decode_rpc(stdout, socket)
     if raw == '' then
         return nil, 'empty response'
     end
+
     local ok, decoded = pcall(vim.json.decode, raw)
     if not ok or type(decoded) ~= 'table' then
         return nil, 'invalid response'
     end
+
     if decoded.ok and type(decoded.server) == 'table' then
         decoded.server.socket = socket
         return decoded.server
     end
+
     return nil, tostring(decoded.error or 'not ready')
 end
 
@@ -367,14 +394,17 @@ local function probe_sync(socket, timeout)
     if not proc then
         return nil, err
     end
+
     local res = proc:wait(timeout or LIST_PROBE_MS)
     if not res then
         pcall(proc.kill, proc, 15)
         return nil, 'timeout'
     end
+
     if res.code ~= 0 then
         return nil, vim.trim(res.stderr or '')
     end
+
     return decode_rpc(res.stdout, socket)
 end
 
@@ -392,11 +422,14 @@ local function probe_async(socket, timeout, cb)
         if done then
             return
         end
+
         done = true
+
         if timer then
             timer:stop()
             timer:close()
         end
+
         vim.schedule(function()
             cb(server, err)
         end)
@@ -412,6 +445,7 @@ local function probe_async(socket, timeout, cb)
             finish(nil, vim.trim(res.stderr or ''))
             return
         end
+
         local server, rpc_err = decode_rpc(res.stdout, socket)
         finish(server, rpc_err)
     end)
@@ -419,6 +453,7 @@ local function probe_async(socket, timeout, cb)
         finish(nil, err)
         return
     end
+
     timer:start(timeout, 0, function()
         pcall(proc.kill, proc, 15)
         finish(nil, 'timeout')
@@ -435,6 +470,7 @@ local function socket_listening_async(socket, cb)
         end)
         return
     end
+
     local ok, pipe = pcall(vim.uv.new_pipe, false)
     if not ok or not pipe then
         vim.schedule(function()
@@ -442,6 +478,7 @@ local function socket_listening_async(socket, cb)
         end)
         return
     end
+
     local timer = vim.uv.new_timer()
     local done = false
     ---@param alive boolean
@@ -450,6 +487,7 @@ local function socket_listening_async(socket, cb)
         if done then
             return
         end
+
         done = true
         timer:stop()
         timer:close()
@@ -481,6 +519,7 @@ local function socket_listening(socket)
     vim.wait(CONNECT_PROBE_MS + READY_POLL_MS, function()
         return done
     end, 10)
+
     return alive
 end
 
@@ -492,6 +531,7 @@ local function add_server(out, seen, server)
     if not server or seen[server.root] then
         return
     end
+
     seen[server.root] = true
     out[#out + 1] = server
 end
@@ -539,15 +579,18 @@ function M.list()
     table.sort(sockets)
     for _, socket in ipairs(sockets) do
         local live = current_server and socket == current_server.socket
+
         if not known[socket] then
             local server = live and current_server
                 or probe_sync(socket, LIST_PROBE_MS)
             if server then
                 server.host = host_of(socket)
             end
+
             add_server(out, seen, server)
         end
     end
+
     return out
 end
 
@@ -558,6 +601,7 @@ local function contains(path, root)
     if path == root then
         return true
     end
+
     return vim.startswith(path, root .. '/')
 end
 
@@ -569,11 +613,13 @@ function M.find(path)
     if type(path) ~= 'string' or path == '' then
         return nil, 'empty path'
     end
+
     local real = vim.uv.fs_realpath(path)
         or vim.uv.fs_realpath(vim.fn.fnamemodify(path, ':h'))
     if not real then
         return nil, 'invalid path: ' .. path
     end
+
     local best
     for _, server in ipairs(M.list()) do
         if
@@ -583,6 +629,7 @@ function M.find(path)
             best = server
         end
     end
+
     return best
 end
 
@@ -597,15 +644,19 @@ local function finish_pending(root, server, err)
         end)
         return
     end
+
     local entry = pending[root]
     pending[root] = nil
+
     if not entry then
         return
     end
+
     if entry.timer then
         entry.timer:stop()
         entry.timer:close()
     end
+
     for _, cb in ipairs(entry.callbacks) do
         local ok, cb_err = pcall(cb, server, err)
         if not ok then
@@ -626,6 +677,7 @@ function M.ensure(root, cb)
         pending[root].callbacks[#pending[root].callbacks + 1] = cb
         return
     end
+
     local paths, perr = paths_for(root)
     if not paths then
         vim.schedule(function()
@@ -633,6 +685,7 @@ function M.ensure(root, cb)
         end)
         return
     end
+
     local existing, probe_err = probe_sync(paths.socket, LIST_PROBE_MS)
     if not existing and socket_listening(paths.socket) then
         existing, probe_err = probe_sync(paths.socket, ENSURE_PROBE_MS)
@@ -651,6 +704,7 @@ function M.ensure(root, cb)
             return
         end
     end
+
     if existing then
         if existing.root ~= root then
             vim.schedule(function()
@@ -658,11 +712,13 @@ function M.ensure(root, cb)
             end)
             return
         end
+
         vim.schedule(function()
             cb(existing)
         end)
         return
     end
+
     local real, err = validate_root(root)
     if not real then
         vim.schedule(function()
@@ -670,13 +726,16 @@ function M.ensure(root, cb)
         end)
         return
     end
+
     if real ~= root then
         M.ensure(real, cb)
         return
     end
+
     if vim.uv.fs_stat(paths.socket) ~= nil then
         pcall(vim.fn.delete, paths.socket)
     end
+
     pcall(vim.fn.mkdir, runtime_dir(), 'p')
     pcall(vim.fn.mkdir, state_dir(), 'p')
     pending[real] = { callbacks = { cb } }
@@ -695,6 +754,7 @@ function M.ensure(root, cb)
         finish_pending(real, nil, spawn_err)
         return
     end
+
     pending[real].proc = proc
     local started = vim.uv.now()
     ---@return nil
@@ -703,23 +763,27 @@ function M.ensure(root, cb)
         if not entry then
             return
         end
+
         if entry.timer then
             local timer = entry.timer
             entry.timer = nil
             timer:stop()
             timer:close()
         end
+
         if vim.uv.now() - started >= READY_TIMEOUT_MS then
             pcall(proc.kill, proc, 15)
             finish_pending(real, nil, 'server startup timed out: ' .. real)
             return
         end
+
         ---@return nil
         local function reschedule()
             local entry2 = pending[real]
             if not entry2 then
                 return
             end
+
             entry2.timer = vim.uv.new_timer()
             entry2.timer:start(READY_POLL_MS, 0, poll)
         end
@@ -728,6 +792,7 @@ function M.ensure(root, cb)
                 reschedule()
                 return
             end
+
             probe_async(paths.socket, LIST_PROBE_MS, function(server, rerr)
                 if server then
                     if server.root == real then
@@ -739,8 +804,10 @@ function M.ensure(root, cb)
                             'socket belongs to different root: ' .. paths.socket
                         )
                     end
+
                     return
                 end
+
                 if
                     rerr
                     and rerr ~= ''
@@ -750,6 +817,7 @@ function M.ensure(root, cb)
                     finish_pending(real, nil, rerr)
                     return
                 end
+
                 reschedule()
             end)
         end)
@@ -769,6 +837,7 @@ function M.attach(target_server, cb, clear_last)
         cb(true)
         return
     end
+
     local function connect()
         -- A UI that is not itself a mux server was started only to reach one,
         -- and the server it detaches from has nothing else to end it.
@@ -780,6 +849,7 @@ function M.attach(target_server, cb, clear_last)
             cb(nil, tostring(connect_err))
             return
         end
+
         cb(true)
     end
     local function connect_when_ready()
@@ -787,6 +857,7 @@ function M.attach(target_server, cb, clear_last)
             connect()
             return
         end
+
         vim.api.nvim_create_autocmd('UIEnter', {
             group = vim.api.nvim_create_augroup(
                 'mux-connect',
@@ -807,10 +878,12 @@ function M.attach(target_server, cb, clear_last)
             )
             return
         end
+
         if not current then
             connect_when_ready()
             return
         end
+
         set_remote_last_root(target_server.socket, current.root, function()
             connect_when_ready()
         end, clear_last)
@@ -829,6 +902,7 @@ function M.connect(root, cb, clear_last)
             cb(nil, ensure_err)
             return
         end
+
         M.attach(target_server, cb, clear_last)
     end)
 end
@@ -842,9 +916,11 @@ function M.reload()
     if not ok then
         return nil, err
     end
+
     vim.schedule(function()
         vim.cmd.restart({ '+qall!', bang = true })
     end)
+
     return true
 end
 
@@ -857,17 +933,20 @@ function M.setup(root)
     if setup_started then
         return true
     end
+
     setup_started = true
     local root, err = validate_root(root)
     if not root then
         setup_error = err
         return nil, err
     end
+
     local server, serr = server_for(root, vim.v.servername)
     if not server then
         setup_error = serr
         return nil, serr
     end
+
     current_server = server
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
@@ -879,11 +958,14 @@ function M.setup(root)
         setup_error = rerr
         return nil, rerr
     end
+
     if not ok then
         require('mux.view').restore()
     end
+
     ready = true
     require('mux.line').refresh()
+
     return true
 end
 
@@ -891,4 +973,5 @@ M.within_sun_path = within_sun_path
 
 M._validate_root = validate_root
 M._paths_for = paths_for
+
 return M

@@ -9,6 +9,7 @@ function M.sessions()
         vim.notify('mux: not a mux server', vim.log.levels.ERROR)
         return
     end
+
     vim.ui.select(require('mux.line').servers(), {
         prompt = 'Select a session:',
         kind = 'mux.session',
@@ -20,6 +21,7 @@ function M.sessions()
         if not choice or choice.root == current.root then
             return
         end
+
         server.connect(choice.root, function(ok, err)
             if not ok then
                 vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
