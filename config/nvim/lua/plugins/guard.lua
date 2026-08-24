@@ -53,7 +53,7 @@ return {
         local cpplint = vim.deepcopy(require('guard-collection.linter.cpplint'))
         cpplint.ignore_patterns = require('config.cp').root_pattern
         ft('cpp'):lint(cpplint)
-        ft('markdown'):fmt('cbfmt'):fmt('prettierd')
+        ft('markdown'):fmt('prettierd')
         local lint = require('guard.lint')
 
         ft('nix')

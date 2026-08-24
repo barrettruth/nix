@@ -451,7 +451,6 @@ in
             nixd
             black
             buf
-            cbfmt
             cmake-format
             isort
             prettierd
