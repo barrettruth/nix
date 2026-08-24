@@ -165,6 +165,7 @@ let
       [includeIf "gitdir:${dir}"]
         path = ${personalGitConf}
     '') config.barrett.user.personalGitDirs}
+    ${config.barrett.user.extraGitConfig}
   '';
 
   awsConf = pkgs.writeText "aws-config" ''
@@ -373,6 +374,11 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "gitdir patterns that keep the personal identity regardless of gitEmail.";
+    };
+    extraGitConfig = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Git configuration appended for this host, overriding the shared file.";
     };
     homeDirectory = lib.mkOption {
       type = lib.types.str;
