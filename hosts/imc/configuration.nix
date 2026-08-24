@@ -29,11 +29,15 @@ in
 
   barrett.user.name = "bruth";
 
-  barrett.user.gitEmail = "Barrett.Ruth@imc.com";
+  barrett.user.gitEmail = "barrett.ruth@imc.com";
   barrett.user.personalGitDirs = [
     "~/dev/"
     "~/.config/nix/"
   ];
+  barrett.user.extraGitConfig = ''
+    [http]
+      emptyAuth = true
+  '';
 
   barrett.tailscale.shieldsUp = true;
   barrett.tailscale.useAuthKey = false;
