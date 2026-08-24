@@ -56,6 +56,13 @@ local function state_dir()
     return vim.fn.stdpath('state') .. '/mux'
 end
 
+---Whether a socket is one this machine hands out.
+---@param socket string
+---@return boolean
+local function ours(socket)
+    return vim.startswith(socket, runtime_dir() .. '/')
+end
+
 ---@param socket string
 ---@return string? host
 local function host_of(socket)
@@ -558,8 +565,8 @@ end
 ---UI client's own addresses are ones it can reach; sessions precede sockets so
 ---their sockets need no probe, probing waiting on a subprocess and vim.wait()
 ---flushing the screen from the pre-refresh cache. A peer is a snapshot that
----outlives the server it names, so its address must still be there; a session
----and a socket are removed by the server that owned them.
+---outlives the server it names, so an address of ours must still be there; a
+---session and a socket are removed by the server that owned them.
 ---@return mux.Server[]
 function M.list()
     local out = {}
@@ -567,7 +574,7 @@ function M.list()
     local known = {}
 
     for _, peer in ipairs(peers()) do
-        if vim.uv.fs_stat(peer.socket) then
+        if not ours(peer.socket) or vim.uv.fs_stat(peer.socket) then
             add_server(out, seen, peer)
         end
     end
@@ -880,9 +887,9 @@ function M.attach(target_server, cb, clear_last)
     end
     -- Connecting a UI to an address nothing answers exits it, but only our own
     -- sockets are ours to judge: the rest are addressed for the UI client.
-    local ours = vim.startswith(target_server.socket, runtime_dir() .. '/')
+    local judged = ours(target_server.socket)
     push_peers(target_server, function(push_err)
-        if push_err and ours then
+        if push_err and judged then
             cb(
                 nil,
                 ('cannot reach %s: %s'):format(target_server.root, push_err)
