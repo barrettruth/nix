@@ -4,7 +4,6 @@ local RESOLVE_MS = 30000
 local FORWARD_MS = 15000
 local PROBE_MS = 2000
 
----The path expands in the remote shell, so `~` is that host's home, not ours.
 local ENSURE = [[cd -- %s && nvim --headless -c 'lua local d, r = false, nil; ]]
     .. [[require("mux.server").ensure(vim.fn.getcwd(), function(s, e) r = s or { error = e }; d = true end); ]]
     .. [[vim.wait(25000, function() return d end, 50); ]]
@@ -122,8 +121,6 @@ function M.ensure(host, path, cb)
             )
             return
         end
-        -- ssh -f backgrounds once the forward is set up, which is a moment
-        -- before the socket it bound will answer.
         if
             not vim.wait(FORWARD_MS, function()
                 return answers(socket)

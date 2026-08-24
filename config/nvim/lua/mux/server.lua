@@ -64,8 +64,6 @@ local function host_of(socket)
     return vim.fn.fnamemodify(dir, ':t')
 end
 
----A mac's private $TMPDIR spends half of sun_path's 104 bytes before naming
----anything, so a nested socket can overrun it.
 ---@param socket string
 ---@return string? socket
 ---@return string? err
@@ -292,14 +290,13 @@ local function set_remote_last_root(socket, root, cb, clear)
 end
 
 ---Hand a target the caller's view of every server, addressed as the caller
----reaches them: a socket path only resolves on the machine that owns it, and
----`:connect` is performed by the UI client rather than the server it runs on.
+---reaches them: `:connect` is performed by the UI client, not by its server.
 ---@param target mux.Server
 ---@param cb fun(err?: string)
 local function push_peers(target, cb)
     local list = M.list()
-    -- The target is known live, so it belongs in the list whether or not the
-    -- probe budget reached it: a forwarded socket costs a round trip.
+    -- A forwarded socket costs a round trip, so the probe budget can miss one
+    -- we already know is live.
     if
         not vim.iter(list):any(function(s)
             return s.root == target.root
@@ -515,8 +512,7 @@ end
 ---sessions, then live sockets not yet saved. Peers rank first because only the
 ---UI client's own addresses are ones it can reach; sessions precede sockets so
 ---their sockets need no probe, probing waiting on a subprocess and vim.wait()
----flushing the screen from the pre-refresh cache. A forwarded socket sits under
----the ssh alias reaching it, so a host is read off the path rather than tracked.
+---flushing the screen from the pre-refresh cache.
 ---@return mux.Server[]
 function M.list()
     local out = {}
@@ -800,9 +796,8 @@ function M.attach(target_server, cb, clear_last)
             callback = connect,
         })
     end
-    -- A UI told to connect somewhere nothing answers exits the process, so a
-    -- silent target is refused. Only sockets under this runtime dir can be
-    -- judged that way: the rest are addressed for the UI client, not for us.
+    -- Connecting a UI to an address nothing answers exits it, but only our own
+    -- sockets are ours to judge: the rest are addressed for the UI client.
     local ours = vim.startswith(target_server.socket, runtime_dir() .. '/')
     push_peers(target_server, function(push_err)
         if push_err and ours then
