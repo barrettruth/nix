@@ -509,6 +509,7 @@ in
           ++ agentPackages;
 
         environment.extraInit = ''
+          export __NIX_SET_ENVIRONMENT_SYSTEM="$(readlink /run/current-system)"
           export PATH="${scriptsPath}:${homeDirectory}/.local/bin:$PATH"
           export PATH="${XDG_DATA_HOME}/cargo/bin:${XDG_DATA_HOME}/go/bin:${XDG_DATA_HOME}/pnpm:$PATH"
           if [ -z "''${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json" ]; then
@@ -518,6 +519,10 @@ in
 
         programs.zsh.enable = true;
         programs.zsh.shellInit = ''
+          if [ "$__NIX_SET_ENVIRONMENT_SYSTEM" != "$(readlink /run/current-system)" ]; then
+            . ${config.system.build.setEnvironment}
+          fi
+
           export ZDOTDIR="$HOME/.config/zsh"
           THEME="$(cat "''${XDG_STATE_HOME:-$HOME/.local/state}/theme" 2>/dev/null)" || THEME="midnight"
           [ -z "$THEME" ] && THEME="midnight"
