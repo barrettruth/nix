@@ -600,7 +600,7 @@ function M.ensure(root, cb)
         '--headless',
         '--listen',
         paths.socket,
-        '+lua require("mux.server").setup()',
+        ('+lua require("mux.server").setup(%q)'):format(real),
     }, {
         cwd = real,
         detach = true,
@@ -740,15 +740,17 @@ function M.reload()
     return true
 end
 
----Initialize this process as the mux server for its cwd.
+---Initialize this process as the mux server for `root`.
+---`:restart` replays argv, so the root outlives any `:cd` the session makes.
+---@param root string
 ---@return true? ok
 ---@return string? err
-function M.setup()
+function M.setup(root)
     if setup_started then
         return true
     end
     setup_started = true
-    local root, err = validate_root(vim.fn.getcwd())
+    local root, err = validate_root(root)
     if not root then
         setup_error = err
         return nil, err
