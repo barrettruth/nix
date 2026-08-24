@@ -608,34 +608,29 @@ end
 ---@param err? string
 ---@return nil
 local function finish_pending(root, server, err)
-    if vim.in_fast_event() then
-        vim.schedule(function()
-            finish_pending(root, server, err)
-        end)
-        return
-    end
+    vim.schedule(function()
+        local entry = pending[root]
+        pending[root] = nil
 
-    local entry = pending[root]
-    pending[root] = nil
-
-    if not entry then
-        return
-    end
-
-    if entry.timer then
-        entry.timer:stop()
-        entry.timer:close()
-    end
-
-    for _, cb in ipairs(entry.callbacks) do
-        local ok, cb_err = pcall(cb, server, err)
-        if not ok then
-            vim.notify(
-                'mux: ensure callback failed: ' .. tostring(cb_err),
-                vim.log.levels.ERROR
-            )
+        if not entry then
+            return
         end
-    end
+
+        if entry.timer then
+            entry.timer:stop()
+            entry.timer:close()
+        end
+
+        for _, cb in ipairs(entry.callbacks) do
+            local ok, cb_err = pcall(cb, server, err)
+            if not ok then
+                vim.notify(
+                    'mux: ensure callback failed: ' .. tostring(cb_err),
+                    vim.log.levels.ERROR
+                )
+            end
+        end
+    end)
 end
 
 ---Start or reuse the mux server for a project root.
