@@ -18,6 +18,7 @@ function M.servers()
     table.sort(servers, function(a, b)
         return a.root < b.root
     end)
+
     return servers
 end
 
@@ -44,6 +45,7 @@ local function segment(minwid, func, group, text)
     -- Labels are path tails, where a '%' would otherwise open a tabline item
     -- and swallow or end the click region.
     local label = text:gsub('%%', '%%%%')
+
     return ('%%%d@%s@%%#%s#%s%%*%%X'):format(minwid, func, group, label)
 end
 
@@ -58,6 +60,7 @@ local function view_segments()
             (entry.current and '*' or '') .. entry.label
         )
     end
+
     return parts
 end
 
@@ -67,9 +70,11 @@ local function session_segments()
     local parts = {}
     for i, entry in ipairs(cached_servers) do
         local name = vim.fn.fnamemodify(entry.root, ':t')
+
         if entry.host then
             name = ('%s:%s'):format(entry.host, name)
         end
+
         if name ~= '' then
             local selected = current and current.root == entry.root
             parts[#parts + 1] = segment(
@@ -80,6 +85,7 @@ local function session_segments()
             )
         end
     end
+
     return parts
 end
 
@@ -97,9 +103,11 @@ function M.redraw()
         vim.schedule(M.redraw)
         return
     end
+
     if redraw_pending then
         return
     end
+
     redraw_pending = true
     vim.schedule(function()
         redraw_pending = false
@@ -115,6 +123,7 @@ function M.render()
     if not server.state().server then
         return ''
     end
+
     return (' %s%%=%s '):format(
         table.concat(view_segments(), ' '),
         table.concat(session_segments(), ' ')
@@ -129,6 +138,7 @@ function M.toggle()
     if not state.server then
         return nil, 'not a mux server'
     end
+
     local file = state.runtime_dir .. '/mux-bar'
     pcall(vim.fn.mkdir, vim.fn.fnamemodify(file, ':h'), 'p')
     pcall(
@@ -137,6 +147,7 @@ function M.toggle()
         file
     )
     M.redraw()
+
     return true
 end
 
@@ -166,6 +177,7 @@ function M.on_session(index)
     if not entry or (current and entry.root == current.root) then
         return
     end
+
     connect(entry)
 end
 
@@ -178,6 +190,7 @@ local function move(step)
     if not current or #cached_servers == 0 then
         return nil, 'not a mux server'
     end
+
     local idx = 1
     for i, entry in ipairs(cached_servers) do
         if entry.root == current.root then
@@ -190,7 +203,9 @@ local function move(step)
     if not entry or entry.root == current.root then
         return true
     end
+
     connect(entry)
+
     return true
 end
 
@@ -203,11 +218,14 @@ local function move_to(n)
     if not current then
         return nil, 'not a mux server'
     end
+
     local entry = cached_servers[n]
     if not entry or entry.root == current.root then
         return true
     end
+
     connect(entry)
+
     return true
 end
 
@@ -220,16 +238,19 @@ local function move_last()
     if not current then
         return nil, 'not a mux server'
     end
+
     local root = state.last_root
     if not root or root == current.root then
         return true
     end
+
     for _, entry in ipairs(cached_servers) do
         if entry.root == root then
             connect(entry)
             return true
         end
     end
+
     return nil, 'no server for ' .. root
 end
 

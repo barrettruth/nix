@@ -30,16 +30,20 @@ local function resolve_arg(arg)
     if stat and stat.type == 'file' then
         real = vim.fn.fnamemodify(real, ':h')
     end
+
     while real and real ~= '' do
         if has_marker(real) then
             return real
         end
+
         local parent = vim.fn.fnamemodify(real, ':h')
         if parent == real then
             break
         end
+
         real = parent
     end
+
     return nil, 'no git/jj root: ' .. raw
 end
 
@@ -58,6 +62,7 @@ function M.mux(arg)
                 )
                 return
             end
+
             require('mux.server').attach(server, function(ok, attach_err)
                 if not ok then
                     vim.notify(
@@ -69,17 +74,21 @@ function M.mux(arg)
         end)
         return
     end
+
     if vim.trim(arg or '') == '' then
         local first = require('mux.line').servers()[1]
         root = first and first.root
     end
+
     if not root then
         root, err = resolve_arg(arg)
     end
+
     if not root then
         vim.notify('mux: ' .. err, vim.log.levels.ERROR)
         return
     end
+
     require('mux.server').connect(root, function(ok, connect_err)
         if not ok then
             vim.notify('mux: ' .. tostring(connect_err), vim.log.levels.ERROR)

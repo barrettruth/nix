@@ -14,6 +14,7 @@ local function current()
     if not server then
         return nil, 'not a mux server'
     end
+
     return server
 end
 
@@ -22,7 +23,9 @@ local function stop_save_timer(close)
     if not timer then
         return
     end
+
     timer:stop()
+
     if close then
         save_timer = nil
         timer:close()
@@ -49,6 +52,7 @@ function M.mark_dirty()
     if restoring or saving then
         return
     end
+
     dirty = true
     schedule_save()
 end
@@ -61,6 +65,7 @@ function M.save()
     if not server then
         return nil, err
     end
+
     dirty = false
     stop_save_timer(true)
     local labels = {}
@@ -75,15 +80,18 @@ function M.save()
     if not mk_ok then
         return nil, 'failed to create session directory: ' .. dir
     end
+
     saving = true
     local ok = pcall(
         vim.cmd.mksession,
         { vim.fn.fnameescape(server.session), bang = true }
     )
     saving = false
+
     if not ok then
         return nil, 'failed to write session: ' .. server.session
     end
+
     return true
 end
 
@@ -95,15 +103,18 @@ function M.delete()
     if not server then
         return nil, err
     end
+
     if
         vim.fn.filereadable(server.session) == 1
         and vim.fn.delete(server.session) ~= 0
     then
         return nil, 'failed to delete session: ' .. server.session
     end
+
     dirty = false
     stop_save_timer(true)
     pcall(vim.api.nvim_del_augroup_by_name, 'mux-session')
+
     return true
 end
 
@@ -115,9 +126,11 @@ function M.restore()
     if not server then
         return nil, err
     end
+
     if vim.fn.filereadable(server.session) == 0 then
         return nil, 'no session'
     end
+
     restoring = true
     local ok = pcall(vim.cmd.source, {
         vim.fn.fnameescape(server.session),
@@ -127,9 +140,11 @@ function M.restore()
         restoring = false
         return nil, 'failed to restore session: ' .. server.session
     end
+
     local mux = vim.g.Mux and vim.json.decode(vim.g.Mux)
     require('mux.view').restore(mux and mux.tabs)
     restoring = false
+
     return true
 end
 
@@ -139,6 +154,7 @@ function M.setup()
     if did_setup then
         return
     end
+
     did_setup = true
     local group = vim.api.nvim_create_augroup('mux-session', { clear = true })
     vim.api.nvim_create_autocmd({

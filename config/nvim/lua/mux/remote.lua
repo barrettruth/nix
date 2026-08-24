@@ -21,10 +21,12 @@ local function ssh(host, args, timeout)
     if not res then
         return nil, ('ssh %s timed out'):format(host)
     end
+
     if res.code ~= 0 then
         local err = vim.trim(res.stderr or '')
         return nil, err ~= '' and err or ('ssh %s failed'):format(host)
     end
+
     return res.stdout
 end
 
@@ -34,6 +36,7 @@ local function answers(socket)
     if not vim.uv.fs_stat(socket) then
         return false
     end
+
     local res = vim.system({
         vim.v.progpath,
         '--server',
@@ -41,6 +44,7 @@ local function answers(socket)
         '--remote-expr',
         '1',
     }, { text = true }):wait(PROBE_MS)
+
     return res ~= nil and res.code == 0
 end
 
@@ -51,6 +55,7 @@ local function shell_safe(path)
     if path:find('[;&|`$\n\'"()<>]') then
         return nil, 'path has shell metacharacters: ' .. path
     end
+
     return path
 end
 
@@ -66,20 +71,24 @@ function M.ensure(host, path, cb)
         cb(nil, unsafe)
         return
     end
+
     local out, err = ssh(host, { ENSURE:format(safe) }, RESOLVE_MS)
     if not out then
         cb(nil, err)
         return
     end
+
     local ok, remote = pcall(vim.json.decode, vim.trim(out))
     if not ok or type(remote) ~= 'table' then
         cb(nil, ('%s gave no answer for %s'):format(host, path))
         return
     end
+
     if remote.error then
         cb(nil, ('%s: %s'):format(host, remote.error))
         return
     end
+
     local dir = ('%s/%s'):format(server.state().runtime_dir, host)
     local socket = ('%s/%s'):format(
         dir,
@@ -90,6 +99,7 @@ function M.ensure(host, path, cb)
         cb(nil, too_long)
         return
     end
+
     if not answers(socket) then
         vim.fn.mkdir(dir, 'p')
         vim.fn.delete(socket)
@@ -121,6 +131,7 @@ function M.ensure(host, path, cb)
             )
             return
         end
+
         if
             not vim.wait(FORWARD_MS, function()
                 return answers(socket)
@@ -130,6 +141,7 @@ function M.ensure(host, path, cb)
             return
         end
     end
+
     cb({
         root = remote.root,
         session = remote.session,
@@ -147,6 +159,7 @@ function M.split(arg)
     if not host or vim.fn.isdirectory(arg) == 1 then
         return nil
     end
+
     return host, path ~= '' and path or '.'
 end
 
