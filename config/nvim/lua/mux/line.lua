@@ -67,6 +67,9 @@ local function session_segments()
     local parts = {}
     for i, entry in ipairs(cached_servers) do
         local name = vim.fn.fnamemodify(entry.root, ':t')
+        if entry.host then
+            name = ('%s:%s'):format(entry.host, name)
+        end
         if name ~= '' then
             local selected = current and current.root == entry.root
             parts[#parts + 1] = segment(

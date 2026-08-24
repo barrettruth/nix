@@ -48,6 +48,27 @@ end
 ---@return nil
 function M.mux(arg)
     local root, err
+    local host, path = require('mux.remote').split(vim.trim(arg or ''))
+    if host then
+        require('mux.remote').ensure(host, path, function(server, remote_err)
+            if not server then
+                vim.notify(
+                    'mux: ' .. tostring(remote_err),
+                    vim.log.levels.ERROR
+                )
+                return
+            end
+            require('mux.server').attach(server, function(ok, attach_err)
+                if not ok then
+                    vim.notify(
+                        'mux: ' .. tostring(attach_err),
+                        vim.log.levels.ERROR
+                    )
+                end
+            end)
+        end)
+        return
+    end
     if vim.trim(arg or '') == '' then
         local first = require('mux.line').servers()[1]
         root = first and first.root
