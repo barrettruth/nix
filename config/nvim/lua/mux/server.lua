@@ -2,6 +2,7 @@
 ---@field root string
 ---@field session string
 ---@field socket string
+---@field host? string
 
 ---@class mux.State
 ---@field server? mux.Server
@@ -51,6 +52,34 @@ end
 ---@return string
 local function state_dir()
     return vim.fn.stdpath('state') .. '/mux'
+end
+
+---@param socket string
+---@return string? host
+local function host_of(socket)
+    local dir = vim.fn.fnamemodify(socket, ':h')
+    if dir == runtime_dir() then
+        return nil
+    end
+    return vim.fn.fnamemodify(dir, ':t')
+end
+
+---A mac's private $TMPDIR spends half of sun_path's 104 bytes before naming
+---anything, so a nested socket can overrun it.
+---@param socket string
+---@return string? socket
+---@return string? err
+local function within_sun_path(socket)
+    local limit = vim.uv.os_uname().sysname == 'Darwin' and 104 or 108
+    if #socket > limit then
+        return nil,
+            ('socket path too long: %s (%d bytes, max %d)'):format(
+                socket,
+                #socket,
+                limit
+            )
+    end
+    return socket
 end
 
 ---@param root string
@@ -467,7 +496,8 @@ end
 ---sessions, then live sockets not yet saved. Peers rank first because only the
 ---UI client's own addresses are ones it can reach; sessions precede sockets so
 ---their sockets need no probe, probing waiting on a subprocess and vim.wait()
----flushing the screen from the pre-refresh cache.
+---flushing the screen from the pre-refresh cache. A forwarded socket sits under
+---the ssh alias reaching it, so a host is read off the path rather than tracked.
 ---@return mux.Server[]
 function M.list()
     local out = {}
@@ -487,15 +517,20 @@ function M.list()
         end
     end
     local sockets = vim.fn.glob(runtime_dir() .. '/*.sock', true, true)
+    vim.list_extend(
+        sockets,
+        vim.fn.glob(runtime_dir() .. '/*/*.sock', true, true)
+    )
     table.sort(sockets)
     for _, socket in ipairs(sockets) do
         local live = current_server and socket == current_server.socket
         if not known[socket] then
-            add_server(
-                out,
-                seen,
-                live and current_server or probe_sync(socket, LIST_PROBE_MS)
-            )
+            local server = live and current_server
+                or probe_sync(socket, LIST_PROBE_MS)
+            if server then
+                server.host = host_of(socket)
+            end
+            add_server(out, seen, server)
         end
     end
     return out
@@ -747,8 +782,7 @@ function M.attach(target_server, cb, clear_last)
         })
     end
     push_peers(target_server.socket, function(push_err)
-        -- A UI that connects to an address nothing answers exits the process,
-        -- so an unreachable target has to fail here rather than at :connect.
+        -- A UI told to connect somewhere nothing answers exits the process.
         if push_err then
             cb(
                 nil,
@@ -835,6 +869,8 @@ function M.setup(root)
     require('mux.line').refresh()
     return true
 end
+
+M.within_sun_path = within_sun_path
 
 M._validate_root = validate_root
 M._paths_for = paths_for
