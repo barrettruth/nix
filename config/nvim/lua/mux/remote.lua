@@ -3,14 +3,15 @@ local M = {}
 local RESOLVE_MS = 10000
 local FORWARD_MS = 10000
 
----Every step here is a blocking round trip over a link that can be slow or
----gone, so each one says where it got to before the editor froze.
 ---@param fmt string
 ---@param ... any
 local function log(fmt, ...)
     local dir = vim.fn.stdpath('log')
     vim.fn.mkdir(dir, 'p')
-    local line = ('%s %s'):format(os.date('%Y-%m-%d %H:%M:%S'), fmt:format(...))
+    local line = ('%s [mux]: %s'):format(
+        os.date('%Y-%m-%d %H:%M:%S'),
+        fmt:format(...)
+    )
     pcall(vim.fn.writefile, { line }, dir .. '/mux.log', 'a')
 end
 
@@ -20,8 +21,6 @@ local function since(started)
     return math.floor((vim.uv.hrtime() - started) / 1e6)
 end
 
----Without this a host that is merely unreachable spends the whole budget inside
----connect(), and every wait here blocks the editor.
 local CONNECT_TIMEOUT = 'ConnectTimeout=5'
 
 local ENSURE = [[cd -- %s && nvim --headless -c 'lua local d, r = false, nil; ]]
@@ -65,8 +64,11 @@ local function ssh(host, args, timeout)
     end
 
     if res.code ~= 0 then
-        local err = vim.trim(res.stderr or '')
-        return nil, err ~= '' and err or ('ssh %s failed'):format(host)
+        local lines =
+            vim.split(vim.trim(res.stderr or ''), '\n', { trimempty = true })
+        local err = lines[#lines]
+
+        return nil, err and vim.trim(err) or ('ssh %s failed'):format(host)
     end
 
     return res.stdout
@@ -108,6 +110,10 @@ local function forward(host, socket, remote_socket)
         'StreamLocalBindUnlink=yes',
     }
 
+    local drop = vim.list_extend(vim.deepcopy(shared), control(host))
+    vim.list_extend(drop, { '-O', 'cancel', '-L', spec, host })
+    vim.system(drop, { text = true }):wait(FORWARD_MS)
+
     local argv = vim.list_extend(vim.deepcopy(shared), control(host))
     vim.list_extend(argv, { '-O', 'forward', '-L', spec, host })
     local res = vim.system(argv, { text = true }):wait(FORWARD_MS)
@@ -117,8 +123,6 @@ local function forward(host, socket, remote_socket)
         return nil
     end
 
-    -- Multiplexing is an optimisation: a host that cannot share a connection
-    -- still gets a forward, at one process per project rather than per host.
     local own = vim.list_extend(vim.deepcopy(shared), {
         '-f',
         '-N',
