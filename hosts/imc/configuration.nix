@@ -3,6 +3,7 @@
   lib,
   pkgs,
   act,
+  mkHostSecret,
   ...
 }:
 let
@@ -48,13 +49,18 @@ in
     Host devschool ${devenvHost}
       HostName ${devenvHost}
       User ${config.barrett.user.name}
-      IdentityFile ${homeDirectory}/.ssh/devenv_private_key
+      IdentityFile ${config.sops.secrets."devenv-private-key".path}
       Port 22
       StrictHostKeyChecking no
       CheckHostIP no
       UserKnownHostsFile /dev/null
       Compression yes
   '';
+
+  sops.secrets."devenv-private-key" = mkHostSecret config.networking.hostName "devenv-private-key" {
+    owner = config.barrett.user.name;
+    mode = "0400";
+  };
 
   barrett.tailscale.shieldsUp = true;
   barrett.tailscale.useAuthKey = false;
