@@ -18,6 +18,11 @@ local function resolve_arg(arg)
 
     local real = vim.uv.fs_realpath(raw)
     if not real then
+        for _, server in ipairs(require('mux.server').list()) do
+            if server.root == raw then
+                return raw
+            end
+        end
         return nil, 'path does not exist: ' .. raw
     end
 
