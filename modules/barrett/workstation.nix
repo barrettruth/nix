@@ -168,6 +168,8 @@ let
     ${config.barrett.user.extraGitConfig}
   '';
 
+  sshConf = pkgs.writeText "ssh-host-config" config.barrett.user.extraSshConfig;
+
   awsConf = pkgs.writeText "aws-config" ''
     [default]
     [profile barrett]
@@ -281,6 +283,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/clangd"}
             ${mkDir "${XDG_DATA_HOME}/nvim/site"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
+            ${mkPrivateDir "${homeDirectory}/.ssh/config.d"}
             ${mkPrivateDir "${homeDirectory}/.gnupg"}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/sops"}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/sops/age"}
@@ -288,6 +291,7 @@ let
             ${mkSymlink "${repo}/config/git/ignore" "${XDG_CONFIG_HOME}/git/ignore"}
             ${mkSymlink "${repo}/config/git/hooks" "${XDG_CONFIG_HOME}/git/hooks"}
             ${mkSymlink "${repo}/config/ssh/config" "${homeDirectory}/.ssh/config"}
+            ${mkSymlink "${sshConf}" "${homeDirectory}/.ssh/config.d/host.conf"}
             ${mkSymlink "${repo}/config/gh/config.yaml" "${XDG_CONFIG_HOME}/gh/config.yml"}
             ${mkSymlink "${pkgs.gh-stack}/bin/gh-stack" "${XDG_DATA_HOME}/gh/extensions/gh-stack/gh-stack"}
             ${mkSymlink "${jjConf}" "${XDG_CONFIG_HOME}/jj/config.toml"}
@@ -379,6 +383,11 @@ in
       type = lib.types.lines;
       default = "";
       description = "Git configuration appended for this host, overriding the shared file.";
+    };
+    extraSshConfig = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "ssh configuration for this host, included ahead of the shared file.";
     };
     homeDirectory = lib.mkOption {
       type = lib.types.str;
