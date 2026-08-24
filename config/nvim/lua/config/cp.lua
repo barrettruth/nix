@@ -134,20 +134,10 @@ local function column(tp)
     return cols
 end
 
----@param buf integer
-local function stop_job(buf)
-    local job = vim.b[buf].cp_job
-    if job then
-        vim.b[buf].cp_job = nil
-        pcall(vim.fn.jobstop, job)
-    end
-end
-
 ---@param cols cp.Column
 local function close_column(cols)
     if cols.output then
         local buf = vim.api.nvim_win_get_buf(cols.output)
-        stop_job(buf)
         pcall(vim.api.nvim_win_close, cols.output, true)
         if vim.api.nvim_buf_is_valid(buf) then
             pcall(vim.api.nvim_buf_delete, buf, { force = true })
@@ -171,13 +161,7 @@ end
 
 ---@param win integer
 ---@param source string
----@return integer buf
----@return integer chan
 local function reset_output(win, source)
-    local old = vim.api.nvim_win_get_buf(win)
-    if vim.b[old].cp_output then
-        stop_job(old)
-    end
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].bufhidden = 'wipe'
     vim.bo[buf].buflisted = false
@@ -187,7 +171,6 @@ local function reset_output(win, source)
     vim.b[buf].term_normal = true
     vim.b[buf].term_insert = false
     vim.api.nvim_win_set_buf(win, buf)
-    return buf, vim.api.nvim_open_term(buf, {})
 end
 
 ---@param output_win integer
@@ -255,8 +238,7 @@ local function retarget_input(win, source)
 end
 
 ---@param source string
----@return integer buf
----@return integer chan
+---@return integer output_win
 local function ensure_column(source)
     local saved_win = vim.api.nvim_get_current_win()
     local saved_view = vim.fn.winsaveview()
@@ -273,14 +255,14 @@ local function ensure_column(source)
             open_column(cols.source or cols.others[1] or saved_win, source)
     end
 
-    local buf, chan = reset_output(output_win, source)
+    reset_output(output_win, source)
     retarget_input(input_win, source)
 
     if vim.api.nvim_win_is_valid(saved_win) then
         vim.api.nvim_set_current_win(saved_win)
         vim.fn.winrestview(saved_view)
     end
-    return buf, chan
+    return output_win
 end
 
 ---@return string?
@@ -314,36 +296,6 @@ local function restore_column()
     if vim.api.nvim_win_is_valid(saved_win) then
         vim.api.nvim_set_current_win(saved_win)
         vim.fn.winrestview(saved_view)
-    end
-end
-
----@param chan integer
----@param data string
-local function term_send(chan, data)
-    if data == '' then
-        return
-    end
-    data = data:gsub('\n', '\r\n')
-    vim.schedule(function()
-        pcall(vim.api.nvim_chan_send, chan, data)
-    end)
-end
-
----@param chan integer
----@return fun(_: integer, data: string[])
-local function output_handler(chan)
-    return function(_, data)
-        local lines = {}
-        for _, line in ipairs(data or {}) do
-            if
-                not line:match(
-                    '^error: recipe .- failed on line %d+ with exit code %d+$'
-                )
-            then
-                lines[#lines + 1] = line
-            end
-        end
-        term_send(chan, table.concat(lines, '\n'))
     end
 end
 
@@ -463,32 +415,13 @@ function M.run(mode)
     write_path(source)
     write_path(input_path(source))
 
-    local buf, chan = ensure_column(source)
     local cmd = { 'just', mode, vim.fn.fnamemodify(source, ':t') }
-    local action = mode == 'debug' and 'debugging' or 'compiling'
-    notify(action .. '...')
-    local job = vim.fn.jobstart(cmd, {
-        cwd = vim.fn.fnamemodify(source, ':h'),
-        stdout_buffered = false,
-        stderr_buffered = false,
-        on_stdout = output_handler(chan),
-        on_stderr = output_handler(chan),
-        on_exit = function(_, code)
-            vim.schedule(function()
-                if vim.api.nvim_buf_is_valid(buf) and vim.b[buf].cp_job then
-                    vim.b[buf].cp_job = nil
-                    notify(
-                        'exited with code ' .. code,
-                        code == 0 and vim.log.levels.INFO
-                            or vim.log.levels.ERROR
-                    )
-                end
-            end)
-        end,
-    })
-    if job > 0 then
-        vim.b[buf].cp_job = job
-    end
+    vim.api.nvim_win_call(ensure_column(source), function()
+        vim.fn.jobstart(cmd, {
+            term = true,
+            cwd = vim.fn.fnamemodify(source, ':h'),
+        })
+    end)
 end
 
 function M.setup()
