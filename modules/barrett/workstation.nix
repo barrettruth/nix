@@ -453,6 +453,7 @@ in
             buf
             cmake-format
             isort
+            prettier
             prettierd
             shfmt
             stylua

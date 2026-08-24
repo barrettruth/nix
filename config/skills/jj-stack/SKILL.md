@@ -105,10 +105,10 @@ they do on GitHub.
 
 ## Waiting on CI
 
-| forge | command |
-|---|---|
+| forge  | command                                |
+| ------ | -------------------------------------- |
 | github | `gh pr checks <n> --watch --fail-fast` |
-| gitlab | `glab ci status --wait` |
+| gitlab | `glab ci status --wait`                |
 
 Both block until the run settles and exit non-zero when it fails, so start one
 with a long timeout and read it once. Add `--required` on GitHub to ignore
@@ -118,15 +118,15 @@ which reads as failure.
 
 ## What each operation costs
 
-| intent | command | bookmark repair | base drift |
-|---|---|---|---|
-| add on top | `jj new -m …` | — | — |
-| amend in place | `jj edit <id>` | — | — |
-| insert | `jj new -A <id> -m …` | — | yes |
-| reorder | `jj rebase -r <id> -B <id>` | — | yes |
-| drop | `jj abandon <id>` | jj deletes it | yes |
-| split one PR into two | `jj split -r <id> <files>` | move it back | yes |
-| merge two PRs into one | `jj squash -u --from <id> --into <id>` | delete the orphan | yes |
+| intent                 | command                                | bookmark repair   | base drift |
+| ---------------------- | -------------------------------------- | ----------------- | ---------- |
+| add on top             | `jj new -m …`                          | —                 | —          |
+| amend in place         | `jj edit <id>`                         | —                 | —          |
+| insert                 | `jj new -A <id> -m …`                  | —                 | yes        |
+| reorder                | `jj rebase -r <id> -B <id>`            | —                 | yes        |
+| drop                   | `jj abandon <id>`                      | jj deletes it     | yes        |
+| split one PR into two  | `jj split -r <id> <files>`             | move it back      | yes        |
+| merge two PRs into one | `jj squash -u --from <id> --into <id>` | delete the orphan | yes        |
 
 Append and amend never drift, which is why ordinary days need no reconciliation.
 Restructuring always drifts, and `jj pr` is how it settles.
@@ -137,17 +137,17 @@ one change wearing two. Both are repaired by restoring the invariant.
 
 ## Recipes
 
-| situation | check | fix |
-|---|---|---|
-| "Bookmark already exists" on push | `jj s` — a split split the name from the ID | `jj pr` |
-| a change shows two bookmarks | `jj bookmark list` | `jj pr` |
-| a pull request shows more diff than its change | `gh pr view <n> --json baseRefName`, or `glab mr view <n> --output json` | `jj pr` |
-| a pull request stayed open after squash or abandon | `jj bookmark list` for the deletion | `jj git push --deleted`, or `jj pr` |
-| changes above `@` did not reach the remote | bare `jj git push` covers `remote_bookmarks()..@` only | `jj up` |
-| a new bookmark was declined on push | creating one needs `-b`, `-c`, `--named` or `--all` | `jj up` |
-| the stack sits on an old trunk | `jj log -r 'trunk()'` | `jj sy` |
-| `jj pr` reports a fork | `jj s` shows two children sharing a parent | `jj pr --revset 'trunk()..<id>'` for one line at a time |
-| what a reviewer will see as new | | `jj interdiff --from <bookmark>@origin --to <bookmark>` |
+| situation                                          | check                                                                    | fix                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------- |
+| "Bookmark already exists" on push                  | `jj s` — a split split the name from the ID                              | `jj pr`                                                 |
+| a change shows two bookmarks                       | `jj bookmark list`                                                       | `jj pr`                                                 |
+| a pull request shows more diff than its change     | `gh pr view <n> --json baseRefName`, or `glab mr view <n> --output json` | `jj pr`                                                 |
+| a pull request stayed open after squash or abandon | `jj bookmark list` for the deletion                                      | `jj git push --deleted`, or `jj pr`                     |
+| changes above `@` did not reach the remote         | bare `jj git push` covers `remote_bookmarks()..@` only                   | `jj up`                                                 |
+| a new bookmark was declined on push                | creating one needs `-b`, `-c`, `--named` or `--all`                      | `jj up`                                                 |
+| the stack sits on an old trunk                     | `jj log -r 'trunk()'`                                                    | `jj sy`                                                 |
+| `jj pr` reports a fork                             | `jj s` shows two children sharing a parent                               | `jj pr --revset 'trunk()..<id>'` for one line at a time |
+| what a reviewer will see as new                    |                                                                          | `jj interdiff --from <bookmark>@origin --to <bookmark>` |
 
 `jj pr` is idempotent, so it is the right answer to most of these — it repairs
 whatever it finds and reports what it changed.

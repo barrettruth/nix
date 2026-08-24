@@ -9,6 +9,7 @@
         pkgs.deadnix
         pkgs.lua-language-server
         pkgs.black
+        pkgs.prettier
         pkgs.shellcheck
         pkgs.shfmt
         pkgs.stylua
