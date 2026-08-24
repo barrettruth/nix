@@ -1,6 +1,20 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  act,
+  ...
+}:
 let
+  homeDirectory = config.barrett.user.homeDirectory;
+
   javaVersion = "17";
+
+  spotlightExcluded = [
+    "${homeDirectory}/.m2"
+    "${homeDirectory}/Library/Caches"
+    "${homeDirectory}/dev"
+  ];
 
   casks = [
     "imc/core/ark"
@@ -42,6 +56,13 @@ in
   environment.extraInit = lib.optionalString (lib.elem "jdk-zulu@${javaVersion}" casks) ''
     export JAVA_HOME="$(/usr/libexec/java_home -v ${javaVersion})"
   '';
+
+  system.activationScripts.extraActivation.text = lib.concatMapStrings (dir: ''
+    if [ -d "${dir}" ]; then
+      ${pkgs.coreutils}/bin/install -m 0644 -o ${config.barrett.user.name} -g ${act.group} \
+        /dev/null "${dir}/.metadata_never_index"
+    fi
+  '') spotlightExcluded;
 
   barrett.mac.chrome = {
     app = "/Applications/Google Chrome.app";
