@@ -137,8 +137,9 @@ function M.toggle()
     return true
 end
 
-local function connect(root)
-    server.connect(root, function(ok, err)
+---@param entry mux.Server
+local function connect(entry)
+    server.attach(entry, function(ok, err)
         if not ok then
             vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
         end
@@ -162,7 +163,7 @@ function M.on_session(index)
     if not entry or (current and entry.root == current.root) then
         return
     end
-    connect(entry.root)
+    connect(entry)
 end
 
 ---@param step integer
@@ -186,7 +187,7 @@ local function move(step)
     if not entry or entry.root == current.root then
         return true
     end
-    connect(entry.root)
+    connect(entry)
     return true
 end
 
@@ -203,13 +204,14 @@ local function move_to(n)
     if not entry or entry.root == current.root then
         return true
     end
-    connect(entry.root)
+    connect(entry)
     return true
 end
 
 ---@return true? ok
 ---@return string? err
 local function move_last()
+    M.refresh()
     local state = server.state()
     local current = state.server
     if not current then
@@ -219,8 +221,13 @@ local function move_last()
     if not root or root == current.root then
         return true
     end
-    connect(root)
-    return true
+    for _, entry in ipairs(cached_servers) do
+        if entry.root == root then
+            connect(entry)
+            return true
+        end
+    end
+    return nil, 'no server for ' .. root
 end
 
 ---Install mux line visibility and redraw autocmds.
