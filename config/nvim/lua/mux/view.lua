@@ -326,6 +326,7 @@ local function default_tab_label(tp)
     local label = default_buf_label(buf)
     local count = 0
     local modified = false
+
     for _, other in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
         local config = vim.api.nvim_win_get_config(other)
         if config.relative == '' and config.focusable ~= false then
@@ -336,6 +337,7 @@ local function default_tab_label(tp)
             end
         end
     end
+
     local prefix = count > 1 and tostring(count) or ''
     prefix = modified and (prefix .. '+') or prefix
 
@@ -348,6 +350,7 @@ function M.list()
     local cur = vim.api.nvim_get_current_tabpage()
     local out = {}
     local labels = {}
+
     for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
         local view_name = tab_view[tp]
         local entry
@@ -374,6 +377,7 @@ function M.list()
         out[#out + 1] = entry
         labels[entry.label] = (labels[entry.label] or 0) + 1
     end
+
     for _, entry in ipairs(out) do
         if not entry.persist and labels[entry.label] > 1 then
             entry.label = vim.api.nvim_tabpage_get_number(entry.tab)
@@ -393,8 +397,10 @@ local function cleanup_terminal(buf)
             local tp = vim.api.nvim_win_get_tabpage(win)
             local name = tab_view[tp]
             local spec = name and views[name]
+
             if spec and spec.terminal then
                 local has_terminal = false
+
                 for _, other_win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
                     local other = vim.api.nvim_win_get_buf(other_win)
                     if other ~= buf and vim.bo[other].buftype == 'terminal' then
@@ -556,6 +562,7 @@ function M.setup()
 
     did_setup = true
     setup_keymaps()
+
     local group = vim.api.nvim_create_augroup('mux-view', { clear = true })
     vim.api.nvim_create_autocmd('TermOpen', {
         group = group,
@@ -568,6 +575,7 @@ function M.setup()
             end
         end,
     })
+
     vim.api.nvim_create_autocmd({ 'BufHidden', 'BufWipeout', 'WinClosed' }, {
         group = group,
         callback = function()
@@ -583,6 +591,7 @@ function M.setup()
             end)
         end,
     })
+
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,
         callback = function(args)
@@ -593,6 +602,7 @@ function M.setup()
             end
         end,
     })
+
     vim.api.nvim_create_autocmd('VimLeavePre', {
         group = group,
         callback = function()
