@@ -2,7 +2,6 @@ local M = {}
 
 local RESOLVE_MS = 10000
 local FORWARD_MS = 10000
-local PROBE_MS = 2000
 
 ---Without this a host that is merely unreachable spends the whole budget inside
 ---connect(), and every wait here blocks the editor.
@@ -32,24 +31,6 @@ local function ssh(host, args, timeout)
     end
 
     return res.stdout
-end
-
----@param socket string
----@return boolean
-local function answers(socket)
-    if not vim.uv.fs_stat(socket) then
-        return false
-    end
-
-    local res = vim.system({
-        vim.v.progpath,
-        '--server',
-        socket,
-        '--remote-expr',
-        '1',
-    }, { text = true }):wait(PROBE_MS)
-
-    return res ~= nil and res.code == 0
 end
 
 ---@param path string
@@ -104,7 +85,7 @@ function M.ensure(host, path, cb)
         return
     end
 
-    if not answers(socket) then
+    if not server.socket_listening(socket) then
         vim.fn.mkdir(dir, 'p')
         vim.fn.delete(socket)
         local forward = vim.system({
@@ -140,7 +121,7 @@ function M.ensure(host, path, cb)
 
         if
             not vim.wait(FORWARD_MS, function()
-                return answers(socket)
+                return server.socket_listening(socket)
             end, 100)
         then
             cb(nil, ('%s forwarded but never answered'):format(host))

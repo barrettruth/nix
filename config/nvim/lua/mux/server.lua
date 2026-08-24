@@ -969,6 +969,7 @@ function M.setup(root)
     return true
 end
 
+M.socket_listening = socket_listening
 M.within_sun_path = within_sun_path
 
 M._validate_root = validate_root
