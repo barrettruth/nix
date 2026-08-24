@@ -32,7 +32,6 @@ local pending = {}
 local READY_TIMEOUT_MS = 5000
 local READY_POLL_MS = 50
 local LIST_PROBE_MS = 100
-local ENSURE_PROBE_MS = 2000
 local CONNECT_PROBE_MS = 1000
 
 ---@return string
@@ -653,7 +652,7 @@ function M.ensure(root, cb)
 
     local existing, probe_err = probe_sync(paths.socket, LIST_PROBE_MS)
     if not existing and socket_listening(paths.socket) then
-        existing, probe_err = probe_sync(paths.socket, ENSURE_PROBE_MS)
+        existing, probe_err = probe_sync(paths.socket, 2000)
         if not existing then
             local reason = probe_err and probe_err ~= '' and probe_err
                 or 'no response'
@@ -820,6 +819,7 @@ function M.attach(target_server, cb, clear_last)
 
         cb(true)
     end
+
     local function connect_when_ready()
         if #vim.api.nvim_list_uis() > 0 then
             connect()
@@ -835,6 +835,7 @@ function M.attach(target_server, cb, clear_last)
             callback = connect,
         })
     end
+
     -- Connecting a UI to an address nothing answers exits it, but only our own
     -- sockets are ours to judge: the rest are addressed for the UI client.
     local judged = ours(target_server.socket)

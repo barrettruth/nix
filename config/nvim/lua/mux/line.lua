@@ -3,14 +3,8 @@ local view = require('mux.view')
 
 local M = {}
 
-local TABLINE_EXPR = "%!v:lua.require'mux.line'.render()"
-local VIEW_CLICK = "v:lua.require'mux.line'.on_view"
-local SESSION_CLICK = "v:lua.require'mux.line'.on_session"
-
 ---@type mux.Server[]
 local cached_servers = {}
-
-local redraw_pending = false
 
 local WATCH_MS = 150
 
@@ -50,7 +44,9 @@ local function apply_visibility()
     local hide = vim.fn.filereadable(file) == 1
         and vim.fn.readfile(file)[1] == 'hide'
     local showtabline = hide and 0 or 2
-    vim.o.tabline = TABLINE_EXPR
+
+    vim.o.tabline = "%!v:lua.require'mux.line'.render()"
+
     if vim.o.showtabline ~= showtabline then
         vim.o.showtabline = showtabline
     end
@@ -73,7 +69,7 @@ local function view_segments()
     for _, entry in ipairs(view.list()) do
         parts[#parts + 1] = segment(
             entry.tab,
-            VIEW_CLICK,
+            "v:lua.require'mux.line'.on_view",
             entry.current and 'TabLineSel' or 'TabLine',
             (entry.current and '*' or '') .. entry.label
         )
@@ -93,7 +89,7 @@ local function session_segments()
             local selected = current and current.root == entry.root
             parts[#parts + 1] = segment(
                 i,
-                SESSION_CLICK,
+                "v:lua.require'mux.line'.on_session",
                 selected and 'TabLineSel' or 'TabLine',
                 (selected and '*' or '') .. name
             )
@@ -109,6 +105,8 @@ function M.refresh()
     cached_servers = M.servers()
     M.redraw()
 end
+
+local redraw_pending = false
 
 ---Coalesce tabline redraws across fast events and autocmd bursts.
 ---@return nil
@@ -188,91 +186,98 @@ function M.on_view(tab)
     view.focus(tab)
 end
 
----Tabline click handler for a session segment. Indexes the servers the
----segment was rendered from: a fresh list may have shifted under the label.
----@param index integer
----@return nil
-function M.on_session(index)
+---@param root string
+---@return integer? index
+local function index_of(root)
+    for i, entry in ipairs(cached_servers) do
+        if entry.root == root then
+            return i
+        end
+    end
+end
+
+---Refresh, then go to whichever server `pick` names.
+---@param pick fun(current: mux.Server): mux.Server?, string?
+---@return true? ok
+---@return string? err
+local function jump(pick)
+    M.refresh()
+
     local current = server.state().server
-    local entry = cached_servers[index]
-    if not entry or (current and entry.root == current.root) then
-        return
+
+    if not current then
+        return nil, 'not a mux server'
     end
 
-    connect(entry)
+    local entry, err = pick(current)
+
+    if err then
+        return nil, err
+    end
+
+    if entry and entry.root ~= current.root then
+        connect(entry)
+    end
+
+    return true
 end
 
 ---@param step integer
 ---@return true? ok
 ---@return string? err
 local function move(step)
-    M.refresh()
-    local current = server.state().server
-    if not current or #cached_servers == 0 then
-        return nil, 'not a mux server'
-    end
+    return jump(function(current)
+        local count = #cached_servers
 
-    local idx = 1
-    for i, entry in ipairs(cached_servers) do
-        if entry.root == current.root then
-            idx = i
-            break
+        if count == 0 then
+            return nil, 'not a mux server'
         end
-    end
-    local target = ((idx - 1 + step) % #cached_servers) + 1
-    local entry = cached_servers[target]
-    if not entry or entry.root == current.root then
-        return true
-    end
 
-    connect(entry)
+        local from = (index_of(current.root) or 1) - 1
 
-    return true
+        return cached_servers[(from + step) % count + 1]
+    end)
 end
 
 ---@param n integer
 ---@return true? ok
 ---@return string? err
 local function move_to(n)
-    M.refresh()
-    local current = server.state().server
-    if not current then
-        return nil, 'not a mux server'
-    end
-
-    local entry = cached_servers[n]
-    if not entry or entry.root == current.root then
-        return true
-    end
-
-    connect(entry)
-
-    return true
+    return jump(function()
+        return cached_servers[n]
+    end)
 end
 
 ---@return true? ok
 ---@return string? err
 local function move_last()
-    M.refresh()
-    local state = server.state()
-    local current = state.server
-    if not current then
-        return nil, 'not a mux server'
-    end
+    return jump(function(current)
+        local root = server.state().last_root
 
-    local root = state.last_root
-    if not root or root == current.root then
-        return true
-    end
-
-    for _, entry in ipairs(cached_servers) do
-        if entry.root == root then
-            connect(entry)
-            return true
+        if not root or root == current.root then
+            return nil
         end
-    end
 
-    return nil, 'no server for ' .. root
+        local index = index_of(root)
+
+        if not index then
+            return nil, 'no server for ' .. root
+        end
+
+        return cached_servers[index]
+    end)
+end
+
+---Tabline click handler for a session segment. Indexes the servers the
+---segment was rendered from: a fresh list may have shifted under the label.
+---@param index integer
+---@return nil
+function M.on_session(index)
+    local entry = cached_servers[index]
+
+    jump(function()
+        return entry
+    end)
 end
 
 ---@return nil
@@ -320,24 +325,30 @@ end
 function M.setup()
     apply_visibility()
     watch()
+
     for lhs, step in pairs({ ['<a-x>['] = -1, ['<a-x>]'] = 1 }) do
         vim.keymap.set({ 'n', 'i', 't' }, lhs, function()
             move(step * vim.v.count1)
         end, { desc = 'mux: move server', silent = true })
     end
+
     vim.keymap.set({ 'n', 'i', 't' }, '<a-x><bs>', function()
         move_last()
     end, { desc = 'mux: last server', silent = true })
+
     for n = 1, 9 do
         vim.keymap.set({ 'n', 'i', 't' }, '<a-x>' .. n, function()
             move_to(n)
         end, { desc = 'mux: server ' .. n, silent = true })
     end
+
     local group = vim.api.nvim_create_augroup('mux-line', { clear = true })
+
     vim.api.nvim_create_autocmd({ 'TabEnter', 'TabNew', 'TabClosed' }, {
         group = group,
         callback = M.redraw,
     })
+
     vim.api.nvim_create_autocmd('UIEnter', {
         group = group,
         callback = function()
