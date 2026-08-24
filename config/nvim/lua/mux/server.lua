@@ -246,6 +246,8 @@ local CLEAR_LAST_ROOT_EXPR =
     "luaeval('(function(root) if vim.g.mux_last_root == root then vim.g.mux_last_root = nil end return true end)(_A)', %s)"
 local SET_PEERS_EXPR =
     "luaeval('(function(p) vim.g.mux_peers = p; require([[mux.line]]).refresh(); return true end)(_A)', %s)"
+local RESTARTED_EXPR =
+    "luaeval('(function(m) vim.api.nvim_create_autocmd([[UIEnter]], { once = true, callback = function() vim.defer_fn(function() vim.api.nvim_echo({ { m } }, true, {}) end, 50) end }); return true end)(_A)', %s)"
 
 ---@param args string[]
 ---@param opts table
@@ -908,11 +910,11 @@ function M.connect(root, cb, clear_last)
 end
 
 ---@param root string
----@return string? socket
-local function peer_address(root)
+---@return mux.Server? peer
+local function peer_for(root)
     for _, peer in ipairs(peers()) do
         if peer.root == root then
-            return peer.socket
+            return peer
         end
     end
 end
@@ -921,7 +923,8 @@ end
 ---@return nil
 local function hand_off(server)
     local attached = #vim.api.nvim_list_uis() > 0
-    local address = peer_address(server.root)
+    local peer = peer_for(server.root)
+    local address = peer and peer.socket
 
     if attached and not address then
         vim.notify(
@@ -979,6 +982,18 @@ local function hand_off(server)
             SET_LAST_ROOT_EXPR:format(vim.fn.string(vim.g.mux_last_root))
     end
 
+    if attached then
+        local name = vim.fn.fnamemodify(server.root, ':t')
+
+        if peer and peer.host then
+            name = ('%s:%s'):format(peer.host, name)
+        end
+
+        carry[#carry + 1] = RESTARTED_EXPR:format(
+            vim.fn.string(('mux: %s restarted'):format(name))
+        )
+    end
+
     for _, expr in ipairs(carry) do
         local handoff = spawn_nvim({
             '--server',
@@ -995,6 +1010,8 @@ local function hand_off(server)
         local ok, connect_err =
             pcall(vim.cmd.connect, vim.fn.fnameescape(address))
         if not ok then
+            pcall(proc.kill, proc, 15)
+            pcall(vim.fn.serverstart, server.socket)
             vim.notify(
                 ('mux: cannot restart %s: %s'):format(
                     server.root,
