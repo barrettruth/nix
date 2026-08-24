@@ -161,16 +161,27 @@ end
 
 ---@param win integer
 ---@param source string
+---@return integer buf
 local function reset_output(win, source)
+    local live = vim.api.nvim_win_get_buf(win)
+    if vim.b[live].cp_source == source and vim.b[live].terminal_job_id then
+        return live
+    end
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].bufhidden = 'wipe'
     vim.bo[buf].buflisted = false
-    vim.bo[buf].swapfile = false
     vim.b[buf].cp_output = true
     vim.b[buf].cp_source = source
     vim.b[buf].term_normal = true
     vim.b[buf].term_insert = false
     vim.api.nvim_win_set_buf(win, buf)
+    vim.api.nvim_win_call(win, function()
+        vim.fn.jobstart({ vim.o.shell }, {
+            term = true,
+            cwd = vim.fn.fnamemodify(source, ':h'),
+        })
+    end)
+    return buf
 end
 
 ---@param output_win integer
@@ -235,7 +246,7 @@ local function retarget_input(win, source)
 end
 
 ---@param source string
----@return integer output_win
+---@return integer buf
 local function ensure_column(source)
     local saved_win = vim.api.nvim_get_current_win()
     local saved_view = vim.fn.winsaveview()
@@ -253,14 +264,14 @@ local function ensure_column(source)
     end
 
     size_column(output_win, input_win)
-    reset_output(output_win, source)
+    local buf = reset_output(output_win, source)
     retarget_input(input_win, source)
 
     if vim.api.nvim_win_is_valid(saved_win) then
         vim.api.nvim_set_current_win(saved_win)
         vim.fn.winrestview(saved_view)
     end
-    return output_win
+    return buf
 end
 
 ---@return string?
@@ -413,13 +424,21 @@ function M.run(mode)
     write_path(source)
     write_path(input_path(source))
 
-    local cmd = { 'just', mode, vim.fn.fnamemodify(source, ':t') }
-    vim.api.nvim_win_call(ensure_column(source), function()
-        vim.fn.jobstart(cmd, {
-            term = true,
-            cwd = vim.fn.fnamemodify(source, ':h'),
-        })
-    end)
+    local buf = ensure_column(source)
+    local job = vim.b[buf].terminal_job_id
+    if not job then
+        return
+    end
+    local cmd = ('just %s %s\r'):format(mode, vim.fn.fnamemodify(source, ':t'))
+    vim.api.nvim_buf_attach(buf, false, {
+        on_lines = function()
+            vim.schedule(function()
+                pcall(vim.api.nvim_chan_send, job, cmd)
+            end)
+            return true
+        end,
+    })
+    vim.api.nvim_chan_send(job, '\12')
 end
 
 function M.setup()
