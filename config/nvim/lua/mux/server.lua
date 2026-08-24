@@ -294,13 +294,23 @@ end
 ---Hand a target the caller's view of every server, addressed as the caller
 ---reaches them: a socket path only resolves on the machine that owns it, and
 ---`:connect` is performed by the UI client rather than the server it runs on.
----@param socket string
+---@param target mux.Server
 ---@param cb fun(err?: string)
-local function push_peers(socket, cb)
-    local expr = SET_PEERS_EXPR:format(vim.fn.string(vim.json.encode(M.list())))
+local function push_peers(target, cb)
+    local list = M.list()
+    -- The target is known live, so it belongs in the list whether or not the
+    -- probe budget reached it: a forwarded socket costs a round trip.
+    if
+        not vim.iter(list):any(function(s)
+            return s.root == target.root
+        end)
+    then
+        list[#list + 1] = target
+    end
+    local expr = SET_PEERS_EXPR:format(vim.fn.string(vim.json.encode(list)))
     local proc, err = spawn_nvim({
         '--server',
-        socket,
+        target.socket,
         '--remote-expr',
         expr,
     }, { text = true, stdout = true, stderr = true }, function(res)
@@ -790,7 +800,7 @@ function M.attach(target_server, cb, clear_last)
             callback = connect,
         })
     end
-    push_peers(target_server.socket, function(push_err)
+    push_peers(target_server, function(push_err)
         -- A UI told to connect somewhere nothing answers exits the process.
         if push_err then
             cb(
