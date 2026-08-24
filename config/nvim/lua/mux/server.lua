@@ -284,14 +284,7 @@ end
 ---@return mux.Server[]
 local function peers()
     local raw = vim.g.mux_peers
-    if type(raw) ~= 'string' or raw == '' then
-        return {}
-    end
-    local ok, decoded = pcall(vim.json.decode, raw)
-    if not ok or type(decoded) ~= 'table' then
-        return {}
-    end
-    return decoded
+    return raw and vim.json.decode(raw) or {}
 end
 
 ---@param stdout string?

@@ -39,7 +39,7 @@ end
 ---@param name string|false|nil
 ---@return nil
 local function mark_dirty(name)
-    if name == false or (type(name) == 'string' and views[name]) then
+    if name == false or (name and views[name]) then
         require('mux.session').mark_dirty()
     end
 end
@@ -251,11 +251,11 @@ function M.restore(names)
     end
     for i, tp in ipairs(vim.api.nvim_list_tabpages()) do
         local name = names[i]
-        tab_view[tp] = type(name) == 'string' and views[name] and name or false
+        tab_view[tp] = name and views[name] and name or false
     end
     local cur = vim.api.nvim_get_current_tabpage()
     for tp, name in pairs(tab_view) do
-        if type(name) == 'string' and views[name].restore then
+        if name and views[name].restore then
             vim.api.nvim_set_current_tabpage(tp)
             materialize(name)
         end
@@ -313,7 +313,7 @@ function M.list()
     for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
         local view_name = tab_view[tp]
         local entry
-        if type(view_name) == 'string' and views[view_name] then
+        if view_name and views[view_name] then
             entry = {
                 kind = 'view',
                 name = view_name,
