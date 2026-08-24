@@ -47,7 +47,6 @@ return {
 
         ft('proto'):fmt('buf'):lint('buf')
         ft('dockerfile'):lint('hadolint')
-        ft('tex'):fmt('latexindent')
         ft('typst'):fmt('typstyle')
         ft('cmake'):fmt('cmake-format')
         ft('make'):lint('checkmake')
