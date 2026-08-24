@@ -259,13 +259,16 @@ local function spawn_nvim(args, opts, cb)
         or 'nvim'
     local argv = { prog }
     local parent = vim.v.argv
+
     for i = 1, #parent - 1 do
         if parent[i] == '--cmd' then
             argv[#argv + 1] = '--cmd'
             argv[#argv + 1] = parent[i + 1]
         end
     end
+
     vim.list_extend(argv, args)
+
     local ok, proc = pcall(vim.system, argv, opts, cb)
     if ok then
         return proc
