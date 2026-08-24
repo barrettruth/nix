@@ -123,8 +123,8 @@ function M.restore()
         restoring = false
         return nil, 'failed to restore session: ' .. server.session
     end
-    local mux = vim.g.Mux and vim.json.decode(vim.g.Mux) or nil
-    require('mux.view').restore(type(mux) == 'table' and mux.tabs or nil)
+    local mux = vim.g.Mux and vim.json.decode(vim.g.Mux)
+    require('mux.view').restore(mux and mux.tabs)
     restoring = false
     return true
 end
