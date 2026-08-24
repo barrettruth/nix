@@ -800,9 +800,12 @@ function M.attach(target_server, cb, clear_last)
             callback = connect,
         })
     end
+    -- A UI told to connect somewhere nothing answers exits the process, so a
+    -- silent target is refused. Only sockets under this runtime dir can be
+    -- judged that way: the rest are addressed for the UI client, not for us.
+    local ours = vim.startswith(target_server.socket, runtime_dir() .. '/')
     push_peers(target_server, function(push_err)
-        -- A UI told to connect somewhere nothing answers exits the process.
-        if push_err then
+        if push_err and ours then
             cb(
                 nil,
                 ('cannot reach %s: %s'):format(target_server.root, push_err)
