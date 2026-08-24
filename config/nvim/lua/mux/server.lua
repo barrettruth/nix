@@ -32,7 +32,7 @@ local READY_TIMEOUT_MS = 5000
 local READY_POLL_MS = 50
 local LIST_PROBE_MS = 100
 local ENSURE_PROBE_MS = 2000
-local CONNECT_PROBE_MS = 200
+local CONNECT_PROBE_MS = 1000
 
 ---@return string
 local function runtime_dir()
@@ -257,9 +257,10 @@ local function set_remote_last_root(socket, root, cb, clear)
 end
 
 ---@param stdout string?
+---@param socket string
 ---@return mux.Server? server
 ---@return string? err
-local function decode_rpc(stdout)
+local function decode_rpc(stdout, socket)
     local raw = vim.trim(stdout or '')
     if raw == '' then
         return nil, 'empty response'
@@ -269,6 +270,7 @@ local function decode_rpc(stdout)
         return nil, 'invalid response'
     end
     if decoded.ok and type(decoded.server) == 'table' then
+        decoded.server.socket = socket
         return decoded.server
     end
     return nil, tostring(decoded.error or 'not ready')
@@ -297,7 +299,7 @@ local function probe_sync(socket, timeout)
     if res.code ~= 0 then
         return nil, vim.trim(res.stderr or '')
     end
-    return decode_rpc(res.stdout)
+    return decode_rpc(res.stdout, socket)
 end
 
 ---@param socket string
@@ -334,7 +336,7 @@ local function probe_async(socket, timeout, cb)
             finish(nil, vim.trim(res.stderr or ''))
             return
         end
-        local server, rpc_err = decode_rpc(res.stdout)
+        local server, rpc_err = decode_rpc(res.stdout, socket)
         finish(server, rpc_err)
     end)
     if not proc then
@@ -531,23 +533,16 @@ local function finish_pending(root, server, err)
     end
 end
 
----Start or reuse the mux server for a validated project root.
+---Start or reuse the mux server for a project root.
 ---@param root string
 ---@param cb mux.EnsureCallback
 ---@return nil
 function M.ensure(root, cb)
-    local real, err = validate_root(root)
-    if not real then
-        vim.schedule(function()
-            cb(nil, err)
-        end)
+    if pending[root] then
+        pending[root].callbacks[#pending[root].callbacks + 1] = cb
         return
     end
-    if pending[real] then
-        pending[real].callbacks[#pending[real].callbacks + 1] = cb
-        return
-    end
-    local paths, perr = paths_for(real)
+    local paths, perr = paths_for(root)
     if not paths then
         vim.schedule(function()
             cb(nil, perr)
@@ -573,7 +568,7 @@ function M.ensure(root, cb)
         end
     end
     if existing then
-        if existing.root ~= real then
+        if existing.root ~= root then
             vim.schedule(function()
                 cb(nil, 'socket belongs to different root: ' .. paths.socket)
             end)
@@ -582,6 +577,17 @@ function M.ensure(root, cb)
         vim.schedule(function()
             cb(existing)
         end)
+        return
+    end
+    local real, err = validate_root(root)
+    if not real then
+        vim.schedule(function()
+            cb(nil, err)
+        end)
+        return
+    end
+    if real ~= root then
+        M.ensure(real, cb)
         return
     end
     if vim.uv.fs_stat(paths.socket) ~= nil then
