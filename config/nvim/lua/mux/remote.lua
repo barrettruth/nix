@@ -122,6 +122,16 @@ function M.ensure(host, path, cb)
             )
             return
         end
+        -- ssh -f backgrounds once the forward is set up, which is a moment
+        -- before the socket it bound will answer.
+        if
+            not vim.wait(FORWARD_MS, function()
+                return answers(socket)
+            end, 100)
+        then
+            cb(nil, ('%s forwarded but never answered'):format(host))
+            return
+        end
     end
     cb({
         root = remote.root,

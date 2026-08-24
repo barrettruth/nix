@@ -228,7 +228,8 @@ local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
 local SET_LAST_ROOT_EXPR = "execute('let g:mux_last_root = ' . string(%s))"
 local CLEAR_LAST_ROOT_EXPR =
     "luaeval('(function(root) if vim.g.mux_last_root == root then vim.g.mux_last_root = nil end return true end)(_A)', %s)"
-local SET_PEERS_EXPR = "execute('let g:mux_peers = ' . string(%s))"
+local SET_PEERS_EXPR =
+    "luaeval('(function(p) vim.g.mux_peers = p; require([[mux.line]]).refresh(); return true end)(_A)', %s)"
 
 ---@param args string[]
 ---@param opts table
@@ -276,7 +277,11 @@ local function set_remote_last_root(socket, root, cb, clear)
         expr,
     }, { text = true, stdout = true, stderr = true }, function(res)
         vim.schedule(function()
-            cb(res.code == 0 and nil or vim.trim(res.stderr or ''))
+            if res.code == 0 then
+                cb()
+                return
+            end
+            cb(vim.trim(res.stderr or ''))
         end)
     end)
     if not proc then
@@ -300,7 +305,11 @@ local function push_peers(socket, cb)
         expr,
     }, { text = true, stdout = true, stderr = true }, function(res)
         vim.schedule(function()
-            cb(res.code == 0 and nil or vim.trim(res.stderr or ''))
+            if res.code == 0 then
+                cb()
+                return
+            end
+            cb(vim.trim(res.stderr or ''))
         end)
     end)
     if not proc then
