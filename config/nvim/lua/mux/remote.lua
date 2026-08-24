@@ -33,15 +33,23 @@ local function ssh(host, args, timeout)
     return res.stdout
 end
 
----@param path string
----@return string? path
----@return string? err
-local function shell_safe(path)
-    if path:find('[;&|`$\n\'"()<>]') then
-        return nil, 'path has shell metacharacters: ' .. path
+local function quote(s)
+    return ("'%s'"):format(s:gsub("'", "'\\''"))
+end
+
+---A leading `~` stays bare so the remote shell still expands it.
+local function shell_quote(path)
+    local tilde, rest = path:match('^(~[^/]*)/(.*)$')
+
+    if tilde then
+        return ('%s/%s'):format(tilde, quote(rest))
     end
 
-    return path
+    if path:match('^~[^/]*$') then
+        return path
+    end
+
+    return quote(path)
 end
 
 ---Start or reuse a server on `host` for `path`, forwarding its socket here.
@@ -51,13 +59,7 @@ end
 ---@return nil
 function M.ensure(host, path, cb)
     local server = require('mux.server')
-    local safe, unsafe = shell_safe(path)
-    if not safe then
-        cb(nil, unsafe)
-        return
-    end
-
-    local out, err = ssh(host, { ENSURE:format(safe) }, RESOLVE_MS)
+    local out, err = ssh(host, { ENSURE:format(shell_quote(path)) }, RESOLVE_MS)
     if not out then
         cb(nil, err)
         return

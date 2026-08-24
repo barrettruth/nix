@@ -160,6 +160,18 @@ vim.api.nvim_create_autocmd('UIEnter', {
     end,
 })
 
+vim.api.nvim_create_autocmd('BufWinEnter', {
+    group = aug,
+    callback = vim.schedule_wrap(function()
+        local cur = vim.api.nvim_get_current_win()
+        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+            if vim.api.nvim_win_get_config(win).relative == '' then
+                vim.wo[win][0].cursorline = win == cur
+            end
+        end
+    end),
+})
+
 vim.api.nvim_create_autocmd('WinLeave', {
     group = aug,
     callback = function()
