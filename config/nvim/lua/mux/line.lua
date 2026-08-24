@@ -171,7 +171,7 @@ local function connect(entry)
         end
     end
 
-    if vim.uv.fs_stat(entry.socket) then
+    if vim.uv.fs_stat(entry.socket) or not server.ours(entry.socket) then
         server.attach(entry, done)
         return
     end
