@@ -1,3 +1,5 @@
+-- Scale windows with the screen, which Nvim only offers as `wincmd =`.
+
 local aug = vim.api.nvim_create_augroup('Resize', { clear = true })
 
 local ratios, cols, lines = {}, vim.o.columns, vim.o.lines
