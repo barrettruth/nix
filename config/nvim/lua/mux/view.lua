@@ -257,6 +257,7 @@ function M.restore(names)
         local name = names[i]
         tab_view[tp] = name and views[name] and name or false
     end
+
     local cur = vim.api.nvim_get_current_tabpage()
     for tp, name in pairs(tab_view) do
         if name and views[name].restore then
@@ -264,6 +265,7 @@ function M.restore(names)
             materialize(name)
         end
     end
+
     vim.api.nvim_set_current_tabpage(cur)
     vim.cmd.stopinsert()
     restore_terminal_focus()
@@ -454,6 +456,7 @@ end
 local function setup_keymaps()
     local modes = { 'n', 'i', 't' }
     local prefix = '<a-x>'
+
     for mode, rhs in pairs({
         n = '<c-w>',
         i = '<c-o><c-w>',
@@ -464,9 +467,11 @@ local function setup_keymaps()
             desc = 'mux: window command prefix',
         })
     end
+
     local function map(lhs, rhs, desc)
         vim.keymap.set(modes, lhs, rhs, { desc = desc, silent = true })
     end
+
     for _, entry in ipairs({
         { key = 'e', name = 'edit' },
         { key = 'v', name = 'vcs' },
@@ -476,6 +481,7 @@ local function setup_keymaps()
             M.open(entry.name)
         end, 'mux: ' .. entry.name .. ' view')
     end
+
     map(prefix .. "'", '<cmd>vertical terminal<cr>', 'mux: vertical terminal')
     map(prefix .. '-', '<cmd>split | terminal<cr>', 'mux: terminal')
     map(prefix .. 'x', function()
@@ -541,6 +547,7 @@ function M.setup()
             vim.bo[args.buf].bufhidden = 'wipe'
             local job = vim.b[args.buf].terminal_job_id
             local ok, pid = pcall(vim.fn.jobpid, job)
+
             if ok and type(pid) == 'number' and pid > 0 then
                 term_pids[args.buf] = pid
             end
