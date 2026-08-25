@@ -245,6 +245,7 @@ function M.ensure(host, path, cb)
         log('%s forward reused %s', host, socket)
     end
 
+    server.theme(socket)
     report('success', '%s %s', host, remote.root)
     cb({
         root = remote.root,

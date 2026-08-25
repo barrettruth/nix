@@ -237,6 +237,7 @@ local RPC_EXPR = "luaeval('require([[mux.server]]).probe()')"
 local SET_LAST_ROOT_EXPR = "execute('let g:mux_last_root = ' . string(%s))"
 local CLEAR_LAST_ROOT_EXPR =
     "luaeval('(function(root) if vim.g.mux_last_root == root then vim.g.mux_last_root = nil end return true end)(_A)', %s)"
+local SET_THEME_EXPR = "execute('colorscheme ' . %s)"
 local SET_PEERS_EXPR =
     "luaeval('(function(p) vim.g.mux_peers = p; require([[mux.line]]).refresh(); return true end)(_A)', %s)"
 local RESTARTED_EXPR =
@@ -874,6 +875,24 @@ function M.connect(root, cb, clear_last)
 
         M.attach(target_server, cb, clear_last)
     end)
+end
+
+---Match a server's colorscheme to this one's.
+---@param socket string
+---@return nil
+function M.theme(socket)
+    local name = vim.g.colors_name
+
+    if not name then
+        return
+    end
+
+    spawn_nvim({
+        '--server',
+        socket,
+        '--remote-expr',
+        SET_THEME_EXPR:format(vim.fn.string(name)),
+    }, { text = true })
 end
 
 ---Name a server the way the tabline shows it.
