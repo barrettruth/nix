@@ -136,13 +136,12 @@ local function create(name, enter)
     local buf = vim.api.nvim_create_buf(false, true)
     local tp = vim.api.nvim_open_tabpage(buf, enter, {})
     tab_view[tp] = name
-    local win = vim.api.nvim_tabpage_get_win(tp)
-    vim.api.nvim_win_call(win, function()
+    vim.api.nvim_win_call(vim.api.nvim_tabpage_get_win(tp), function()
         materialize(name)
     end)
     mark_dirty(name)
 
-    return win, tp
+    return vim.api.nvim_tabpage_get_win(tp), tp
 end
 
 ---Create a user view tab if it does not already exist.
@@ -198,6 +197,42 @@ function M.focus(tab)
     mark_dirty(tab_view[tab] or false)
 
     return true
+end
+
+-- NOTE: the sole caller is config/skills/_lib/driver.lua, off the runtimepath.
+---Run a callback inside a user view, then restore focus.
+---@generic T
+---@param name string
+---@param fn fun(): T
+---@return T? result
+---@return string? err
+function M.call(name, fn)
+    local saved_win = vim.api.nvim_get_current_win()
+    local saved_tab = vim.api.nvim_get_current_tabpage()
+    local win, _, err = M.ensure(name)
+    if not win then
+        return nil, err
+    end
+
+    local ok, result = pcall(vim.api.nvim_win_call, win, fn)
+
+    if vim.api.nvim_tabpage_is_valid(saved_tab) then
+        vim.api.nvim_set_current_tabpage(saved_tab)
+    end
+
+    if vim.api.nvim_win_is_valid(saved_win) then
+        vim.api.nvim_set_current_win(saved_win)
+    end
+
+    restore_terminal_focus()
+
+    if not ok then
+        return nil, tostring(result)
+    end
+
+    mark_dirty(name)
+
+    return result
 end
 
 ---Close the current user view.
