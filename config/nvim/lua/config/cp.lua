@@ -408,6 +408,86 @@ function M.open_problem(problem)
     ensure_column(vim.api.nvim_buf_get_name(0))
 end
 
+---@alias cp.Url fun(round: string, problem: string): string
+
+---@type table<string, { problem: cp.Url, submit?: cp.Url }>
+local judges = {
+    atcoder = {
+        problem = function(round, problem)
+            return ('https://atcoder.jp/contests/%s/tasks/%s'):format(
+                round,
+                problem
+            )
+        end,
+        submit = function(round, problem)
+            return ('https://atcoder.jp/contests/%s/submit?taskScreenName=%s'):format(
+                round,
+                problem
+            )
+        end,
+    },
+    codeforces = {
+        problem = function(round, problem)
+            return ('https://codeforces.com/contest/%s/problem/%s'):format(
+                round,
+                problem:upper()
+            )
+        end,
+        submit = function(round, problem)
+            return ('https://codeforces.com/problemset/submit/%s/%s'):format(
+                round,
+                problem:upper()
+            )
+        end,
+    },
+    cses = {
+        problem = function(_, problem)
+            return ('https://cses.fi/problemset/task/%s'):format(problem)
+        end,
+    },
+    kattis = {
+        problem = function(_, problem)
+            return ('https://open.kattis.com/problems/%s'):format(problem)
+        end,
+    },
+    usaco = {
+        problem = function(_, problem)
+            return ('https://usaco.org/index.php?page=viewproblem2&cpid=%s'):format(
+                problem
+            )
+        end,
+    },
+}
+
+---@param kind 'problem'|'submit'
+function M.open_url(kind)
+    local source = resolve_source()
+    if not source then
+        notify('not in ~/dev/cp', vim.log.levels.ERROR)
+        return
+    end
+
+    local parts = vim.split(vim.fs.relpath(M.root, source), '/')
+    if #parts < 3 then
+        notify('expected <judge>/<round>/<problem>', vim.log.levels.ERROR)
+        return
+    end
+    local judge = judges[parts[1]]
+    if not judge then
+        notify('unknown judge: ' .. parts[1], vim.log.levels.ERROR)
+        return
+    end
+
+    local url = (judge[kind] or judge.problem)(
+        parts[#parts - 1],
+        vim.fn.fnamemodify(parts[#parts], ':r')
+    )
+    local _, err = vim.ui.open(url)
+    if err then
+        notify(('%s: %s'):format(err, url), vim.log.levels.ERROR)
+    end
+end
+
 ---@param mode 'run'|'debug'
 function M.run(mode)
     local source = resolve_source()
@@ -497,6 +577,12 @@ function M.setup()
     vim.keymap.set('n', '<leader>d', function()
         M.run('debug')
     end, { desc = 'debug CP problem' })
+    vim.keymap.set('n', 'gX', function()
+        M.open_url('problem')
+    end, { desc = 'open CP problem' })
+    vim.keymap.set('n', 'gS', function()
+        M.open_url('submit')
+    end, { desc = 'open CP submission' })
 end
 
 return M
