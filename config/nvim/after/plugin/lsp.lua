@@ -20,21 +20,31 @@ vim.lsp.config('*', {
     on_attach = lsp.on_attach,
 })
 
+-- vim.lsp.config folds every lsp/<server>.lua on the runtimepath with
+-- tbl_deep_extend('force'), so an after/lsp override replaces a plugin's
+-- on_attach instead of running after it; collect each one and call them all
 ---@param server string
 local function compose_on_attach(server)
-    local config = vim.lsp.config[server]
-    if not config then
-        return
+    local on_attaches = { lsp.on_attach }
+    for _, file in
+        ipairs(
+            vim.api.nvim_get_runtime_file(('lsp/%s.lua'):format(server), true)
+        )
+    do
+        local on_attach = assert(loadfile(file))().on_attach
+        if on_attach then
+            on_attaches[#on_attaches + 1] = on_attach
+        end
     end
-    local server_on_attach = config.on_attach
-    if not server_on_attach or server_on_attach == lsp.on_attach then
+    if #on_attaches == 1 then
         return
     end
 
     vim.lsp.config(server, {
         on_attach = function(client, bufnr)
-            lsp.on_attach(client, bufnr)
-            server_on_attach(client, bufnr)
+            for _, on_attach in ipairs(on_attaches) do
+                on_attach(client, bufnr)
+            end
         end,
     })
 end
