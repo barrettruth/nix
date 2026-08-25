@@ -144,21 +144,13 @@ def open_review(model: dict[str, Any]) -> None:
             "op": "review",
             "base": model["base"],
             "layout": model["layout"],
-        },
-    )
-    if not review.get("ok"):
-        raise ReviewError(review.get("error", "review driver failed"))
-    edit = muxlib.call(
-        socket,
-        {
-            "op": "edit",
             "files": model["files"],
             "items": model["items"],
             "root": model["root"],
         },
     )
-    if not edit.get("ok"):
-        raise ReviewError(edit.get("error", "edit driver failed"))
+    if not review.get("ok"):
+        raise ReviewError(review.get("error", "review driver failed"))
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
