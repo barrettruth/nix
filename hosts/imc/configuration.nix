@@ -78,6 +78,11 @@ in
     ];
   };
 
+  environment.systemPackages = with pkgs; [
+    bazelisk
+    bazel-buildtools
+  ];
+
   environment.systemPath = lib.mkOrder 1100 [ "${config.homebrew.prefix}/bin" ];
 
   environment.extraInit = lib.optionalString (lib.elem "jdk-zulu@${javaVersion}" casks) ''
