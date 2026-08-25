@@ -1,4 +1,6 @@
 alias g=git
+alias l='ls --color=auto --group-directories-first'
+alias ll='l -la --classify=auto'
 alias mux='nvim -c Mux'
 alias nv=nvim
 
