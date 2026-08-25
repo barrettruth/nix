@@ -54,6 +54,16 @@ return {
         cpplint.ignore_patterns = require('config.cp').root_pattern
         ft('cpp'):lint(cpplint)
         ft('markdown'):fmt('prettierd')
+
+        if vim.fn.executable('buildifier') == 1 then
+            ft('bzl'):fmt({
+                cmd = 'buildifier',
+                args = { '-path' },
+                fname = true,
+                stdin = true,
+            })
+        end
+
         local lint = require('guard.lint')
 
         ft('nix')
