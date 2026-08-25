@@ -28,7 +28,7 @@ apply_nvim_theme() {
   runtime_dir="${runtime_dir%/}/mux"
   [ -d "$runtime_dir" ] || return 0
 
-  for sock in "$runtime_dir"/*.sock; do
+  for sock in "$runtime_dir"/*.sock "$runtime_dir"/*/*.sock; do
     [ -S "$sock" ] || continue
     [ "${NVIM:-}" = "$sock" ] && continue
     nvim --server "$sock" --remote-expr "$expr" </dev/null >/dev/null 2>&1 &
