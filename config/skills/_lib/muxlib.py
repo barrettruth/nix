@@ -1,9 +1,8 @@
-"""Shared client for the nvim-{commit,pr,edit,changes} skills.
+"""Shared client for the nvim-{commit,edit,review} skills.
 
 Owns the parts every helper repeated: git/target resolution, locating the
-project's mux Neovim server, and the RPC into `mux.skills`. The view/focus
-logic lives in Lua (config/nvim/lua/mux/); these helpers just resolve a socket
-and hand a payload across.
+project's mux Neovim server, and the RPC into `driver.lua`. The editor work
+lives there; these helpers just resolve a socket and hand a payload across.
 """
 
 from __future__ import annotations
@@ -208,45 +207,25 @@ def socket_for_root(root: Path, *, spawn: bool = True) -> str:
 # --- RPC ---------------------------------------------------------------------
 
 
-_COMMIT_LUA = (
-    '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
-    'local message = payload.message or {}; if #message == 0 then return vim.json.encode({ ok = false, error = "empty commit message" }); end; '
-    'local _, err = require("mux.view").call("vcs", function() local existing = vim.fn.bufnr("COMMIT_EDITMSG"); if existing > 0 then pcall(vim.cmd, "silent! bwipeout! " .. existing); end; pcall(vim.cmd, "silent! Git"); pcall(vim.cmd, "silent! only"); pcall(vim.cmd, "Git commit"); return true; end); '
-    "if err then return vim.json.encode({ ok = false, error = err }); end; "
-    'local ready = vim.wait(6000, function() local buf = vim.fn.bufnr("COMMIT_EDITMSG"); return buf > 0 and vim.fn.bufloaded(buf) == 1 and vim.bo[buf].modifiable == true; end, 50); '
-    'if ready ~= true then return vim.json.encode({ ok = false, error = "commit buffer did not open" }); end; '
-    'local buf = vim.fn.bufnr("COMMIT_EDITMSG"); local current = vim.api.nvim_buf_get_lines(buf, 0, -1, false); local cut = #current; for i = 1, #current do if current[i]:match("^#") then cut = i - 1; break; end; end; '
-    'local head = {}; for _, line in ipairs(message) do head[#head + 1] = line; end; head[#head + 1] = ""; vim.api.nvim_buf_set_lines(buf, 0, cut, false, head); '
-    "for _, win in ipairs(vim.fn.win_findbuf(buf)) do pcall(vim.api.nvim_win_set_cursor, win, { 1, 0 }); end; return vim.json.encode({ ok = true, subject = message[1] }); end)()"
-)
+_DRIVER = Path(__file__).with_name("driver.lua")
 
-_EDIT_LUA = (
-    '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
-    "local files = payload.files or {}; local items = payload.items or {}; local root = payload.root or vim.fn.getcwd(); local line = tonumber(payload.line); local column = tonumber(payload.column); "
-    'local result, err = require("mux.view").call("edit", function() '
-    'pcall(vim.fn.setreg, "/", ""); pcall(vim.fn.histdel, "search"); pcall(vim.cmd, "silent! nohlsearch"); pcall(vim.cmd, "silent! only"); '
-    'if #files == 0 then vim.cmd("edit " .. vim.fn.fnameescape(root)); else vim.cmd("%argdelete"); local escaped = {}; for i, file in ipairs(files) do escaped[i] = vim.fn.fnameescape(file); end; vim.cmd("args " .. table.concat(escaped, " ")); vim.cmd("edit " .. vim.fn.fnameescape(files[1])); for i = 2, #files do vim.cmd("badd " .. vim.fn.fnameescape(files[i])); end; end; '
-    'if #files == 1 and line and line >= 1 then local maxline = math.max(vim.api.nvim_buf_line_count(0), 1); local target_line = math.min(line, maxline); local text = vim.api.nvim_buf_get_lines(0, target_line - 1, target_line, false)[1] or ""; local target_column = math.max((column or 1) - 1, 0); target_column = math.min(target_column, #text); pcall(vim.api.nvim_win_set_cursor, 0, { target_line, target_column }); end; '
-    'vim.fn.setqflist({}, "r", { title = "edit", items = items }); if #items > 1 then vim.cmd("botright copen"); vim.cmd("wincmd p"); else vim.cmd("cclose"); end; pcall(vim.cmd, "silent! nohlsearch"); vim.cmd("redraw!"); return true; end); '
-    "if err then return vim.json.encode({ ok = false, error = err }); end; return vim.json.encode({ ok = result == true, count = #files }); end)()"
-)
-
-_REVIEW_LUA = (
-    '(function() local payload = vim.json.decode(table.concat(vim.fn.readfile(_A), "\\n")) or {}; '
-    'local base = payload.base or ""; local layout = payload.layout or "unified"; '
-    'if base == "" then return vim.json.encode({ ok = false, error = "missing base" }); end; '
-    'if layout ~= "unified" and layout ~= "stacked" and layout ~= "split" then layout = "unified"; end; '
-    'local result, err = require("mux.view").call("vcs", function() vim.cmd("silent! only"); vim.cmd("Diff review ++layout=" .. layout .. " " .. base); if layout ~= "split" then vim.cmd("silent! only"); end; vim.cmd("redraw!"); return true; end); '
-    "if err then return vim.json.encode({ ok = false, error = err }); end; return vim.json.encode({ ok = result == true }); end)()"
-)
+_RPC_LUA = "loadfile(_A[1])().rpc(_A[2])"
 
 
-def _call_lua(socket: str, lua: str, payload: dict[str, Any]) -> dict[str, Any]:
+def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Invoke the driver's rpc(payload) on the server, returning its result dict.
+
+    The driver and the payload travel as paths (luaeval's `_A`), so commit
+    messages with quotes or apostrophes never need shell/vim escaping, and the
+    driver runs from disk rather than the server's module cache. Raises
+    MuxError on transport failure.
+    """
     fd, name = tempfile.mkstemp(prefix=f"mux-rpc-{os.getuid()}-", suffix=".json")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(payload, fh)
-        expr = f"luaeval({_vim_str(lua)}, {_vim_str(name)})"
+        args = ", ".join(_vim_str(str(path)) for path in (_DRIVER, name))
+        expr = f"luaeval({_vim_str(_RPC_LUA)}, [{args}])"
         proc = subprocess.run(
             ["nvim", "--server", socket, "--remote-expr", expr],
             check=False,
@@ -267,22 +246,6 @@ def _call_lua(socket: str, lua: str, payload: dict[str, Any]) -> dict[str, Any]:
             os.unlink(name)
         except OSError:
             pass
-
-
-def call(socket: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """Invoke mux.skills.rpc(payload) on the server, returning its result dict.
-
-    The payload is passed via a temp file (its path as luaeval's _A) so commit
-    messages / PR bodies with quotes or apostrophes never need shell/vim
-    escaping. Raises MuxError on transport failure.
-    """
-    if payload.get("op") == "commit":
-        return _call_lua(socket, _COMMIT_LUA, payload)
-    if payload.get("op") == "edit":
-        return _call_lua(socket, _EDIT_LUA, payload)
-    if payload.get("op") == "review":
-        return _call_lua(socket, _REVIEW_LUA, payload)
-    return {"ok": False, "error": f"unknown op: {payload.get('op')}"}
 
 
 def _vim_str(s: str) -> str:

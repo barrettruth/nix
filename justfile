@@ -35,6 +35,8 @@ _rebuild-nixos host +args:
 
 paths := "'scripts/**' 'modules/**' 'config/**' 'pkgs/**'"
 
+lua_dirs := "config/nvim config/skills/_lib"
+
 _python-scripts:
    @git ls-files {{ paths }} | while IFS= read -r file; do \
         [ -f "$file" ] || continue; \
@@ -60,12 +62,12 @@ format:
     nix fmt -- --ci
     just _shell-scripts | xargs -r shfmt -i 2 -d
     just _python-scripts | xargs -r black --check
-    stylua --check config/nvim
+    stylua --check --config-path config/nvim/stylua.toml {{ lua_dirs }}
     git ls-files '*.md' | xargs -r prettier --check
 
 lint:
     git ls-files '*.nix' | xargs deadnix --fail --no-lambda-pattern-names
-    export VIMRUNTIME="$(nvim --clean --headless -c 'lua io.write(vim.env.VIMRUNTIME)' -c 'qa!')" && test -d "$VIMRUNTIME" && lua-language-server --check config/nvim --configpath "$(pwd)/config/nvim/.luarc.json" --checklevel=Warning
+    export VIMRUNTIME="$(nvim --clean --headless -c 'lua io.write(vim.env.VIMRUNTIME)' -c 'qa!')" && test -d "$VIMRUNTIME" && for dir in {{ lua_dirs }}; do lua-language-server --check "$dir" --configpath "$(pwd)/$dir/.luarc.json" --checklevel=Warning || exit 1; done
     just _shell-scripts | xargs -r shellcheck
     just _python-scripts | xargs -r ty check
     just _python-scripts | xargs -r basedpyright

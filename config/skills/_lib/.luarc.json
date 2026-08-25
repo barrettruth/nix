@@ -1,0 +1,12 @@
+{
+  "runtime.version": "LuaJIT",
+  "diagnostics.globals": ["vim"],
+  "diagnostics.disable": ["param-type-mismatch"],
+  "workspace.library": [
+    "$VIMRUNTIME/lua",
+    "${3rd}/luv/library",
+    "../../nvim/lua"
+  ],
+  "workspace.checkThirdParty": false,
+  "diagnostics.libraryFiles": "Disable"
+}
