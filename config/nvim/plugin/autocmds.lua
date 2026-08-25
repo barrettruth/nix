@@ -98,7 +98,9 @@ vim.api.nvim_create_autocmd('InsertEnter', {
     group = aug,
     callback = function()
         if vim.v.hlsearch == 1 then
-            vim.o.hlsearch = false
+            vim.schedule(function()
+                vim.v.hlsearch = 0
+            end)
         end
     end,
 })
@@ -109,9 +111,11 @@ vim.api.nvim_create_autocmd('CursorMoved', {
         if vim.v.hlsearch == 0 then
             return
         end
-        local count = vim.fn.searchcount({ recompute = true, maxcount = 1 })
+        local count = vim.fn.searchcount({ recompute = true, maxcount = 0 })
         if count.exact_match ~= 1 then
-            vim.o.hlsearch = false
+            vim.schedule(function()
+                vim.v.hlsearch = 0
+            end)
         end
     end,
 })

@@ -51,7 +51,7 @@ vim.opt.listchars = {
 
 vim.opt.matchpairs:append('<:>')
 
-vim.o.hlsearch = false
+vim.o.hlsearch = true
 vim.o.number = true
 vim.o.relativenumber = true
 vim.o.signcolumn = 'no'
