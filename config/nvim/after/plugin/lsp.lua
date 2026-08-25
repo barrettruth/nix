@@ -52,6 +52,7 @@ end
 local enabled = {
     'bashls',
     'basedpyright',
+    'bazel_ls',
     'clangd',
     'cssls',
     'emmet_language_server',
