@@ -1,5 +1,6 @@
 vim.filetype.add({
     extension = {
+        bazelrc = 'bazelrc',
         log = 'log',
         mdx = 'mdx',
     },
