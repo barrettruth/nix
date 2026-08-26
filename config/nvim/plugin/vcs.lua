@@ -15,6 +15,10 @@ require('gitsigns').setup({
     end,
 })
 
+vim.keymap.set('n', '<leader>ig', function()
+    require('config.statuscolumn').toggle_git()
+end, { desc = 'toggle git signs' })
+
 vim.pack.add({
     'https://github.com/justinmk/guh.nvim',
 }, { load = function() end })

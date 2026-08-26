@@ -9,6 +9,9 @@ local numberless_ft = {
     TelescopeResults = true,
 }
 
+---@type boolean
+local git = false
+
 ---@param buf integer
 ---@return boolean
 local function columnless(buf)
@@ -56,13 +59,23 @@ function M.render()
         return ''
     end
 
-    local column = '%s%C '
+    local signs = git and require('gitsigns').statuscolumn() or ''
+    local column = signs .. '%C '
 
     if not vim.wo.number and not vim.wo.relativenumber then
         return column
     end
 
     return column .. '%=%{v:relnum?v:relnum:v:lnum} '
+end
+
+---@return nil
+function M.toggle_git()
+    git = not git
+    if git then
+        require('gitsigns').refresh()
+    end
+    vim.api.nvim__redraw({ statuscolumn = true })
 end
 
 function M.setup()
