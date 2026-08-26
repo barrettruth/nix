@@ -17,8 +17,13 @@ let
     "barrettruth.com" = "/srv/www/barrettruth.com/current";
     "philipmruth.com" = "/srv/www/philipmruth.com/current";
     "ts.barrettruth.com" = "/srv/www/ts.barrettruth.com/current";
+    "bazel-language-server.com" = "/srv/www/bazel-language-server.com/current";
     "vimdoc-language-server.com" = "/srv/www/vimdoc-language-server.com/current";
   };
+  fontOrigins = [
+    "https://www.bazel-language-server.com"
+    "https://www.vimdoc-language-server.com"
+  ];
   githubOwner = "barrettruth";
   mkStaticSiteHost = root: {
     enableACME = true;
@@ -48,7 +53,7 @@ let
       locations."~* ^/fonts/.*\\.(?:ttf|otf|woff|woff2)$".extraConfig = ''
         expires 1y;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
-        add_header Access-Control-Allow-Origin "https://www.vimdoc-language-server.com" always;
+        add_header Access-Control-Allow-Origin $font_cors_origin always;
         add_header Vary "Origin" always;
       '';
     };
@@ -69,6 +74,11 @@ in
     appendHttpConfig = ''
       limit_req_zone $binary_remote_addr zone=static_site_per_ip:10m rate=20r/s;
       limit_conn_zone $binary_remote_addr zone=static_site_conn_per_ip:10m;
+
+      map $http_origin $font_cors_origin {
+        default "";
+        ${lib.concatMapStringsSep "\n  " (o: ''"${o}" $http_origin;'') fontOrigins}
+      }
     '';
     virtualHosts."www.${identity.domain}" = mkBarrettruthHost staticWebRoots."barrettruth.com";
     virtualHosts.${identity.domain} = mkRedirectHost "www.${identity.domain}";
@@ -85,6 +95,12 @@ in
     virtualHosts."vimdoc-language-server.com" = mkRedirectHost "www.vimdoc-language-server.com";
     virtualHosts."vimdoc-language-server.${identity.domain}" =
       mkRedirectHost "www.vimdoc-language-server.com";
+    virtualHosts."www.bazel-language-server.com" =
+      mkStaticSiteHost
+        staticWebRoots."bazel-language-server.com";
+    virtualHosts."bazel-language-server.com" = mkRedirectHost "www.bazel-language-server.com";
+    virtualHosts."bazel-language-server.${identity.domain}" =
+      mkRedirectHost "www.bazel-language-server.com";
   };
 
   users.groups.${webDeployGroup}.gid = webDeployGid;
@@ -109,5 +125,7 @@ in
     "d /srv/www/ts.barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/vimdoc-language-server.com 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/vimdoc-language-server.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/bazel-language-server.com 0755 ${webDeployUser} ${webDeployGroup} -"
+    "d /srv/www/bazel-language-server.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
   ];
 }
