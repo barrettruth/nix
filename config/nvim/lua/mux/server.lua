@@ -1061,6 +1061,7 @@ function M.setup(root)
     end
 
     current_server = server
+    require('config.direnv').load(server.root)
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
     require('mux.session').setup()
