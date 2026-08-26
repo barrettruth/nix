@@ -1,4 +1,3 @@
-const OMNIBOX_RESULT_LIMIT = 9;
 const HISTORY_CACHE_TTL_MS = 5 * 60 * 1000;
 const HISTORY_CACHE_MAX_RESULTS = 5000;
 const NEGATIVE_SCORE = -1e9;
@@ -6,9 +5,6 @@ const NEGATIVE_SCORE = -1e9;
 let historyIndex = [];
 let historyIndexLoadedAt = 0;
 let historyIndexPromise = null;
-let omniboxRequestId = 0;
-let lastOmniboxText = "";
-let lastOmniboxResults = [];
 
 function safeDecode(value) {
   try {
@@ -340,7 +336,7 @@ function invalidateHistoryIndex() {
   historyIndexLoadedAt = 0;
 }
 
-async function searchHistory(queryText, limit = OMNIBOX_RESULT_LIMIT) {
+async function searchHistory(queryText, limit) {
   const entries = await getHistoryIndex();
   const query = parseQuery(queryText);
   const now = Date.now();
@@ -364,98 +360,5 @@ async function searchHistory(queryText, limit = OMNIBOX_RESULT_LIMIT) {
     .map(({ entry, score }) => ({ ...entry, score }));
 }
 
-function escapeDescription(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function truncate(value, maxLength) {
-  const text = String(value || "");
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength - 1)}…`;
-}
-
-function buildSuggestionDescription(entry) {
-  return `<url>${escapeDescription(truncate(entry.displayUrl, 120))}</url>`;
-}
-
-function toSuggestion(entry) {
-  return {
-    content: entry.url,
-    description: buildSuggestionDescription(entry),
-  };
-}
-
-async function openOmniboxResult(url, disposition) {
-  if (disposition === "currentTab") {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    if (tab?.id) {
-      await chrome.tabs.update(tab.id, { url });
-      return;
-    }
-  }
-
-  await chrome.tabs.create({
-    url,
-    active: disposition !== "newBackgroundTab",
-  });
-}
-
-function resolveSelectedUrl(text, results) {
-  if (!text) return results[0]?.url || null;
-  const direct = results.find((result) => result.url === text);
-  if (direct) return direct.url;
-  try {
-    return new URL(text).toString();
-  } catch (_) {}
-  return results[0]?.url || null;
-}
-
 chrome.history.onVisited.addListener(() => invalidateHistoryIndex());
 chrome.history.onVisitRemoved.addListener(() => invalidateHistoryIndex());
-
-chrome.omnibox.onInputStarted.addListener(() => {
-  omniboxRequestId++;
-  lastOmniboxText = "";
-  lastOmniboxResults = [];
-});
-
-chrome.omnibox.onInputChanged.addListener((text, suggest) => {
-  const requestId = ++omniboxRequestId;
-  lastOmniboxText = text;
-
-  void (async () => {
-    const results = await searchHistory(text, OMNIBOX_RESULT_LIMIT);
-    if (requestId !== omniboxRequestId) return;
-    lastOmniboxResults = results;
-    suggest(results.map(toSuggestion));
-  })().catch(() => {
-    if (requestId !== omniboxRequestId) return;
-    lastOmniboxResults = [];
-    suggest([]);
-  });
-});
-
-chrome.omnibox.onInputEntered.addListener((text, disposition) => {
-  void (async () => {
-    const results =
-      text === lastOmniboxText && lastOmniboxResults.length
-        ? lastOmniboxResults
-        : await searchHistory(text, 1);
-    const url = resolveSelectedUrl(text, results);
-    if (!url) return;
-    await openOmniboxResult(url, disposition);
-  })();
-});
-
-chrome.omnibox.onInputCancelled.addListener(() => {
-  omniboxRequestId++;
-  lastOmniboxText = "";
-  lastOmniboxResults = [];
-});
