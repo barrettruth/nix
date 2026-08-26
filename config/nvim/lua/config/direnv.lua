@@ -2,12 +2,15 @@ local M = {}
 
 local TIMEOUT_MS = 2000
 
-function M.load()
-    local root = vim.fs.root(vim.fn.getcwd(), '.envrc')
-    if not root or vim.env.DIRENV_DIR == '-' .. root then
+local loading = {}
+
+function M.load(from)
+    local root = vim.fs.root(from or vim.fn.getcwd(-1, -1, -1), '.envrc')
+    if not root or loading[root] or vim.env.DIRENV_DIR == '-' .. root then
         return
     end
 
+    loading[root] = true
     local name = vim.fn.fnamemodify(root, ':t')
     local progress = {
         kind = 'progress',
@@ -18,6 +21,7 @@ function M.load()
     local result
 
     local function finish()
+        loading[root] = nil
         local failed = result.code ~= 0
         local loaded = false
         for key, value in pairs(failed and {} or vim.json.decode(result.stdout)) do
@@ -63,14 +67,6 @@ function M.load()
         progress.id =
             vim.api.nvim_echo({ { 'loading ' .. name } }, true, progress)
     end
-end
-
-function M.setup()
-    vim.api.nvim_create_autocmd('DirChanged', {
-        group = vim.api.nvim_create_augroup('Direnv', { clear = true }),
-        callback = M.load,
-    })
-    M.load()
 end
 
 return M

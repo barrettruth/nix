@@ -1,1 +1,1 @@
-require('config.direnv').setup()
+require('config.direnv').load()
