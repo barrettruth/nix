@@ -13,9 +13,6 @@
     "history"
   ],
   "host_permissions": ["<all_urls>"],
-  "omnibox": {
-    "keyword": "f"
-  },
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
