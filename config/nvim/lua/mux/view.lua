@@ -199,6 +199,24 @@ function M.focus(tab)
     return true
 end
 
+---@param step integer
+---@return true? ok
+---@return string? err
+local function walk(step)
+    local tabs = user_tabpages()
+    local cur = vim.api.nvim_get_current_tabpage()
+    local from = 0
+
+    for i, tp in ipairs(tabs) do
+        if tp == cur then
+            from = i - 1
+            break
+        end
+    end
+
+    return M.focus(tabs[(from + step) % #tabs + 1])
+end
+
 -- NOTE: the sole caller is config/skills/_lib/driver.lua, off the runtimepath.
 ---Run a callback inside a user view, then restore focus.
 ---@generic T
@@ -515,6 +533,12 @@ local function setup_keymaps()
         map(prefix .. entry.key, function()
             M.open(entry.name)
         end, 'mux: ' .. entry.name .. ' view')
+    end
+
+    for key, step in pairs({ ['('] = -1, [')'] = 1 }) do
+        map(prefix .. key, function()
+            walk(step * vim.v.count1)
+        end, 'mux: move tab')
     end
 
     map(prefix .. "'", '<cmd>vertical terminal<cr>', 'mux: vertical terminal')
