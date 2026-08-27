@@ -9,7 +9,6 @@ vim.api.nvim_create_autocmd('TermOpen', {
     group = aug,
     callback = function(args)
         local normal = vim.b[args.buf].term_normal
-        vim.b[args.buf].term_insert = not normal
         if not normal then
             vim.keymap.set('n', 'G', 'Gi', {
                 buf = args.buf,
@@ -23,37 +22,6 @@ vim.api.nvim_create_autocmd('TermOpen', {
         if not normal then
             vim.cmd.startinsert()
         end
-    end,
-})
-
-vim.api.nvim_create_autocmd('TermEnter', {
-    group = aug,
-    callback = function()
-        if not vim.b.term_normal then
-            vim.b.term_insert = true
-        end
-    end,
-})
-
-vim.api.nvim_create_autocmd('TermLeave', {
-    group = aug,
-    callback = function()
-        local buf = vim.api.nvim_get_current_buf()
-        if vim.b[buf].term_normal then
-            vim.b[buf].term_insert = false
-            return
-        end
-        if vim.b[buf].term_programmatic then
-            vim.b[buf].term_programmatic = false
-            return
-        end
-        vim.b[buf].term_insert = false
-        vim.b[buf].term_leaving = true
-        vim.schedule(function()
-            if vim.api.nvim_buf_is_valid(buf) then
-                vim.b[buf].term_leaving = false
-            end
-        end)
     end,
 })
 
@@ -106,34 +74,12 @@ vim.api.nvim_create_autocmd('WinEnter', {
     group = aug,
     callback = function()
         vim.wo[0][0].cursorline = true
-        if
-            vim.bo.buftype == 'terminal'
-            and not vim.b.term_normal
-            and vim.b.term_insert
-        then
-            vim.cmd.startinsert()
-        end
-    end,
-})
-
-vim.api.nvim_create_autocmd('UIEnter', {
-    group = aug,
-    callback = function()
-        local buf = vim.api.nvim_get_current_buf()
-        if
-            vim.bo[buf].buftype == 'terminal'
-            and not vim.b[buf].term_normal
-            and vim.b[buf].term_insert
-        then
-            vim.schedule(function()
-                if
-                    vim.api.nvim_get_current_buf() == buf
-                    and not vim.b[buf].term_normal
-                    and vim.b[buf].term_insert
-                then
-                    vim.cmd.startinsert()
-                end
-            end)
+        if vim.bo.buftype == 'terminal' and not vim.b.term_normal then
+            if vim.w.term_mode == 'nt' then
+                vim.cmd.stopinsert()
+            else
+                vim.cmd.startinsert()
+            end
         end
     end,
 })
@@ -154,17 +100,8 @@ vim.api.nvim_create_autocmd('WinLeave', {
     group = aug,
     callback = function()
         vim.wo[0][0].cursorline = false
-        if vim.bo.buftype == 'terminal' and not vim.b.term_normal then
-            if vim.b.term_leaving then
-                vim.b.term_insert = true
-            end
-            if vim.b.term_insert then
-                pcall(
-                    vim.api.nvim_win_set_cursor,
-                    0,
-                    { vim.api.nvim_buf_line_count(0), 0 }
-                )
-            end
+        if vim.bo.buftype == 'terminal' then
+            vim.w.term_mode = vim.api.nvim_get_mode().mode
         end
     end,
 })

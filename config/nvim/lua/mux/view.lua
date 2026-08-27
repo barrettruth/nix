@@ -90,7 +90,7 @@ local function restore_terminal_focus()
     if
         not (spec and spec.terminal)
         or vim.bo[buf].buftype ~= 'terminal'
-        or not vim.b[buf].term_insert
+        or vim.w.term_mode == 'nt'
     then
         return false
     end
