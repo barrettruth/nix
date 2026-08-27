@@ -1068,6 +1068,13 @@ function M.setup(root)
     require('mux.view').setup()
     require('mux.line').setup()
 
+    vim.api.nvim_create_autocmd('UIEnter', {
+        group = vim.api.nvim_create_augroup('mux-ui', { clear = true }),
+        callback = function()
+            vim.cmd('silent! %detach')
+        end,
+    })
+
     local ok, rerr = require('mux.session').restore()
     if not ok and rerr ~= 'no session' then
         setup_error = rerr
