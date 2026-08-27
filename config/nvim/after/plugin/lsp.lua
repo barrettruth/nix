@@ -48,7 +48,7 @@ vim.lsp.enable({
     'vtsls',
 })
 
--- remove duplicate entries from goto defintion list
+-- remove duplicate entries from goto definition list
 -- example: https://github.com/LuaLS/lua-language-server/issues/2451
 local locations_to_items = vim.lsp.util.locations_to_items
 vim.lsp.util.locations_to_items = function(locations, offset_encoding)
