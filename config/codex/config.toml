@@ -1,0 +1,14 @@
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+file_opener = "none"
+check_for_update_on_startup = false
+
+log_dir = "~/.local/state/codex/log"
+sqlite_home = "~/.local/state/codex"
+
+[projects."/Users/bruth"]
+trust_level = "trusted"

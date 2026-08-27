@@ -19,6 +19,10 @@ let
     "${homeDirectory}/dev"
   ];
 
+  repo = "${homeDirectory}/.config/nix";
+
+  codexHome = "${homeDirectory}/.config/codex";
+
   brews = [ "imc/core/imc-claude" ];
 
   casks = [
@@ -81,7 +85,10 @@ in
   environment.systemPackages = with pkgs; [
     bazelisk
     bazel-buildtools
+    codex
   ];
+
+  environment.variables.CODEX_HOME = codexHome;
 
   environment.systemPath = lib.mkOrder 1100 [ "${config.homebrew.prefix}/bin" ];
 
@@ -89,12 +96,19 @@ in
     export JAVA_HOME="$(/usr/libexec/java_home -v ${javaVersion})"
   '';
 
-  system.activationScripts.extraActivation.text = lib.concatMapStrings (dir: ''
-    if [ -d "${dir}" ]; then
-      ${pkgs.coreutils}/bin/install -m 0644 -o ${config.barrett.user.name} -g ${act.group} \
-        /dev/null "${dir}/.metadata_never_index"
-    fi
-  '') spotlightExcluded;
+  system.activationScripts.extraActivation.text =
+    lib.concatMapStrings (dir: ''
+      if [ -d "${dir}" ]; then
+        ${pkgs.coreutils}/bin/install -m 0644 -o ${config.barrett.user.name} -g ${act.group} \
+          /dev/null "${dir}/.metadata_never_index"
+      fi
+    '') spotlightExcluded
+    + ''
+      ${act.installDirMode "0700" codexHome}
+      ${act.installDirMode "0755" "${homeDirectory}/.local/state/codex"}
+      ${act.mkSymlink "${repo}/config/codex/config.toml" "${codexHome}/config.toml"}
+      ${act.mkSymlink "${repo}/config/agents/AGENTS.md" "${codexHome}/AGENTS.md"}
+    '';
 
   barrett.mac.chrome = {
     app = "/Applications/Google Chrome.app";
