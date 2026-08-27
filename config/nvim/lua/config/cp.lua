@@ -405,8 +405,56 @@ function M.open_problem(problem)
 end
 
 ---@alias cp.Url fun(round: string, problem: string): string
+---@alias cp.Round fun(round: string, done: fun(contest: string))
 
----@type table<string, { problem: cp.Url, submit?: cp.Url }>
+local CONTEST_LIST = 'https://codeforces.com/api/contest.list?gym=false'
+
+---@param round string
+---@param done fun(contest: string)
+local function codeforces_contest(round, done)
+    vim.net.request(CONTEST_LIST, {}, function(err, response)
+        vim.schedule(function()
+            if err or not response then
+                notify(err or 'no contest list', vim.log.levels.ERROR)
+                return
+            end
+            local ok, list = pcall(vim.json.decode, response.body)
+            if not ok or list.status ~= 'OK' then
+                notify('malformed contest list', vim.log.levels.ERROR)
+                return
+            end
+
+            local matches = {}
+            for _, contest in ipairs(list.result) do
+                local number = contest.name:match('Codeforces Round%s+(%d+)')
+                    or contest.name:match('Codeforces Beta Round%s+(%d+)')
+                if number and tonumber(number) == tonumber(round) then
+                    matches[#matches + 1] = contest
+                end
+            end
+            table.sort(matches, function(a, b)
+                return a.name < b.name
+            end)
+
+            if #matches < 2 then
+                done(matches[1] and tostring(matches[1].id) or round)
+                return
+            end
+            vim.ui.select(matches, {
+                prompt = 'Codeforces Round ' .. round,
+                format_item = function(contest)
+                    return contest.name
+                end,
+            }, function(contest)
+                if contest then
+                    done(tostring(contest.id))
+                end
+            end)
+        end)
+    end)
+end
+
+---@type table<string, { problem: cp.Url, submit?: cp.Url, round?: cp.Round }>
 local judges = {
     atcoder = {
         problem = function(round, problem)
@@ -423,6 +471,7 @@ local judges = {
         end,
     },
     codeforces = {
+        round = codeforces_contest,
         problem = function(round, problem)
             return ('https://codeforces.com/contest/%s/problem/%s'):format(
                 round,
@@ -474,13 +523,19 @@ function M.open_url(kind)
         return
     end
 
-    local url = (judge[kind] or judge.problem)(
-        parts[#parts - 1],
-        vim.fn.fnamemodify(parts[#parts], ':r')
-    )
-    local _, err = vim.ui.open(url)
-    if err then
-        notify(('%s: %s'):format(err, url), vim.log.levels.ERROR)
+    local problem = vim.fn.fnamemodify(parts[#parts], ':r')
+    local function open(round)
+        local url = (judge[kind] or judge.problem)(round, problem)
+        local _, err = vim.ui.open(url)
+        if err then
+            notify(('%s: %s'):format(err, url), vim.log.levels.ERROR)
+        end
+    end
+
+    if judge.round then
+        judge.round(parts[#parts - 1], open)
+    else
+        open(parts[#parts - 1])
     end
 end
 
