@@ -9,6 +9,8 @@ local languages = {
 }
 
 local RATIO = 0.35
+local CLEAR_POLL_MS = 10
+local CLEAR_TIMEOUT_MS = 500
 
 ---@class cp.Column
 ---@field output? integer
@@ -503,9 +505,29 @@ function M.run(mode)
     if not job then
         return
     end
-    vim.api.nvim_chan_send(
-        job,
-        ('clear; just %s %s\r'):format(mode, vim.fn.fnamemodify(source, ':t'))
+    local cmd = ('just %s %s\r'):format(mode, vim.fn.fnamemodify(source, ':t'))
+    local tick = vim.api.nvim_buf_get_changedtick(buf)
+    local timer = assert(vim.uv.new_timer())
+    local waited = 0
+
+    vim.api.nvim_chan_send(job, '\12')
+    timer:start(
+        CLEAR_POLL_MS,
+        CLEAR_POLL_MS,
+        vim.schedule_wrap(function()
+            waited = waited + CLEAR_POLL_MS
+            local settled = not vim.api.nvim_buf_is_valid(buf)
+                or vim.api.nvim_buf_get_changedtick(buf) ~= tick
+            if not settled and waited < CLEAR_TIMEOUT_MS then
+                return
+            end
+
+            timer:stop()
+            timer:close()
+            if vim.api.nvim_buf_is_valid(buf) then
+                pcall(vim.api.nvim_chan_send, job, cmd)
+            end
+        end)
     )
 end
 
