@@ -426,7 +426,11 @@ in
             just
             file
             luarocks
-            rustup
+            rustc
+            cargo
+            clippy
+            rustfmt
+            rust-analyzer
             uv
             python3
             ocaml
