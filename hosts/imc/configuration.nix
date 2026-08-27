@@ -23,6 +23,8 @@ let
 
   codexHome = "${homeDirectory}/.config/codex";
 
+  repoEnv = "${pkgs.python3}/bin/python3 ${repo}/config/agents/hooks/repo-env.py";
+
   brews = [ "imc/core/imc-claude" ];
 
   casks = [
@@ -89,6 +91,24 @@ in
   ];
 
   environment.variables.CODEX_HOME = codexHome;
+
+  environment.etc."codex/config.toml".text = ''
+    [[hooks.SessionStart]]
+    matcher = "startup|resume"
+
+    [[hooks.SessionStart.hooks]]
+    type = "command"
+    command = "${repoEnv} session"
+    timeout = 5
+
+    [[hooks.PostToolUse]]
+    matcher = "^Bash$"
+
+    [[hooks.PostToolUse.hooks]]
+    type = "command"
+    command = "${repoEnv} command-not-found"
+    timeout = 5
+  '';
 
   environment.systemPath = lib.mkOrder 1100 [ "${config.homebrew.prefix}/bin" ];
 

@@ -19,7 +19,7 @@ class ToolResponse(TypedDict, total=False):
 
 
 class HookEvent(TypedDict, total=False):
-    tool_response: ToolResponse
+    tool_response: ToolResponse | str
 
 
 class Arguments(argparse.Namespace):
@@ -137,7 +137,11 @@ def command_not_found() -> None:
     except (json.JSONDecodeError, ValueError):
         return
     response = payload.get("tool_response") or ToolResponse()
-    haystack = (response.get("output") or "") + "\n" + (response.get("error") or "")
+    haystack = (
+        response
+        if isinstance(response, str)
+        else (response.get("output") or "") + "\n" + (response.get("error") or "")
+    )
     if "command not found" not in haystack and "not found in $PATH" not in haystack:
         return
     root = project_root()
@@ -156,7 +160,7 @@ def command_not_found() -> None:
 def parse_arguments() -> Arguments:
     parser = argparse.ArgumentParser(
         prog="repo-env",
-        description="Report checkout facts to the agent as devin lifecycle hooks.",
+        description="Report checkout facts to the agent as lifecycle hooks.",
     )
     sub = parser.add_subparsers(dest="mode", required=True)
     _ = sub.add_parser("session", help="SessionStart: state what the checkout provides")
