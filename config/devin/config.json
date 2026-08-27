@@ -13,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.config/nix/config/devin/hooks/repo-env.py\" session",
+            "command": "python3 \"$HOME/.config/nix/config/agents/hooks/repo-env.py\" session",
             "timeout": 5
           }
         ]
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.config/nix/config/devin/hooks/repo-env.py\" command-not-found",
+            "command": "python3 \"$HOME/.config/nix/config/agents/hooks/repo-env.py\" command-not-found",
             "timeout": 5
           }
         ]
