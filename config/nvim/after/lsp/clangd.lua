@@ -16,12 +16,4 @@ return {
             },
         },
     },
-    on_attach = function(_, bufnr)
-        vim.keymap.set(
-            'n',
-            'gH',
-            '<cmd>LspClangdSwitchSourceHeader<cr>',
-            { buf = bufnr, desc = 'switch source/header' }
-        )
-    end,
 }

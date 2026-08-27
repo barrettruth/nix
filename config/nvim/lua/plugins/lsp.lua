@@ -67,8 +67,7 @@ return {
                     capabilities = {
                         general = { positionEncodings = { 'utf-16' } },
                     },
-                    on_attach = function(client, bufnr)
-                        require('config.lsp').on_attach(client, bufnr)
+                    on_attach = function(_, bufnr)
                         vim.keymap.set(
                             'n',
                             '\\Rc',

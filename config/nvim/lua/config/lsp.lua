@@ -14,6 +14,22 @@ local function fzf_or(fzf_cmd, fallback)
     end
 end
 
+local server_to_on_attach = {
+    clangd = function(bufnr)
+        vim.keymap.set(
+            'n',
+            'gH',
+            '<cmd>LspClangdSwitchSourceHeader<cr>',
+            { buf = bufnr, desc = 'switch source/header' }
+        )
+    end,
+    vtsls = function(bufnr)
+        vim.keymap.set('n', 'gD', function()
+            vim.cmd.VtsExec('goto_source_definition')
+        end, { buf = bufnr, desc = 'goto source definition' })
+    end,
+}
+
 ---@param client vim.lsp.Client
 ---@param bufnr integer
 function M.on_attach(client, bufnr)
@@ -88,6 +104,11 @@ function M.on_attach(client, bufnr)
         if client:supports_method(method) then
             vim.keymap.set('n', key, cmd, { buf = bufnr, desc = desc })
         end
+    end
+
+    local on_attach = server_to_on_attach[client.name]
+    if on_attach then
+        on_attach(bufnr)
     end
 end
 
