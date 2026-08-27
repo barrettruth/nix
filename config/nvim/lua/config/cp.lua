@@ -8,11 +8,12 @@ local languages = {
     python = { ext = '.py', solve = '^%s*def%s+solve%(%).*:%s*$' },
 }
 
+local RATIO = 0.35
+
 ---@class cp.Column
----@field source? integer
 ---@field output? integer
 ---@field input? integer
----@field others integer[]
+---@field rest integer[]
 
 ---@param msg string
 ---@param level? integer
@@ -86,52 +87,32 @@ local function write_path(path)
     end
 end
 
----@param a integer
----@param b integer
----@return boolean
-local function below_right(a, b)
-    local ap = vim.api.nvim_win_get_position(a)
-    local bp = vim.api.nvim_win_get_position(b)
-    return ap[2] > bp[2] or (ap[2] == bp[2] and ap[1] > bp[1])
-end
-
 ---@param tp? integer
 ---@return cp.Column
 local function column(tp)
-    tp = tp or vim.api.nvim_get_current_tabpage()
-    local cur = vim.api.nvim_get_current_win()
-    local cols = { others = {} }
-    local wins, inputs = {}, {}
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+    local cols = { rest = {} }
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp or 0)) do
         if vim.api.nvim_win_get_config(win).relative == '' then
-            wins[#wins + 1] = win
-            local buf = vim.api.nvim_win_get_buf(win)
-            if vim.b[buf].cp_output then
+            if vim.b[vim.api.nvim_win_get_buf(win)].cp_output then
                 cols.output = win
-            elseif is_input_path(vim.api.nvim_buf_get_name(buf)) then
-                inputs[#inputs + 1] = win
-            end
-        end
-    end
-    for _, win in ipairs(inputs) do
-        if not cols.input or below_right(win, cols.input) then
-            cols.input = win
-        end
-    end
-    for _, win in ipairs(wins) do
-        if win ~= cols.output and win ~= cols.input then
-            cols.others[#cols.others + 1] = win
-            local buf = vim.api.nvim_win_get_buf(win)
-            if
-                languages[vim.bo[buf].filetype]
-                and M.is_cp_path(vim.api.nvim_buf_get_name(buf))
-                and (not cols.source or win == cur)
-            then
-                cols.source = win
+            elseif vim.w[win].cp_input then
+                cols.input = win
+            else
+                cols.rest[#cols.rest + 1] = win
             end
         end
     end
     return cols
+end
+
+---@param cols cp.Column
+---@return integer
+local function edit_win(cols)
+    local cur = vim.api.nvim_get_current_win()
+    if cur ~= cols.output and cur ~= cols.input then
+        return cur
+    end
+    return cols.rest[1] or cur
 end
 
 ---@param cols cp.Column
@@ -152,7 +133,7 @@ local function close_if_orphaned()
     vim.schedule(function()
         for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
             local cols = column(tp)
-            if (cols.output or cols.input) and #cols.others == 0 then
+            if (cols.output or cols.input) and #cols.rest == 0 then
                 close_column(cols)
             end
         end
@@ -186,18 +167,10 @@ end
 ---@param output_win integer
 ---@param input_win integer
 local function size_column(output_win, input_win)
-    local total = vim.api.nvim_win_get_height(output_win)
+    local rows = vim.api.nvim_win_get_height(output_win)
         + vim.api.nvim_win_get_height(input_win)
-    vim.api.nvim_win_resize(
-        output_win,
-        math.max(1, math.floor(vim.o.columns * 0.35)),
-        -1
-    )
-    vim.api.nvim_win_resize(
-        input_win,
-        -1,
-        math.max(1, math.floor(total * 0.35))
-    )
+    vim.api.nvim_win_resize(output_win, math.floor(vim.o.columns * RATIO), -1)
+    vim.api.nvim_win_resize(input_win, -1, math.floor(rows * RATIO))
 end
 
 ---@param output_win integer
@@ -207,6 +180,7 @@ local function attach_input(output_win, source)
     vim.api.nvim_set_current_win(output_win)
     vim.cmd('belowright split ' .. vim.fn.fnameescape(input_path(source)))
     local input_win = vim.api.nvim_get_current_win()
+    vim.w[input_win].cp_input = true
     size_column(output_win, input_win)
     return input_win
 end
@@ -258,11 +232,9 @@ local function ensure_column(source)
     elseif input_win and not output_win then
         output_win = attach_output(input_win)
     elseif not output_win then
-        output_win, input_win =
-            open_column(cols.source or cols.others[1] or saved_win, source)
+        output_win, input_win = open_column(edit_win(cols), source)
     end
 
-    size_column(output_win, input_win)
     local buf = reset_output(output_win, source)
     retarget_input(input_win, source)
 
@@ -275,10 +247,15 @@ end
 
 ---@return string?
 local function resolve_source()
-    local cols = column()
-    if cols.source then
-        return vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(cols.source))
+    local name = vim.api.nvim_buf_get_name(0)
+    if languages[vim.bo.filetype] and M.is_cp_path(name) then
+        return name
     end
+    if is_input_path(name) then
+        return source_for_input(name)
+    end
+
+    local cols = column()
     if cols.output then
         return vim.b[vim.api.nvim_win_get_buf(cols.output)].cp_source
     end
@@ -289,18 +266,39 @@ local function resolve_source()
     end
 end
 
+---@param wins integer[]
+---@return integer?
+local function claim_input(wins)
+    for _, win in ipairs(wins) do
+        local name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win))
+        if is_input_path(name) then
+            vim.w[win].cp_input = true
+            return win
+        end
+    end
+end
+
 local function restore_column()
     local cols = column()
-    if cols.output or not cols.input then
+    if cols.output then
         return
     end
-    local source = resolve_source()
+
+    local input_win = cols.input or claim_input(cols.rest)
+    if not input_win then
+        return
+    end
+
+    local source = source_for_input(
+        vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(input_win))
+    )
     if not source then
         return
     end
+
     local saved_win = vim.api.nvim_get_current_win()
     local saved_view = vim.fn.winsaveview()
-    reset_output(attach_output(cols.input), source)
+    reset_output(attach_output(input_win), source)
     if vim.api.nvim_win_is_valid(saved_win) then
         vim.api.nvim_set_current_win(saved_win)
         vim.fn.winrestview(saved_view)
@@ -390,10 +388,7 @@ function M.open_problem(problem)
         return
     end
 
-    local cols = column()
-    vim.api.nvim_set_current_win(
-        cols.source or cols.others[1] or vim.api.nvim_get_current_win()
-    )
+    vim.api.nvim_set_current_win(edit_win(column()))
     if vim.bo.modified then
         vim.cmd.write()
     end
@@ -508,16 +503,10 @@ function M.run(mode)
     if not job then
         return
     end
-    local cmd = ('just %s %s\r'):format(mode, vim.fn.fnamemodify(source, ':t'))
-    vim.api.nvim_buf_attach(buf, false, {
-        on_lines = function()
-            vim.schedule(function()
-                pcall(vim.api.nvim_chan_send, job, cmd)
-            end)
-            return true
-        end,
-    })
-    vim.api.nvim_chan_send(job, '\12')
+    vim.api.nvim_chan_send(
+        job,
+        ('clear; just %s %s\r'):format(mode, vim.fn.fnamemodify(source, ':t'))
+    )
 end
 
 function M.setup()
