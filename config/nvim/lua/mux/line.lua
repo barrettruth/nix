@@ -91,7 +91,7 @@ local function session_segments()
                 i,
                 "v:lua.require'mux.line'.on_session",
                 selected and 'TabLineSel' or 'TabLine',
-                ('%d:%s%s'):format(i, selected and '*' or '', name)
+                ('%s%d:%s'):format(selected and '*' or '', i, name)
             )
         end
     end
