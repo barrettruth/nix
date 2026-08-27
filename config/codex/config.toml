@@ -10,5 +10,29 @@ check_for_update_on_startup = false
 log_dir = "~/.local/state/codex/log"
 sqlite_home = "~/.local/state/codex"
 
+[mcp_servers.gcalendar]
+command = "npx"
+args = ["-y", "@cocal/google-calendar-mcp@2.6.2", "start"]
+env = { GOOGLE_OAUTH_CREDENTIALS = "/Users/bruth/.config/mcp-google/gcp-oauth.keys.json" }
+env_vars = ["NPM_CONFIG_CACHE"]
+startup_timeout_sec = 30
+required = true
+
+[mcp_servers.gmail]
+command = "npx"
+args = ["-y", "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"]
+env_vars = ["NPM_CONFIG_CACHE"]
+startup_timeout_sec = 30
+required = true
+
+[mcp_servers.gdrive]
+command = "/Users/bruth/.config/nix/scripts/mcp-gdrive"
+env_vars = ["NPM_CONFIG_CACHE"]
+startup_timeout_sec = 30
+required = true
+
 [projects."/Users/bruth"]
+trust_level = "trusted"
+
+[projects."/Users/bruth/.config/nix"]
 trust_level = "trusted"
