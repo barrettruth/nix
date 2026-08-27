@@ -88,6 +88,8 @@ in
     bazelisk
     bazel-buildtools
     codex
+    kotlin-language-server
+    ktfmt
   ];
 
   environment.variables.CODEX_HOME = codexHome;
