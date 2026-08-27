@@ -16,40 +16,17 @@ vim.diagnostic.config({
     },
 })
 
-vim.lsp.config('*', {
-    on_attach = lsp.on_attach,
+vim.api.nvim_create_autocmd('LspAttach', {
+    callback = function(o)
+        local client = vim.lsp.get_client_by_id(o.data.client_id)
+        if client then
+            lsp.on_attach(client, o.buf)
+        end
+    end,
+    group = vim.api.nvim_create_augroup('ALsp', { clear = true }),
 })
 
--- vim.lsp.config folds every lsp/<server>.lua on the runtimepath with
--- tbl_deep_extend('force'), so an after/lsp override replaces a plugin's
--- on_attach instead of running after it; collect each one and call them all
----@param server string
-local function compose_on_attach(server)
-    local on_attaches = { lsp.on_attach }
-    for _, file in
-        ipairs(
-            vim.api.nvim_get_runtime_file(('lsp/%s.lua'):format(server), true)
-        )
-    do
-        local on_attach = assert(loadfile(file))().on_attach
-        if on_attach then
-            on_attaches[#on_attaches + 1] = on_attach
-        end
-    end
-    if #on_attaches == 1 then
-        return
-    end
-
-    vim.lsp.config(server, {
-        on_attach = function(client, bufnr)
-            for _, on_attach in ipairs(on_attaches) do
-                on_attach(client, bufnr)
-            end
-        end,
-    })
-end
-
-local enabled = {
+vim.lsp.enable({
     'bashls',
     'basedpyright',
     'bazel_ls',
@@ -69,12 +46,7 @@ local enabled = {
     'ts_query_ls',
     'vimdoc_ls',
     'vtsls',
-}
-
-for _, server in ipairs(enabled) do
-    compose_on_attach(server)
-end
-vim.lsp.enable(enabled)
+})
 
 -- remove duplicate entries from goto defintion list
 -- example: https://github.com/LuaLS/lua-language-server/issues/2451
