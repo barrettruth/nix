@@ -24,7 +24,7 @@ end
 ---@return { ext: string, solve: string }?
 ---@return string
 local function default_language()
-    local name = (vim.g.cp or {}).language or 'python'
+    local name = (vim.g.cp or {}).language
     return languages[name], tostring(name)
 end
 
