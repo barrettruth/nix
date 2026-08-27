@@ -63,6 +63,10 @@ local function control(host)
         ('ControlPath=%s'):format(path),
         '-o',
         'ControlPersist=yes',
+        '-o',
+        'ServerAliveInterval=30',
+        '-o',
+        'ServerAliveCountMax=3',
     }
 end
 
