@@ -38,6 +38,7 @@ vim.lsp.enable({
     'nixd',
     'mdx_analyzer',
     'jsonls',
+    'kotlin_language_server',
     'lua_ls',
     'ocamllsp',
     'ruff',

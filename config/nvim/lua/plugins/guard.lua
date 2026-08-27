@@ -97,6 +97,13 @@ return {
                 stdin = true,
             })
         end
+        if vim.fn.executable('ktfmt') == 1 then
+            ft('kotlin'):fmt({
+                cmd = 'ktfmt',
+                args = { '--kotlinlang-style', '-' },
+                stdin = true,
+            })
+        end
 
         local lint = require('guard.lint')
 
