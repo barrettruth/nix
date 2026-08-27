@@ -7,15 +7,16 @@ local applying = false
 
 ---@return integer
 local function usable()
-    local top, bottom = vim.o.lines, 0
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if vim.api.nvim_win_get_config(win).relative == '' then
-            local row = vim.api.nvim_win_get_position(win)[1]
-            top = math.min(top, row)
-            bottom = math.max(bottom, row + vim.api.nvim_win_get_height(win))
-        end
-    end
-    return math.max(1, bottom - top)
+    local tabline = vim.o.showtabline == 2
+        or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
+
+    return math.max(
+        1,
+        vim.o.lines
+            - vim.o.cmdheight
+            - (tabline and 1 or 0)
+            - (vim.o.laststatus > 0 and 1 or 0)
+    )
 end
 
 local function capture_ratios()
@@ -24,7 +25,7 @@ local function capture_ratios()
     end
     local rows = usable()
     ratios = {}
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         if vim.api.nvim_win_get_config(win).relative == '' then
             ratios[win] = {
                 vim.api.nvim_win_get_width(win) / cols,
@@ -44,8 +45,9 @@ vim.api.nvim_create_autocmd('VimResized', {
     callback = function()
         applying = true
         local rows = usable()
-        for win, ratio in pairs(ratios) do
-            if vim.api.nvim_win_is_valid(win) then
+        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+            local ratio = ratios[win]
+            if ratio then
                 pcall(
                     vim.api.nvim_win_resize,
                     win,
