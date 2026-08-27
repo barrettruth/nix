@@ -173,7 +173,6 @@ local function reset_output(win, source)
     vim.b[buf].cp_output = true
     vim.b[buf].cp_source = source
     vim.b[buf].term_normal = true
-    vim.b[buf].term_insert = false
     vim.api.nvim_win_set_buf(win, buf)
     vim.api.nvim_win_call(win, function()
         vim.fn.jobstart({ vim.o.shell }, {
