@@ -5,7 +5,6 @@ vim.pack.add({
     'https://github.com/monaqa/dial.nvim',
     'https://github.com/catgoose/nvim-colorizer.lua',
     'https://github.com/echasnovski/mini.pairs',
-    'https://github.com/stevearc/quicker.nvim',
     'https://github.com/tpope/vim-abolish',
     'https://github.com/tpope/vim-apathy',
     'https://github.com/tpope/vim-characterize',
@@ -288,13 +287,6 @@ return {
             })
         end,
         event = 'BufReadPre',
-    },
-    {
-        'stevearc/quicker.nvim',
-        after = function()
-            require('quicker').setup({})
-        end,
-        ft = 'qf',
     },
     { 'tpope/vim-abolish', event = 'DeferredUIEnter' },
     { 'tpope/vim-apathy' },
