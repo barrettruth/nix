@@ -64,11 +64,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787379453,
-        "narHash": "sha256-HajxKrOBXHn8vWusB0f5X9dNktzrQFtc9XaO7fsv/Bo=",
+        "lastModified": 1787682002,
+        "narHash": "sha256-y56hI9HvBPJDFRo2IQuqYy72bYO+lFbvpbfvjp5davQ=",
         "owner": "charliemeyer2000",
         "repo": "devin-cli-overlay",
-        "rev": "29c68ce2d3272aa6922d8cc404b043c8a1fa8e64",
+        "rev": "02f4fc05142cde7f2d28828a393d04867e58cb93",
         "type": "github"
       },
       "original": {
@@ -370,11 +370,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1785944842,
-        "narHash": "sha256-ij38giJJS73LQEowO5ZYFkwmYUNt74JEDzV50AwhLwU=",
+        "lastModified": 1787798363,
+        "narHash": "sha256-ky4zDUWwrEB/65RQBXZrr/HbKLL/idsebpedDB8b6wo=",
         "ref": "main",
-        "rev": "88a88841ae16a2b2f434d21094b221e760f126c4",
-        "revCount": 45,
+        "rev": "4a6a575f57a0a4bd9f55cf3e403e88d78e209412",
+        "revCount": 51,
         "type": "git",
         "url": "https://git.harivan.sh/harivansh-afk/pierrejo.git"
       },
