@@ -355,6 +355,16 @@ local function peers()
     return raw and vim.json.decode(raw) or {}
 end
 
+---@param root string
+---@return mux.Server? peer
+local function peer_for(root)
+    for _, peer in ipairs(peers()) do
+        if peer.root == root then
+            return peer
+        end
+    end
+end
+
 ---@param stdout string?
 ---@param socket string
 ---@return mux.Server? server
@@ -643,6 +653,13 @@ function M.ensure(root, cb)
         return
     end
 
+    local peer = peer_for(root)
+
+    if peer and peer.host then
+        require('mux.remote').ensure(peer.host, root, cb)
+        return
+    end
+
     local paths, perr = paths_for(root)
     if not paths then
         vim.schedule(function()
@@ -902,16 +919,6 @@ function M.label(server)
     local name = vim.fn.fnamemodify(server.root, ':t')
 
     return server.host and ('%s:%s'):format(server.host, name) or name
-end
-
----@param root string
----@return mux.Server? peer
-local function peer_for(root)
-    for _, peer in ipairs(peers()) do
-        if peer.root == root then
-            return peer
-        end
-    end
 end
 
 ---@param server mux.Server
