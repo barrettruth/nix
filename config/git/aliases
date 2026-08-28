@@ -9,7 +9,6 @@
 	cl = clone
 	cp = cherry-pick
 	d = diff
-	dt = difftool
 	f = fetch
 	i = init
 	lg = log --oneline --graph --decorate

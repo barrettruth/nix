@@ -24,23 +24,11 @@
 [color]
 	ui = auto
 
-[diff]
-	tool = codediff
-
-[difftool]
-	prompt = false
-
-[difftool "codediff"]
-	cmd = nvim -c 'CodeDiff' $LOCAL $REMOTE
-
 [merge]
 	tool = diffs-nvim
 
 [mergetool]
 	prompt = false
-
-[mergetool "codediff"]
-	cmd = nvim -c 'CodeDiff' $LOCAL $REMOTE $MERGED
 
 [mergetool "diffs-nvim"]
 	cmd = nvim "$MERGED"
