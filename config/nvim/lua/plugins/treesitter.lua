@@ -31,9 +31,6 @@ vim.api.nvim_create_autocmd('FileType', {
 return {
     {
         'nvim-treesitter/nvim-treesitter-textobjects',
-        before = function()
-            vim.g.no_plugin_maps = true
-        end,
         after = function()
             require('nvim-treesitter-textobjects').setup({
                 select = {

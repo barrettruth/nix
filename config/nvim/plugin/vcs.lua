@@ -7,11 +7,6 @@ require('gitsigns').setup({
     signcolumn = false,
     signs_staged_enable = false,
     current_line_blame = false,
-    on_attach = function(buf)
-        vim.keymap.set('n', 'Un', function()
-            require('gitsigns').blame_line({ full = true })
-        end, { buf = buf, desc = 'preview line blame' })
-    end,
 })
 
 vim.keymap.set('n', '<leader>ig', function()
