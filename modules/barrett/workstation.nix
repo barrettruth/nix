@@ -82,6 +82,9 @@ let
 
   ghosttyConfig = if isDarwin then "${ghosttyDarwinConf}" else "${repo}/config/ghostty/config";
 
+  clangdConfigDir =
+    if isDarwin then "${homeDirectory}/Library/Preferences/clangd" else "${XDG_CONFIG_HOME}/clangd";
+
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
@@ -297,7 +300,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
-            ${mkDir "${XDG_CONFIG_HOME}/clangd"}
+            ${mkDir clangdConfigDir}
             ${mkDir "${XDG_DATA_HOME}/nvim/site"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
             ${mkPrivateDir "${homeDirectory}/.ssh/config.d"}
@@ -322,7 +325,7 @@ let
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
             ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
             ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
-            ${mkSymlink "${repo}/config/clangd/config.yaml" "${XDG_CONFIG_HOME}/clangd/config.yaml"}
+            ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
             ${mkSymlink "${pkgs.neovim.treesitter}/queries" "${XDG_DATA_HOME}/nvim/site/queries"}
         ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
@@ -478,7 +481,6 @@ in
             shfmt
             stylua
             checkmake
-            cpplint
             eslint_d
             hadolint
             mypy

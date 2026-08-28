@@ -9,6 +9,9 @@ return {
         '--header-insertion=iwyu',
         '--header-insertion-decorators=false',
     },
+    init_options = {
+        fallbackFlags = { '-std=c++23' },
+    },
     capabilities = {
         textDocument = {
             completion = {

@@ -2,7 +2,6 @@ If:
   PathMatch: .*/dev/cp/.*
 CompileFlags:
   Add:
-    - -std=c++23
     - -O2
     - -Wall
     - -Wextra
