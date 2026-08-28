@@ -147,6 +147,22 @@ let
     g = ["git"]
     d = ["describe"]
     rb = ["rebase"]
+    acp = ["util", "exec", "--", "sh", "-c", 'jj commit -m "$*" && jj up', ""]
+    c = ["commit"]
+    cf = ["config"]
+    ch = ["edit"]
+    cl = ["git", "clone"]
+    cp = ["duplicate"]
+    f = ["git", "fetch"]
+    i = ["git", "init"]
+    lg = ["log"]
+    m = ["new"]
+    p = ["sync"]
+    pu = ["git", "push"]
+    r = ["git", "remote"]
+    sw = ["edit"]
+    t = ["tag"]
+    wt = ["workspace"]
   '';
 
   personalGitConf = pkgs.writeText "git-personal" ''
