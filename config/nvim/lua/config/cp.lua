@@ -1,7 +1,6 @@
 local M = {}
 
 M.root = vim.fs.normalize('~/dev/cp')
-M.root_pattern = '^' .. vim.pesc(M.root) .. '/'
 
 local languages = {
     cpp = { ext = '.cc', solve = '^%s*void%s+solve%(%).*{%s*$' },
