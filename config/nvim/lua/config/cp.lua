@@ -8,6 +8,8 @@ local languages = {
     python = { ext = '.py', solve = '^%s*def%s+solve%(%).*:%s*$' },
 }
 
+local MODES = { 'run', 'debug', 'judge' }
+
 local RATIO = 0.35
 local CLEAR_POLL_MS = 10
 local CLEAR_TIMEOUT_MS = 500
@@ -359,7 +361,7 @@ local function normalize_problem(problem, lang)
 end
 
 local function complete_problem(arg_lead)
-    local items = { 'run', 'debug' }
+    local items = vim.list_extend({}, MODES)
     local lang = default_language()
     if lang then
         for _, file in ipairs(vim.fn.glob('*' .. lang.ext, false, true)) do
@@ -539,7 +541,7 @@ function M.open_url(kind)
     end
 end
 
----@param mode 'run'|'debug'
+---@param mode 'run'|'debug'|'judge'
 function M.run(mode)
     local source = resolve_source()
     if not source then
@@ -625,7 +627,7 @@ function M.setup()
 
     vim.api.nvim_create_user_command('CP', function(opts)
         local arg = opts.args == '' and 'run' or opts.args
-        if arg == 'run' or arg == 'debug' then
+        if vim.tbl_contains(MODES, arg) then
             M.run(arg)
         else
             M.open_problem(arg)
@@ -636,16 +638,15 @@ function M.setup()
             return complete_problem(arg_lead)
         end,
     })
-    vim.keymap.set('n', '<leader>r', function()
-        M.run('run')
-    end, { desc = 'run CP problem' })
-    vim.keymap.set('n', '<leader>d', function()
-        M.run('debug')
-    end, { desc = 'debug CP problem' })
-    vim.keymap.set('n', 'gX', function()
+    for _, mode in ipairs(MODES) do
+        vim.keymap.set('n', '<Plug>(cp-' .. mode .. ')', function()
+            M.run(mode)
+        end, { desc = mode .. ' CP problem' })
+    end
+    vim.keymap.set('n', '<Plug>(cp-problem)', function()
         M.open_url('problem')
     end, { desc = 'open CP problem' })
-    vim.keymap.set('n', 'gS', function()
+    vim.keymap.set('n', '<Plug>(cp-submit)', function()
         M.open_url('submit')
     end, { desc = 'open CP submission' })
 end
