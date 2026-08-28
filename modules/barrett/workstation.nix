@@ -132,13 +132,6 @@ let
     "top()" = "heads(stack())"
 
     [aliases]
-    stack = ["log", "-r", "stack()"]
-    s = ["stack"]
-    sdiff = ["diff", "--from", "trunk()", "--to", "top()"]
-    sd = ["sdiff"]
-    spatch = ["log", "-r", "stack()", "-p"]
-    sp = ["spatch"]
-    hist = ["log", "-r", "::trunk() ~ root()"]
     h = ["hist"]
     restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
     rs = ["restack"]
@@ -150,22 +143,12 @@ let
     g = ["git"]
     d = ["describe"]
     rb = ["rebase"]
-    acp = ["util", "exec", "--", "sh", "-c", 'jj commit -m "$*" && jj up', ""]
     c = ["commit"]
     cf = ["config"]
-    ch = ["edit"]
-    cl = ["git", "clone"]
     cp = ["duplicate"]
-    f = ["git", "fetch"]
-    i = ["git", "init"]
     lg = ["log"]
-    m = ["new"]
-    p = ["sync"]
-    pu = ["git", "push"]
-    r = ["git", "remote"]
-    sw = ["edit"]
     t = ["tag"]
-    wt = ["workspace"]
+    ws = ["workspace"]
   '';
 
   personalGitConf = pkgs.writeText "git-personal" ''
