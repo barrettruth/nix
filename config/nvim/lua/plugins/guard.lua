@@ -82,12 +82,6 @@ return {
         if vim.fn.executable('checkmake') == 1 then
             ft('make'):lint('checkmake')
         end
-        if vim.fn.executable('cpplint') == 1 then
-            local cpplint =
-                vim.deepcopy(require('guard-collection.linter.cpplint'))
-            cpplint.ignore_patterns = require('config.cp').root_pattern
-            ft('cpp'):lint(cpplint)
-        end
 
         if vim.fn.executable('buildifier') == 1 then
             ft('bzl'):fmt({
