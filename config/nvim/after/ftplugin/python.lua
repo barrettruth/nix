@@ -6,5 +6,6 @@ vim.bo.errorformat = table.concat({
     [[%A  File "%f"\, line %l%.%#]],
     [[%C %.%#]],
     [[%Z%[%^ ]%\@=%m]],
+    [[%-G%.%#]],
 }, ',')
 vim.b.run = 'python3 %:S'

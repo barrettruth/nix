@@ -2,15 +2,17 @@ local M = {}
 
 local RATIO = 0.35
 
+---@type vim.SystemObj?
+local building = nil
+
 ---@param msg string
----@param level? integer
-local function notify(msg, level)
-    vim.notify('[run]: ' .. msg, level or vim.log.levels.INFO)
+local function log(msg)
+    vim.api.nvim_echo({ { 'run: ' .. msg } }, true, {})
 end
 
----@return integer
-local function width()
-    return math.floor(vim.o.columns * RATIO)
+---@param msg string
+local function fail(msg)
+    vim.notify('run: ' .. msg, vim.log.levels.ERROR)
 end
 
 ---@return integer?
@@ -28,34 +30,20 @@ end
 ---@param title string
 ---@param lines string[]
 ---@param efm string
----@param code integer
-local function report(title, lines, efm, code)
-    if #lines == 0 then
-        notify(('exited %d'):format(code), vim.log.levels.ERROR)
-        return
+---@return integer count
+local function report(title, lines, efm)
+    local items = vim.fn.getqflist({ lines = lines, efm = efm }).items
+    if #items == 0 then
+        return 0
     end
 
-    vim.fn.setqflist({}, ' ', {
-        title = title,
-        items = vim.fn.getqflist({ lines = lines, efm = efm }).items,
-    })
-
+    vim.fn.setqflist({}, ' ', { title = title, items = items })
     local saved = vim.api.nvim_get_current_win()
-    local out = output_win()
-    if out then
-        vim.api.nvim_set_current_win(out)
-        vim.cmd(
-            ('belowright copen %d'):format(
-                math.floor(vim.api.nvim_win_get_height(out) * RATIO)
-            )
-        )
-    else
-        vim.cmd(('botright vertical %d copen'):format(width()))
-        vim.wo.winfixwidth = true
-    end
+    vim.cmd('botright copen')
     if vim.api.nvim_win_is_valid(saved) then
         vim.api.nvim_set_current_win(saved)
     end
+    return #items
 end
 
 ---@param cmd string
@@ -66,7 +54,11 @@ local function terminal(cmd, efm)
     if win then
         vim.api.nvim_set_current_win(win)
     else
-        vim.cmd(('botright vertical %d split'):format(width()))
+        vim.cmd(
+            ('botright vertical %d split'):format(
+                math.floor(vim.o.columns * RATIO)
+            )
+        )
         win = vim.api.nvim_get_current_win()
         vim.wo[win].winfixwidth = true
     end
@@ -74,18 +66,22 @@ local function terminal(cmd, efm)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].bufhidden = 'wipe'
     vim.b[buf].run_output = true
+    vim.b[buf].term_normal = true
     vim.api.nvim_win_set_buf(win, buf)
 
     local errors = vim.fn.tempname()
+    log('running...')
     vim.fn.jobstart(('%s 2> %s'):format(cmd, vim.fn.shellescape(errors)), {
         term = true,
         on_exit = function(_, code)
             vim.schedule(function()
-                local lines = vim.fn.readfile(errors)
-                vim.fn.delete(errors)
-                if code ~= 0 then
-                    report(cmd, lines, efm, code)
+                if vim.api.nvim_buf_is_valid(buf) then
+                    if code ~= 0 then
+                        report(cmd, vim.fn.readfile(errors), efm)
+                    end
+                    log(('exit %d'):format(code))
                 end
+                vim.fn.delete(errors)
             end)
         end,
     })
@@ -95,59 +91,94 @@ local function terminal(cmd, efm)
     end
 end
 
----@param args string
-function M.run(args)
-    local buf = vim.api.nvim_get_current_buf()
-    local cmd = vim.b[buf].run
-    if not cmd then
-        local ft = vim.bo[buf].filetype
-        notify(
-            'no runner for ' .. (ft ~= '' and ft or 'this buffer'),
-            vim.log.levels.ERROR
-        )
-        return
-    end
-
-    vim.cmd.update()
-
+---@param buf integer
+local function launch(buf)
     local efm = vim.bo[buf].errorformat
-    local run = vim.trim(vim.fn.expandcmd(cmd) .. ' ' .. args)
-    local build = vim.bo[buf].makeprg ~= ''
-        and vim.fn.expandcmd(vim.bo[buf].makeprg)
+    local run, build
+    vim.api.nvim_buf_call(buf, function()
+        run = vim.fn.expandcmd(vim.b[buf].run)
+        build = vim.bo.makeprg ~= '' and vim.fn.expandcmd(vim.bo.makeprg)
+    end)
 
-    if not build then
+    local function start()
         vim.cmd.cclose()
         terminal(run, efm)
-        return
     end
 
-    vim.system(
-        { vim.o.shell, vim.o.shellcmdflag, build },
+    if not build then
+        return start()
+    end
+
+    log('building...')
+    local job
+    job = vim.system(
+        { vim.o.shell, vim.o.shellcmdflag, 'exec ' .. build },
         { text = true },
         function(out)
             vim.schedule(function()
-                if out.code == 0 then
-                    vim.cmd.cclose()
-                    terminal(run, efm)
+                if building ~= job then
                     return
                 end
+                building = nil
+
+                if out.code == 0 then
+                    return start()
+                end
+
                 local lines =
                     vim.split((out.stdout or '') .. (out.stderr or ''), '\n', {
                         trimempty = true,
                     })
-                report(build, lines, efm, out.code)
+                local count = report(build, lines, efm)
+                if count == 0 then
+                    fail(('build exited %d'):format(out.code))
+                else
+                    log(
+                        ('build failed, %d error%s'):format(
+                            count,
+                            count == 1 and '' or 's'
+                        )
+                    )
+                end
             end)
         end
     )
+    building = job
+end
+
+---@param buf? integer
+function M.run(buf)
+    buf = buf or vim.api.nvim_get_current_buf()
+    if not vim.b[buf].run then
+        local ft = vim.bo[buf].filetype
+        fail('no runner for ' .. (ft ~= '' and ft or 'this buffer'))
+        return
+    end
+    if vim.bo[buf].modified then
+        return vim.api.nvim_buf_call(buf, vim.cmd.write)
+    end
+
+    if building then
+        building:kill('sigterm')
+        building = nil
+    end
+    launch(buf)
 end
 
 function M.setup()
-    vim.api.nvim_create_user_command('Run', function(opts)
-        M.run(opts.args)
-    end, { nargs = '*', desc = 'build and run the current file' })
+    vim.api.nvim_create_autocmd('BufWritePost', {
+        group = vim.api.nvim_create_augroup('Run', { clear = true }),
+        callback = function(args)
+            if vim.b[args.buf].run then
+                vim.schedule(function()
+                    M.run(args.buf)
+                end)
+            end
+        end,
+    })
 
     vim.keymap.set('n', '<Plug>(run)', function()
-        M.run('')
+        M.run()
     end, { desc = 'build and run the current file' })
 end
 

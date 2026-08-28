@@ -4,6 +4,7 @@ if vim.bo.buftype ~= '' or vim.fn.expand('%:t:r') == '' then
     return
 end
 
+vim.g.compiler_gcc_ignore_unmatched_lines = true
 vim.cmd.compiler('gcc')
 
 local binary = vim.fn.shellescape(
@@ -20,6 +21,7 @@ vim.bo.makeprg = table.concat({
     '-Wextra',
     '-g',
     '-fdiagnostics-color=never',
+    '-fno-diagnostics-show-caret',
     '-o',
     binary,
     '%:S',

@@ -317,6 +317,7 @@ return {
                 file = { suffix = '' },
                 indent = { suffix = '' },
                 treesitter = { suffix = '' },
+                undo = { suffix = '' },
             })
         end,
         event = 'DeferredUIEnter',
