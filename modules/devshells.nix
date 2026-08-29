@@ -1,7 +1,7 @@
-{ ... }:
+{ inputs, ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, system, ... }:
     let
       commonPackages = [
         pkgs.just
@@ -42,6 +42,7 @@
             pkgs.selene
             pkgs.stylua
             pkgs.lua-language-server
+            inputs.vimdoc-language-server.packages.${system}.default
           ];
         };
         neovim-src = pkgs.mkShell {

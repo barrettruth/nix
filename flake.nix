@@ -32,6 +32,10 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    vimdoc-language-server = {
+      url = "github:barrettruth/vimdoc-language-server";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

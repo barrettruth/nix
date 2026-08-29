@@ -80,10 +80,10 @@ let
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
-  agentPackages = [
-    pkgs.devin-cli
-    pkgs.mcp-gdrive
-  ];
+  isImc = isDarwin && config.networking.hostName == "imc";
+
+  agentPackages =
+    lib.optionals (!isImc) [ pkgs.devin-cli ] ++ lib.optionals isImc [ pkgs.mcp-gdrive ];
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
@@ -209,13 +209,6 @@ let
 
   sshConf = pkgs.writeText "ssh-host-config" config.barrett.user.extraSshConfig;
 
-  awsConf = pkgs.writeText "aws-config" ''
-    [default]
-    [profile barrett]
-    region = us-east-2
-    output = json
-  '';
-
   isLinux = !isDarwin;
 
   sessionVariables = {
@@ -256,7 +249,6 @@ let
     PRETTIERD_CONFIG_HOME = "${XDG_STATE_HOME}/prettierd";
     RIPGREP_CONFIG_PATH = "${XDG_CONFIG_HOME}/rg/config";
     CARGO_HOME = "${XDG_DATA_HOME}/cargo";
-    RUSTUP_HOME = "${XDG_DATA_HOME}/rustup";
     GOPATH = "${XDG_DATA_HOME}/go";
     GOMODCACHE = "${XDG_CACHE_HOME}/go/mod";
     NPM_CONFIG_USERCONFIG = "${XDG_CONFIG_HOME}/npm/npmrc";
@@ -275,15 +267,11 @@ let
     JUPYTER_PLATFORM_DIRS = "1";
     OPAMROOT = "${XDG_DATA_HOME}/opam";
     DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
-    DEVIN_PERMISSION_MODE = "dangerous";
-    AWS_SHARED_CREDENTIALS_FILE = "${XDG_CONFIG_HOME}/aws/credentials";
-    AWS_CONFIG_FILE = "${XDG_CONFIG_HOME}/aws/config";
-    BOTO_CONFIG = "${XDG_CONFIG_HOME}/boto/config";
     PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
     SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
   }
-  // lib.optionalAttrs isDarwin {
-    CODEX_HOME = "${XDG_CONFIG_HOME}/codex";
+  // lib.optionalAttrs (!isImc) {
+    DEVIN_PERMISSION_MODE = "dangerous";
   };
 
   activationText = ''
@@ -321,8 +309,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/luarocks"}
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
-            ${mkDir "${XDG_CONFIG_HOME}/devin"}
-            ${lib.optionalString isDarwin (mkDir "${XDG_CONFIG_HOME}/codex")}
+            ${lib.optionalString (!isImc) (mkDir "${XDG_CONFIG_HOME}/devin")}
             ${mkDir clangdConfigDir}
             ${mkDir "${XDG_DATA_HOME}/nvim/site"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
@@ -346,24 +333,23 @@ let
             ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
             ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
-            ${lib.optionalString isDarwin (
-              mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml"
-            )}
-            devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
-            devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
-            trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
-            if [ -f "$devinConfigPath" ]; then
-              ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$devinConfigPath" "${devinConfig}" > "$devinConfigTmp"
-            else
-              ${pkgs.coreutils}/bin/cp "${devinConfig}" "$devinConfigTmp"
-            fi
-            if [ -L "$devinConfigPath" ]; then
-              ${runAsUser} ${pkgs.coreutils}/bin/unlink "$devinConfigPath"
-            fi
-            ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g ${act.group} "$devinConfigTmp" "$devinConfigPath"
-            ${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"
-            trap - EXIT
-            ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
+            ${lib.optionalString (!isImc) ''
+              devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
+              devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
+              trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
+              if [ -f "$devinConfigPath" ]; then
+                ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$devinConfigPath" "${devinConfig}" > "$devinConfigTmp"
+              else
+                ${pkgs.coreutils}/bin/cp "${devinConfig}" "$devinConfigTmp"
+              fi
+              if [ -L "$devinConfigPath" ]; then
+                ${runAsUser} ${pkgs.coreutils}/bin/unlink "$devinConfigPath"
+              fi
+              ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g ${act.group} "$devinConfigTmp" "$devinConfigPath"
+              ${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"
+              trap - EXIT
+              ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
+            ''}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
             ${mkSymlink "${pkgs.neovim.treesitter}/queries" "${XDG_DATA_HOME}/nvim/site/queries"}
@@ -391,8 +377,6 @@ let
               done
             '') agentSkillDirs}
 
-            ${mkDir "${XDG_CONFIG_HOME}/aws"}
-            ${mkSymlink "${awsConf}" "${XDG_CONFIG_HOME}/aws/config"}
   '';
 
   direnvCachePrune = pkgs.writeShellScript "direnv-cache-prune" ''
@@ -471,8 +455,6 @@ in
       {
         users.users.${username}.packages =
           (with pkgs; [
-            awscli2
-            google-cloud-sdk
             tree
             typos
             jq
@@ -482,11 +464,6 @@ in
             gnumake
             just
             file
-            rustc
-            cargo
-            clippy
-            rustfmt
-            rust-analyzer
             uv
             python3
             bash-language-server
@@ -550,9 +527,6 @@ in
           export __NIX_SET_ENVIRONMENT_SYSTEM="$(readlink /run/current-system)"
           export PATH="${scriptsPath}:${homeDirectory}/.local/bin:$PATH"
           export PATH="${XDG_DATA_HOME}/cargo/bin:${XDG_DATA_HOME}/go/bin:${XDG_DATA_HOME}/pnpm:$PATH"
-          if [ -z "''${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json" ]; then
-            export GOOGLE_APPLICATION_CREDENTIALS="${XDG_CONFIG_HOME}/gcloud/application_default_credentials.json"
-          fi
         '';
 
         programs.zsh.enable = true;
