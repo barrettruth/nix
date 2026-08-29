@@ -33,18 +33,14 @@
         ci = pkgs.mkShell {
           packages = commonPackages ++ [ pkgs.neovim-unwrapped ];
         };
-        neovim = pkgs.mkShell {
+        neovim = pkgs.mkShellNoCC {
           packages = [
+            pkgs.just
             pkgs.prettier
-            pkgs.stylua
-            pkgs.ts_query_ls
+            pkgs.prettierd
             pkgs.selene
+            pkgs.stylua
             pkgs.lua-language-server
-            pkgs.vimdoc-language-server
-            (pkgs.luajit.withPackages (ps: [
-              ps.busted
-              ps.nlua
-            ]))
           ];
         };
         neovim-src = pkgs.mkShell {

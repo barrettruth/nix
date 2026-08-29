@@ -166,8 +166,6 @@ in
     bazelisk
     bazel-buildtools
     codex
-    kotlin-language-server
-    ktfmt
   ];
 
   nix.settings.ssl-cert-file = imcCaBundle;
