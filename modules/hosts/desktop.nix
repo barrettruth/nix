@@ -15,7 +15,6 @@ in
 {
   flake.nixosConfigurations.desktop = inputs.nixpkgs.lib.nixosSystem {
     modules = [
-      inputs.determinate.nixosModules.default
       inputs.disko.nixosModules.disko
       ../../hosts/desktop/configuration.nix
       ../nixos/barrett
@@ -25,7 +24,7 @@ in
       ../nixos/common/sops.nix
       ../nixos/common/tailscale.nix
       (
-        { pkgs, ... }:
+        { ... }:
         {
           barrett.workstation.enable = true;
           barrett.ui.enable = false;

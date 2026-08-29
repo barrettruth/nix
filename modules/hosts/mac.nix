@@ -15,7 +15,6 @@ in
 {
   flake.darwinConfigurations.mac = inputs.nix-darwin.lib.darwinSystem {
     modules = [
-      inputs.determinate.darwinModules.default
       ../darwin/common/activation.nix
       ../darwin/common/nix.nix
       ../darwin/common/sops.nix

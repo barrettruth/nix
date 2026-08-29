@@ -15,7 +15,6 @@ in
 {
   flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
     modules = [
-      inputs.determinate.nixosModules.default
       inputs.nixos-hardware.nixosModules.dell-xps-15-9500-nvidia
       ../../hosts/laptop/configuration.nix
       ../nixos/barrett
@@ -25,7 +24,7 @@ in
       ../nixos/common/sops.nix
       ../nixos/common/tailscale.nix
       (
-        { pkgs, ... }:
+        { ... }:
         {
           barrett.workstation.enable = true;
           barrett.ui.enable = true;
