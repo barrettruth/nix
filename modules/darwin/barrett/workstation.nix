@@ -270,13 +270,10 @@ in
         lalt + shift - 0x2B : ${aerospace} move-node-to-monitor prev
         lalt + shift - 0x2F : ${aerospace} move-node-to-monitor next
 
-        lalt - tab : ${aerospace} workspace-back-and-forth
         lalt + shift - r : ${aerospace} flatten-workspace-tree
 
         ${aerospaceBindings}
 
-        lalt + shift - tab : ${pkgs.skhd}/bin/skhd -k "cmd + shift - tab"
-        lalt - 0x32 : ${pkgs.skhd}/bin/skhd -k "cmd - 0x32"
         lalt - q : ${aerospace} close
         lalt + shift - q : ${pkgs.skhd}/bin/skhd -k "cmd - q"
       '';
