@@ -171,8 +171,6 @@ in
   security.rtkit.enable = true;
 
   environment.systemPackages = with pkgs; [
-    wget
-    git
     dash
     cloudflared
     ntfs3g

@@ -416,20 +416,7 @@ in
       lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
       ++ (with pkgs; [
         trex
-        curl
-        fd
-        fzf
-        eza
-        zoxide
         ghostty
-        git
-        gh
-        jq
-        just
-        neovim
-        ripgrep
-        tree
-        wget
       ]);
   };
 }

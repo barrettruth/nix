@@ -182,7 +182,6 @@ in
       shell = lib.mkDefault pkgs.zsh;
       packages =
         (with pkgs; [
-          dconf
           hyprpaper
           waybar
           fuzzel
