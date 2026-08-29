@@ -15,6 +15,13 @@ local function fail(msg)
     vim.notify('run: ' .. msg, vim.log.levels.ERROR)
 end
 
+---@param buf integer
+---@return string
+local function no_runner(buf)
+    local ft = vim.bo[buf].filetype
+    return 'no runner for ' .. (ft ~= '' and ft or 'this buffer')
+end
+
 ---@return integer?
 local function output_win()
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
@@ -101,6 +108,9 @@ local function launch(buf)
     end)
 
     local function start()
+        if not vim.api.nvim_buf_is_valid(buf) or not vim.b[buf].run then
+            return
+        end
         vim.cmd.cclose()
         terminal(run, efm)
     end
@@ -150,8 +160,7 @@ end
 function M.run(buf)
     buf = buf or vim.api.nvim_get_current_buf()
     if not vim.b[buf].run then
-        local ft = vim.bo[buf].filetype
-        fail('no runner for ' .. (ft ~= '' and ft or 'this buffer'))
+        fail(no_runner(buf))
         return
     end
     if vim.bo[buf].modified then
@@ -163,6 +172,17 @@ function M.run(buf)
         building = nil
     end
     launch(buf)
+end
+
+---@param buf? integer
+function M.disable(buf)
+    buf = buf or vim.api.nvim_get_current_buf()
+    if not vim.b[buf].run then
+        log(no_runner(buf))
+        return
+    end
+    vim.b[buf].run = nil
+    log('disabled')
 end
 
 function M.setup()
@@ -180,6 +200,9 @@ function M.setup()
     vim.keymap.set('n', '<Plug>(run)', function()
         M.run()
     end, { desc = 'build and run the current file' })
+    vim.keymap.set('n', '<Plug>(run-disable)', function()
+        M.disable()
+    end, { desc = 'disable the runner for the current file' })
 end
 
 return M
