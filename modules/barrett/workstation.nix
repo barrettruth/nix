@@ -484,22 +484,14 @@ in
             rust-analyzer
             uv
             python3
-            ocaml
-            dune
-            ocamlformat
-            ocamlPackages.ocaml-lsp
-            ocamlPackages.utop
-            ocamlPackages.odoc
             bash-language-server
             basedpyright
             clang-tools
             gcc
             emmet-language-server
             mdx-language-server
-            pandoc
             ruff
             tailwindcss-language-server
-            tinymist
             vtsls
             vscode-langservers-extracted
             nixd
@@ -523,8 +515,6 @@ in
             tea
             git-lfs
             git-filter-repo
-            typst
-            typstyle
             glab
             direnv
             nix-direnv
