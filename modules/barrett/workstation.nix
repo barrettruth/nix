@@ -468,7 +468,6 @@ in
             clang-tools
             gcc
             gdb
-            emmet-language-server
             vscode-langservers-extracted
             prettier
             shfmt
