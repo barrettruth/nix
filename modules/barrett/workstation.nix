@@ -477,7 +477,6 @@ in
             gnumake
             just
             file
-            luarocks
             rustc
             cargo
             clippy
@@ -496,7 +495,6 @@ in
             clang-tools
             gcc
             emmet-language-server
-            lua-language-server
             mdx-language-server
             pandoc
             ruff
@@ -512,21 +510,16 @@ in
             prettier
             prettierd
             shfmt
-            stylua
             checkmake
             eslint_d
             hadolint
             mypy
             ty
-            selene
             shellcheck
             deadnix
             statix
             nodejs
             bun
-            lua
-            tree-sitter
-            ts_query_ls
             nixfmt-tree
             tea
             git-lfs
