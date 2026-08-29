@@ -26,7 +26,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
     group = vim.api.nvim_create_augroup('ALsp', { clear = true }),
 })
 
-vim.lsp.enable({
+local servers = {
     'bashls',
     'basedpyright',
     'bazel_ls',
@@ -46,7 +46,22 @@ vim.lsp.enable({
     'ts_query_ls',
     'vimdoc_ls',
     'vtsls',
-})
+}
+
+local available = vim.iter(servers)
+    :filter(function(name)
+        local cmd = vim.lsp.config[name].cmd
+        if type(cmd) == 'function' then
+            return true
+        end
+
+        return type(cmd) == 'table'
+            and type(cmd[1]) == 'string'
+            and vim.fn.executable(cmd[1]) == 1
+    end)
+    :totable()
+
+vim.lsp.enable(available)
 
 -- remove duplicate entries from goto definition list
 -- example: https://github.com/LuaLS/lua-language-server/issues/2451
