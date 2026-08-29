@@ -28,11 +28,6 @@ local function listing()
     return table.concat(names, '\n')
 end
 
----@return mux.Server[]
-function M.servers()
-    return server.ordered()
-end
-
 ---@return nil
 local function apply_visibility()
     local file = server.state().runtime_dir .. '/mux-bar'
@@ -97,7 +92,7 @@ end
 ---Refresh cached line state and redraw.
 ---@return nil
 function M.refresh()
-    cached_servers = M.servers()
+    cached_servers = server.ordered()
     M.redraw()
 end
 

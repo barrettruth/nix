@@ -1126,7 +1126,6 @@ end
 
 M.socket_listening = socket_listening
 M.within_sun_path = within_sun_path
-M.ours = ours
 
 M._validate_root = validate_root
 M._paths_for = paths_for
