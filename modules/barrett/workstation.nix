@@ -211,6 +211,17 @@ let
 
   isLinux = !isDarwin;
 
+  clangCli = pkgs.linkFarm "clang-cli" [
+    {
+      name = "bin/clang";
+      path = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
+    }
+    {
+      name = "bin/clang++";
+      path = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang++";
+    }
+  ];
+
   sessionVariables = {
     inherit
       XDG_CONFIG_HOME
@@ -465,7 +476,7 @@ in
             uv
             python3
             bash-language-server
-            clang-tools
+            clangCli
             gcc
             gdb
             vscode-langservers-extracted
@@ -491,7 +502,6 @@ in
             git
             neovim
             openssl
-            socat
             zsh-syntax-highlighting
             zsh-autosuggestions
           ])
@@ -504,7 +514,10 @@ in
             ]
           )
           ++ lib.optionals (isLinux && hasDisplay) [ pkgs.xdg-utils ]
-          ++ lib.optionals isLinux [ pkgs.psmisc ]
+          ++ lib.optionals isLinux [
+            pkgs.psmisc
+            pkgs.socat
+          ]
           ++ agentPackages;
 
         environment.extraInit = ''

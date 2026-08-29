@@ -415,7 +415,6 @@ in
     environment.systemPackages =
       lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
       ++ (with pkgs; [
-        age
         trex
         curl
         fd
@@ -429,8 +428,6 @@ in
         just
         neovim
         ripgrep
-        sops
-        ssh-to-age
         tree
         wget
       ]);
