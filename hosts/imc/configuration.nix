@@ -39,6 +39,11 @@ let
 
     sqlite_home = "${homeDirectory}/.local/state/codex";
 
+    projects = {
+      "${homeDirectory}".trust_level = "trusted";
+      "${repo}".trust_level = "trusted";
+    };
+
     mcp_servers = {
       gcalendar = {
         command = "npx";
@@ -199,7 +204,11 @@ in
 
       ${act.installDirMode "0700" codexHome}
       ${act.installDirMode "0755" "${homeDirectory}/.local/state/codex"}
-      ${act.mkSymlink codexConfig "${codexHome}/config.toml"}
+      if [ -L "${codexHome}/config.toml" ]; then
+        ${act.runAsUser} ${pkgs.coreutils}/bin/unlink "${codexHome}/config.toml"
+      fi
+      ${pkgs.coreutils}/bin/install -m 0600 -o ${config.barrett.user.name} -g ${act.group} \
+        "${codexConfig}" "${codexHome}/config.toml"
       ${act.mkSymlink "${repo}/config/agents/AGENTS.md" "${codexHome}/AGENTS.md"}
     '';
 
