@@ -53,7 +53,18 @@ end
 local function retire_session()
     local server = require('mux.server')
     local state = server.state()
-    local last = state.last_root
+    local targets = {}
+
+    for _, entry in ipairs(server.ordered()) do
+        if state.server and entry.root ~= state.server.root then
+            if entry.root == state.last_root then
+                table.insert(targets, 1, entry)
+            else
+                targets[#targets + 1] = entry
+            end
+        end
+    end
+
     local ok, err = require('mux.session').delete()
 
     if not ok then
@@ -64,19 +75,32 @@ local function retire_session()
         vim.fn.serverstop(state.server.socket)
     end
 
-    local function exit(connected)
-        if not connected and #vim.api.nvim_list_uis() > 0 then
+    local function exit(detach)
+        if detach and #vim.api.nvim_list_uis() > 0 then
             vim.cmd.detach()
         end
 
         vim.cmd.qall({ bang = true })
     end
 
-    if last then
-        server.connect(last, exit, true)
-    else
-        exit()
+    local function handoff(index)
+        local target = targets[index]
+
+        if not target then
+            exit(true)
+            return
+        end
+
+        server.switch(target, function(connected)
+            if connected then
+                exit(false)
+            else
+                handoff(index + 1)
+            end
+        end, true)
     end
+
+    handoff(1)
 
     return true
 end

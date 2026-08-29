@@ -30,12 +30,7 @@ end
 
 ---@return mux.Server[]
 function M.servers()
-    local servers = server.list()
-    table.sort(servers, function(a, b)
-        return a.root < b.root
-    end)
-
-    return servers
+    return server.ordered()
 end
 
 ---@return nil
