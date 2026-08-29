@@ -9,17 +9,15 @@ local dev_plugins = {
 local function current_colorscheme()
     local state_home = vim.env.XDG_STATE_HOME
         or (vim.env.HOME and (vim.env.HOME .. '/.local/state'))
+
     if not state_home then
         return 'midnight'
     end
+
     local ok, lines = pcall(vim.fn.readfile, state_home .. '/theme')
     local theme = ok and lines[1] or nil
 
-    if theme == 'daylight' or theme == 'bright' or theme == 'light' then
-        return 'daylight'
-    end
-
-    return 'midnight'
+    return theme == 'daylight' and 'daylight' or 'midnight'
 end
 
 local opt_dir = vim.fn.stdpath('data') .. '/site/pack/dev/opt/'
@@ -92,12 +90,13 @@ return {
 
             vim.api.nvim_create_autocmd('OptionSet', {
                 pattern = 'background',
-                group = vim.api.nvim_create_augroup('Theme', { clear = true }),
+                group = vim.api.nvim_create_augroup('ATheme', { clear = true }),
                 callback = function()
-                    local want = vim.o.background == 'light' and 'daylight'
+                    local colorscheme = vim.o.background == 'light'
+                            and 'daylight'
                         or 'midnight'
-                    if vim.g.colors_name ~= want then
-                        vim.cmd.colorscheme(want)
+                    if vim.g.colors_name ~= colorscheme then
+                        vim.cmd.colorscheme(colorscheme)
                     end
                 end,
             })

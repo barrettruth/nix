@@ -32,7 +32,6 @@ local servers = {
     'bazel_ls',
     'clangd',
     'cssls',
-    'emmet_language_server',
     'eslint',
     'html',
     'nixd',
@@ -48,7 +47,7 @@ local servers = {
     'vtsls',
 }
 
-local available = vim.iter(servers)
+local available_servers = vim.iter(servers)
     :filter(function(name)
         local cmd = vim.lsp.config[name].cmd
         if type(cmd) == 'function' then
@@ -61,7 +60,7 @@ local available = vim.iter(servers)
     end)
     :totable()
 
-vim.lsp.enable(available)
+vim.lsp.enable(available_servers)
 
 -- remove duplicate entries from goto definition list
 -- example: https://github.com/LuaLS/lua-language-server/issues/2451
