@@ -29,13 +29,6 @@ in
           barrett.workstation.enable = true;
           barrett.ui.enable = false;
           barrett.whisper.enable = true;
-          programs.direnv.enable = true;
-          programs.direnv.enableZshIntegration = false;
-          programs.direnv.nix-direnv.enable = true;
-          programs.direnv.settings.global = {
-            hide_env_diff = true;
-            log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
-          };
           nixpkgs.hostPlatform = platform;
           nixpkgs.overlays = overlays;
           nixpkgs.config.allowUnfreePredicate =

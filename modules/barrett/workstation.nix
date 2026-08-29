@@ -467,7 +467,6 @@ in
           (with pkgs; [
             tree
             jq
-            curl
             wget
             unzip
             gnumake
@@ -488,12 +487,8 @@ in
             git-lfs
             git-filter-repo
             glab
-            direnv
-            nix-direnv
             gh
             jujutsu
-            gnupg
-            pure-prompt
             fzf
             eza
             zoxide
@@ -502,18 +497,17 @@ in
             git
             neovim
             openssl
-            zsh-syntax-highlighting
-            zsh-autosuggestions
           ])
-          ++ [ (if hasDisplay then pkgs.ghostty else pkgs.ghostty.terminfo) ]
+          ++ lib.optional (!isDarwin) (if hasDisplay then pkgs.ghostty else pkgs.ghostty.terminfo)
           ++ lib.optionals isDarwin (
             with pkgs;
             [
               coreutils
               gnused
+              curl
+              direnv
             ]
           )
-          ++ lib.optionals (isLinux && hasDisplay) [ pkgs.xdg-utils ]
           ++ lib.optionals isLinux [
             pkgs.psmisc
             pkgs.socat
@@ -548,6 +542,16 @@ in
         ];
 
         environment.sessionVariables = sessionVariables;
+
+        programs.direnv = {
+          enable = true;
+          enableZshIntegration = false;
+          nix-direnv.enable = true;
+          settings.global = {
+            hide_env_diff = true;
+            log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
+          };
+        };
 
         programs.gnupg.agent.pinentryPackage = pkgs.pinentry-curses;
 
