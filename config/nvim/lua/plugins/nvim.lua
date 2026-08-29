@@ -8,6 +8,7 @@ vim.pack.add({
     'https://github.com/tpope/vim-abolish',
     'https://github.com/tpope/vim-apathy',
     'https://github.com/tpope/vim-characterize',
+    'https://github.com/tpope/vim-eunuch',
     'https://github.com/tpope/vim-repeat',
     'https://github.com/tpope/vim-sleuth',
     'https://github.com/kylechui/nvim-surround',
@@ -291,6 +292,12 @@ return {
     { 'tpope/vim-abolish', event = 'DeferredUIEnter' },
     { 'tpope/vim-apathy' },
     { 'tpope/vim-characterize' },
+    {
+        'tpope/vim-eunuch',
+        before = function()
+            require('config.lz').load('echasnovski/mini.pairs')
+        end,
+    },
     { 'tpope/vim-repeat' },
     { 'tpope/vim-sleuth', event = 'BufReadPost' },
     {

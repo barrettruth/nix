@@ -33,7 +33,7 @@
       "src": "https://github.com/saecki/live-rename.nvim"
     },
     "lz.n": {
-      "rev": "5144815893aab0bae3dc3ed25c24bc6ccf888f87",
+      "rev": "d236f17a6c6afa762e7ebfdb31ead8d224395b1f",
       "src": "https://github.com/lumen-oss/lz.n"
     },
     "mini.ai": {
@@ -57,7 +57,7 @@
       "src": "https://github.com/catgoose/nvim-colorizer.lua"
     },
     "nvim-lspconfig": {
-      "rev": "221c43884319e791519f0d6c94a7f2fbcd653278",
+      "rev": "684cb45c2faa24ce463b4fe9aaf011bfe1e0fb26",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-surround": {
@@ -73,7 +73,7 @@
       "src": "https://github.com/yioneko/nvim-vtsls"
     },
     "rustaceanvim": {
-      "rev": "d1da25b7398831b6bf3c053a7abe955ba9b22cc2",
+      "rev": "791ef71968d542e3764174fac5264da1eac0ccf7",
       "src": "https://github.com/mrcjkb/rustaceanvim"
     },
     "vim-abolish": {
@@ -87,6 +87,10 @@
     "vim-characterize": {
       "rev": "a8bffac6cead6b2869d939ecad06312b187a4c79",
       "src": "https://github.com/tpope/vim-characterize"
+    },
+    "vim-eunuch": {
+      "rev": "929490937745cd96130d3e7948f762f0aa403314",
+      "src": "https://github.com/tpope/vim-eunuch"
     },
     "vim-fugitive": {
       "rev": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
