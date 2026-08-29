@@ -470,19 +470,15 @@ in
             gcc
             emmet-language-server
             mdx-language-server
-            ruff
             tailwindcss-language-server
             vtsls
             vscode-langservers-extracted
-            black
             cmake-format
-            isort
             prettier
             prettierd
             shfmt
             checkmake
             eslint_d
-            ty
             shellcheck
             nodejs
             tea
