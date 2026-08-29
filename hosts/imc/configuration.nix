@@ -96,7 +96,6 @@ let
       vim_mode_default = true;
       status_line = [
         "model-with-reasoning"
-        "current-dir"
         "run-state"
       ];
       status_line_use_colors = true;
