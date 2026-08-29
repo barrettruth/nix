@@ -18,6 +18,11 @@ command = "/nix/store/k07j8cq0iyvna81qlhwxz8xq6pkz02z8-python3-3.14.7/bin/python
 timeout = 5
 type = "command"
 
+[hooks.state]
+
+[hooks.state."/Users/bruth/.config/codex/config.toml:session_start:0:0"]
+trusted_hash = "sha256:2d3868791c42f00f91caf8c8b085a3818daeeac1d9d1b90dfe498c2b1a97d66a"
+
 [mcp_servers.gcalendar]
 command = "npx"
 args = ["-y", "@cocal/google-calendar-mcp@2.6.2", "start"]

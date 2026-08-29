@@ -167,6 +167,7 @@ let
     h = ["hist"]
     restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
     rs = ["restack"]
+    s = ["status"]
     sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack && jj stack"]
     sy = ["sync"]
     up = ["git", "push", "-c", "ready()"]
