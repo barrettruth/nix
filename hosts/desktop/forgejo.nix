@@ -68,37 +68,25 @@ in
       service.HCAPTCHA_SECRET = config.sops.secrets."forgejo-hcaptcha-secret".path;
     };
     settings = {
-      DEFAULT = {
-        APP_NAME = identity.fullName;
-      };
       server = {
         DOMAIN = "forge.${identity.domain}";
         ROOT_URL = "https://forge.${identity.domain}/";
-        HTTP_PORT = 3000;
-        SSH_DOMAIN = "forge.${identity.domain}";
         START_SSH_SERVER = true;
-        SSH_PORT = 22;
         SSH_LISTEN_PORT = 2222;
         SSH_SERVER_HOST_KEYS = config.sops.secrets."forgejo-ssh-host-ed25519-key".path;
       };
       service = {
-        DISABLE_REGISTRATION = false;
         REGISTER_EMAIL_CONFIRM = true;
         ENABLE_NOTIFY_MAIL = true;
         ENABLE_CAPTCHA = true;
-        REQUIRE_CAPTCHA_FOR_LOGIN = false;
+        REQUIRE_CAPTCHA_FOR_LOGIN = true;
         CAPTCHA_TYPE = "hcaptcha";
-      };
-      repository = {
-        DEFAULT_PRIVATE = "private";
-        DEFAULT_PUSH_CREATE_PRIVATE = true;
       };
       oauth2_client = {
         ENABLE_AUTO_REGISTRATION = true;
         ACCOUNT_LINKING = "auto";
         REGISTER_EMAIL_CONFIRM = false;
         UPDATE_AVATAR = true;
-        USERNAME = "nickname";
       };
       security.GLOBAL_TWO_FACTOR_REQUIREMENT = "admin";
       session.COOKIE_SECURE = true;
@@ -124,10 +112,8 @@ in
         SIGNING_KEY = "/run/credentials/forgejo.service/forgejo-signing-key.pub";
         SIGNING_NAME = "Forgejo";
         SIGNING_EMAIL = "noreply@${identity.domain}";
-        INITIAL_COMMIT = "always";
         CRUD_ACTIONS = "always";
         MERGES = "always";
-        WIKI = "never";
       };
       "markup.sanitizer.video-muted" = {
         ELEMENT = "video";
@@ -210,8 +196,6 @@ in
   users.groups.git = { };
 
   systemd.services.forgejo-dump.preStart = ''
-    find /var/backup/forgejo -maxdepth 1 -type f -name 'forgejo-dump-*' -mtime +3 -delete
-
     free_bytes=$(df --output=avail -B1 /var/backup/forgejo | tail -n 1 | tr -d ' ')
     min_free_bytes=$((20 * 1024 * 1024 * 1024))
     if [ "$free_bytes" -lt "$min_free_bytes" ]; then
