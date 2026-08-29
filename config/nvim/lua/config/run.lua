@@ -5,6 +5,9 @@ local RATIO = 0.35
 ---@type vim.SystemObj?
 local building = nil
 
+---@type integer?
+local group = nil
+
 ---@param msg string
 local function log(msg)
     vim.api.nvim_echo({ { 'run: ' .. msg } }, true, {})
@@ -20,6 +23,19 @@ end
 local function no_runner(buf)
     local ft = vim.bo[buf].filetype
     return 'no runner for ' .. (ft ~= '' and ft or 'this buffer')
+end
+
+---@param buf integer
+---@return boolean
+local function enabled(buf)
+    return group ~= nil
+        and vim.api.nvim_buf_is_valid(buf)
+        and #vim.api.nvim_get_autocmds({
+                group = group,
+                event = 'BufWritePost',
+                buf = buf,
+            })
+            > 0
 end
 
 ---@return integer?
@@ -108,7 +124,7 @@ local function launch(buf)
     end)
 
     local function start()
-        if not vim.api.nvim_buf_is_valid(buf) or not vim.b[buf].run then
+        if not enabled(buf) or not vim.b[buf].run then
             return
         end
         vim.cmd.cclose()
@@ -159,6 +175,9 @@ end
 ---@param buf? integer
 function M.run(buf)
     buf = buf or vim.api.nvim_get_current_buf()
+    if not enabled(buf) then
+        return
+    end
     if not vim.b[buf].run then
         fail(no_runner(buf))
         return
@@ -174,6 +193,25 @@ function M.run(buf)
     launch(buf)
 end
 
+---@param buf integer
+local function enable(buf)
+    if enabled(buf) then
+        return
+    end
+    vim.api.nvim_create_autocmd('BufWritePost', {
+        group = group,
+        buffer = buf,
+        callback = function(args)
+            local id = args.id
+            vim.schedule(function()
+                if #vim.api.nvim_get_autocmds({ id = id }) > 0 then
+                    M.run(args.buf)
+                end
+            end)
+        end,
+    })
+end
+
 ---@param buf? integer
 function M.disable(buf)
     buf = buf or vim.api.nvim_get_current_buf()
@@ -181,24 +219,25 @@ function M.disable(buf)
         log(no_runner(buf))
         return
     end
-    vim.b[buf].run = nil
+    vim.api.nvim_clear_autocmds({
+        group = group,
+        event = 'BufWritePost',
+        buf = buf,
+    })
     log('disabled')
 end
 
 function M.setup()
-    vim.api.nvim_create_autocmd('BufWritePost', {
-        group = vim.api.nvim_create_augroup('Run', { clear = true }),
-        callback = function(args)
-            if vim.b[args.buf].run then
-                vim.schedule(function()
-                    M.run(args.buf)
-                end)
-            end
-        end,
-    })
+    group = vim.api.nvim_create_augroup('Run', { clear = true })
 
     vim.keymap.set('n', '<Plug>(run)', function()
-        M.run()
+        local buf = vim.api.nvim_get_current_buf()
+        if not vim.b[buf].run then
+            fail(no_runner(buf))
+            return
+        end
+        enable(buf)
+        M.run(buf)
     end, { desc = 'build and run the current file' })
     vim.keymap.set('n', '<Plug>(run-disable)', function()
         M.disable()
