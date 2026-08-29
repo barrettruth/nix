@@ -468,8 +468,6 @@ in
             clang-tools
             gcc
             emmet-language-server
-            mdx-language-server
-            vtsls
             vscode-langservers-extracted
             cmake-format
             prettier
