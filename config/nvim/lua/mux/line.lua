@@ -203,23 +203,6 @@ local function jump(pick)
     return true
 end
 
----@param step integer
----@return true? ok
----@return string? err
-local function move(step)
-    return jump(function(current)
-        local count = #cached_servers
-
-        if count == 0 then
-            return nil, 'not a mux server'
-        end
-
-        local from = (index_of(current.root) or 1) - 1
-
-        return cached_servers[(from + step) % count + 1]
-    end)
-end
-
 ---@param n integer
 ---@return true? ok
 ---@return string? err
@@ -306,12 +289,6 @@ end
 function M.setup()
     apply_visibility()
     watch()
-
-    for lhs, step in pairs({ ['<a-x>['] = -1, ['<a-x>]'] = 1 }) do
-        vim.keymap.set({ 'n', 'i', 't' }, lhs, function()
-            move(step * vim.v.count1)
-        end, { desc = 'mux: move server', silent = true })
-    end
 
     vim.keymap.set({ 'n', 'i', 't' }, '<a-x><bs>', function()
         move_last()
