@@ -4,7 +4,6 @@ vim.pack.add({
 
 vim.pack.add({
     'https://github.com/folke/lazydev.nvim',
-    'https://github.com/mrcjkb/rustaceanvim',
     'https://github.com/saecki/live-rename.nvim',
 }, { load = function() end })
 
@@ -52,57 +51,5 @@ return {
             })
         end,
         keys = { 'grn' },
-    },
-    {
-        'mrcjkb/rustaceanvim',
-        ft = 'rust',
-        before = function()
-            vim.g.rustaceanvim = {
-                server = {
-                    standalone = false,
-                    capabilities = {
-                        general = { positionEncodings = { 'utf-16' } },
-                    },
-                    on_attach = function(_, bufnr)
-                        vim.keymap.set(
-                            'n',
-                            '\\Rc',
-                            '<cmd>RustLsp codeAction<cr>',
-                            { buf = bufnr, desc = 'rust code action' }
-                        )
-                        vim.keymap.set(
-                            'n',
-                            '\\Rm',
-                            '<cmd>RustLsp expandMacro<cr>',
-                            { buf = bufnr, desc = 'rust expand macro' }
-                        )
-                        vim.keymap.set(
-                            'n',
-                            '\\Ro',
-                            '<cmd>RustLsp openCargo<cr>',
-                            { buf = bufnr, desc = 'rust open cargo' }
-                        )
-                    end,
-                    default_settings = {
-                        ['rust-analyzer'] = {
-                            check = {
-                                overrideCommand = {
-                                    'cargo',
-                                    'clippy',
-                                    '--message-format=json',
-                                    '--',
-                                    '-W',
-                                    'clippy::expect_used',
-                                    '-W',
-                                    'clippy::pedantic',
-                                    '-W',
-                                    'clippy::unwrap_used',
-                                },
-                            },
-                        },
-                    },
-                },
-            }
-        end,
     },
 }
