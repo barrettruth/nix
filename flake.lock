@@ -164,27 +164,6 @@
         "type": "github"
       }
     },
-    "pierrejo": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1787798363,
-        "narHash": "sha256-ky4zDUWwrEB/65RQBXZrr/HbKLL/idsebpedDB8b6wo=",
-        "ref": "main",
-        "rev": "4a6a575f57a0a4bd9f55cf3e403e88d78e209412",
-        "revCount": 51,
-        "type": "git",
-        "url": "https://git.harivan.sh/harivansh-afk/pierrejo.git"
-      },
-      "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "https://git.harivan.sh/harivansh-afk/pierrejo.git"
-      }
-    },
     "root": {
       "inputs": {
         "devin": "devin",
@@ -194,7 +173,6 @@
         "nix-darwin": "nix-darwin",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
-        "pierrejo": "pierrejo",
         "sops-nix": "sops-nix",
         "vimdoc-language-server": "vimdoc-language-server"
       }

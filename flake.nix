@@ -24,10 +24,6 @@
       url = "git+ssh://git@github.com/barrettruth/font-berkeley-mono.git";
       flake = false;
     };
-    pierrejo = {
-      url = "git+https://git.harivan.sh/harivansh-afk/pierrejo.git?ref=main";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
