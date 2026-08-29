@@ -178,7 +178,6 @@ in
 
   environment.systemPackages = with pkgs; [
     bazelisk
-    bazel-buildtools
     codex
   ];
 
