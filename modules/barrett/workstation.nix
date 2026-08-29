@@ -472,7 +472,6 @@ in
             vscode-langservers-extracted
             prettier
             shfmt
-            checkmake
             shellcheck
             nodejs
             tea
