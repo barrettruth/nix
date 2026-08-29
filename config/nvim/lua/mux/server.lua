@@ -894,6 +894,22 @@ function M.connect(root, cb, clear_last)
     end)
 end
 
+---@param target_server mux.Server
+---@param cb? fun(ok?: true, err?: string)
+---@param clear_last? boolean
+---@return nil
+function M.switch(target_server, cb, clear_last)
+    if
+        not ours(target_server.socket)
+        or socket_listening(target_server.socket)
+    then
+        M.attach(target_server, cb, clear_last)
+        return
+    end
+
+    M.connect(target_server.root, cb, clear_last)
+end
+
 ---Match a server's colorscheme to this one's.
 ---@param socket string
 ---@return nil

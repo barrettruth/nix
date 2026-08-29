@@ -52,6 +52,7 @@ end
 ---@return nil
 function M.mux(arg)
     local root, err
+    local target
     local host, path = require('mux.remote').split(vim.trim(arg or ''))
     if host then
         require('mux.remote').ensure(host, path, function(server, remote_err)
@@ -76,8 +77,8 @@ function M.mux(arg)
     end
 
     if vim.trim(arg or '') == '' then
-        local first = require('mux.line').servers()[1]
-        root = first and first.root
+        target = require('mux.line').servers()[1]
+        root = target and target.root
     end
 
     if not root then
@@ -89,7 +90,9 @@ function M.mux(arg)
         return
     end
 
-    require('mux.server').connect(root, function(ok, connect_err)
+    local server = require('mux.server')
+    local connect = target and server.switch or server.connect
+    connect(target or root, function(ok, connect_err)
         if not ok then
             vim.notify('mux: ' .. tostring(connect_err), vim.log.levels.ERROR)
         end

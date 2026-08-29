@@ -163,25 +163,6 @@ function M.toggle()
     return true
 end
 
----@param entry mux.Server
-local function connect(entry)
-    local function done(ok, err)
-        if not ok then
-            vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
-        end
-    end
-
-    if
-        not server.ours(entry.socket)
-        or server.socket_listening(entry.socket)
-    then
-        server.attach(entry, done)
-        return
-    end
-
-    server.connect(entry.root, done)
-end
-
 ---Tabline click handler for a view segment.
 ---@param tab integer
 ---@return nil
@@ -219,7 +200,14 @@ local function jump(pick)
     end
 
     if entry and entry.root ~= current.root then
-        connect(entry)
+        server.switch(entry, function(ok, switch_err)
+            if not ok then
+                vim.notify(
+                    'mux: ' .. tostring(switch_err),
+                    vim.log.levels.ERROR
+                )
+            end
+        end)
     end
 
     return true
