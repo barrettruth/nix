@@ -511,9 +511,9 @@ CONTOUR_LEVELS: int = 20
 
 def font_path() -> str:
     candidates = [
-        os.path.join(HOME, ".local", "share", "fonts", "berkeley-mono", "BerkeleyMono-Regular.ttf"),
+        os.path.join(HOME, ".local", "share", "fonts", "BerkeleyMono-Regular.otf"),
     ]
-    candidates.extend(sorted(glob.glob("/Library/Fonts/Nix Fonts/*/share/fonts/barrett/berkeley-mono/BerkeleyMono-Regular.ttf")))
+    candidates.extend(sorted(glob.glob("/Library/Fonts/Nix Fonts/*/share/fonts/opentype/BerkeleyMono-Regular.otf")))
     for candidate in candidates:
         if os.path.exists(candidate):
             return candidate

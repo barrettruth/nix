@@ -1,7 +1,7 @@
 {
   pkgs,
   pierreForgejo,
-  barrettWebfonts ? null,
+  berkeleyMono,
   ...
 }:
 let
@@ -16,12 +16,6 @@ let
   templatesSrc = builtins.path {
     path = ./templates;
     name = "forgejo-custom-templates-src";
-  };
-  noniconsFont = pkgs.fetchFromGitHub {
-    owner = "ya2s";
-    repo = "nonicons";
-    rev = "a7d49eef27d1143b03a4eeb33859f411b9e93490";
-    hash = "sha256-2eTjf7tl85YJkJY99Pb3a5PBhfPRUHIXXvAwfTPgnwc=";
   };
   frontend = pkgs.buildNpmPackage {
     pname = "barrett-forgejo-custom-frontend";
@@ -46,11 +40,12 @@ let
         full_to_woff2() {
           local input="$1"
           local output="$2"
-          local tmp="$TMPDIR/$(basename "$output" .woff2).ttf"
+          local stem="$TMPDIR/$(basename "$output" .woff2)"
+          local tmp="$stem.''${input##*.}"
           cp "$input" "$tmp"
           chmod u+w "$tmp"
           woff2_compress "$tmp" >/dev/null
-          mv "''${tmp%.ttf}.woff2" "$output"
+          mv "$stem.woff2" "$output"
         }
 
         mkdir -p $out
@@ -59,17 +54,15 @@ let
           ${assetsSrc}/css/barrett-forgejo/00-vars.css \
           ${assetsSrc}/css/barrett-forgejo/10-base.css \
           > $out/css/barrett-forgejo.css
-        mkdir -p $out/fonts
-        cp ${noniconsFont}/dist/nonicons.woff $out/fonts/nonicons.woff
-        full_to_woff2 ${noniconsFont}/dist/nonicons.ttf $out/fonts/nonicons-v1.woff2
-
-        ${pkgs.lib.optionalString (
-          barrettWebfonts != null
-        ) "cp -R ${barrettWebfonts}/share/barrett-webfonts/. $out/fonts/"}
-
-        mkdir -p $out/fonts/stix-two
-        full_to_woff2 '${pkgs.stix-two}/share/fonts/truetype/STIXTwoText[wght].ttf' \
-          $out/fonts/stix-two/STIXTwoText-v1.woff2
+        mkdir -p $out/fonts/berkeley-mono
+        full_to_woff2 ${berkeleyMono}/share/fonts/opentype/BerkeleyMono-Regular.otf \
+          $out/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2
+        full_to_woff2 ${berkeleyMono}/share/fonts/opentype/BerkeleyMono-Oblique.otf \
+          $out/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2
+        full_to_woff2 ${berkeleyMono}/share/fonts/opentype/BerkeleyMono-Bold.otf \
+          $out/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2
+        full_to_woff2 ${berkeleyMono}/share/fonts/opentype/BerkeleyMono-Bold-Oblique.otf \
+          $out/fonts/berkeley-mono/BerkeleyMono-BoldItalic-v1.woff2
       '';
   templates = pkgs.runCommand "barrett-forgejo-custom-templates" { } ''
     cp -R --no-preserve=mode,ownership ${templatesSrc}/. $out/
