@@ -38,7 +38,6 @@
           packages = [
             pkgs.just
             pkgs.prettier
-            pkgs.prettierd
             pkgs.selene
             pkgs.stylua
             pkgs.lua-language-server

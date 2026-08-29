@@ -49,10 +49,6 @@ return {
             ft('html,astro'):fmt('prettierd')
             ft('markdown'):fmt('prettierd')
         end
-        if vim.fn.executable('npx') == 1 then
-            ft(web):lint('eslint_d')
-        end
-
         if vim.fn.executable('shfmt') == 1 then
             ft('sh,bash,zsh'):fmt({
                 cmd = 'shfmt',
