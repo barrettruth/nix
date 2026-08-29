@@ -467,6 +467,7 @@ in
             bash-language-server
             clang-tools
             gcc
+            gdb
             emmet-language-server
             vscode-langservers-extracted
             prettier
@@ -504,6 +505,7 @@ in
               gnused
             ]
           )
+          ++ lib.optionals (isLinux && hasDisplay) [ pkgs.xdg-utils ]
           ++ lib.optionals isLinux [ pkgs.psmisc ]
           ++ agentPackages;
 
