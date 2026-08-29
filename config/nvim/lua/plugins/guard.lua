@@ -72,13 +72,6 @@ return {
         if vim.fn.executable('typstyle') == 1 then
             ft('typst'):fmt('typstyle')
         end
-        if vim.fn.executable('cmake-format') == 1 then
-            ft('cmake'):fmt('cmake-format')
-        end
-        if vim.fn.executable('checkmake') == 1 then
-            ft('make'):lint('checkmake')
-        end
-
         if vim.fn.executable('buildifier') == 1 then
             ft('bzl'):fmt({
                 cmd = 'buildifier',
