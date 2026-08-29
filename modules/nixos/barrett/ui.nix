@@ -19,13 +19,11 @@ let
   repo = "${XDG_CONFIG_HOME}/nix";
   configRoot = "${repo}/config";
 
-  wayland = import ../desktop/wayland.nix { inherit pkgs; };
-  inherit (wayland)
-    hyprSessionEnv
-    mkWaylandGate
-    wrapWaylandExec
-    ;
-  waylandGate = mkWaylandGate "hyprland-session.target";
+  graphicalSession = {
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    wantedBy = [ "graphical-session.target" ];
+  };
 
   inherit (act) runAsUser mkSymlink;
   mkDir = act.installDir;
@@ -116,7 +114,7 @@ let
     hl.env("GSK_RENDERER", "ngl")
 
     hl.on("hyprland.start", function()
-        hl.exec_cmd("${hyprSessionEnv}/bin/hypr-session-env import")
+        hl.exec_cmd("${lib.getExe pkgs.uwsm} finalize")
     end)
 
     local function source(path)
@@ -186,12 +184,9 @@ in
         (with pkgs; [
           dconf
           hyprpaper
-          hyprland
           waybar
           fuzzel
           dunst
-          xdg-desktop-portal-hyprland
-          xdg-desktop-portal-gtk
           wl-clipboard
           grim
           slurp
@@ -241,40 +236,24 @@ in
     };
 
     environment.sessionVariables = {
-      HYPRLAND_NO_SD_VARS = "1";
       QT_AUTO_SCREEN_SCALE_FACTOR = "1";
       XCURSOR_SIZE = "24";
       XCURSOR_THEME = "macOS";
     };
 
+    programs.hyprland = {
+      enable = true;
+      withUWSM = true;
+    };
+
     programs.zsh = {
       enable = true;
       loginShellInit = ''
-        if [[ -z "$DISPLAY$WAYLAND_DISPLAY" && "$(tty)" == /dev/tty1 ]]; then
-          [ -e /etc/set-environment ] && . /etc/set-environment
-          exec ${pkgs.hyprland}/bin/Hyprland
+        if [[ -z "$DISPLAY$WAYLAND_DISPLAY" && "$(tty)" == /dev/tty1 ]] && ${lib.getExe pkgs.uwsm} check may-start; then
+          exec ${lib.getExe pkgs.uwsm} start -F -- ${pkgs.hyprland}/bin/start-hyprland
         fi
       '';
     };
-
-    xdg.portal = {
-      enable = true;
-      extraPortals = with pkgs; [
-        xdg-desktop-portal-hyprland
-        xdg-desktop-portal-gtk
-      ];
-      config.common = {
-        default = [
-          "hyprland"
-          "gtk"
-        ];
-      };
-    };
-
-    environment.pathsToLink = [
-      "/share/applications"
-      "/share/xdg-desktop-portal"
-    ];
 
     systemd.tmpfiles.rules = [
       "d ${homeDirectory}/Pictures/Screensavers 0755 ${username} users -"
@@ -282,33 +261,36 @@ in
       "d ${homeDirectory}/Pictures/wp 0755 ${username} users -"
     ];
 
-    systemd.user.targets.hyprland-session = {
-      description = "Hyprland session";
-    };
-
-    systemd.user.services.hyprpaper = waylandGate // {
+    systemd.user.services.hyprpaper = graphicalSession // {
       description = "Hyprpaper wallpaper daemon";
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = wrapWaylandExec "${pkgs.hyprpaper}/bin/hyprpaper";
+      serviceConfig = {
+        ExecStart = lib.getExe pkgs.hyprpaper;
+        Restart = "on-failure";
+        Slice = "background-graphical.slice";
       };
     };
 
-    systemd.user.services.dunst = waylandGate // {
+    systemd.user.services.dunst = graphicalSession // {
       description = "Dunst notification daemon";
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = wrapWaylandExec "${pkgs.dunst}/bin/dunst";
+      serviceConfig = {
+        ExecStart = lib.getExe pkgs.dunst;
+        Restart = "on-failure";
+        Slice = "background-graphical.slice";
       };
     };
 
-    systemd.user.services.cliphist = waylandGate // {
+    systemd.user.services.cliphist = graphicalSession // {
       description = "Clipboard history";
-      serviceConfig = waylandGate.serviceConfig // {
-        ExecStart = wrapWaylandExec "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
+      serviceConfig = {
+        ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
+        Restart = "on-failure";
+        Slice = "app-graphical.slice";
       };
     };
 
     systemd.user.services.cliphist-wipe = {
       description = "Clear clipboard history on session end";
+      partOf = [ "graphical-session.target" ];
       wantedBy = [ "graphical-session.target" ];
       serviceConfig = {
         Type = "oneshot";
@@ -320,8 +302,9 @@ in
 
     systemd.user.services.dconf-setup = {
       description = "Set dconf preferences";
-      wantedBy = [ "hyprland-session.target" ];
-      before = [ "hyprland-session.target" ];
+      partOf = [ "graphical-session.target" ];
+      wantedBy = [ "graphical-session.target" ];
+      before = [ "graphical-session.target" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;

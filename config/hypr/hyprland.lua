@@ -1,7 +1,3 @@
-hl.on("hyprland.start", function()
-	hl.exec_cmd("systemctl --user start hyprland-session.target")
-end)
-
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("ELECTRON_OZONE_PLATFORM_HINT", "wayland")
