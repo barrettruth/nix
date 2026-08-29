@@ -494,7 +494,6 @@ in
             tailwindcss-language-server
             vtsls
             vscode-langservers-extracted
-            nixd
             black
             buf
             cmake-format
@@ -508,10 +507,7 @@ in
             mypy
             ty
             shellcheck
-            deadnix
-            statix
             nodejs
-            nixfmt-tree
             tea
             git-lfs
             git-filter-repo

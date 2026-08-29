@@ -23,17 +23,18 @@
         default = pkgs.mkShell {
           packages = commonPackages ++ [
             pkgs.age
-            pkgs.authelia
+            pkgs.nixd
             pkgs.xxd
             pkgs.pre-commit
             pkgs.sops
             pkgs.ssh-to-age
+            pkgs.statix
           ];
         };
         ci = pkgs.mkShell {
           packages = commonPackages ++ [ pkgs.neovim-unwrapped ];
         };
-        neovim = pkgs.mkShellNoCC {
+        neovim-config = pkgs.mkShellNoCC {
           packages = [
             pkgs.just
             pkgs.prettier

@@ -73,7 +73,7 @@ imports keep a `# ty: ignore[unresolved-import]`.
 | `modules/hosts/<host>.nix`        | per-host composition                                                     |
 | `modules/barrett/workstation.nix` | the dotfile activation script: symlinks, generated configs, package list |
 | `modules/{darwin,nixos}/`         | platform-specific modules                                                |
-| `modules/devshells.nix`           | `default`, `ci`, `neovim`, `neovim-src` shells                           |
+| `modules/devshells.nix`           | `default`, `ci`, `neovim-config`, `neovim-src` shells                    |
 | `pkgs/`                           | packages built here rather than taken from nixpkgs                       |
 | `config/`                         | the dotfiles themselves, deployed by activation                          |
 | `secrets/<host>/`                 | sops-encrypted; never read, decrypt, or rewrite these                    |
