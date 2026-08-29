@@ -16,7 +16,6 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     devin = {
       url = "github:charliemeyer2000/devin-cli-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
