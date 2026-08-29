@@ -152,24 +152,20 @@
         "type": "github"
       }
     },
-    "fonts": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
+    "font-berkeley-mono": {
+      "flake": false,
       "locked": {
-        "lastModified": 1785552023,
-        "narHash": "sha256-ld5MDeyoOp9a0SaCD2+zmSY4mQe6W6vZTvfga2/ZELA=",
+        "lastModified": 1787966735,
+        "narHash": "sha256-E2tY6xk/0+2P8kemkedraHNtXCRDR1eansJtvn8OVls=",
         "ref": "refs/heads/main",
-        "rev": "4d0f15f6455c3737b10df0c2babc3d13d24868c3",
-        "revCount": 11,
+        "rev": "02e9dee83e8af1acc3793269606e73aab89ca0ef",
+        "revCount": 1,
         "type": "git",
-        "url": "ssh://git@github.com/barrettruth/fonts.git"
+        "url": "ssh://git@github.com/barrettruth/font-berkeley-mono.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@github.com/barrettruth/fonts.git"
+        "url": "ssh://git@github.com/barrettruth/font-berkeley-mono.git"
       }
     },
     "git-hooks-nix": {
@@ -390,7 +386,7 @@
         "devin": "devin",
         "disko": "disko",
         "flake-parts": "flake-parts_2",
-        "fonts": "fonts",
+        "font-berkeley-mono": "font-berkeley-mono",
         "nix-darwin": "nix-darwin",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_3",

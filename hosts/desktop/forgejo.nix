@@ -78,12 +78,8 @@ let
   };
   forgejoCustom = pkgs.callPackage ../../pkgs/forgejo-custom {
     inherit pierreForgejo;
-    barrettWebfonts = pkgs.barrett-webfonts or null;
+    berkeleyMono = pkgs.barrett-berkeley-mono;
   };
-
-  forgejoStixTwoFontFile = pkgs.runCommand "stix-two-text.ttf" { } ''
-    cp '${pkgs.stix-two}/share/fonts/truetype/STIXTwoText[wght].ttf' $out
-  '';
 
   forgejoFooterTmpl = pkgs.writeText "footer.tmpl" "";
   forgejoFooterContentTmpl = pkgs.writeText "footer_content.tmpl" "";
@@ -563,27 +559,11 @@ in
     "d /var/lib/forgejo/custom/templates/user/auth 0750 git git -"
     "L+ /var/lib/forgejo/custom/templates/user/auth/oauth_container.tmpl - - - - ${forgejoOauthContainerTmpl}"
     "d /var/lib/forgejo/custom/public/assets/fonts 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons.woff - - - - ${forgejoCustom.assets}/fonts/nonicons.woff"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/nonicons-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/nonicons-v1.woff2"
-    "d /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro.ttf - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic.ttf - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-latin-v1.woff2"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic-latin-v1.woff2"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-v1.woff2"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/san-francisco-pro/SF-Pro-Italic-v1.woff2"
     "d /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Regular.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Italic.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Bold.ttf"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-BoldItalic.ttf"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Regular-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Italic-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-Bold-v1.woff2"
     "L+ /var/lib/forgejo/custom/public/assets/fonts/berkeley-mono/BerkeleyMono-BoldItalic-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/berkeley-mono/BerkeleyMono-BoldItalic-v1.woff2"
-    "d /var/lib/forgejo/custom/public/assets/fonts/stix-two 0750 git git -"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/stix-two/STIXTwoText.ttf - - - - ${forgejoStixTwoFontFile}"
-    "L+ /var/lib/forgejo/custom/public/assets/fonts/stix-two/STIXTwoText-v1.woff2 - - - - ${forgejoCustom.assets}/fonts/stix-two/STIXTwoText-v1.woff2"
   ];
 
   systemd.services.forgejo-dump.preStart = ''

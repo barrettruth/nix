@@ -188,20 +188,6 @@ in
   security.sudo.enable = true;
   security.rtkit.enable = true;
 
-  fonts.packages = with pkgs; [
-    dejavu_fonts
-    freefont_ttf
-    gyre-fonts
-    liberation_ttf
-    unifont
-    noto-fonts-color-emoji
-  ];
-  fonts.fontconfig.defaultFonts = {
-    sansSerif = [ "SF Pro Display" ];
-    monospace = [ "Berkeley Mono" ];
-    serif = [ "Times New Roman" ];
-  };
-
   environment.systemPackages = with pkgs; [
     wget
     git

@@ -359,7 +359,7 @@ in
       harddisk = 30;
     };
 
-    fonts.packages = lib.optional (pkgs ? barrett-fonts) pkgs.barrett-fonts;
+    fonts.packages = [ pkgs.barrett-berkeley-mono ];
 
     system.activationScripts.extraActivation.text = ''
       /usr/bin/pmset -b displaysleep 5 sleep 15 disksleep 10 lessbright 0

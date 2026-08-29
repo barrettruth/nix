@@ -22,9 +22,9 @@
       url = "github:charliemeyer2000/devin-cli-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    fonts = {
-      url = "git+ssh://git@github.com/barrettruth/fonts.git";
-      inputs.nixpkgs.follows = "nixpkgs";
+    font-berkeley-mono = {
+      url = "git+ssh://git@github.com/barrettruth/font-berkeley-mono.git";
+      flake = false;
     };
     pierrejo = {
       url = "git+https://git.harivan.sh/harivansh-afk/pierrejo.git?ref=main";

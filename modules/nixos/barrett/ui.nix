@@ -219,20 +219,20 @@ in
         ];
     };
 
-    fonts.packages =
-      lib.optional (pkgs ? barrett-fonts) pkgs.barrett-fonts
-      ++ (with pkgs; [
-        dejavu_fonts
-        freefont_ttf
-        gyre-fonts
-        liberation_ttf
-        unifont
-        noto-fonts-color-emoji
-      ]);
+    fonts.packages = [
+      pkgs.barrett-berkeley-mono
+    ]
+    ++ (with pkgs; [
+      dejavu_fonts
+      freefont_ttf
+      gyre-fonts
+      liberation_ttf
+      unifont
+      noto-fonts-color-emoji
+    ]);
 
     fonts.fontconfig.defaultFonts = {
       sansSerif = [
-        "SF Pro Display"
         "DejaVu Sans"
       ];
       monospace = [
@@ -348,8 +348,8 @@ in
             *) color_scheme="prefer-dark" ;;
           esac
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/color-scheme "'$color_scheme'"
-          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/font-name "'SF Pro Display 11'"
-          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/document-font-name "'SF Pro Display 11'"
+          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/font-name "'DejaVu Sans 11'"
+          ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/document-font-name "'DejaVu Sans 11'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/desktop/interface/monospace-font-name "'Berkeley Mono 11'"
           ${pkgs.dconf}/bin/dconf write /org/gnome/system/location/enabled true
         '';

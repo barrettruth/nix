@@ -1,61 +1,10 @@
 { lib, inputs, ... }:
 let
-  hasFonts = inputs ? fonts;
-
   overlays = [
     inputs.devin.overlays.default
     (
       final: prev:
       let
-        system = final.stdenv.hostPlatform.system;
-        barrettFonts =
-          let
-            fontRoot = inputs.fonts.outPath;
-            src = builtins.path {
-              path = fontRoot;
-              name = "barrett-desktop-fonts-source";
-              filter =
-                path: type:
-                let
-                  relative = lib.removePrefix "${fontRoot}/" (toString path);
-                in
-                type == "directory"
-                || lib.hasPrefix "berkeley-mono/" relative
-                || lib.hasPrefix "nonicons/" relative
-                || (
-                  final.stdenv.hostPlatform.isLinux && lib.hasPrefix "san-francisco-pro/SF-Pro-Display-" relative
-                );
-            };
-          in
-          final.stdenvNoCC.mkDerivation {
-            pname = "barrett-fonts";
-            version = "0";
-            inherit src;
-
-            dontConfigure = true;
-            dontBuild = true;
-
-            installPhase = ''
-              runHook preInstall
-
-              mkdir -p $out/share/fonts/barrett
-              find . -type f \
-                \( -name '*.ttf' -o -name '*.otf' -o -name '*.bdf' -o -name '*.woff' -o -name '*.woff2' \) \
-                -print0 \
-                | while IFS= read -r -d "" file; do
-                    rel="''${file#./}"
-                    install -Dm644 "$file" "$out/share/fonts/barrett/$rel"
-                  done
-
-              runHook postInstall
-            '';
-
-            meta = {
-              description = "Private fonts used by Barrett's workstations";
-              license = lib.licenses.unfree;
-              platforms = lib.platforms.all;
-            };
-          };
         localNeovim =
           base:
           final.runCommand "neovim-local-first-${lib.getVersion base}"
@@ -130,17 +79,16 @@ let
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };
-      }
-      // lib.optionalAttrs hasFonts {
-        barrett-fonts = barrettFonts;
-        barrett-webfonts = inputs.fonts.packages.${system}.web;
+        barrett-berkeley-mono = final.callPackage ../pkgs/berkeley-mono.nix {
+          src = inputs.font-berkeley-mono;
+        };
       }
     )
   ];
 
   sharedUnfree = [
     "apple_cursor"
-    "barrett-fonts"
+    "barrett-berkeley-mono"
     "devin"
   ];
 in
@@ -160,10 +108,7 @@ in
     {
       _module.args.pkgs = pkgs;
       packages = {
-        inherit (pkgs) neovim;
-      }
-      // lib.optionalAttrs hasFonts {
-        inherit (pkgs) barrett-fonts barrett-webfonts;
+        inherit (pkgs) neovim barrett-berkeley-mono;
       };
     };
 }
