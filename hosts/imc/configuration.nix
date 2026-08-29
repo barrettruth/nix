@@ -25,6 +25,79 @@ let
 
   repoEnv = "${pkgs.python3}/bin/python3 ${repo}/config/agents/hooks/repo-env.py";
 
+  imcCaBundle = "/etc/ssl/certs/ca-certificates-imc.crt";
+
+  codexConfig = (pkgs.formats.toml { }).generate "codex-config.toml" {
+    model = "gpt-5.6-sol";
+    model_reasoning_effort = "xhigh";
+
+    approval_policy = "never";
+    sandbox_mode = "danger-full-access";
+
+    file_opener = "none";
+    check_for_update_on_startup = false;
+
+    sqlite_home = "${homeDirectory}/.local/state/codex";
+
+    mcp_servers = {
+      gcalendar = {
+        command = "npx";
+        args = [
+          "-y"
+          "@cocal/google-calendar-mcp@2.6.2"
+          "start"
+        ];
+        env.GOOGLE_OAUTH_CREDENTIALS = "${homeDirectory}/.config/mcp-google/gcp-oauth.keys.json";
+        env_vars = [ "NPM_CONFIG_CACHE" ];
+        startup_timeout_sec = 30;
+        required = true;
+      };
+
+      gmail = {
+        command = "npx";
+        args = [
+          "-y"
+          "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"
+        ];
+        env_vars = [ "NPM_CONFIG_CACHE" ];
+        startup_timeout_sec = 30;
+        required = true;
+      };
+
+      gdrive = {
+        command = "${repo}/scripts/mcp-gdrive";
+        env_vars = [ "NPM_CONFIG_CACHE" ];
+        startup_timeout_sec = 30;
+        required = true;
+      };
+    };
+
+    tui = {
+      vim_mode_default = true;
+      status_line = [
+        "model-with-reasoning"
+        "current-dir"
+        "run-state"
+      ];
+      status_line_use_colors = true;
+    };
+
+    hooks = {
+      SessionStart = [
+        {
+          matcher = "startup|resume";
+          hooks = [
+            {
+              type = "command";
+              command = "${repoEnv} session";
+              timeout = 5;
+            }
+          ];
+        }
+      ];
+    };
+  };
+
   brews = [ "imc/core/imc-claude" ];
 
   casks = [
@@ -92,25 +165,13 @@ in
     ktfmt
   ];
 
-  environment.variables.CODEX_HOME = codexHome;
+  nix.settings.ssl-cert-file = imcCaBundle;
 
-  environment.etc."codex/config.toml".text = ''
-    [[hooks.SessionStart]]
-    matcher = "startup|resume"
-
-    [[hooks.SessionStart.hooks]]
-    type = "command"
-    command = "${repoEnv} session"
-    timeout = 5
-
-    [[hooks.PostToolUse]]
-    matcher = "^Bash$"
-
-    [[hooks.PostToolUse.hooks]]
-    type = "command"
-    command = "${repoEnv} command-not-found"
-    timeout = 5
-  '';
+  environment.variables = {
+    CODEX_HOME = codexHome;
+    CURL_CA_BUNDLE = imcCaBundle;
+    SSL_CERT_FILE = imcCaBundle;
+  };
 
   environment.systemPath = lib.mkOrder 1100 [ "${config.homebrew.prefix}/bin" ];
 
@@ -126,9 +187,19 @@ in
       fi
     '') spotlightExcluded
     + ''
+      caBundleTmp=$(${pkgs.coreutils}/bin/mktemp "${imcCaBundle}.XXXXXX")
+      trap '${pkgs.coreutils}/bin/rm -f "$caBundleTmp"' EXIT
+      {
+        ${pkgs.coreutils}/bin/cat ${config.environment.etc."ssl/certs/ca-certificates.crt".source}
+        /usr/bin/security find-certificate -a -p -c CAIMC03 /Library/Keychains/System.keychain
+      } >"$caBundleTmp"
+      ${pkgs.coreutils}/bin/install -m 0644 -o root -g wheel "$caBundleTmp" "${imcCaBundle}"
+      ${pkgs.coreutils}/bin/rm -f "$caBundleTmp"
+      trap - EXIT
+
       ${act.installDirMode "0700" codexHome}
       ${act.installDirMode "0755" "${homeDirectory}/.local/state/codex"}
-      ${act.mkSymlink "${repo}/config/codex/config.toml" "${codexHome}/config.toml"}
+      ${act.mkSymlink codexConfig "${codexHome}/config.toml"}
       ${act.mkSymlink "${repo}/config/agents/AGENTS.md" "${codexHome}/AGENTS.md"}
     '';
 
