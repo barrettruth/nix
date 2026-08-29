@@ -92,6 +92,46 @@ let
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
+  devinConfig = (pkgs.formats.json { }).generate "devin-config.json" {
+    agent.model = "claude-opus-5-xhigh-fast";
+    attribution = false;
+    devin.org_id = "org-f27ebacf926a440d96985a94ab9b66bf";
+    hooks = {
+      SessionStart = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "${pkgs.python3}/bin/python3 ${repo}/config/agents/hooks/repo-env.py session";
+              timeout = 5;
+            }
+          ];
+        }
+      ];
+      PostToolUse = [
+        {
+          matcher = "^exec$";
+          hooks = [
+            {
+              type = "command";
+              command = "${pkgs.python3}/bin/python3 ${repo}/config/agents/hooks/repo-env.py command-not-found";
+              timeout = 5;
+            }
+          ];
+        }
+      ];
+    };
+    read_config_from = {
+      claude = false;
+      cursor = false;
+      windsurf = false;
+    };
+    shell.setup_complete = true;
+    show_hints = false;
+    theme_auto_detect = "always";
+    version = 1;
+  };
+
   jjConf = pkgs.writeText "jj-config" ''
     [user]
     name = "${identity.fullName}"
@@ -306,7 +346,20 @@ let
             ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
             ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
-            ${mkSymlink "${repo}/config/devin/config.json" "${XDG_CONFIG_HOME}/devin/config.json"}
+            devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
+            devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
+            trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
+            if [ -f "$devinConfigPath" ]; then
+              ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$devinConfigPath" "${devinConfig}" > "$devinConfigTmp"
+            else
+              ${pkgs.coreutils}/bin/cp "${devinConfig}" "$devinConfigTmp"
+            fi
+            if [ -L "$devinConfigPath" ]; then
+              ${runAsUser} ${pkgs.coreutils}/bin/unlink "$devinConfigPath"
+            fi
+            ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g ${act.group} "$devinConfigTmp" "$devinConfigPath"
+            ${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"
+            trap - EXIT
             ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
