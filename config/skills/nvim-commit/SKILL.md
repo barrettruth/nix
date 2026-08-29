@@ -5,6 +5,8 @@ description: Use when asked to commit — "commit this", "make/write a commit", 
 
 # nvim-commit
 
+If the repository root contains both `.jj` and `.git`, refuse in one sentence and stop. Do not inspect, stage, or open the commit UI.
+
 Draft a commit message into a fugitive commit buffer in the mux `vcs` view,
 left unfocused for the user to review and `:wq`. The helper does the nvim work;
 your job is the message and which files to stage.
