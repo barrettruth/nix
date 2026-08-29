@@ -10,6 +10,7 @@
         pkgs.lua-language-server
         pkgs.black
         pkgs.prettier
+        pkgs.selene
         pkgs.shellcheck
         pkgs.shfmt
         pkgs.stylua
