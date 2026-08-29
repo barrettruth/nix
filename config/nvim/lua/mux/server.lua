@@ -613,6 +613,16 @@ function M.list()
     return out
 end
 
+---@return mux.Server[]
+function M.ordered()
+    local servers = M.list()
+    table.sort(servers, function(a, b)
+        return a.root < b.root
+    end)
+
+    return servers
+end
+
 ---@param root string
 ---@param server? mux.Server
 ---@param err? string
