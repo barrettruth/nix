@@ -36,13 +36,6 @@ return {
             ft('python'):lint('mypy')
         end
 
-        if vim.fn.executable('stylua') == 1 then
-            ft('lua'):fmt('stylua')
-        end
-        if vim.fn.executable('selene') == 1 then
-            ft('lua'):lint('selene')
-        end
-
         local web = 'javascript,javascriptreact,typescript,typescriptreact'
         if vim.fn.executable('prettierd') == 1 then
             ft(web):fmt('prettierd')

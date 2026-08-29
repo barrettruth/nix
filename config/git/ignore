@@ -28,3 +28,4 @@ result-*
 .envrc
 .devin/
 .worktrees/
+.nvim.lua
