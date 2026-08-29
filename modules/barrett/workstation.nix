@@ -519,7 +519,6 @@ in
             deadnix
             statix
             nodejs
-            bun
             nixfmt-tree
             tea
             git-lfs
