@@ -70,8 +70,7 @@ let
       };
 
       gdrive = {
-        command = "${repo}/scripts/mcp-gdrive";
-        env_vars = [ "NPM_CONFIG_CACHE" ];
+        command = lib.getExe pkgs.mcp-gdrive;
         startup_timeout_sec = 30;
         required = true;
       };

@@ -33,7 +33,7 @@ _rebuild-nixos host +args:
         nix run nixpkgs#nixos-rebuild -- switch --no-reexec --flake '.#{{ host }}' {{ args }}; \
       fi
 
-paths := "'scripts/**' 'modules/**' 'config/**' 'pkgs/**'"
+paths := "'.devin/skills/**' 'scripts/**' 'modules/**' 'config/**' 'pkgs/**'"
 
 lua_dirs := "config/nvim config/skills/_lib"
 
