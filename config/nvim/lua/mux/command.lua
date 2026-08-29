@@ -1,4 +1,12 @@
+local server = require('mux.server')
+
 local M = {}
+
+local function done(ok, err)
+    if not ok then
+        vim.notify('mux: ' .. tostring(err), vim.log.levels.ERROR)
+    end
+end
 
 local function has_marker(path)
     return vim.uv.fs_stat(path .. '/.git') ~= nil
@@ -6,7 +14,7 @@ local function has_marker(path)
 end
 
 local function resolve_arg(arg)
-    local raw = vim.trim(arg or '')
+    local raw = arg
     if raw == '' then
         raw = vim.fn.getcwd()
     else
@@ -18,8 +26,8 @@ local function resolve_arg(arg)
 
     local real = vim.uv.fs_realpath(raw)
     if not real then
-        for _, server in ipairs(require('mux.server').list()) do
-            if server.root == raw then
+        for _, entry in ipairs(server.list()) do
+            if entry.root == raw then
                 return raw
             end
         end
@@ -51,34 +59,27 @@ end
 ---@param arg string?
 ---@return nil
 function M.mux(arg)
+    arg = vim.trim(arg or '')
     local root, err
-    local target
-    local host, path = require('mux.remote').split(vim.trim(arg or ''))
+    local host, path = require('mux.remote').split(arg)
     if host then
-        require('mux.remote').ensure(host, path, function(server, remote_err)
-            if not server then
-                vim.notify(
-                    'mux: ' .. tostring(remote_err),
-                    vim.log.levels.ERROR
-                )
+        require('mux.remote').ensure(host, path, function(target, remote_err)
+            if not target then
+                done(nil, remote_err)
                 return
             end
 
-            require('mux.server').attach(server, function(ok, attach_err)
-                if not ok then
-                    vim.notify(
-                        'mux: ' .. tostring(attach_err),
-                        vim.log.levels.ERROR
-                    )
-                end
-            end)
+            server.switch(target, done)
         end)
         return
     end
 
-    if vim.trim(arg or '') == '' then
-        target = require('mux.line').servers()[1]
-        root = target and target.root
+    if arg == '' then
+        local target = server.ordered()[1]
+        if target then
+            server.switch(target, done)
+            return
+        end
     end
 
     if not root then
@@ -86,17 +87,11 @@ function M.mux(arg)
     end
 
     if not root then
-        vim.notify('mux: ' .. err, vim.log.levels.ERROR)
+        done(nil, err)
         return
     end
 
-    local server = require('mux.server')
-    local connect = target and server.switch or server.connect
-    connect(target or root, function(ok, connect_err)
-        if not ok then
-            vim.notify('mux: ' .. tostring(connect_err), vim.log.levels.ERROR)
-        end
-    end)
+    server.connect(root, done)
 end
 
 return M
