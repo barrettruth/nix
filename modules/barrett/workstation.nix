@@ -214,70 +214,74 @@ let
 
   isLinux = !isDarwin;
 
-  sessionVariables = {
-    inherit
-      XDG_CONFIG_HOME
-      XDG_DATA_HOME
-      XDG_STATE_HOME
-      XDG_CACHE_HOME
-      ;
-    EDITOR = "nvim";
-    MANPAGER = "nvim +Man!";
-    TERMINAL = "ghostty";
-    TERM = "xterm-ghostty";
-    TERMINFO = "${XDG_DATA_HOME}/terminfo";
-    BROWSER = if isDarwin then "open" else "chromium";
-    LESSHISTFILE = "-";
-    BARRETT_NIX_CONFIG_DIR = "${repo}/config";
-    FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
-    FZF_DEFAULT_OPTS = lib.concatStringsSep " " [
-      "--bind=ctrl-a:select-all"
-      "--bind=ctrl-f:half-page-down"
-      "--bind=ctrl-b:half-page-up"
-      "--no-scrollbar"
-      "--no-info"
-    ];
-    FZF_DEFAULT_COMMAND = "rg --files --hidden";
-    FZF_CTRL_T_COMMAND = "rg --files --hidden";
-    FZF_ALT_C_COMMAND = "fd --type d --hidden";
+  sessionVariables =
+    {
+      inherit
+        XDG_CONFIG_HOME
+        XDG_DATA_HOME
+        XDG_STATE_HOME
+        XDG_CACHE_HOME
+        ;
+      EDITOR = "nvim";
+      MANPAGER = "nvim +Man!";
+      TERMINAL = "ghostty";
+      TERM = "xterm-ghostty";
+      TERMINFO = "${XDG_DATA_HOME}/terminfo";
+      BROWSER = if isDarwin then "open" else "chromium";
+      LESSHISTFILE = "-";
+      BARRETT_NIX_CONFIG_DIR = "${repo}/config";
+      FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
+      FZF_DEFAULT_OPTS = lib.concatStringsSep " " [
+        "--bind=ctrl-a:select-all"
+        "--bind=ctrl-f:half-page-down"
+        "--bind=ctrl-b:half-page-up"
+        "--no-scrollbar"
+        "--no-info"
+      ];
+      FZF_DEFAULT_COMMAND = "rg --files --hidden";
+      FZF_CTRL_T_COMMAND = "rg --files --hidden";
+      FZF_ALT_C_COMMAND = "fd --type d --hidden";
 
-    GIT_CONFIG_GLOBAL = "${XDG_CONFIG_HOME}/git/config";
-    WGETRC = "${XDG_CONFIG_HOME}/wgetrc";
-    LUAROCKS_CONFIG = "${XDG_CONFIG_HOME}/luarocks/config.lua";
-    GRADLE_USER_HOME = "${XDG_CONFIG_HOME}/gradle";
-    LIBVIRT_DEFAULT_URI = "qemu:///system";
-    MBSYNCRC = "${XDG_CONFIG_HOME}/mbsync/config";
-    PARALLEL_HOME = "${XDG_CONFIG_HOME}/parallel";
-    PASSWORD_STORE_DIR = "${XDG_DATA_HOME}/pass";
-    PRETTIERD_CONFIG_HOME = "${XDG_STATE_HOME}/prettierd";
-    RIPGREP_CONFIG_PATH = "${XDG_CONFIG_HOME}/rg/config";
-    CARGO_HOME = "${XDG_DATA_HOME}/cargo";
-    RUSTUP_HOME = "${XDG_DATA_HOME}/rustup";
-    GOPATH = "${XDG_DATA_HOME}/go";
-    GOMODCACHE = "${XDG_CACHE_HOME}/go/mod";
-    NPM_CONFIG_USERCONFIG = "${XDG_CONFIG_HOME}/npm/npmrc";
-    NPM_CONFIG_PREFIX = "${XDG_DATA_HOME}/npm";
-    NPM_CONFIG_CACHE = "${XDG_CACHE_HOME}/npm";
-    NPM_CONFIG_INIT_MODULE = "${XDG_CONFIG_HOME}/npm/config/npm-init.js";
-    NODE_REPL_HISTORY = "${XDG_STATE_HOME}/node_repl_history";
-    PNPM_HOME = "${XDG_DATA_HOME}/pnpm";
-    PNPM_NO_UPDATE_NOTIFIER = "true";
-    PYTHONSTARTUP = "${XDG_CONFIG_HOME}/python/pythonrc";
-    PYTHON_HISTORY = "${XDG_STATE_HOME}/python_history";
-    PYTHONPYCACHEPREFIX = "${XDG_CACHE_HOME}/python";
-    PYTHONUSERBASE = "${XDG_DATA_HOME}/python";
-    MYPY_CACHE_DIR = "${XDG_CACHE_HOME}/mypy";
-    JUPYTER_CONFIG_DIR = "${XDG_CONFIG_HOME}/jupyter";
-    JUPYTER_PLATFORM_DIRS = "1";
-    OPAMROOT = "${XDG_DATA_HOME}/opam";
-    DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
-    DEVIN_PERMISSION_MODE = "dangerous";
-    AWS_SHARED_CREDENTIALS_FILE = "${XDG_CONFIG_HOME}/aws/credentials";
-    AWS_CONFIG_FILE = "${XDG_CONFIG_HOME}/aws/config";
-    BOTO_CONFIG = "${XDG_CONFIG_HOME}/boto/config";
-    PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
-    SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
-  };
+      GIT_CONFIG_GLOBAL = "${XDG_CONFIG_HOME}/git/config";
+      WGETRC = "${XDG_CONFIG_HOME}/wgetrc";
+      LUAROCKS_CONFIG = "${XDG_CONFIG_HOME}/luarocks/config.lua";
+      GRADLE_USER_HOME = "${XDG_CONFIG_HOME}/gradle";
+      LIBVIRT_DEFAULT_URI = "qemu:///system";
+      MBSYNCRC = "${XDG_CONFIG_HOME}/mbsync/config";
+      PARALLEL_HOME = "${XDG_CONFIG_HOME}/parallel";
+      PASSWORD_STORE_DIR = "${XDG_DATA_HOME}/pass";
+      PRETTIERD_CONFIG_HOME = "${XDG_STATE_HOME}/prettierd";
+      RIPGREP_CONFIG_PATH = "${XDG_CONFIG_HOME}/rg/config";
+      CARGO_HOME = "${XDG_DATA_HOME}/cargo";
+      RUSTUP_HOME = "${XDG_DATA_HOME}/rustup";
+      GOPATH = "${XDG_DATA_HOME}/go";
+      GOMODCACHE = "${XDG_CACHE_HOME}/go/mod";
+      NPM_CONFIG_USERCONFIG = "${XDG_CONFIG_HOME}/npm/npmrc";
+      NPM_CONFIG_PREFIX = "${XDG_DATA_HOME}/npm";
+      NPM_CONFIG_CACHE = "${XDG_CACHE_HOME}/npm";
+      NPM_CONFIG_INIT_MODULE = "${XDG_CONFIG_HOME}/npm/config/npm-init.js";
+      NODE_REPL_HISTORY = "${XDG_STATE_HOME}/node_repl_history";
+      PNPM_HOME = "${XDG_DATA_HOME}/pnpm";
+      PNPM_NO_UPDATE_NOTIFIER = "true";
+      PYTHONSTARTUP = "${XDG_CONFIG_HOME}/python/pythonrc";
+      PYTHON_HISTORY = "${XDG_STATE_HOME}/python_history";
+      PYTHONPYCACHEPREFIX = "${XDG_CACHE_HOME}/python";
+      PYTHONUSERBASE = "${XDG_DATA_HOME}/python";
+      MYPY_CACHE_DIR = "${XDG_CACHE_HOME}/mypy";
+      JUPYTER_CONFIG_DIR = "${XDG_CONFIG_HOME}/jupyter";
+      JUPYTER_PLATFORM_DIRS = "1";
+      OPAMROOT = "${XDG_DATA_HOME}/opam";
+      DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
+      DEVIN_PERMISSION_MODE = "dangerous";
+      AWS_SHARED_CREDENTIALS_FILE = "${XDG_CONFIG_HOME}/aws/credentials";
+      AWS_CONFIG_FILE = "${XDG_CONFIG_HOME}/aws/config";
+      BOTO_CONFIG = "${XDG_CONFIG_HOME}/boto/config";
+      PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
+      SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
+    }
+    // lib.optionalAttrs isDarwin {
+      CODEX_HOME = "${XDG_CONFIG_HOME}/codex";
+    };
 
   activationText = ''
         ${mkDir "${XDG_CONFIG_HOME}/zsh"}
@@ -315,6 +319,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
+            ${lib.optionalString isDarwin (mkDir "${XDG_CONFIG_HOME}/codex")}
             ${mkDir clangdConfigDir}
             ${mkDir "${XDG_DATA_HOME}/nvim/site"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
@@ -338,6 +343,7 @@ let
             ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
             ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
+            ${lib.optionalString isDarwin (mkSymlink "${repo}/config/codex/config.toml" "${XDG_CONFIG_HOME}/codex/config.toml")}
             devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
             devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
             trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
