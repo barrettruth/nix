@@ -2,40 +2,52 @@
 
 local aug = vim.api.nvim_create_augroup('Resize', { clear = true })
 
-local ratios, cols, lines = {}, vim.o.columns, vim.o.lines
+---@type table<integer, table<integer, [number, number]>>
+local tab_ratios = {}
+local cols, lines = vim.o.columns, vim.o.lines
 local applying = false
 
----@return integer
-local function usable()
-    local tabline = vim.o.showtabline == 2
-        or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
+---@param tab integer
+---@return integer[] wins, integer width, integer height
+local function layout(tab)
+    local wins = {}
+    local top, left = math.huge, math.huge
+    local bottom, right = 0, 0
 
-    return math.max(
-        1,
-        vim.o.lines
-            - vim.o.cmdheight
-            - (tabline and 1 or 0)
-            - (vim.o.laststatus > 0 and 1 or 0)
-    )
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+        if vim.api.nvim_win_get_config(win).relative == '' then
+            local pos = vim.api.nvim_win_get_position(win)
+            wins[#wins + 1] = win
+            top = math.min(top, pos[1])
+            left = math.min(left, pos[2])
+            bottom = math.max(bottom, pos[1] + vim.api.nvim_win_get_height(win))
+            right = math.max(right, pos[2] + vim.api.nvim_win_get_width(win))
+        end
+    end
+
+    return wins, math.max(1, right - left), math.max(1, bottom - top)
 end
 
 local function capture_ratios()
     if applying or vim.o.columns ~= cols or vim.o.lines ~= lines then
         return
     end
-    local rows = usable()
-    ratios = {}
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if vim.api.nvim_win_get_config(win).relative == '' then
-            ratios[win] = {
-                vim.api.nvim_win_get_width(win) / cols,
-                vim.api.nvim_win_get_height(win) / rows,
-            }
-        end
+
+    local tab = vim.api.nvim_get_current_tabpage()
+    local wins, width, height = layout(tab)
+    local ratios = {}
+    for _, win in ipairs(wins) do
+        ratios[win] = {
+            vim.api.nvim_win_get_width(win) / width,
+            vim.api.nvim_win_get_height(win) / height,
+        }
     end
+    tab_ratios[tab] = ratios
 end
 
-vim.api.nvim_create_autocmd({ 'WinResized', 'WinNew', 'WinClosed' }, {
+capture_ratios()
+
+vim.api.nvim_create_autocmd({ 'WinResized', 'TabEnter' }, {
     group = aug,
     callback = capture_ratios,
 })
@@ -44,16 +56,22 @@ vim.api.nvim_create_autocmd('VimResized', {
     group = aug,
     callback = function()
         applying = true
-        local rows = usable()
-        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-            local ratio = ratios[win]
-            if ratio then
-                pcall(
-                    vim.api.nvim_win_resize,
-                    win,
-                    math.max(1, math.floor(ratio[1] * vim.o.columns + 0.5)),
-                    math.max(1, math.floor(ratio[2] * rows + 0.5))
-                )
+        for tab, ratios in pairs(tab_ratios) do
+            if vim.api.nvim_tabpage_is_valid(tab) then
+                local wins, width, height = layout(tab)
+                for _, win in ipairs(wins) do
+                    local ratio = ratios[win]
+                    if ratio then
+                        pcall(
+                            vim.api.nvim_win_resize,
+                            win,
+                            math.max(1, math.floor(ratio[1] * width + 0.5)),
+                            math.max(1, math.floor(ratio[2] * height + 0.5))
+                        )
+                    end
+                end
+            else
+                tab_ratios[tab] = nil
             end
         end
         cols, lines = vim.o.columns, vim.o.lines
