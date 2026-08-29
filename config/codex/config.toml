@@ -10,6 +10,14 @@ check_for_update_on_startup = false
 log_dir = "~/.local/state/codex/log"
 sqlite_home = "~/.local/state/codex"
 
+[[hooks.SessionStart]]
+matcher = "startup|resume"
+
+[[hooks.SessionStart.hooks]]
+command = "/nix/store/k07j8cq0iyvna81qlhwxz8xq6pkz02z8-python3-3.14.7/bin/python3 /Users/bruth/.config/nix/config/agents/hooks/repo-env.py session"
+timeout = 5
+type = "command"
+
 [mcp_servers.gcalendar]
 command = "npx"
 args = ["-y", "@cocal/google-calendar-mcp@2.6.2", "start"]
@@ -38,8 +46,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [tui]
-status_line = ["model-with-reasoning", "current-dir", "run-state"]
+status_line = ["model-with-reasoning", "run-state", "context-used"]
 status_line_use_colors = true
+vim_mode_default = true
 
 [tui.model_availability_nux]
 "gpt-5.6-sol" = 1
