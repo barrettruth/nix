@@ -27,6 +27,11 @@
       "all_frames": false
     },
     {
+      "matches": ["*://github.com/*"],
+      "css": ["github.css"],
+      "run_at": "document_start"
+    },
+    {
       "matches": ["*://*.linkedin.com/*"],
       "css": ["linkedin.css"],
       "run_at": "document_start"
