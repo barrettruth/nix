@@ -18,10 +18,6 @@ let
   XDG_STATE_HOME = "${homeDirectory}/.local/state";
   XDG_CACHE_HOME = "${homeDirectory}/.cache";
   repo = "${XDG_CONFIG_HOME}/nix";
-  xkbBaremak = builtins.path {
-    path = ../../../config/xkb/baremak;
-    name = "xkb-baremak";
-  };
   configRoot = "${repo}/config";
 
   wayland = import ../desktop/wayland.nix { inherit pkgs; };
@@ -280,12 +276,6 @@ in
       };
     };
 
-    services.xserver.xkb.extraLayouts.baremak = {
-      description = "English (Baremak)";
-      languages = [ "eng" ];
-      symbolsFile = xkbBaremak;
-    };
-
     environment.pathsToLink = [
       "/share/applications"
       "/share/xdg-desktop-portal"
@@ -393,7 +383,6 @@ in
       ${mkSymlink "${hyprThemes}/midnight.lua" "${XDG_CONFIG_HOME}/hypr/themes/midnight.lua"}
       ${mkSymlink "${hyprThemes}/daylight.lua" "${XDG_CONFIG_HOME}/hypr/themes/daylight.lua"}
       ${mkSymlink "${hyprlandConf}" "${XDG_CONFIG_HOME}/hypr/hyprland.lua"}
-      ${mkSymlink "${configRoot}/xkb/baremak" "${XDG_CONFIG_HOME}/xkb/symbols/baremak"}
       ${mkSymlink "${hyprpaperConf}" "${XDG_CONFIG_HOME}/hypr/hyprpaper.conf"}
 
       ${mkSymlink "${waybarThemes}/midnight.css" "${XDG_CONFIG_HOME}/waybar/themes/midnight.css"}

@@ -45,8 +45,8 @@ hl.config({
 	},
 
 	input = {
-		kb_layout = "us,us,us,baremak",
-		kb_variant = ",dvorak,colemak_dh,",
+		kb_layout = "us,us,us",
+		kb_variant = ",dvorak,colemak_dh",
 		follow_mouse = 1,
 		sensitivity = 0,
 		touchpad = {
