@@ -52,9 +52,9 @@ while edits inside an existing one are live.
 | `stylua --check`, `lua-language-server --check` | `config/nvim`                        |
 | `deadnix --fail --no-lambda-pattern-names`      | dead nix bindings                    |
 
-Both steps enumerate the same `paths` (`scripts/**`, `modules/**`, `config/**`,
-`pkgs/**`), picking up shell and python by extension or shebang, so skill
-scripts, git hooks and devin hooks are covered too.
+Both steps enumerate the same `paths` (`.devin/skills/**`, `scripts/**`,
+`modules/**`, `config/**`, `pkgs/**`), picking up shell and python by extension
+or shebang, so skill scripts, git hooks and devin hooks are covered too.
 
 lua-language-server only resolves `vim.*` when `VIMRUNTIME` is set, so `lint`
 derives it from whichever `nvim` is on PATH. Bare, that is the local nightly

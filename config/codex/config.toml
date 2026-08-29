@@ -39,8 +39,7 @@ startup_timeout_sec = 30
 required = true
 
 [mcp_servers.gdrive]
-command = "/Users/bruth/.config/nix/scripts/mcp-gdrive"
-env_vars = ["NPM_CONFIG_CACHE"]
+command = "mcp-gdrive"
 startup_timeout_sec = 30
 required = true
 

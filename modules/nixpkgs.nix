@@ -79,6 +79,7 @@ let
         neovim = final.callPackage ../pkgs/neovim {
           neovimPackage = localNeovim prev.neovim-unwrapped;
         };
+        mcp-gdrive = final.callPackage ../pkgs/mcp-gdrive { };
         barrett-berkeley-mono = final.callPackage ../pkgs/berkeley-mono.nix {
           src = inputs.font-berkeley-mono;
         };
@@ -108,7 +109,7 @@ in
     {
       _module.args.pkgs = pkgs;
       packages = {
-        inherit (pkgs) neovim barrett-berkeley-mono;
+        inherit (pkgs) neovim mcp-gdrive barrett-berkeley-mono;
       };
     };
 }

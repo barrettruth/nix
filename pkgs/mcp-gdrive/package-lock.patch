@@ -1,0 +1,13 @@
+diff --git a/package-lock.json b/package-lock.json
+index 78c0d41..5c92fe9 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -50,6 +50,8 @@
+     },
+     "node_modules/@types/node": {
+       "version": "22.9.3",
++      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.9.3.tgz",
++      "integrity": "sha512-F3u1fs/fce3FFk+DAxbxc78DF8x0cY09RRL8GnXLmkJ1jvx3TtPdWoTT5/NiYfI5ASqXBmfqJi9dZ3gxMx4lzw==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {

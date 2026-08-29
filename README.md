@@ -30,7 +30,7 @@ modules/
   theme.nix                      central palette definition
 config/                          app configs (symlinked into XDG dirs)
 services/                        services a host can adopt, see below
-scripts/                         runtime scripts
+scripts/                         personal commands
 secrets/                         sops-encrypted secrets
 pkgs/                            custom derivations
 ```
