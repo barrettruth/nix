@@ -6,7 +6,6 @@ vim.pack.add({
     'https://github.com/folke/lazydev.nvim',
     'https://github.com/mrcjkb/rustaceanvim',
     'https://github.com/saecki/live-rename.nvim',
-    'https://github.com/yioneko/nvim-vtsls',
 }, { load = function() end })
 
 return {
@@ -53,9 +52,6 @@ return {
             })
         end,
         keys = { 'grn' },
-    },
-    {
-        'yioneko/nvim-vtsls',
     },
     {
         'mrcjkb/rustaceanvim',
