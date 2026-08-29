@@ -68,10 +68,6 @@
       "rev": "898ee307df58f854d11cd7edd06472574d48014e",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects"
     },
-    "rustaceanvim": {
-      "rev": "791ef71968d542e3764174fac5264da1eac0ccf7",
-      "src": "https://github.com/mrcjkb/rustaceanvim"
-    },
     "vim-abolish": {
       "rev": "dcbfe065297d31823561ba787f51056c147aa682",
       "src": "https://github.com/tpope/vim-abolish"
