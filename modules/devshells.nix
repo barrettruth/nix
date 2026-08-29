@@ -32,46 +32,17 @@
           ];
         };
         ci = pkgs.mkShell {
-          packages = commonPackages ++ [ pkgs.neovim-unwrapped ];
+          packages = commonPackages ++ [ pkgs.neovim ];
         };
         neovim-config = pkgs.mkShellNoCC {
           packages = [
             pkgs.just
+            pkgs.neovim
             pkgs.prettier
             pkgs.selene
             pkgs.stylua
             pkgs.lua-language-server
             inputs.vimdoc-language-server.packages.${system}.default
-          ];
-        };
-        neovim-src = pkgs.mkShell {
-          packages = [
-            pkgs.just
-            pkgs.bash
-            pkgs.gnumake
-            pkgs.cmake
-            pkgs.ninja
-            pkgs.gettext
-            pkgs.curl
-            pkgs.git
-            pkgs.pkg-config
-            pkgs.unzip
-            pkgs.stylua
-            pkgs.shellcheck
-            pkgs.ts_query_ls
-            pkgs.fish
-            pkgs.gdb
-            pkgs.xdg-utils
-            pkgs.nodejs
-            pkgs.perlPackages.Appcpanminus
-            (pkgs.python3.withPackages (ps: [
-              ps.pynvim
-            ]))
-          ]
-          ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-            pkgs.inotify-tools
-            pkgs.attr
-            pkgs.acl
           ];
         };
       };

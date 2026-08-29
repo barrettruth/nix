@@ -57,9 +57,7 @@ Both steps enumerate the same `paths` (`.devin/skills/**`, `scripts/**`,
 or shebang, so skill scripts, git hooks and devin hooks are covered too.
 
 lua-language-server only resolves `vim.*` when `VIMRUNTIME` is set, so `lint`
-derives it from whichever `nvim` is on PATH. Bare, that is the local nightly
-build; in `.#ci` it is the `neovim-unwrapped` the shell pins, which lags and so
-under-reports deprecations rather than inventing them.
+derives it from the pinned nightly `nvim` in `.#ci`.
 
 basedpyright reads `pyrightconfig.json` at the root: `strict`, pinned to python
 3.11, with `config/skills/_lib` on `extraPaths` so the skill scripts' runtime
@@ -73,7 +71,7 @@ imports keep a `# ty: ignore[unresolved-import]`.
 | `modules/hosts/<host>.nix`        | per-host composition                                                     |
 | `modules/barrett/workstation.nix` | the dotfile activation script: symlinks, generated configs, package list |
 | `modules/{darwin,nixos}/`         | platform-specific modules                                                |
-| `modules/devshells.nix`           | `default`, `ci`, `neovim-config`, `neovim-src` shells                    |
+| `modules/devshells.nix`           | `default`, `ci`, and `neovim-config` shells                              |
 | `pkgs/`                           | packages built here rather than taken from nixpkgs                       |
 | `config/`                         | the dotfiles themselves, deployed by activation                          |
 | `secrets/<host>/`                 | sops-encrypted; never read, decrypt, or rewrite these                    |
