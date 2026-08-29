@@ -29,6 +29,7 @@ in
         {
           barrett.workstation.enable = true;
           barrett.ui.enable = false;
+          barrett.whisper.enable = true;
           programs.direnv.enable = true;
           programs.direnv.enableZshIntegration = false;
           programs.direnv.nix-direnv.enable = true;
@@ -45,6 +46,11 @@ in
               ++ [
                 "nvidia-x11"
                 "nvidia-kernel-modules"
+                "cuda_cccl"
+                "cuda_cudart"
+                "cuda_nvrtc"
+                "libcublas"
+                "cuda_nvcc"
               ]
             );
         }

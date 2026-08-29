@@ -4,7 +4,6 @@
   lib,
   palettes,
   themeGenerators,
-  whisperPkgs ? pkgs,
   act,
   ...
 }:
@@ -44,8 +43,6 @@ let
     text/plain=nvim.desktop
     application/pdf=org.pwmt.zathura.desktop
   '';
-
-  whisper = whisperPkgs.whisper-cpp.override { cudaSupport = cfg.gpu != "generic"; };
 
   zathuraThemes = pkgs.runCommand "zathura-theme-files" { } ''
     mkdir -p $out
@@ -215,7 +212,6 @@ in
         ])
         ++ [
           chromium
-          whisper
         ];
     };
 
@@ -322,15 +318,6 @@ in
       };
     };
 
-    systemd.user.services.whisper-dictation = {
-      description = "Whisper dictation server";
-      unitConfig.ConditionPathExists = "${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin";
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = "${whisper}/bin/whisper-server --model ${XDG_DATA_HOME}/whisper-models/ggml-large-v3-turbo-q5_0.bin --host 127.0.0.1 --port 8178";
-      };
-    };
-
     systemd.user.services.dconf-setup = {
       description = "Set dconf preferences";
       wantedBy = [ "hyprland-session.target" ];
@@ -374,7 +361,6 @@ in
       ${mkDir "${XDG_CONFIG_HOME}/dunst/dunstrc.d"}
       ${mkDir "${XDG_CONFIG_HOME}/zathura"}
       ${mkDir "${XDG_CONFIG_HOME}/zathura/themes"}
-      ${mkDir "${XDG_DATA_HOME}/whisper-models"}
       ${mkDir "${homeDirectory}/Pictures/Screensavers"}
 
       ${mkSymlink "${mimeappsList}" "${XDG_CONFIG_HOME}/mimeapps.list"}
