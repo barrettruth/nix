@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 let
   palettes = {
     midnight = {
@@ -42,6 +42,215 @@ let
   hex = color: builtins.substring 1 6 color;
 
   hexToFuzzel = color: "${builtins.substring 1 6 color}ff";
+
+  colorChannel = color: offset: lib.fromHexString (builtins.substring offset 2 color);
+
+  formatColorChannel =
+    value:
+    let
+      hexValue = lib.toHexString value;
+    in
+    if builtins.stringLength hexValue == 1 then "0${hexValue}" else hexValue;
+
+  blendColor =
+    foreground: background: opacity:
+    let
+      blendChannel =
+        offset:
+        builtins.div (
+          colorChannel foreground offset * opacity + colorChannel background offset * (100 - opacity)
+        ) 100;
+    in
+    "#${formatColorChannel (blendChannel 1)}${formatColorChannel (blendChannel 3)}${formatColorChannel (blendChannel 5)}";
+
+  mkCodexScope =
+    {
+      name,
+      scope,
+      foreground,
+      background ? null,
+      fontStyle ? null,
+    }:
+    ''
+      <dict>
+        <key>name</key>
+        <string>${name}</string>
+        <key>scope</key>
+        <string>${scope}</string>
+        <key>settings</key>
+        <dict>
+          <key>foreground</key>
+          <string>${foreground}</string>
+          ${lib.optionalString (background != null) ''
+            <key>background</key>
+            <string>${background}</string>
+          ''}
+          ${lib.optionalString (fontStyle != null) ''
+            <key>fontStyle</key>
+            <string>${fontStyle}</string>
+          ''}
+        </dict>
+      </dict>
+    '';
+
+  mkCodexTheme =
+    {
+      name,
+      background,
+      foreground,
+      muted,
+      red,
+      green,
+      yellow,
+      blue,
+      diffBackgrounds ? null,
+    }:
+    let
+      scopes = [
+        {
+          name = "Comments";
+          scope = "comment, punctuation.definition.comment";
+          foreground = muted;
+        }
+        {
+          name = "Keywords";
+          scope = "keyword, storage.modifier, meta.preprocessor";
+          foreground = blue;
+        }
+        {
+          name = "Strings";
+          scope = "string, constant.character";
+          foreground = green;
+        }
+        {
+          name = "Constants";
+          scope = "constant, constant.numeric, constant.language, support.constant";
+          foreground = green;
+        }
+        {
+          name = "Code";
+          scope = "entity.name, entity.other.attribute-name, support.function, support.type, variable, keyword.operator, storage.type, punctuation";
+          inherit foreground;
+        }
+        {
+          name = "Headings";
+          scope = "markup.heading, entity.name.section";
+          inherit foreground;
+          fontStyle = "bold";
+        }
+        {
+          name = "Emphasis";
+          scope = "markup.italic";
+          inherit foreground;
+          fontStyle = "italic";
+        }
+        {
+          name = "Strong";
+          scope = "markup.bold";
+          inherit foreground;
+          fontStyle = "bold";
+        }
+        {
+          name = "Links";
+          scope = "markup.underline.link, string.other.link";
+          inherit foreground;
+          fontStyle = "underline";
+        }
+        {
+          name = "Notes";
+          scope = "keyword.other.note";
+          foreground = blue;
+          fontStyle = "bold italic";
+        }
+        {
+          name = "Warnings";
+          scope = "keyword.other.todo, keyword.other.fixme, keyword.other.warning";
+          foreground = yellow;
+          fontStyle = "bold italic";
+        }
+        {
+          name = "Invalid";
+          scope = "invalid, invalid.illegal";
+          foreground = red;
+        }
+        {
+          name = "Inserted";
+          scope = "markup.inserted, diff.inserted";
+          foreground = green;
+          background = if diffBackgrounds == null then null else diffBackgrounds.added;
+        }
+        {
+          name = "Deleted";
+          scope = "markup.deleted, diff.deleted";
+          foreground = red;
+          background = if diffBackgrounds == null then null else diffBackgrounds.deleted;
+        }
+        {
+          name = "Changed";
+          scope = "markup.changed, diff.changed, meta.diff.header";
+          foreground = blue;
+          background = if diffBackgrounds == null then null else diffBackgrounds.changed;
+        }
+      ];
+    in
+    ''
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>name</key>
+        <string>${name}</string>
+        <key>settings</key>
+        <array>
+          <dict>
+            <key>settings</key>
+            <dict>
+              <key>background</key>
+              <string>${background}</string>
+              <key>foreground</key>
+              <string>${foreground}</string>
+            </dict>
+          </dict>
+          ${lib.concatMapStrings mkCodexScope scopes}
+        </array>
+      </dict>
+      </plist>
+    '';
+
+  mkCodexPaletteTheme =
+    name: palette:
+    mkCodexTheme {
+      inherit name;
+      inherit (palette)
+        red
+        green
+        yellow
+        blue
+        ;
+      background = palette.bg;
+      foreground = palette.fg;
+      muted = palette.fgAlt;
+      diffBackgrounds = {
+        added = blendColor palette.green palette.bg 40;
+        deleted = blendColor palette.red palette.bg 40;
+        changed = blendColor palette.blue palette.bg 40;
+      };
+    };
+
+  mkCodexAnsiTheme =
+    name:
+    mkCodexTheme {
+      inherit name;
+      # Codex interprets the alpha byte as an ANSI palette selector. Palette
+      # indices follow Ghostty as it switches between Midnight and Daylight.
+      background = "#00000001";
+      foreground = "#00000001";
+      muted = "#08000000";
+      red = "#01000000";
+      green = "#02000000";
+      yellow = "#03000000";
+      blue = "#04000000";
+    };
 
   mkFzfTheme = palette: ''
     --color=fg:${palette.fg},bg:${palette.bg},hl:${palette.accent}
@@ -179,6 +388,8 @@ in
         mkZathuraTheme
         mkChromeThemeCss
         mkChromeThemeJs
+        mkCodexPaletteTheme
+        mkCodexAnsiTheme
         ;
     };
   };

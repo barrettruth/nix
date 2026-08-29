@@ -4,6 +4,8 @@
   pkgs,
   act,
   mkHostSecret,
+  palettes,
+  themeGenerators,
   ...
 }:
 let
@@ -26,6 +28,25 @@ let
   repoEnv = "${pkgs.python3}/bin/python3 ${repo}/config/agents/hooks/repo-env.py";
 
   imcCaBundle = "/etc/ssl/certs/ca-certificates-imc.crt";
+
+  codexThemes = pkgs.linkFarm "codex-themes" [
+    {
+      name = "midnight.tmTheme";
+      path = pkgs.writeText "midnight.tmTheme" (
+        themeGenerators.mkCodexPaletteTheme "Midnight" palettes.midnight
+      );
+    }
+    {
+      name = "daylight.tmTheme";
+      path = pkgs.writeText "daylight.tmTheme" (
+        themeGenerators.mkCodexPaletteTheme "Daylight" palettes.daylight
+      );
+    }
+    {
+      name = "midnight-auto.tmTheme";
+      path = pkgs.writeText "midnight-auto.tmTheme" (themeGenerators.mkCodexAnsiTheme "Midnight Auto");
+    }
+  ];
 
   codexConfig = (pkgs.formats.toml { }).generate "codex-config.toml" {
     model = "gpt-5.6-sol";
@@ -77,6 +98,7 @@ let
     };
 
     tui = {
+      theme = "midnight-auto";
       vim_mode_default = true;
       status_line = [
         "model-with-reasoning"
@@ -200,6 +222,7 @@ in
       trap - EXIT
 
       ${act.installDirMode "0700" codexHome}
+      ${act.installDirMode "0755" "${codexHome}/themes"}
       ${act.installDirMode "0755" "${homeDirectory}/.local/state/codex"}
       if [ -L "${codexHome}/config.toml" ]; then
         ${act.runAsUser} ${pkgs.coreutils}/bin/unlink "${codexHome}/config.toml"
@@ -207,6 +230,9 @@ in
       ${pkgs.coreutils}/bin/install -m 0600 -o ${config.barrett.user.name} -g ${act.group} \
         "${codexConfig}" "${codexHome}/config.toml"
       ${act.mkSymlink "${repo}/config/agents/AGENTS.md" "${codexHome}/AGENTS.md"}
+      ${act.mkSymlink "${codexThemes}/midnight.tmTheme" "${codexHome}/themes/midnight.tmTheme"}
+      ${act.mkSymlink "${codexThemes}/daylight.tmTheme" "${codexHome}/themes/daylight.tmTheme"}
+      ${act.mkSymlink "${codexThemes}/midnight-auto.tmTheme" "${codexHome}/themes/midnight-auto.tmTheme"}
     '';
 
   barrett.mac.chrome = {
