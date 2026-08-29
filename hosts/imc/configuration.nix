@@ -31,20 +31,14 @@ let
 
   codexThemes = pkgs.linkFarm "codex-themes" [
     {
-      name = "midnight.tmTheme";
-      path = pkgs.writeText "midnight.tmTheme" (
-        themeGenerators.mkCodexPaletteTheme "Midnight" palettes.midnight
-      );
-    }
-    {
       name = "daylight.tmTheme";
       path = pkgs.writeText "daylight.tmTheme" (
         themeGenerators.mkCodexPaletteTheme "Daylight" palettes.daylight
       );
     }
     {
-      name = "midnight-auto.tmTheme";
-      path = pkgs.writeText "midnight-auto.tmTheme" (themeGenerators.mkCodexAnsiTheme "Midnight Auto");
+      name = "midnight.tmTheme";
+      path = pkgs.writeText "midnight.tmTheme" (themeGenerators.mkCodexAnsiTheme "Midnight");
     }
   ];
 
@@ -98,7 +92,7 @@ let
     };
 
     tui = {
-      theme = "midnight-auto";
+      theme = "midnight";
       vim_mode_default = true;
       status_line = [
         "model-with-reasoning"
@@ -232,7 +226,9 @@ in
       ${act.mkSymlink "${repo}/config/agents/AGENTS.md" "${codexHome}/AGENTS.md"}
       ${act.mkSymlink "${codexThemes}/midnight.tmTheme" "${codexHome}/themes/midnight.tmTheme"}
       ${act.mkSymlink "${codexThemes}/daylight.tmTheme" "${codexHome}/themes/daylight.tmTheme"}
-      ${act.mkSymlink "${codexThemes}/midnight-auto.tmTheme" "${codexHome}/themes/midnight-auto.tmTheme"}
+      if [ -L "${codexHome}/themes/midnight-auto.tmTheme" ]; then
+        ${act.runAsUser} ${pkgs.coreutils}/bin/unlink "${codexHome}/themes/midnight-auto.tmTheme"
+      fi
     '';
 
   barrett.mac.chrome = {

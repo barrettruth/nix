@@ -53,7 +53,7 @@ trust_level = "trusted"
 status_line = ["model-with-reasoning", "run-state", "context-used"]
 status_line_use_colors = true
 vim_mode_default = true
-theme = "midnight-auto"
+theme = "midnight"
 
 [tui.model_availability_nux]
 "gpt-5.6-sol" = 1
