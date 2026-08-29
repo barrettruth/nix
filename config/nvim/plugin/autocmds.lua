@@ -101,7 +101,14 @@ vim.api.nvim_create_autocmd('WinLeave', {
     callback = function()
         vim.wo[0][0].cursorline = false
         if vim.bo.buftype == 'terminal' then
-            vim.w.term_mode = vim.api.nvim_get_mode().mode
+            local mode = vim.api.nvim_get_mode().mode
+            vim.w.term_mode = mode
+            if mode == 't' then
+                vim.api.nvim_win_set_cursor(
+                    0,
+                    { vim.api.nvim_buf_line_count(0), 0 }
+                )
+            end
         end
     end,
 })
