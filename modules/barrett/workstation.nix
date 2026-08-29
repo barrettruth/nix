@@ -246,7 +246,6 @@ let
     MBSYNCRC = "${XDG_CONFIG_HOME}/mbsync/config";
     PARALLEL_HOME = "${XDG_CONFIG_HOME}/parallel";
     PASSWORD_STORE_DIR = "${XDG_DATA_HOME}/pass";
-    PRETTIERD_CONFIG_HOME = "${XDG_STATE_HOME}/prettierd";
     RIPGREP_CONFIG_PATH = "${XDG_CONFIG_HOME}/rg/config";
     CARGO_HOME = "${XDG_DATA_HOME}/cargo";
     GOPATH = "${XDG_DATA_HOME}/go";
@@ -470,15 +469,12 @@ in
             gcc
             emmet-language-server
             mdx-language-server
-            tailwindcss-language-server
             vtsls
             vscode-langservers-extracted
             cmake-format
             prettier
-            prettierd
             shfmt
             checkmake
-            eslint_d
             shellcheck
             nodejs
             tea

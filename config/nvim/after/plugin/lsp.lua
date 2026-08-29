@@ -42,7 +42,6 @@ vim.lsp.enable({
     'lua_ls',
     'ocamllsp',
     'ruff',
-    'tailwindcss',
     'tinymist',
     'ts_query_ls',
     'vimdoc_ls',
