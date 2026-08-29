@@ -559,11 +559,12 @@ local function setup_keymaps()
         end, 'mux: ' .. entry.name .. ' view')
     end
 
-    for key, step in pairs({ ['('] = -1, [')'] = 1 }) do
-        map(prefix .. key, function()
-            walk(step * vim.v.count1)
-        end, 'mux: move tab')
-    end
+    map(prefix .. '[', function()
+        walk(-vim.v.count1)
+    end, 'mux: previous view')
+    map(prefix .. ']', function()
+        walk(vim.v.count1)
+    end, 'mux: next view')
 
     map(prefix .. "'", '<cmd>vertical terminal<cr>', 'mux: vertical terminal')
     map(prefix .. '-', '<cmd>split | terminal<cr>', 'mux: terminal')
