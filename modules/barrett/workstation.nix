@@ -58,14 +58,6 @@ let
     FZFDAYLIGHT
   '';
 
-  iosevkaTerm = (pkgs.iosevka-bin.override { variant = "SGr-IosevkaTerm"; }).overrideAttrs {
-    inherit (pkgs.iosevka) version;
-    src = pkgs.fetchurl {
-      url = "https://github.com/be5invis/Iosevka/releases/download/v${pkgs.iosevka.version}/PkgTTC-SGr-IosevkaTerm-${pkgs.iosevka.version}.zip";
-      hash = "sha256-dpzswpCXn2MN6Q6MscHHmyo80dsI8evHa21ELwkLEG0=";
-    };
-  };
-
   ghosttyDarwinConf = pkgs.writeText "ghostty-config-darwin" ''
     config-file = ${repo}/config/ghostty/config
     macos-option-as-alt = false
@@ -465,8 +457,6 @@ in
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
       {
-        fonts.packages = lib.optionals hasDisplay [ iosevkaTerm ];
-
         users.users.${username}.packages =
           (with pkgs; [
             awscli2

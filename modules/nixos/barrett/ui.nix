@@ -237,7 +237,6 @@ in
       ];
       monospace = [
         "Berkeley Mono"
-        "Iosevka Term"
       ];
       serif = [
         "Times New Roman"
