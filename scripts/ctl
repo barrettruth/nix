@@ -860,7 +860,7 @@ power)
   chosen="$(printf '%s\n' "$suspend" "$logout" "$reboot" "$shutdown" | fuzzel --dmenu --hide-prompt --lines=4 --width=20 --no-icons)"
   case "$chosen" in
   "$suspend") systemctl suspend ;;
-  "$logout") hyprctl dispatch 'hl.dsp.exit()' ;;
+  "$logout") uwsm stop ;;
   "$reboot") systemctl reboot ;;
   "$shutdown") systemctl poweroff ;;
   esac

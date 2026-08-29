@@ -167,24 +167,6 @@ in
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-    ];
-    config.common = {
-      default = [
-        "hyprland"
-        "gtk"
-      ];
-    };
-  };
-
-  environment.pathsToLink = [
-    "/share/applications"
-    "/share/xdg-desktop-portal"
-  ];
-
   security.sudo.enable = true;
   security.rtkit.enable = true;
 

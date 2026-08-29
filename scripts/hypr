@@ -101,9 +101,8 @@ case "$cmd" in
   exit 0
   ;;
 exit)
-  require hyprctl
-  pkill hyprpaper
-  hyprctl dispatch 'hl.dsp.exit()'
+  require uwsm
+  uwsm stop
   exit 0
   ;;
 pull)
