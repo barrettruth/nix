@@ -456,7 +456,6 @@ in
         users.users.${username}.packages =
           (with pkgs; [
             tree
-            typos
             jq
             curl
             wget
@@ -477,7 +476,6 @@ in
             vtsls
             vscode-langservers-extracted
             black
-            buf
             cmake-format
             isort
             prettier
