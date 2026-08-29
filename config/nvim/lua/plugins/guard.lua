@@ -5,6 +5,7 @@ vim.pack.add({
 
 return {
     'nvimdev/guard.nvim',
+    lazy = false,
     before = function()
         require('config.lz').load('guard-collection')
         vim.g.guard_config = {
