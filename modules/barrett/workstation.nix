@@ -469,7 +469,6 @@ in
             gcc
             emmet-language-server
             vscode-langservers-extracted
-            cmake-format
             prettier
             shfmt
             checkmake
