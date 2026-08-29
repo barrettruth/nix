@@ -466,7 +466,6 @@ in
             uv
             python3
             bash-language-server
-            basedpyright
             clang-tools
             gcc
             emmet-language-server
@@ -483,8 +482,6 @@ in
             shfmt
             checkmake
             eslint_d
-            hadolint
-            mypy
             ty
             shellcheck
             nodejs
