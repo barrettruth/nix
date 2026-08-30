@@ -239,6 +239,34 @@ brightness)
   pct=$(awk -v cur="$(brightnessctl get)" -v max="$(brightnessctl max)" 'BEGIN { printf "%d", cur * 100 / max }')
   notify-send -a ctl -t 2500 -r 5555 "Brightness $pct%" "$(mkbar "$pct")"
   ;;
+grayscale)
+  case "$2" in
+  toggle) ;;
+  *)
+    echo "Usage: ctl grayscale toggle" >&2
+    exit 1
+    ;;
+  esac
+  case "$(uname)" in
+  Darwin)
+    require python3
+    python3 - <<'PYTHON'
+from ctypes import CDLL, c_int
+
+universal_access = CDLL(
+    "/System/Library/PrivateFrameworks/UniversalAccess.framework/UniversalAccess"
+)
+universal_access.UAGrayscaleIsEnabled.restype = c_int
+universal_access.UAGrayscaleSetEnabled.argtypes = [c_int]
+universal_access.UAGrayscaleSetEnabled(not universal_access.UAGrayscaleIsEnabled())
+PYTHON
+    ;;
+  *)
+    echo "ctl: grayscale is not supported on $(uname)" >&2
+    exit 1
+    ;;
+  esac
+  ;;
 volume)
   require wpctl notify-send
   SINK="@DEFAULT_AUDIO_SINK@"
@@ -1016,7 +1044,7 @@ dictate)
   dictation_unlock
   ;;
 *)
-  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|volume|media|wallpaper|power|clip|dictate}" >&2
+  echo "Usage: ctl {screenshot|keyboard|audio|wifi|brightness|grayscale|volume|media|wallpaper|power|clip|dictate}" >&2
   exit 1
   ;;
 esac

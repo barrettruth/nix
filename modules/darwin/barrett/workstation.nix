@@ -246,6 +246,7 @@ in
         lalt - n : open -a Finder
 
         ralt - c : /usr/bin/osascript -l JavaScript ${spotlightClipboard}
+        ralt - g : ${scripts}/ctl grayscale toggle
         ralt - o : ${trexCapture}
         ralt - t : ${scripts}/theme
 
