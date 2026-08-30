@@ -211,17 +211,6 @@ let
 
   isLinux = !isDarwin;
 
-  clangCli = pkgs.linkFarm "clang-cli" [
-    {
-      name = "bin/clang";
-      path = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
-    }
-    {
-      name = "bin/clang++";
-      path = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang++";
-    }
-  ];
-
   sessionVariables = {
     inherit
       XDG_CONFIG_HOME
@@ -475,9 +464,6 @@ in
             uv
             python3
             bash-language-server
-            clangCli
-            gcc
-            gdb
             vscode-langservers-extracted
             prettier
             shfmt
