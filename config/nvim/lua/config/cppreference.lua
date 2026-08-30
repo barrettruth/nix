@@ -121,13 +121,23 @@ function M.setup()
             search(opts.args)
         end
     end, { force = true, nargs = '*' })
-    vim.keymap.set('n', 'gX', search_under_cursor, {
+    vim.keymap.set('n', '<Plug>(cppreference-search)', search_under_cursor, {
         buffer = true,
         desc = 'search cppreference',
     })
-    vim.keymap.set('x', 'gX', function()
+    vim.keymap.set('x', '<Plug>(cppreference-search)', function()
         search(visual_selection())
     end, { buffer = true, desc = 'search cppreference' })
+    vim.keymap.set('n', 'gX', '<Plug>(cppreference-search)', {
+        buffer = true,
+        remap = true,
+        desc = 'search cppreference',
+    })
+    vim.keymap.set('x', 'gX', '<Plug>(cppreference-search)', {
+        buffer = true,
+        remap = true,
+        desc = 'search cppreference',
+    })
 end
 
 return M
