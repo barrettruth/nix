@@ -9,6 +9,13 @@ require('gitsigns').setup({
     current_line_blame = false,
 })
 
+vim.keymap.set('n', '[g', function()
+    require('gitsigns').nav_hunk('prev', { count = vim.v.count1 })
+end, { desc = 'goto prev git hunk' })
+vim.keymap.set('n', ']g', function()
+    require('gitsigns').nav_hunk('next', { count = vim.v.count1 })
+end, { desc = 'goto next git hunk' })
+
 vim.keymap.set('n', '<leader>ig', function()
     require('config.statuscolumn').toggle_git()
 end, { desc = 'toggle git signs' })
