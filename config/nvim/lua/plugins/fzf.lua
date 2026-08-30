@@ -9,6 +9,7 @@ return {
         local actions = require('fzf-lua.actions')
 
         local opts = {
+            ui_select = {},
             files = {
                 cmd = vim.env.FZF_CTRL_T_COMMAND,
                 no_header_i = true,
