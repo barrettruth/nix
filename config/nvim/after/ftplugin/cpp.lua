@@ -1,4 +1,5 @@
 vim.opt.indentkeys:remove(':')
+vim.opt_local.iskeyword:append(':')
 require('config.cppreference').setup()
 
 if vim.bo.buftype ~= '' or vim.fn.expand('%:t:r') == '' then
