@@ -118,8 +118,6 @@ return {
                 typst = {
                     open = { vim.fn.has('mac') == 1 and 'open' or 'zathura' },
                 },
-                plantuml = true,
-                mermaid = true,
             }
         end,
         keys = {
