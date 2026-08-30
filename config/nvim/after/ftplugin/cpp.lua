@@ -1,4 +1,5 @@
 vim.opt.indentkeys:remove(':')
+require('config.cppreference').setup()
 
 if vim.bo.buftype ~= '' or vim.fn.expand('%:t:r') == '' then
     return
