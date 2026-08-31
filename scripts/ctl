@@ -811,8 +811,8 @@ def gen() -> None:
     for theme_name, colors in THEMES.items():
         img = render_contours(elevation, W, H, colors["bg"], colors["line"])
         draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype(FONT, 21)
-        draw.text((24, H - 38), label, fill=colors["label"], font=font)
+        font = ImageFont.truetype(FONT, 32)
+        draw.text((24, H - 49), label, fill=colors["label"], font=font)
         out_path = f"{DIR}/wallpaper-{theme_name}.jpg"
         img.save(out_path, quality=95)
         log(f"wrote theme={theme_name} path={out_path}")
