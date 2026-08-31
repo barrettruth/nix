@@ -50,7 +50,38 @@ local function user_tabpages()
     return vim.api.nvim_list_tabpages()
 end
 
-local function retire_session()
+---@return mux.State? state
+---@return string? err
+local function delete_session()
+    local server = require('mux.server')
+    local state = server.state()
+    local ok, err = require('mux.session').delete()
+
+    if not ok then
+        return nil, err
+    end
+
+    if state.server then
+        vim.fn.serverstop(state.server.socket)
+    end
+
+    return state
+end
+
+function M.stop()
+    local state, err = delete_session()
+    if not state then
+        return nil, err
+    end
+
+    vim.schedule(function()
+        vim.cmd.qall({ bang = true })
+    end)
+
+    return true
+end
+
+function M.retire()
     local server = require('mux.server')
     local state = server.state()
     local targets = {}
@@ -65,14 +96,16 @@ local function retire_session()
         end
     end
 
-    local ok, err = require('mux.session').delete()
-
-    if not ok then
+    local deleted, err = delete_session()
+    if not deleted then
         return nil, err
     end
 
-    if state.server then
-        vim.fn.serverstop(state.server.socket)
+    if #vim.api.nvim_list_uis() == 0 then
+        vim.schedule(function()
+            vim.cmd.qall({ bang = true })
+        end)
+        return true
     end
 
     local function exit(detach)
@@ -288,7 +321,7 @@ function M.close()
     end
 
     if #user_tabpages() <= 1 then
-        return retire_session()
+        return M.retire()
     end
 
     local bufs = {}
@@ -462,7 +495,7 @@ local function cleanup_terminal(buf)
                 if has_terminal then
                     vim.api.nvim_win_close(win, true)
                 elseif #user_tabpages() <= 1 then
-                    retire_session()
+                    M.retire()
                     return
                 else
                     vim.api.nvim_set_current_tabpage(tp)
@@ -572,7 +605,7 @@ local function setup_keymaps()
         M.close()
     end, 'mux: close view')
     map(prefix .. 'X', function()
-        retire_session()
+        M.retire()
     end, 'mux: kill session')
     map(prefix .. 'b', function()
         require('mux.line').toggle()

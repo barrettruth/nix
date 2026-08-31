@@ -13,7 +13,10 @@ local function has_marker(path)
         or vim.uv.fs_stat(path .. '/.jj') ~= nil
 end
 
-local function resolve_arg(arg)
+---@param arg string
+---@return string? root
+---@return string? err
+function M.resolve(arg)
     local raw = arg
     if raw == '' then
         raw = vim.fn.getcwd()
@@ -83,7 +86,7 @@ function M.mux(arg)
     end
 
     if not root then
-        root, err = resolve_arg(arg)
+        root, err = M.resolve(arg)
     end
 
     if not root then
