@@ -171,6 +171,8 @@ let
     restack = ["rebase", "-b", "@", "-o", "trunk()", "--skip-emptied"]
     rs = ["restack"]
     s = ["status"]
+    f = ["git", "fetch"]
+    pu = ["git", "push"]
     sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack && jj stack"]
     sy = ["sync"]
     up = ["git", "push", "-c", "ready()"]
