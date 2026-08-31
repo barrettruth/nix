@@ -58,24 +58,31 @@ function M.resolve(arg)
     return nil, 'no git/jj root: ' .. raw
 end
 
+---@param arg string?
+---@param cb mux.EnsureCallback
+---@return nil
+function M.ensure(arg, cb)
+    arg = vim.trim(arg or '')
+    local host, path = require('mux.remote').split(arg)
+    if host then
+        require('mux.remote').ensure(host, path, cb)
+        return
+    end
+
+    local root, err = M.resolve(arg)
+    if not root then
+        cb(nil, err)
+        return
+    end
+
+    server.ensure_target(root, cb)
+end
+
 ---Connect this UI to the mux server for a resolved project root.
 ---@param arg string?
 ---@return nil
 function M.mux(arg)
     arg = vim.trim(arg or '')
-    local root, err
-    local host, path = require('mux.remote').split(arg)
-    if host then
-        require('mux.remote').ensure(host, path, function(target, remote_err)
-            if not target then
-                done(nil, remote_err)
-                return
-            end
-
-            server.switch(target, done)
-        end)
-        return
-    end
 
     if arg == '' then
         local target = server.ordered()[1]
@@ -85,16 +92,14 @@ function M.mux(arg)
         end
     end
 
-    if not root then
-        root, err = M.resolve(arg)
-    end
+    M.ensure(arg, function(target, err)
+        if not target then
+            done(nil, err)
+            return
+        end
 
-    if not root then
-        done(nil, err)
-        return
-    end
-
-    server.connect(root, done)
+        server.switch(target, done)
+    end)
 end
 
 return M

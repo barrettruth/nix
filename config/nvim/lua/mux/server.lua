@@ -650,6 +650,15 @@ end
 ---@param cb mux.EnsureCallback
 ---@return nil
 function M.ensure(root, cb)
+    if current_server and current_server.root == root then
+        local existing = ready and current_server or nil
+        local err = not ready and (setup_error or 'not ready') or nil
+        vim.schedule(function()
+            cb(existing, err)
+        end)
+        return
+    end
+
     if pending[root] then
         pending[root].callbacks[#pending[root].callbacks + 1] = cb
         return
@@ -879,13 +888,10 @@ function M.attach(target_server, cb, clear_last)
     end)
 end
 
----Resolve a root to an address this UI can reach, then connect it.
 ---@param root string
----@param cb? fun(ok?: true, err?: string)
----@param clear_last? boolean
+---@param cb mux.EnsureCallback
 ---@return nil
-function M.connect(root, cb, clear_last)
-    cb = cb or function() end
+function M.ensure_target(root, cb)
     local self = current_server and peer_for(current_server.root)
 
     if self and not ours(self.socket) then
@@ -895,11 +901,21 @@ function M.connect(root, cb, clear_last)
             return
         end
 
-        M.switch(target, cb, clear_last)
+        cb(target)
         return
     end
 
-    M.ensure(root, function(target_server, ensure_err)
+    M.ensure(root, cb)
+end
+
+---Resolve a root to an address this UI can reach, then connect it.
+---@param root string
+---@param cb? fun(ok?: true, err?: string)
+---@param clear_last? boolean
+---@return nil
+function M.connect(root, cb, clear_last)
+    cb = cb or function() end
+    M.ensure_target(root, function(target_server, ensure_err)
         if not target_server then
             cb(nil, ensure_err)
             return
