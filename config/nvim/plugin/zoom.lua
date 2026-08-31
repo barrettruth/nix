@@ -52,4 +52,4 @@ local function zoom()
     })
 end
 
-vim.keymap.set('n', '<c-w>m', zoom, { desc = 'toggle zoom' })
+vim.keymap.set('n', '<c-w>z', zoom, { desc = 'toggle zoom' })
