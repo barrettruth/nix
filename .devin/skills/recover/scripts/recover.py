@@ -16,6 +16,8 @@ import time
 from pathlib import Path
 from typing import Literal, NotRequired, TypedDict, cast
 
+Backend = Literal["codex", "devin"]
+
 
 class RecoveryError(Exception):
     pass
@@ -35,6 +37,7 @@ class ProcessDetails(TypedDict):
 
 class StatusResult(TypedDict):
     ok: bool
+    backend: Backend
     session_id: str
     lock: str
     status: Literal["in_use", "available"]
@@ -44,6 +47,7 @@ class StatusResult(TypedDict):
 
 class ReleaseResult(TypedDict):
     ok: bool
+    backend: Backend
     session_id: str
     lock: str
     action: str
@@ -68,10 +72,51 @@ def data_home() -> Path:
     return Path(value).expanduser() if value else Path.home() / ".local" / "share"
 
 
-def lock_path(session_id: str) -> Path:
+def codex_home() -> Path:
+    value = os.environ.get("CODEX_HOME")
+    return Path(value).expanduser() if value else Path.home() / ".codex"
+
+
+def validate_session_id(session_id: str) -> None:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", session_id):
         raise RecoveryError(f"invalid session ID: {session_id!r}")
+
+
+def devin_lock_path(session_id: str) -> Path:
+    validate_session_id(session_id)
     return data_home() / "devin" / "cli" / "session_locks" / f"{session_id}.lock"
+
+
+def codex_lock_path(session_id: str) -> Path:
+    validate_session_id(session_id)
+    return codex_home() / "thread-writer-locks" / f"{session_id}.lock"
+
+
+def backend_for(session_id: str) -> Backend:
+    devin_path = devin_lock_path(session_id)
+    codex_path = codex_lock_path(session_id)
+    devin_exists = devin_path.exists()
+    codex_exists = codex_path.exists()
+    if devin_exists and codex_exists:
+        raise RecoveryError(
+            f"session ID {session_id!r} has both Devin and Codex lock files"
+        )
+    if codex_exists:
+        return "codex"
+    if devin_exists:
+        return "devin"
+    if re.fullmatch(
+        r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}",
+        session_id,
+    ):
+        return "codex"
+    return "devin"
+
+
+def lock_path(session_id: str, backend: Backend) -> Path:
+    if backend == "codex":
+        return codex_lock_path(session_id)
+    return devin_lock_path(session_id)
 
 
 def lock_is_held(path: Path) -> bool:
@@ -151,6 +196,16 @@ def process_is_devin(pid: int) -> bool:
     return Path(process_executable(pid)).name == "devin"
 
 
+def process_is_codex(pid: int) -> bool:
+    return Path(process_executable(pid)).name in {"codex", ".codex-wrapped"}
+
+
+def process_is_backend(pid: int, backend: Backend) -> bool:
+    if backend == "codex":
+        return process_is_codex(pid)
+    return process_is_devin(pid)
+
+
 def darwin_holds(pid: int, path: Path) -> bool:
     output = command_output(["lsof", "-t", "--", str(path)])
     for line in output.split():
@@ -177,6 +232,26 @@ def process_holds(pid: int, path: Path) -> bool:
         except (FileNotFoundError, PermissionError, OSError):
             continue
     return False
+
+
+def processes_with_open_file(path: Path) -> set[int]:
+    if DARWIN:
+        result: set[int] = set()
+        for line in command_output(["lsof", "-t", "--", str(path)]).split():
+            try:
+                result.add(int(line))
+            except ValueError:
+                continue
+        return result
+    result = set()
+    for directory in Path("/proc").glob("[0-9]*/fd"):
+        try:
+            pid = int(directory.parent.name)
+        except ValueError:
+            continue
+        if process_holds(pid, path):
+            result.add(pid)
+    return result
 
 
 def read_link(path: str) -> str | None:
@@ -235,7 +310,7 @@ def process_details(pid: int) -> ProcessDetails:
     }
 
 
-def lock_holder(path: Path) -> ProcessDetails | None:
+def devin_lock_holder(path: Path) -> ProcessDetails | None:
     for _ in range(3):
         if not lock_is_held(path):
             return None
@@ -260,6 +335,39 @@ def lock_holder(path: Path) -> ProcessDetails | None:
     )
 
 
+def codex_lock_holder(path: Path) -> ProcessDetails | None:
+    for _ in range(3):
+        if not lock_is_held(path):
+            return None
+        pids = {
+            pid
+            for pid in processes_with_open_file(path)
+            if pid > 1 and process_is_codex(pid) and process_holds(pid, path)
+        }
+        if len(pids) == 1:
+            try:
+                return process_details(pids.pop())
+            except RecoveryError:
+                pass
+        elif len(pids) > 1:
+            values = ", ".join(str(pid) for pid in sorted(pids))
+            raise RecoveryError(
+                f"{path} has multiple validated Codex processes with the lock file open: {values}"
+            )
+        time.sleep(0.05)
+    if not lock_is_held(path):
+        return None
+    raise RecoveryError(
+        f"{path} is locked, but its holder is not a validated Codex process"
+    )
+
+
+def lock_holder(path: Path, backend: Backend) -> ProcessDetails | None:
+    if backend == "codex":
+        return codex_lock_holder(path)
+    return devin_lock_holder(path)
+
+
 def ancestor_pids() -> set[int]:
     result: set[int] = set()
     pid = os.getpid()
@@ -272,8 +380,12 @@ def ancestor_pids() -> set[int]:
     return result
 
 
-def has_devin_ancestor() -> bool:
-    return any(process_is_devin(pid) for pid in ancestor_pids() if pid != os.getpid())
+def has_backend_ancestor(backend: Backend) -> bool:
+    return any(
+        process_is_backend(pid, backend)
+        for pid in ancestor_pids()
+        if pid != os.getpid()
+    )
 
 
 def same_process(pid: int, started: int) -> bool:
@@ -293,10 +405,12 @@ def wait_for_release(path: Path, timeout: float) -> bool:
 
 
 def status(session_id: str) -> StatusResult:
-    path = lock_path(session_id)
-    holder = lock_holder(path)
+    backend = backend_for(session_id)
+    path = lock_path(session_id, backend)
+    holder = lock_holder(path, backend)
     return {
         "ok": True,
+        "backend": backend,
         "session_id": session_id,
         "lock": str(path),
         "status": "in_use" if holder else "available",
@@ -308,11 +422,13 @@ def status(session_id: str) -> StatusResult:
 def release(session_id: str, timeout: float) -> ReleaseResult:
     if not math.isfinite(timeout) or timeout < 0:
         raise RecoveryError("timeout must be a finite non-negative number")
-    path = lock_path(session_id)
-    holder = lock_holder(path)
+    backend = backend_for(session_id)
+    path = lock_path(session_id, backend)
+    holder = lock_holder(path, backend)
     if holder is None:
         return {
             "ok": True,
+            "backend": backend,
             "session_id": session_id,
             "lock": str(path),
             "action": "already_available",
@@ -322,7 +438,7 @@ def release(session_id: str, timeout: float) -> ReleaseResult:
     started = holder["start_ticks"]
     if pid in ancestor_pids():
         raise RecoveryError(
-            f"refusing to terminate PID {pid}: it is the Devin session executing this recovery"
+            f"refusing to terminate PID {pid}: it is the {backend.capitalize()} session executing this recovery"
         )
     try:
         os.kill(pid, signal.SIGTERM)
@@ -330,6 +446,7 @@ def release(session_id: str, timeout: float) -> ReleaseResult:
         if wait_for_release(path, 1.0):
             return {
                 "ok": True,
+                "backend": backend,
                 "session_id": session_id,
                 "lock": str(path),
                 "action": "released_during_recovery",
@@ -343,7 +460,7 @@ def release(session_id: str, timeout: float) -> ReleaseResult:
         ) from None
     escalated = False
     if not wait_for_release(path, timeout):
-        current = lock_holder(path)
+        current = lock_holder(path, backend)
         if current is None:
             pass
         elif current["pid"] != pid or not same_process(pid, started):
@@ -364,6 +481,7 @@ def release(session_id: str, timeout: float) -> ReleaseResult:
                 raise RecoveryError(f"PID {pid} did not release {path} after KILL")
     return {
         "ok": True,
+        "backend": backend,
         "session_id": session_id,
         "lock": str(path),
         "action": "terminated",
@@ -379,12 +497,12 @@ def emit(result: Result, as_json: bool) -> None:
         print(json.dumps(result, indent=2, sort_keys=True))
         return
     if "status" in result:
-        print(f"{result['session_id']}: {result['status']}")
+        print(f"{result['session_id']} ({result['backend']}): {result['status']}")
         holder = result.get("holder")
         if holder:
             print(f"holder: PID {holder['pid']} {holder['command']}")
         return
-    print(f"{result['session_id']}: {result['action']}")
+    print(f"{result['session_id']} ({result['backend']}): {result['action']}")
     pid = result.get("pid")
     if pid is not None:
         print(f"holder: PID {pid} via {result.get('signal', 'none')}")
@@ -416,15 +534,18 @@ def main() -> int:
         if args.command == "release":
             emit(release(args.session_id, args.timeout), args.json)
             return 0
-        if has_devin_ancestor():
+        backend = backend_for(args.session_id)
+        if has_backend_ancestor(backend):
             raise RecoveryError(
-                f"automatic resume cannot replace a running Devin CLI; use `recover release {args.session_id}` and then `/resume {args.session_id}`"
+                f"automatic resume cannot replace a running {backend.capitalize()} CLI; use `recover release {args.session_id}` and then `/resume {args.session_id}`"
             )
         result = release(args.session_id, args.timeout)
         if args.json:
             emit(result, True)
         else:
             print(f"{args.session_id}: {result['action']}; resuming", flush=True)
+        if backend == "codex":
+            os.execvp("codex", ["codex", "resume", args.session_id])
         os.execvp("devin", ["devin", "--resume", args.session_id])
     except RecoveryError as error:
         result = {"ok": False, "error": str(error)}
