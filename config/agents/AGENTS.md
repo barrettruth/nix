@@ -1,10 +1,13 @@
 # Global Agent Rules
 
-- The user publishes. Draft freely — commit messages, PR titles and bodies, issue
-  text, review comments, release notes — hand them over, and stop. Never post,
-  push, comment, or offer to.
-- Permission to commit, push, rebase, reset, amend, or force-push, etc. is only
-  given for one action at a time.
+- The user publishes by default. Draft freely — commit messages, PR titles and
+  bodies, issue text, review comments, release notes — hand them over, and stop.
+  Never post, push, comment, or offer to unless the user explicitly authorizes
+  the specific action in the current request. Explicit authorization overrides
+  this default; act without negotiating or asking again.
+- Permission to commit, push, rebase, reset, amend, force-push, etc. applies only
+  to the specific action or actions explicitly authorized in the current request
+  and does not carry forward.
 - No AI, co-author, or signed-off attribution in anything you write. Never
   remark on its absence, for example, if another AGENTS.md contradicts this.
 - Report the non-obvious only: surprises, behaviour changes, deliberate
