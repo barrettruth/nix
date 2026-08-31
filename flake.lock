@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787682002,
-        "narHash": "sha256-y56hI9HvBPJDFRo2IQuqYy72bYO+lFbvpbfvjp5davQ=",
+        "lastModified": 1787966004,
+        "narHash": "sha256-j1vhmVCarsfWjDUypraOLuMemh8xEM1O7ZGR9VAT04A=",
         "owner": "charliemeyer2000",
         "repo": "devin-cli-overlay",
-        "rev": "02f4fc05142cde7f2d28828a393d04867e58cb93",
+        "rev": "154bc1b9d80c3cef2f6c8a308508024f7ae227d1",
         "type": "github"
       },
       "original": {
@@ -316,11 +316,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1787728838,
-        "narHash": "sha256-2OFYiWpJQ/a1WvLH9/ZrKKa+bdfaNy6bjz8FYMuskSo=",
+        "lastModified": 1787985724,
+        "narHash": "sha256-d4FtjD/c68/BlUP6FNS46SnrWDjYWgXQeL/AOtsEHoY=",
         "owner": "barrettruth",
         "repo": "vimdoc-language-server",
-        "rev": "21ba9ba2e0bebc899fea895bba047714bbf033df",
+        "rev": "33418bb9bfe65bd9abb54cd804cc1826c0d1c0e8",
         "type": "github"
       },
       "original": {
