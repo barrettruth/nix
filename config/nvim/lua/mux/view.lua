@@ -13,6 +13,8 @@
 local M = {}
 
 local JOB_EXIT_TIMEOUT_MS = 5000
+local MODES = { 'n', 'i', 't' }
+local PREFIX = '<a-x>'
 
 ---@type table<integer, string|false>
 local tab_view = {}
@@ -564,22 +566,15 @@ end
 
 ---@return nil
 local function setup_keymaps()
-    local modes = { 'n', 'i', 't' }
-    local prefix = '<a-x>'
-
     for mode, rhs in pairs({
         n = '<c-w>',
         i = '<c-o><c-w>',
         t = '<c-\\><c-n><c-w>',
     }) do
-        vim.keymap.set(mode, prefix, rhs, {
+        vim.keymap.set(mode, PREFIX, rhs, {
             remap = true,
             desc = 'mux: window command prefix',
         })
-    end
-
-    local function map(lhs, rhs, desc)
-        vim.keymap.set(modes, lhs, rhs, { desc = desc, silent = true })
     end
 
     for _, entry in ipairs({
@@ -587,33 +582,43 @@ local function setup_keymaps()
         { key = 'v', name = 'vcs' },
         { key = 'z', name = 'zsh' },
     }) do
-        map(prefix .. entry.key, function()
+        vim.keymap.set(MODES, PREFIX .. entry.key, function()
             M.open(entry.name)
-        end, 'mux: ' .. entry.name .. ' view')
+        end, { desc = 'mux: ' .. entry.name .. ' view', silent = true })
     end
 
-    map(prefix .. '[', function()
+    vim.keymap.set(MODES, PREFIX .. '[', function()
         walk(-vim.v.count1)
-    end, 'mux: previous view')
-    map(prefix .. ']', function()
+    end, { desc = 'mux: previous view', silent = true })
+    vim.keymap.set(MODES, PREFIX .. ']', function()
         walk(vim.v.count1)
-    end, 'mux: next view')
+    end, { desc = 'mux: next view', silent = true })
 
-    map(prefix .. "'", '<cmd>vertical terminal<cr>', 'mux: vertical terminal')
-    map(prefix .. '-', '<cmd>split | terminal<cr>', 'mux: terminal')
-    map(prefix .. 'x', function()
+    vim.keymap.set(MODES, PREFIX .. "'", '<cmd>vertical terminal<cr>', {
+        desc = 'mux: vertical terminal',
+        silent = true,
+    })
+    vim.keymap.set(MODES, PREFIX .. '-', '<cmd>split | terminal<cr>', {
+        desc = 'mux: terminal',
+        silent = true,
+    })
+    vim.keymap.set(MODES, PREFIX .. 'd', '<cmd>detach<cr>', {
+        desc = 'mux: detach',
+        silent = true,
+    })
+    vim.keymap.set(MODES, PREFIX .. 'x', function()
         M.close()
-    end, 'mux: close view')
-    map(prefix .. 'X', function()
+    end, { desc = 'mux: close view', silent = true })
+    vim.keymap.set(MODES, PREFIX .. 'X', function()
         M.retire()
-    end, 'mux: kill session')
-    map(prefix .. 'b', function()
+    end, { desc = 'mux: kill session', silent = true })
+    vim.keymap.set(MODES, PREFIX .. 'b', function()
         require('mux.line').toggle()
-    end, 'mux: toggle bar')
-    map(prefix .. 'r', function()
+    end, { desc = 'mux: toggle bar', silent = true })
+    vim.keymap.set(MODES, PREFIX .. 'r', function()
         require('mux.server').reload()
-    end, 'mux: reload')
-    map(prefix .. 'R', function()
+    end, { desc = 'mux: reload', silent = true })
+    vim.keymap.set(MODES, PREFIX .. 'R', function()
         local server = require('mux.server')
         local current = server.state().server
         if not current then
@@ -644,7 +649,7 @@ local function setup_keymaps()
             end
         end
         server.reload()
-    end, 'mux: reload all')
+    end, { desc = 'mux: reload all', silent = true })
 end
 
 ---Install view keymaps and terminal lifecycle cleanup.
