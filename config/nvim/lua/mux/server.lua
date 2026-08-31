@@ -240,6 +240,7 @@ local CLEAR_LAST_ROOT_EXPR =
 local SET_THEME_EXPR = "execute('colorscheme ' . %s)"
 local SET_PEERS_EXPR =
     "luaeval('(function(p) vim.g.mux_peers = p; require([[mux.line]]).refresh(); return true end)(_A)', %s)"
+local CONTROL_EXPR = "luaeval('require([[mux.server]]).control(_A)', %s)"
 local RESTARTED_EXPR =
     "luaeval('(function(m) vim.api.nvim_create_autocmd([[UIEnter]], { once = true, callback = function() vim.defer_fn(function() vim.api.nvim_echo({ { m } }, true, {}) end, 50) end }); return true end)(_A)', %s)"
 
@@ -280,6 +281,32 @@ local function spawn_nvim(args, opts, cb)
 end
 
 ---@param socket string
+---@param expr string
+---@param cb fun(stdout?: string, err?: string)
+---@return nil
+local function remote_expr(socket, expr, cb)
+    local proc, err = spawn_nvim({
+        '--server',
+        socket,
+        '--remote-expr',
+        expr,
+    }, { text = true, stdout = true, stderr = true }, function(result)
+        vim.schedule(function()
+            if result.code == 0 then
+                cb(result.stdout)
+            else
+                cb(nil, vim.trim(result.stderr or ''))
+            end
+        end)
+    end)
+    if not proc then
+        vim.schedule(function()
+            cb(nil, err)
+        end)
+    end
+end
+
+---@param socket string
 ---@param root string
 ---@param cb fun(err?: string)
 ---@param clear? boolean
@@ -287,26 +314,9 @@ local function set_remote_last_root(socket, root, cb, clear)
     local expr = (clear and CLEAR_LAST_ROOT_EXPR or SET_LAST_ROOT_EXPR):format(
         vim.fn.string(root)
     )
-    local proc, err = spawn_nvim({
-        '--server',
-        socket,
-        '--remote-expr',
-        expr,
-    }, { text = true, stdout = true, stderr = true }, function(res)
-        vim.schedule(function()
-            if res.code == 0 then
-                cb()
-                return
-            end
-
-            cb(vim.trim(res.stderr or ''))
-        end)
+    remote_expr(socket, expr, function(_, err)
+        cb(err)
     end)
-    if not proc then
-        vim.schedule(function()
-            cb(err)
-        end)
-    end
 end
 
 ---Hand a target the caller's view of every server, addressed as the caller
@@ -326,26 +336,9 @@ local function push_peers(target, cb)
     end
 
     local expr = SET_PEERS_EXPR:format(vim.fn.string(vim.json.encode(list)))
-    local proc, err = spawn_nvim({
-        '--server',
-        target.socket,
-        '--remote-expr',
-        expr,
-    }, { text = true, stdout = true, stderr = true }, function(res)
-        vim.schedule(function()
-            if res.code == 0 then
-                cb()
-                return
-            end
-
-            cb(vim.trim(res.stderr or ''))
-        end)
+    remote_expr(target.socket, expr, function(_, err)
+        cb(err)
     end)
-    if not proc then
-        vim.schedule(function()
-            cb(err)
-        end)
-    end
 end
 
 ---@return mux.Server[]
@@ -566,6 +559,7 @@ end
 ---session and a socket are removed by the server that owned them. A server
 ---reached through a foreign peer route exposes only that UI's peer snapshot.
 ---@return mux.Server[]
+---@return boolean can_discover_local
 function M.list()
     local out = {}
     local seen = {}
@@ -579,7 +573,7 @@ function M.list()
 
     local self = current_server and peer_for(current_server.root)
     if self and not ours(self.socket) then
-        return out
+        return out, false
     end
 
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
@@ -616,7 +610,7 @@ function M.list()
         end
     end
 
-    return out
+    return out, true
 end
 
 ---@return mux.Server[]
@@ -980,6 +974,92 @@ function M.label(server)
     return server.host and ('%s:%s'):format(server.host, name) or name
 end
 
+---@param target mux.Server
+---@return string? socket
+---@return string? err
+local function control_socket(target)
+    local self = current_server and peer_for(current_server.root)
+    if self and not ours(self.socket) then
+        if self.host and self.host == target.host then
+            local local_target, err = paths_for(target.root)
+            return local_target and local_target.socket, err
+        end
+
+        return nil, target.root .. ' has no control route from this mux server'
+    end
+
+    return target.socket
+end
+
+---@param raw string?
+---@return true? ok
+---@return string? err
+local function decode_control(raw)
+    local ok, response = pcall(vim.json.decode, vim.trim(raw or ''))
+    if not ok or type(response) ~= 'table' then
+        return nil, 'invalid response'
+    end
+
+    if response.ok then
+        return true
+    end
+
+    return nil, tostring(response.error or 'operation failed')
+end
+
+---@param target mux.Server
+---@param action 'kill'|'reload'
+---@param cb fun(ok?: true, err?: string)
+---@return nil
+local function control_target(target, action, cb)
+    if current_server and current_server.root == target.root then
+        local ok, err
+        if action == 'kill' then
+            ok, err = require('mux.view').retire()
+        else
+            ok, err = M.reload()
+        end
+        cb(ok, err)
+        return
+    end
+
+    local socket, route_err = control_socket(target)
+    if not socket then
+        vim.schedule(function()
+            cb(nil, route_err)
+        end)
+        return
+    end
+
+    remote_expr(
+        socket,
+        CONTROL_EXPR:format(vim.fn.string(action)),
+        function(stdout, err)
+            if not stdout then
+                cb(nil, err)
+                return
+            end
+
+            local ok, control_err = decode_control(stdout)
+            cb(ok, control_err)
+        end
+    )
+end
+
+---@param target mux.Server
+---@param cb? fun(ok?: true, err?: string)
+---@return nil
+function M.kill(target, cb)
+    control_target(target, 'kill', cb or function() end)
+end
+
+---@param target mux.Server
+---@param cb? fun(ok?: true, err?: string)
+---@return nil
+function M.reload_target(target, cb)
+    control_target(target, 'reload', cb or function() end)
+end
+
 ---@param server mux.Server
 ---@return nil
 local function hand_off(server)
@@ -1102,6 +1182,25 @@ function M.reload()
     return true
 end
 
+---@param action 'kill'|'reload'
+---@return string
+function M.control(action)
+    local ok, err
+    if action == 'kill' then
+        ok, err = require('mux.view').stop()
+    elseif action == 'reload' then
+        if #vim.api.nvim_list_uis() > 0 then
+            err = 'session has an attached UI'
+        else
+            ok, err = M.reload()
+        end
+    else
+        err = 'unknown operation: ' .. tostring(action)
+    end
+
+    return vim.json.encode({ ok = ok == true, error = err })
+end
+
 ---Initialize this process as the mux server for `root`.
 ---The root is baked into the respawn, so it outlives any `:cd` the session makes.
 ---@param root string
@@ -1127,7 +1226,7 @@ function M.setup(root)
     end
 
     current_server = server
-    require('config.direnv').load(server.root)
+    require('mux.direnv').load(server.root)
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
     require('mux.session').setup()
