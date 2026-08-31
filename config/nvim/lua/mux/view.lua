@@ -7,8 +7,9 @@
 ---@field current boolean
 
 ---@class mux.ViewSpec
+---@field key string
 ---@field restore? boolean
----@field terminal? boolean
+---@field terminal? string[]
 
 local M = {}
 
@@ -25,9 +26,10 @@ local term_pids = {}
 
 ---@type table<string, mux.ViewSpec>
 local views = {
-    edit = {},
-    vcs = { restore = true },
-    zsh = { restore = true, terminal = true },
+    codex = { key = 'c', restore = true, terminal = { 'codex' } },
+    edit = { key = 'e' },
+    vcs = { key = 'v', restore = true },
+    zsh = { key = 'z', restore = true, terminal = { vim.o.shell } },
 }
 
 local did_setup = false
@@ -173,17 +175,18 @@ end
 ---@return nil
 local function materialize(name)
     local cwd = root()
+    local spec = views[name]
 
-    if name == 'edit' then
+    if spec.terminal then
+        vim.fn.jobstart(spec.terminal, { term = true, cwd = cwd })
+        restore_terminal_focus()
+    elseif name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
     elseif name == 'vcs' then
         pcall(function()
             vim.cmd.Git()
             vim.cmd.only()
         end)
-    elseif name == 'zsh' then
-        vim.fn.jobstart({ vim.o.shell }, { term = true, cwd = cwd })
-        restore_terminal_focus()
     end
 end
 
@@ -577,14 +580,10 @@ local function setup_keymaps()
         })
     end
 
-    for _, entry in ipairs({
-        { key = 'e', name = 'edit' },
-        { key = 'v', name = 'vcs' },
-        { key = 'z', name = 'zsh' },
-    }) do
-        vim.keymap.set(MODES, PREFIX .. entry.key, function()
-            M.open(entry.name)
-        end, { desc = 'mux: ' .. entry.name .. ' view', silent = true })
+    for name, spec in pairs(views) do
+        vim.keymap.set(MODES, PREFIX .. spec.key, function()
+            M.open(name)
+        end, { desc = 'mux: ' .. name .. ' view', silent = true })
     end
 
     vim.keymap.set(MODES, PREFIX .. '[', function()
