@@ -8,7 +8,6 @@ My personal nix configuration leveraging:
 > GitHub is maintained as a read-only mirror.
 
 - [NixOS](https://nixos.org/)
-- [Determinate Nix](https://github.com/DeterminateSystems/determinate)
 - [Dendritic Nix](https://github.com/DeterminateSystems/detsys-ts/wiki/Dendritic-Nix)
 - [flakes](https://wiki.nixos.org/wiki/Flakes) & [flake-parts](https://github.com/hercules-ci/flake-parts)
 - [nix-darwin](https://github.com/nix-darwin/nix-darwin)
