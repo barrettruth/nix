@@ -482,6 +482,7 @@ in
             fd
             git
             neovim
+            pandoc
             openssl
           ])
           ++ lib.optional (!isDarwin) (if hasDisplay then pkgs.ghostty else pkgs.ghostty.terminfo)
