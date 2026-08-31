@@ -114,6 +114,7 @@
   environment.systemPackages = with pkgs; [
     vim
     git
+    rsync
   ];
 
   nix.gc = {
