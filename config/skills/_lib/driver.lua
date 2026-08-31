@@ -145,6 +145,35 @@ function M.edit(payload)
     return { ok = result == true, count = #files }
 end
 
+---@param payload { command?: string, view?: string }
+---@return table
+function M.command(payload)
+    local command = payload.command or ''
+    local name = payload.view or 'edit'
+
+    if command == '' then
+        return { ok = false, error = 'empty command' }
+    end
+
+    local result, err = view.call(name, function()
+        vim.cmd(command)
+
+        return {
+            buffer = vim.api.nvim_buf_get_name(0),
+        }
+    end)
+
+    if err then
+        return { ok = false, error = err }
+    end
+
+    return {
+        ok = true,
+        view = name,
+        buffer = result.buffer,
+    }
+end
+
 ---@param payload { base?: string, layout?: string, files?: string[], items?: table[], root?: string }
 ---@return table
 function M.review(payload)
@@ -180,6 +209,7 @@ function M.review(payload)
 end
 
 local ops = {
+    command = M.command,
     commit = M.commit,
     edit = M.edit,
     review = M.review,

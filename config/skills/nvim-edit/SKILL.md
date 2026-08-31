@@ -41,6 +41,9 @@ resolve the target to concrete path(s) and pass them.
   nothing about resolver steps or the helper.
 - A zero exit is success — stop. Re-open or inspect the editor only if the user
   says the editor state is wrong.
+- Opening populates the `edit` view without changing the user's focused view.
+  If a later task must run an editor command against that file, use the mux
+  command helper with `--view edit`; never assume a raw key send targets it.
 - On failure, report the helper's stderr exactly enough to identify the mux root
   or server problem, and stop there.
 
