@@ -1,10 +1,11 @@
 ---
 name: recover
-description: Recover a local Devin CLI session that cannot resume because it is still in use by an abandoned process.
+description: Recover an exact local Codex or Devin CLI session that cannot resume because it is still in use by an abandoned process.
 allowed-tools:
   - exec
 permissions:
   allow:
+    - Exec(codex resume)
     - Exec(devin list)
     - Exec(recover)
 triggers:
@@ -14,11 +15,11 @@ triggers:
 
 # recover
 
-Recover one exact local Devin CLI session without disturbing other Devin processes.
+Recover one exact local Codex or Devin CLI session without disturbing other CLI processes.
 
 ## Flow
 
-1. Resolve the target to one exact session ID. Use an ID supplied directly. If only a title or description is supplied, run `devin list --format json` and continue only when it identifies one unique session; otherwise ask which session is meant.
+1. Resolve the target to one exact session ID. Use an ID supplied directly. Codex IDs are UUIDs. If only a Devin title or description is supplied, run `devin list --format json` and continue only when it identifies one unique session; otherwise ask which session is meant.
 2. Inspect the exact session lock:
 
 ```sh
@@ -37,12 +38,12 @@ recover release <session-id> --json
 /resume <session-id>
 ```
 
-A skill cannot replace the interactive Devin process that is currently executing it. Do not run `devin --resume` through `exec`; that creates a hidden nested CLI and makes the session busy again. From a normal shell, `recover resume <session-id>` safely releases and then replaces the shell process with the resumed Devin CLI.
+A skill cannot replace the interactive Codex or Devin process that is currently executing it. Do not run a CLI's resume command through `exec`; that creates a hidden nested CLI and makes the session busy again. From a normal shell, `recover resume <session-id>` safely releases and then replaces the shell process with the matching CLI.
 
 ## Rules
 
 - Operate only on the lock for the exact requested session.
-- Trust the helper's lock-holder validation; never infer ownership from a broad process-name search.
+- Trust the helper's exact lock-holder validation; never infer ownership from a broad process-name search.
 - Never use `pkill`, `killall`, `fuser -k`, `/rm-session`, or direct PID signals.
 - Never delete lock files or edit the sessions database.
 - Never release the session executing this skill. The helper detects and refuses that case.
