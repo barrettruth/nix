@@ -26,32 +26,41 @@ mean it is waiting.
 timeout 10 nvim --server "$sock" --remote-expr 'bufname("%")'
 ```
 
-## Send
+## Command
 
-`--remote-send` delivers keys and returns at once. Lead with `<Esc>` so they
-land in normal mode, and send `<Esc>` alone to give a waiting session the
-keypress it is after: it changes nothing when nothing is waiting, where `<CR>`
-opens whatever is under the cursor.
+Run Ex commands through the RPC helper. It executes inside the named mux view
+even when another view is focused, waits for completion, restores the user's
+focus, and prints the view and buffer it acted on.
 
 ```sh
-nvim --server "$sock" --remote-send '<Esc>:CI<CR>'
+python3 ~/.config/nix/config/skills/mux/scripts/command.py \
+  --root <repo-root> --view edit 'lsp restart bazel_ls'
+python3 ~/.config/nix/config/skills/mux/scripts/command.py \
+  --root <repo-root> --view vcs 'Git status'
 ```
 
-A send returns before the command it sent has finished. Poll for what it
-produces.
+Do not follow `nvim-edit` with `--remote-send`: opening a file populates the
+`edit` view but deliberately leaves the user's focused view unchanged.
+
+## Keys
+
+`--remote-send` targets Neovim's currently focused window; it cannot select a
+mux view. Use it only when the task is specifically to send literal keys to the
+confirmed current window, never as a way to run an Ex or Lua command. To leave
+insert, command-line, or terminal mode, use `<C-\><C-N>`; `<Esc>` is delivered
+to the program inside a terminal buffer.
+
+```sh
+nvim --server "$sock" --remote-expr '[bufname("%"), mode()]'
+nvim --server "$sock" --remote-send '<C-\><C-N>'
+```
 
 ## Lua
 
-Past a single value, put the Lua in a file and take the result from one. This
-also settles the quoting, `--remote-expr` being Vimscript through a shell,
-where a dictionary key carries quotes of its own (`{'name': 'Title'}`).
-
-```sh
-cat > /tmp/probe.lua <<'EOF'
-vim.fn.writefile({ vim.api.nvim_buf_get_name(0) }, '/tmp/probe.out')
-EOF
-nvim --server "$sock" --remote-send '<Esc>:luafile /tmp/probe.lua<CR>'
-```
+Past a single Ex command, add a narrow operation to
+`config/skills/_lib/driver.lua` and invoke it with `muxlib.call`. This gives
+structured arguments and deterministic view targeting. Do not inject
+`:luafile` with `--remote-send`.
 
 ## Restart
 
@@ -61,11 +70,13 @@ poll the socket until it answers again.
 
 ```sh
 nvim --server "$sock" --remote-expr 'len(getbufinfo({"bufmodified":1}))'
-nvim --server "$sock" --remote-send '<Esc>:restart<CR>'
+nvim --server "$sock" --remote-send '<C-\><C-N>:restart<CR>'
 ```
 
 ## Rules
 
 - Opening files is `nvim-edit`, review is `nvim-review`, commits are
   `nvim-commit`. This skill is the session itself.
+- Commands that must run in a named view use `command.py`, never
+  `--remote-send`.
 - Say which buffer the session is left showing.
