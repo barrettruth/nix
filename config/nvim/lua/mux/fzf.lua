@@ -1,4 +1,5 @@
 local candidates = require('mux.candidates')
+local command = require('mux.command')
 local server = require('mux.server')
 
 local M = {}
@@ -59,6 +60,39 @@ local function picked(items, selected)
     return index and items[index]
 end
 
+---@param selected string[]
+---@param opts {last_query?: string}
+---@return nil
+local function create(selected, opts)
+    local query = vim.trim(selected[1] or opts.last_query or '')
+    if query == '' then
+        done(nil, 'path cannot be empty')
+        return
+    end
+
+    local complete = false
+    local target, err
+    command.ensure(query, function(ensured, ensure_err)
+        target = ensured
+        err = ensure_err
+        complete = true
+    end)
+
+    if
+        not complete
+        and not vim.wait(25000, function()
+            return complete
+        end, 50)
+    then
+        done(nil, 'timed out creating ' .. query)
+        return
+    end
+
+    if not target then
+        done(nil, err)
+    end
+end
+
 ---@param value string
 ---@param group string
 ---@return string
@@ -67,8 +101,8 @@ local function highlight(value, group)
 end
 
 ---@param items mux.Candidate[]
----@return nil
-local function open(items)
+---@return string[]
+local function entries(items)
     local current = server.state().server
     local labels = {}
     local width = 0
@@ -80,7 +114,7 @@ local function open(items)
         width = math.max(width, vim.fn.strdisplaywidth(label))
     end
 
-    local entries = {}
+    local rendered = {}
     for i, candidate in ipairs(items) do
         local current_root = current and current.root == candidate.root
         local marker = current_root and highlight('*', 'Special')
@@ -88,7 +122,7 @@ local function open(items)
             or ' '
         local padding =
             string.rep(' ', width - vim.fn.strdisplaywidth(labels[i]))
-        entries[i] = ('%d\t%s %s%s  %s'):format(
+        rendered[i] = ('%d\t%s %s%s  %s'):format(
             i,
             marker,
             labels[i],
@@ -97,10 +131,35 @@ local function open(items)
         )
     end
 
-    require('fzf-lua').fzf_exec(entries, {
+    return rendered
+end
+
+---@return nil
+local function open()
+    local items = {}
+
+    local function contents(cb)
+        candidates.list(function(next_items, err)
+            items = next_items
+
+            if err then
+                local level = #items == 0 and vim.log.levels.ERROR
+                    or vim.log.levels.WARN
+                vim.notify('mux: zoxide: ' .. err, level)
+            end
+
+            for _, entry in ipairs(entries(items)) do
+                cb(entry)
+            end
+            cb(nil)
+        end)
+    end
+
+    require('fzf-lua').fzf_exec(contents, {
         prompt = 'mux> ',
         previewer = false,
-        header = ('%s reload | %s kill | %s open'):format(
+        header = ('%s create | %s reload | %s kill | %s open'):format(
+            highlight('<c-a>', 'FzfLuaHeaderBind'),
             highlight('<c-r>', 'FzfLuaHeaderBind'),
             highlight('<c-x>', 'FzfLuaHeaderBind'),
             highlight('<enter>', 'FzfLuaHeaderBind')
@@ -113,6 +172,12 @@ local function open(items)
             ['--tiebreak'] = 'index',
         },
         actions = {
+            ['ctrl-a'] = {
+                fn = create,
+                field_index = '{q}',
+                postfix = 'clear-query+first',
+                reload = true,
+            },
             enter = {
                 fn = function(selected)
                     local candidate = picked(items, selected)
@@ -149,19 +214,7 @@ function M.pick()
         return
     end
 
-    candidates.list(function(items, err)
-        if #items == 0 then
-            local message = err and 'zoxide: ' .. err or 'no projects'
-            vim.notify('mux: ' .. message, vim.log.levels.ERROR)
-            return
-        end
-
-        if err then
-            vim.notify('mux: zoxide: ' .. err, vim.log.levels.WARN)
-        end
-
-        open(items)
-    end)
+    open()
 end
 
 return M
