@@ -63,7 +63,7 @@ format:
     just _shell-scripts | xargs -r shfmt -i 2 -d
     just _python-scripts | xargs -r black --check
     stylua --check --config-path config/nvim/stylua.toml {{ lua_dirs }}
-    git ls-files '*.md' | xargs -r prettier --check
+    git ls-files '*.md' '*.yaml' '*.yml' | xargs -r prettier --check
 
 lint:
     git ls-files '*.nix' | xargs deadnix --fail --no-lambda-pattern-names
