@@ -114,9 +114,23 @@ backup() {
     [ -e "$plist" ] && cp -p "$plist" "$state/systems.determinate.$name.plist"
   done
   [ -e /etc/nix/nix.conf ] && sudo cp -p /etc/nix/nix.conf "$state/nix.conf"
+  [ -e /etc/nix/nix.custom.conf ] && sudo cp -pL /etc/nix/nix.custom.conf "$state/nix.custom.conf"
   [ -e "$nixd" ] && sudo cp -p "$nixd" "$state/determinate-nixd"
   sudo chown -R "$(id -un)" "$state"
   say "backed up determinate state to $state"
+}
+
+# nix-darwin refuses to overwrite an /etc/nix it did not write, and refuses
+# again if determinate's custom settings file is still there. Both want the
+# same .before-nix-darwin suffix, so move them rather than lose an older backup.
+stash_etc() {
+  target="$1"
+  [ -e "$target" ] || return 0
+  if [ -e "$target.before-nix-darwin" ]; then
+    sudo mv "$target.before-nix-darwin" "$target.before-nix-darwin.$(date +%Y%m%d%H%M%S)"
+  fi
+  sudo mv "$target" "$target.before-nix-darwin"
+  say "moved $target aside"
 }
 
 cmd_migrate() {
@@ -161,6 +175,13 @@ cmd_migrate() {
     say "setting the system profile"
     sudo -H nix-env --profile "$profile" --set "$system"
   fi
+
+  # Determinate writes both of these and stamps neither with nix-darwin's
+  # header, so activation aborts on them unless they are out of the way. Their
+  # settings (cores, experimental-features, sandbox) are all in the closure's
+  # own nix.conf already.
+  stash_etc /etc/nix/nix.conf
+  stash_etc /etc/nix/nix.custom.conf
 
   say "activating"
   sudo -H "$profile/activate"
