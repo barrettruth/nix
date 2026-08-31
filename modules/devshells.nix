@@ -24,6 +24,7 @@
         default = pkgs.mkShell {
           packages = commonPackages ++ [
             pkgs.age
+            pkgs.dnsutils
             pkgs.nixd
             pkgs.xxd
             pkgs.pre-commit
