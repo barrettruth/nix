@@ -2,6 +2,7 @@
   pkgs,
   lib,
   identity,
+  inputs,
   ...
 }:
 let
@@ -15,7 +16,7 @@ let
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBkw93EYiycZClQlKB2tynntKA2OqzCLq1VjMrsXUC25 github-actions-web-deploy-2026-08-26"
   ];
   staticWebRoots = {
-    "barrettruth.com" = "/srv/www/barrettruth.com/current";
+    "barrettruth.com" = inputs.barrettruth-com.packages.${pkgs.stdenv.hostPlatform.system}.default;
     "philipmruth.com" = "/srv/www/philipmruth.com/current";
     "ts.barrettruth.com" = "/srv/www/ts.barrettruth.com/current";
     "bazel-language-server.com" = "/srv/www/bazel-language-server.com/current";
@@ -118,8 +119,6 @@ in
 
   systemd.tmpfiles.rules = [
     "d /srv/www 0755 root root -"
-    "d /srv/www/barrettruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
-    "d /srv/www/barrettruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/philipmruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/philipmruth.com/releases 0755 ${webDeployUser} ${webDeployGroup} -"
     "d /srv/www/ts.barrettruth.com 0755 ${webDeployUser} ${webDeployGroup} -"
