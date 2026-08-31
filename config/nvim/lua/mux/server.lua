@@ -550,32 +550,24 @@ local function saved_root(file)
     end
 end
 
----List known mux servers: peers the connecting UI told us about, then saved
----sessions, then live sockets not yet saved. Peers rank first because only the
----UI client's own addresses are ones it can reach; sessions precede sockets so
----their sockets need no probe, probing waiting on a subprocess and vim.wait()
----flushing the screen from the pre-refresh cache. A peer is a snapshot that
----outlives the server it names, so an address of ours must still be there; a
----session and a socket are removed by the server that owned them. A server
----reached through a foreign peer route exposes only that UI's peer snapshot.
 ---@return mux.Server[]
 ---@return boolean can_discover_local
 function M.list()
     local out = {}
     local seen = {}
-    local known = {}
-
-    for _, peer in ipairs(peers()) do
-        if not ours(peer.socket) or vim.uv.fs_stat(peer.socket) then
-            add_server(out, seen, peer)
-        end
-    end
 
     local self = current_server and peer_for(current_server.root)
     if self and not ours(self.socket) then
+        for _, peer in ipairs(peers()) do
+            if not ours(peer.socket) or vim.uv.fs_stat(peer.socket) then
+                add_server(out, seen, peer)
+            end
+        end
+
         return out, false
     end
 
+    local known = {}
     local sessions = vim.fn.glob(state_dir() .. '/*.vim', true, true)
     table.sort(sessions)
 
