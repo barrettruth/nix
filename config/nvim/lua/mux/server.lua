@@ -887,28 +887,55 @@ function M.attach(target_server, cb, clear_last)
     end)
 end
 
----Start or reuse the server for a root, then connect this UI to it.
+---Resolve a root to an address this UI can reach, then connect it.
 ---@param root string
 ---@param cb? fun(ok?: true, err?: string)
 ---@param clear_last? boolean
 ---@return nil
 function M.connect(root, cb, clear_last)
     cb = cb or function() end
+    local self = current_server and peer_for(current_server.root)
+
+    if self and not ours(self.socket) then
+        local target = peer_for(root)
+        if not target then
+            cb(nil, root .. ' has no route to this UI')
+            return
+        end
+
+        M.switch(target, cb, clear_last)
+        return
+    end
+
     M.ensure(root, function(target_server, ensure_err)
         if not target_server then
             cb(nil, ensure_err)
             return
         end
 
-        M.attach(target_server, cb, clear_last)
+        M.switch(target_server, cb, clear_last)
     end)
 end
 
+---Switch to a server entry, using the UI's route when this server is remote.
 ---@param target_server mux.Server
 ---@param cb? fun(ok?: true, err?: string)
 ---@param clear_last? boolean
 ---@return nil
 function M.switch(target_server, cb, clear_last)
+    cb = cb or function() end
+    local self = current_server and peer_for(current_server.root)
+
+    if self and not ours(self.socket) then
+        local target = peer_for(target_server.root)
+        if not target then
+            cb(nil, target_server.root .. ' has no route to this UI')
+            return
+        end
+
+        target_server = target
+    end
+
     if
         not ours(target_server.socket)
         or socket_listening(target_server.socket)
