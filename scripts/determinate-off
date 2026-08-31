@@ -1,0 +1,268 @@
+#!/bin/sh
+# Move a mac from Determinate Nix onto nix-darwin's own Nix.
+#
+# nix-darwin aborts activation while /usr/local/bin/determinate-nixd exists, so
+# the daemon handover has to sit between building the system closure and
+# activating it. Booting Determinate out first would strip an unprivileged user
+# of a daemon and leave nothing able to build; root writes the store directly,
+# so the closure is built up front and the rest runs privileged.
+#
+# The store, the APFS volume and the build users are never touched. Nothing
+# here calls nix-installer, which is the only thing that would destroy them.
+
+set -eu
+
+repo="${DETERMINATE_OFF_REPO:-$HOME/.config/nix}"
+host="${DETERMINATE_OFF_HOST:-mac}"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/determinate-off"
+nixd="/usr/local/bin/determinate-nixd"
+daemons="nix-daemon nix-store nix-installer.nix-hook"
+profile="/nix/var/nix/profiles/system"
+
+say() {
+  echo "determinate-off: $*"
+}
+
+die() {
+  echo "determinate-off: $*" >&2
+  exit 1
+}
+
+require() {
+  for cmd in "$@"; do
+    command -v "$cmd" >/dev/null 2>&1 || die "missing dependency: $cmd"
+  done
+}
+
+determinate_present() {
+  [ -e "$nixd" ]
+}
+
+loaded_daemons() {
+  found=""
+  for name in $daemons; do
+    if launchctl print "system/systems.determinate.$name" >/dev/null 2>&1; then
+      found="$found $name"
+    fi
+  done
+  echo "$found"
+}
+
+cmd_status() {
+  echo "repo:      $repo"
+  echo "host:      $host"
+  echo "backups:   $state"
+  echo
+
+  if determinate_present; then
+    echo "determinate-nixd: present ($nixd)"
+  else
+    echo "determinate-nixd: absent"
+  fi
+
+  running=$(loaded_daemons)
+  if [ -n "$running" ]; then
+    echo "loaded daemons:  $running"
+  else
+    echo "loaded daemons:  none"
+  fi
+
+  if launchctl print system/org.nixos.nix-daemon >/dev/null 2>&1; then
+    echo "nix-darwin daemon: loaded"
+  else
+    echo "nix-darwin daemon: not loaded"
+  fi
+
+  echo "nix version:     $(nix --version 2>/dev/null || echo unavailable)"
+  echo "system profile:  $(readlink -f "$profile" 2>/dev/null || echo unknown)"
+
+  ca=$(readlink -f /etc/ssl/certs/ca-certificates.crt 2>/dev/null || true)
+  if [ -n "$ca" ] && [ -r "$ca" ]; then
+    echo "ca bundle:       ok ($ca)"
+  else
+    echo "ca bundle:       BROKEN - fix before migrating"
+  fi
+
+  if [ -d "$state" ]; then
+    echo
+    echo "a backup exists; 'determinate-off rollback' can restore it"
+  fi
+}
+
+preflight() {
+  [ "$(id -u)" -eq 0 ] && die "run unprivileged; sudo is used only where needed"
+  [ -d "$repo" ] || die "no repo at $repo"
+
+  if pgrep -f 'nixos-rebuild|darwin-rebuild' >/dev/null 2>&1; then
+    die "a rebuild is in flight; wait for it to finish"
+  fi
+
+  ca=$(readlink -f /etc/ssl/certs/ca-certificates.crt 2>/dev/null || true)
+  [ -n "$ca" ] && [ -r "$ca" ] ||
+    die "/etc/ssl/certs/ca-certificates.crt is broken; nix would lose TLS after the swap"
+
+  expected=$(nix eval --raw "$repo#darwinConfigurations.$host.config.barrett.user.name") ||
+    die "could not evaluate $host"
+  [ "$expected" = "$(id -un)" ] ||
+    die "$host is configured for user $expected, but this machine is $(id -un)"
+}
+
+backup() {
+  mkdir -p "$state"
+  for name in $daemons; do
+    plist="/Library/LaunchDaemons/systems.determinate.$name.plist"
+    [ -e "$plist" ] && cp -p "$plist" "$state/systems.determinate.$name.plist"
+  done
+  [ -e /etc/nix/nix.conf ] && sudo cp -p /etc/nix/nix.conf "$state/nix.conf"
+  [ -e "$nixd" ] && sudo cp -p "$nixd" "$state/determinate-nixd"
+  sudo chown -R "$(id -un)" "$state"
+  say "backed up determinate state to $state"
+}
+
+cmd_migrate() {
+  require nix launchctl sudo
+  preflight
+
+  if ! determinate_present; then
+    say "determinate already gone; running a normal rebuild"
+    (cd "$repo" && just "rebuild-$host")
+    return
+  fi
+
+  # Built while the determinate daemon is still up, and pinned with a gcroot so
+  # nothing can collect it during the window where no daemon is running.
+  say "building the $host system closure"
+  mkdir -p "$state"
+  system=$(nix build --no-link --print-out-paths "$repo#darwinConfigurations.$host.system")
+  nix build --out-link "$state/system" "$repo#darwinConfigurations.$host.system" >/dev/null
+  say "closure: $system"
+
+  backup
+
+  say "booting out determinate daemons"
+  for name in $daemons; do
+    label="system/systems.determinate.$name"
+    plist="/Library/LaunchDaemons/systems.determinate.$name.plist"
+    if launchctl print "$label" >/dev/null 2>&1; then
+      sudo launchctl bootout "$label" 2>/dev/null ||
+        sudo launchctl unload "$plist" 2>/dev/null ||
+        say "warning: could not bootout $name"
+    fi
+    [ -e "$plist" ] && sudo mv "$plist" "$plist.determinate-off"
+  done
+
+  say "moving determinate-nixd aside"
+  sudo mv "$nixd" "$nixd.determinate-off"
+
+  # Root talks to the store directly, so these two work with no daemon running.
+  if [ "$(readlink -f "$profile" 2>/dev/null)" = "$system" ]; then
+    say "system profile already points at the closure"
+  else
+    say "setting the system profile"
+    sudo -H nix-env --profile "$profile" --set "$system"
+  fi
+
+  say "activating"
+  sudo -H "$profile/activate"
+
+  say "done"
+  echo
+  cmd_verify
+}
+
+cmd_verify() {
+  ok=0
+
+  if determinate_present; then
+    echo "FAIL determinate-nixd still present"
+    ok=1
+  else
+    echo "ok   determinate-nixd gone"
+  fi
+
+  if launchctl print system/org.nixos.nix-daemon >/dev/null 2>&1; then
+    echo "ok   nix-darwin daemon loaded"
+  else
+    echo "FAIL nix-darwin daemon not loaded"
+    ok=1
+  fi
+
+  version=$(nix --version 2>&1 || echo failed)
+  case "$version" in
+  *Determinate*)
+    echo "FAIL nix still reports Determinate: $version"
+    ok=1
+    ;;
+  *"nix (Nix)"*)
+    echo "ok   $version"
+    ;;
+  *)
+    echo "FAIL nix unusable: $version"
+    ok=1
+    ;;
+  esac
+
+  if nix store info >/dev/null 2>&1 || nix store ping >/dev/null 2>&1; then
+    echo "ok   store reachable"
+  else
+    echo "FAIL store unreachable"
+    ok=1
+  fi
+
+  [ "$ok" -eq 0 ] ||
+    printf '\nsomething is wrong; "determinate-off rollback" puts determinate back\n'
+  return "$ok"
+}
+
+cmd_rollback() {
+  require launchctl sudo
+  [ "$(id -u)" -eq 0 ] && die "run unprivileged; sudo is used only where needed"
+  [ -d "$state" ] || die "no backup at $state"
+
+  say "restoring determinate"
+  if [ -e "$state/determinate-nixd" ]; then
+    sudo cp -p "$state/determinate-nixd" "$nixd"
+    sudo chown root:wheel "$nixd"
+    sudo chmod 755 "$nixd"
+  fi
+
+  if launchctl print system/org.nixos.nix-daemon >/dev/null 2>&1; then
+    sudo launchctl bootout system/org.nixos.nix-daemon 2>/dev/null || true
+  fi
+
+  for name in $daemons; do
+    src="$state/systems.determinate.$name.plist"
+    plist="/Library/LaunchDaemons/systems.determinate.$name.plist"
+    [ -e "$src" ] || continue
+    sudo cp -p "$src" "$plist"
+    sudo chown root:wheel "$plist"
+    sudo launchctl bootstrap system "$plist" 2>/dev/null ||
+      sudo launchctl load "$plist" 2>/dev/null ||
+      say "warning: could not load $name"
+  done
+
+  [ -e "$state/nix.conf" ] && sudo cp -p "$state/nix.conf" /etc/nix/nix.conf
+
+  say "restored; check 'nix --version'"
+}
+
+usage() {
+  cat <<'EOF'
+usage: determinate-off <command>
+
+  status     what is installed and whether it is safe to migrate
+  migrate    build, swap the daemon, activate, verify
+  verify     check the result of a migration
+  rollback   put determinate back from the backup
+
+Never runs nix-installer, so the store is never destroyed.
+EOF
+}
+
+case "${1:-}" in
+status) cmd_status ;;
+migrate) cmd_migrate ;;
+verify) cmd_verify ;;
+rollback) cmd_rollback ;;
+*) usage ;;
+esac
