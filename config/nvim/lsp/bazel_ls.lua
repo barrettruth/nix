@@ -1,6 +1,6 @@
 return {
     cmd = { 'bazel-language-server', 'server' },
-    filetypes = { 'bzl', 'starlark' },
+    filetypes = { 'bazelrc', 'bzl', 'starlark' },
     root_markers = {
         'MODULE.bazel',
         'WORKSPACE.bazel',

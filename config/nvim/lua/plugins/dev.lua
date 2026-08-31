@@ -33,11 +33,6 @@ return {
     {
         'barrettruth/ci.nvim',
         cmd = 'CI',
-        before = function()
-            vim.g.ci = {
-                debug = false,
-            }
-        end,
     },
     {
         'barrettruth/forge.nvim',
