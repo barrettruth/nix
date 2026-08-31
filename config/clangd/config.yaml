@@ -15,4 +15,4 @@ CompileFlags:
     - -DLOCAL
 Diagnostics:
   ClangTidy:
-    Remove: '*'
+    Remove: "*"
