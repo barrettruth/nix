@@ -10,9 +10,6 @@ vim.opt.diffopt:append('linematch:60')
 
 vim.o.expandtab = true
 
-vim.o.exrc = true
-vim.o.secure = true
-
 vim.o.foldcolumn = 'auto'
 vim.o.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
 vim.o.foldlevel = 99
