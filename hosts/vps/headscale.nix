@@ -2,11 +2,21 @@
   config,
   identity,
   mkVpsSecret,
+  pkgs,
   ...
 }:
 let
   headscaleHost = "headscale.${identity.domain}";
   headscalePort = 8085;
+  waitForOidc = pkgs.writeShellScript "wait-for-oidc" ''
+    for _ in $(seq 1 60); do
+      ${pkgs.curl}/bin/curl -fsS -o /dev/null \
+        https://auth.${identity.domain}/.well-known/openid-configuration && exit 0
+      sleep 1
+    done
+    echo "authelia did not serve OIDC discovery within 60s" >&2
+    exit 1
+  '';
 in
 {
   systemd.services.headscale = {
@@ -18,6 +28,7 @@ in
       "nginx.service"
       "authelia-finance.service"
     ];
+    serviceConfig.ExecStartPre = [ "${waitForOidc}" ];
   };
 
   services.headscale = {
