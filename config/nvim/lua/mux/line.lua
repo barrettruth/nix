@@ -57,11 +57,12 @@ end
 local function view_segments()
     local parts = {}
     for _, entry in ipairs(view.list()) do
+        local label = (entry.key and (entry.key .. ':') or '') .. entry.label
         parts[#parts + 1] = segment(
             entry.tab,
             "v:lua.require'mux.line'.on_view",
             entry.current and 'TabLineSel' or 'TabLine',
-            (entry.current and '*' or '') .. entry.label
+            (entry.current and '*' or '') .. label
         )
     end
 

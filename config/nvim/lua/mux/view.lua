@@ -1,6 +1,7 @@
 ---@class mux.ViewEntry
 ---@field kind 'view'|'tab'
 ---@field name? string
+---@field key? string
 ---@field persist? string|false Persisted tab identity; `false` preserves ordinary Vim tabs.
 ---@field label string
 ---@field tab integer
@@ -447,6 +448,7 @@ function M.list()
             entry = {
                 kind = 'view',
                 name = view_name,
+                key = views[view_name].key,
                 persist = view_name,
                 label = view_name,
                 tab = tp,
