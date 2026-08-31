@@ -10,9 +10,7 @@ let
   webDeployUid = 990;
   webDeployGid = 988;
   webDeployPublicKeys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF4QXLB3ZH77HJwTbcYB/52jg7kAT+E6BwACf1ianOXS forgejo-actions-web-deploy-2026-05-01"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINc5ql/WCnABQZEQmekLW5LT7Ej2u/APFP13PjM3Y9Zs forgejo-actions-ts-deploy-2026-07-08"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBkw93EYiycZClQlKB2tynntKA2OqzCLq1VjMrsXUC25 github-actions-web-deploy-2026-08-26"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBa/AEcIEhMpEKt+JVyv0QUpzTz4O2snjBqNgzvvsI5r github-actions-web-deploy-2026-08-31"
   ];
   staticWebRoots = {
     "barrettruth.com" = "/srv/www/barrettruth.com/current";
