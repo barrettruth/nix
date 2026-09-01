@@ -117,7 +117,10 @@ let
     };
   };
 
-  brews = [ "imc/core/imc-claude" ];
+  brews = [
+    "imc/core/imc-claude"
+    "imc/core/jx"
+  ];
 
   casks = [
     "imc/core/ark"
