@@ -117,13 +117,11 @@ let
     };
   };
 
-  brews = [
-    "imc/core/imc-claude"
-    "imc/core/jx"
-  ];
+  brews = [ "imc/core/imc-claude" ];
 
   casks = [
     "imc/core/ark"
+    "imc/core/jx"
     "jdk-zulu@11"
     "jdk-zulu@17"
     "jdk-zulu@21"
