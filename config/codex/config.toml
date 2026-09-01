@@ -23,26 +23,6 @@ type = "command"
 [hooks.state."/Users/bruth/.config/codex/config.toml:session_start:0:0"]
 trusted_hash = "sha256:2d3868791c42f00f91caf8c8b085a3818daeeac1d9d1b90dfe498c2b1a97d66a"
 
-[mcp_servers.gcalendar]
-command = "npx"
-args = ["-y", "@cocal/google-calendar-mcp@2.6.2", "start"]
-env = { GOOGLE_OAUTH_CREDENTIALS = "/Users/bruth/.config/mcp-google/gcp-oauth.keys.json" }
-env_vars = ["NPM_CONFIG_CACHE"]
-startup_timeout_sec = 30
-required = true
-
-[mcp_servers.gmail]
-command = "npx"
-args = ["-y", "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"]
-env_vars = ["NPM_CONFIG_CACHE"]
-startup_timeout_sec = 30
-required = true
-
-[mcp_servers.gdrive]
-command = "mcp-gdrive"
-startup_timeout_sec = 30
-required = true
-
 [projects."/Users/bruth"]
 trust_level = "trusted"
 
@@ -50,7 +30,7 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [tui]
-status_line = ["model-with-reasoning", "run-state", "context-used"]
+status_line = ["model-with-reasoning", "run-state", "thread-title", "context-used"]
 status_line_use_colors = true
 vim_mode_default = true
 theme = "midnight"

@@ -59,44 +59,13 @@ let
       "${repo}".trust_level = "trusted";
     };
 
-    mcp_servers = {
-      gcalendar = {
-        command = "npx";
-        args = [
-          "-y"
-          "@cocal/google-calendar-mcp@2.6.2"
-          "start"
-        ];
-        env.GOOGLE_OAUTH_CREDENTIALS = "${homeDirectory}/.config/mcp-google/gcp-oauth.keys.json";
-        env_vars = [ "NPM_CONFIG_CACHE" ];
-        startup_timeout_sec = 30;
-        required = true;
-      };
-
-      gmail = {
-        command = "npx";
-        args = [
-          "-y"
-          "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"
-        ];
-        env_vars = [ "NPM_CONFIG_CACHE" ];
-        startup_timeout_sec = 30;
-        required = true;
-      };
-
-      gdrive = {
-        command = lib.getExe pkgs.mcp-gdrive;
-        startup_timeout_sec = 30;
-        required = true;
-      };
-    };
-
     tui = {
       theme = "midnight";
       vim_mode_default = true;
       status_line = [
         "model-with-reasoning"
         "run-state"
+        "thread-title"
       ];
       status_line_use_colors = true;
     };

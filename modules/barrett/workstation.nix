@@ -82,8 +82,7 @@ let
 
   isImc = isDarwin && config.networking.hostName == "imc";
 
-  agentPackages =
-    lib.optionals (!isImc) [ pkgs.devin-cli ] ++ lib.optionals isImc [ pkgs.mcp-gdrive ];
+  agentPackages = lib.optionals (!isImc) [ pkgs.devin-cli ];
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
