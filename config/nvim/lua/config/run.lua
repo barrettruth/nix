@@ -50,22 +50,29 @@ local function output_win()
     end
 end
 
+---@param win integer
+---@param fn function
+local function win_call(win, fn)
+    if vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_call(win, fn)
+    end
+end
+
+---@param win integer
 ---@param title string
 ---@param lines string[]
 ---@param efm string
 ---@return integer count
-local function report(title, lines, efm)
+local function report(win, title, lines, efm)
     local items = vim.fn.getqflist({ lines = lines, efm = efm }).items
     if #items == 0 then
         return 0
     end
 
     vim.fn.setqflist({}, ' ', { title = title, items = items })
-    local saved = vim.api.nvim_get_current_win()
-    vim.cmd('botright copen')
-    if vim.api.nvim_win_is_valid(saved) then
-        vim.api.nvim_set_current_win(saved)
-    end
+    win_call(win, function()
+        vim.cmd('botright copen')
+    end)
     return #items
 end
 
@@ -100,7 +107,7 @@ local function terminal(cmd, efm)
             vim.schedule(function()
                 if vim.api.nvim_buf_is_valid(buf) then
                     if code ~= 0 then
-                        report(cmd, vim.fn.readfile(errors), efm)
+                        report(saved, cmd, vim.fn.readfile(errors), efm)
                     end
                     log(('exit %d'):format(code))
                 end
@@ -115,7 +122,8 @@ local function terminal(cmd, efm)
 end
 
 ---@param buf integer
-local function launch(buf)
+---@param win integer
+local function launch(buf, win)
     local efm = vim.bo[buf].errorformat
     local run, build
     vim.api.nvim_buf_call(buf, function()
@@ -127,8 +135,10 @@ local function launch(buf)
         if not enabled(buf) or not vim.b[buf].run then
             return
         end
-        vim.cmd.cclose()
-        terminal(run, efm)
+        win_call(win, function()
+            vim.cmd.cclose()
+            terminal(run, efm)
+        end)
     end
 
     if not build then
@@ -155,7 +165,7 @@ local function launch(buf)
                     vim.split((out.stdout or '') .. (out.stderr or ''), '\n', {
                         trimempty = true,
                     })
-                local count = report(build, lines, efm)
+                local count = report(win, build, lines, efm)
                 if count == 0 then
                     fail(('build exited %d'):format(out.code))
                 else
@@ -173,8 +183,10 @@ local function launch(buf)
 end
 
 ---@param buf? integer
-function M.run(buf)
+---@param win? integer
+function M.run(buf, win)
     buf = buf or vim.api.nvim_get_current_buf()
+    win = win or vim.api.nvim_get_current_win()
     if not enabled(buf) then
         return
     end
@@ -190,7 +202,7 @@ function M.run(buf)
         building:kill('sigterm')
         building = nil
     end
-    launch(buf)
+    launch(buf, win)
 end
 
 ---@param buf integer
@@ -203,9 +215,10 @@ local function enable(buf)
         buffer = buf,
         callback = function(args)
             local id = args.id
+            local win = vim.api.nvim_get_current_win()
             vim.schedule(function()
                 if #vim.api.nvim_get_autocmds({ id = id }) > 0 then
-                    M.run(args.buf)
+                    M.run(args.buf, win)
                 end
             end)
         end,
