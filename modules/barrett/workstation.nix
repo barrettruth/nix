@@ -82,8 +82,7 @@ let
 
   isRetired = isDarwin && config.networking.hostName == "retired";
 
-  agentPackages =
-    lib.optionals (!isRetired) [ pkgs.devin-cli ] ++ lib.optionals isRetired [ pkgs.mcp-gdrive ];
+  agentPackages = lib.optionals (!isRetired) [ pkgs.devin-cli ];
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
