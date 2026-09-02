@@ -143,7 +143,7 @@ return {
             end,
         },
         { '<c-l>', '<cmd>FzfLua live_grep<cr>' },
-        { '<leader>fb', '<cmd>FzfLua buffers<cr>' },
+        { '<c-b>', '<cmd>FzfLua buffers<cr>' },
         {
             '<leader>ft',
             function()
