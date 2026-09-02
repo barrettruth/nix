@@ -38,14 +38,68 @@ local function enabled(buf)
             > 0
 end
 
+---@param win integer
+---@return boolean
+local function is_output(win)
+    return vim.b[vim.api.nvim_win_get_buf(win)].run_output == true
+end
+
+---@param tp integer
+---@param skip? integer
+---@return integer[] outputs
+---@return integer others
+local function survey(tp, skip)
+    local outputs, others = {}, 0
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+        if vim.api.nvim_win_get_config(win).relative == '' and win ~= skip then
+            if is_output(win) then
+                outputs[#outputs + 1] = win
+            else
+                others = others + 1
+            end
+        end
+    end
+    return outputs, others
+end
+
 ---@return integer?
 local function output_win()
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local outputs = survey(0)
+    return outputs[1]
+end
+
+---@param buf integer
+---@param tp integer
+---@return boolean
+local function displayed(buf, tp)
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+        if vim.api.nvim_win_get_buf(win) == buf then
+            return true
+        end
+    end
+    return false
+end
+
+local function close_orphans()
+    local orphans = {}
+    for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
+        local outputs = survey(tp)
+        for _, win in ipairs(outputs) do
+            local src = vim.b[vim.api.nvim_win_get_buf(win)].run_source
+            local kept = src
+                and vim.api.nvim_buf_is_valid(src)
+                and displayed(src, tp)
+            if not kept then
+                orphans[#orphans + 1] = win
+            end
+        end
+    end
+    for _, win in ipairs(orphans) do
         if
-            vim.api.nvim_win_get_config(win).relative == ''
-            and vim.b[vim.api.nvim_win_get_buf(win)].run_output
+            vim.api.nvim_win_is_valid(win)
+            and not pcall(vim.api.nvim_win_close, win, true)
         then
-            return win
+            pcall(vim.api.nvim_win_call, win, vim.cmd.quit)
         end
     end
 end
@@ -76,9 +130,10 @@ local function report(win, title, lines, efm)
     return #items
 end
 
+---@param source integer
 ---@param cmd string
 ---@param efm string
-local function terminal(cmd, efm)
+local function terminal(source, cmd, efm)
     local saved = vim.api.nvim_get_current_win()
     local win = output_win()
     if win then
@@ -96,6 +151,7 @@ local function terminal(cmd, efm)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].bufhidden = 'wipe'
     vim.b[buf].run_output = true
+    vim.b[buf].run_source = source
     vim.b[buf].term_normal = true
     vim.api.nvim_win_set_buf(win, buf)
 
@@ -137,7 +193,7 @@ local function launch(buf, win)
         end
         win_call(win, function()
             vim.cmd.cclose()
-            terminal(run, efm)
+            terminal(buf, run, efm)
         end)
     end
 
@@ -245,6 +301,32 @@ end
 
 function M.setup()
     group = vim.api.nvim_create_augroup('Run', { clear = true })
+
+    vim.api.nvim_create_autocmd('QuitPre', {
+        group = group,
+        callback = function()
+            local cur = vim.api.nvim_get_current_win()
+            if vim.v.exiting ~= vim.NIL or is_output(cur) then
+                return
+            end
+            local outputs, others = survey(0, cur)
+            if others > 0 then
+                return
+            end
+            for _, win in ipairs(outputs) do
+                pcall(vim.api.nvim_win_close, win, true)
+            end
+        end,
+    })
+    vim.api.nvim_create_autocmd({ 'WinClosed', 'BufWinLeave' }, {
+        group = group,
+        callback = function()
+            if vim.v.exiting ~= vim.NIL then
+                return
+            end
+            vim.schedule(close_orphans)
+        end,
+    })
 
     vim.keymap.set('n', '<Plug>(run)', function()
         local buf = vim.api.nvim_get_current_buf()
