@@ -31,6 +31,34 @@ local function default_language()
     return languages[name], tostring(name)
 end
 
+---@param buf integer
+---@param action string
+---@param rhs fun()
+---@param desc string
+local function map(buf, action, rhs, desc)
+    local plug = '<Plug>(cp-' .. action .. ')'
+    vim.keymap.set('n', plug, rhs, { buffer = buf, desc = desc })
+    local lhs = ((vim.g.cp or {}).mappings or {})[action]
+    if lhs and lhs ~= '' then
+        vim.keymap.set('n', lhs, plug, { buffer = buf, remap = true })
+    end
+end
+
+---@param buf integer
+local function attach_keys(buf)
+    for _, mode in ipairs(MODES) do
+        map(buf, mode, function()
+            M.run(mode)
+        end, mode .. ' CP problem')
+    end
+    map(buf, 'problem', function()
+        M.open_url('problem')
+    end, 'open CP problem')
+    map(buf, 'submit', function()
+        M.open_url('submit')
+    end, 'open CP submission')
+end
+
 ---@param path string?
 ---@return boolean
 function M.is_cp_path(path)
@@ -157,6 +185,7 @@ local function reset_output(win, source)
     vim.b[buf].cp_output = true
     vim.b[buf].cp_source = source
     vim.b[buf].term_normal = true
+    attach_keys(buf)
     vim.api.nvim_win_set_buf(win, buf)
     vim.api.nvim_win_call(win, function()
         vim.fn.jobstart({ vim.o.shell }, {
@@ -620,6 +649,7 @@ function M.setup()
                 vim.diagnostic.enable(false, { bufnr = args.buf })
                 vim.b[args.buf].minicompletion_config =
                     { delay = { signature = 10000000 } }
+                attach_keys(args.buf)
             end
         end,
     })
@@ -637,17 +667,6 @@ function M.setup()
             return complete_problem(arg_lead)
         end,
     })
-    for _, mode in ipairs(MODES) do
-        vim.keymap.set('n', '<Plug>(cp-' .. mode .. ')', function()
-            M.run(mode)
-        end, { desc = mode .. ' CP problem' })
-    end
-    vim.keymap.set('n', '<Plug>(cp-problem)', function()
-        M.open_url('problem')
-    end, { desc = 'open CP problem' })
-    vim.keymap.set('n', '<Plug>(cp-submit)', function()
-        M.open_url('submit')
-    end, { desc = 'open CP submission' })
 end
 
 return M
