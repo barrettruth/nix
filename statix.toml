@@ -2,3 +2,4 @@ disabled = [
   "repeated_keys",
   "empty_pattern",
 ]
+
