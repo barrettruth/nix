@@ -386,6 +386,10 @@ in
       };
 
     system.defaults = {
+      menuExtraClock = {
+        Show24Hour = true;
+        ShowAMPM = false;
+      };
       dock = {
         autohide = true;
         show-recents = false;
@@ -399,6 +403,7 @@ in
       spaces.spans-displays = true;
       screencapture.location = screenshotDir;
       NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
+      NSGlobalDomain.AppleICUForce24HourTime = true;
       NSGlobalDomain."com.apple.swipescrolldirection" = true;
       NSGlobalDomain.NSAutomaticWindowAnimationsEnabled = false;
       NSGlobalDomain.NSWindowResizeTime = 0.001;
