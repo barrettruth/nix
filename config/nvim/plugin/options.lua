@@ -2,7 +2,7 @@ vim.o.autowrite = true
 
 vim.o.breakindent = true
 
-vim.opt.completeopt = { 'menuone', 'noselect', 'noinsert', 'fuzzy', 'popup' }
+vim.opt.completeopt = { 'menuone', 'noinsert', 'fuzzy', 'nosort', 'popup' }
 
 vim.o.cursorline = true
 
