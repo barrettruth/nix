@@ -148,7 +148,7 @@ local function launch(buf, win)
     log('building...')
     local job
     job = vim.system(
-        { vim.o.shell, vim.o.shellcmdflag, 'exec ' .. build },
+        { '/bin/sh', '-c', 'exec ' .. build },
         { text = true },
         function(out)
             vim.schedule(function()
@@ -167,7 +167,10 @@ local function launch(buf, win)
                     })
                 local count = report(win, build, lines, efm)
                 if count == 0 then
-                    fail(('build exited %d'):format(out.code))
+                    fail(
+                        #lines > 0 and table.concat(lines, '\n')
+                            or ('build exited %d'):format(out.code)
+                    )
                 else
                     log(
                         ('build failed, %d error%s'):format(
