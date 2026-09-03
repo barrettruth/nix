@@ -28,4 +28,6 @@ vim.bo.makeprg = table.concat({
     binary,
     '%:S',
 }, ' ')
-vim.b.run = binary
+local run = type(vim.b.run) == 'table' and vim.b.run or {}
+run.command = binary
+vim.b.run = run

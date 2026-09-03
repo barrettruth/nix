@@ -1,12 +1,34 @@
 local M = {}
 
 local RATIO = 0.35
+local DIAGNOSTIC_NAMESPACE = vim.api.nvim_create_namespace('run')
+local DEFAULT_PUBLISH = { 'quickfix' }
 
 ---@type vim.SystemObj?
 local building = nil
 
 ---@type integer?
 local group = nil
+
+---@param buf integer
+---@return table
+local function buffer_run(buf)
+    local value = vim.b[buf].run
+    if type(value) == 'table' then
+        return value
+    end
+    if type(value) == 'string' then
+        return { command = value }
+    end
+    return {}
+end
+
+---@param buf integer
+---@return string?
+local function run_command(buf)
+    local command = buffer_run(buf).command
+    return type(command) == 'string' and command or nil
+end
 
 ---@param msg string
 local function log(msg)
@@ -16,6 +38,29 @@ end
 ---@param msg string
 local function fail(msg)
     vim.notify('run: ' .. msg, vim.log.levels.ERROR)
+end
+
+---@param buf integer
+---@return string[]
+local function publishers(buf)
+    local buffer = buffer_run(buf)
+    if buffer.publish ~= nil then
+        return buffer.publish
+    end
+
+    local global = vim.g.run
+    if type(global) == 'table' and global.publish ~= nil then
+        return global.publish
+    end
+
+    return DEFAULT_PUBLISH
+end
+
+---@param buf integer
+---@param name string
+---@return boolean
+local function publishes(buf, name)
+    return vim.tbl_contains(publishers(buf), name)
 end
 
 ---@param buf integer
@@ -116,11 +161,9 @@ end
 
 ---@param win integer
 ---@param title string
----@param lines string[]
----@param efm string
+---@param items table[]
 ---@return integer count
-local function report(win, title, lines, efm)
-    local items = vim.fn.getqflist({ lines = lines, efm = efm }).items
+local function publish_quickfix(win, title, items)
     if #items == 0 then
         return 0
     end
@@ -132,10 +175,63 @@ local function report(win, title, lines, efm)
     return #items
 end
 
+---@param items table[]
+---@return integer count
+local function publish_diagnostics(items)
+    local severity = {
+        E = vim.diagnostic.severity.ERROR,
+        W = vim.diagnostic.severity.WARN,
+        I = vim.diagnostic.severity.INFO,
+        N = vim.diagnostic.severity.HINT,
+    }
+    local by_buffer = {}
+    local count = 0
+
+    for _, item in ipairs(items) do
+        if item.valid == 1 and item.bufnr > 0 and item.lnum > 0 then
+            by_buffer[item.bufnr] = by_buffer[item.bufnr] or {}
+            table.insert(by_buffer[item.bufnr], {
+                lnum = item.lnum - 1,
+                col = math.max(item.col - 1, 0),
+                message = item.text,
+                severity = severity[item.type] or vim.diagnostic.severity.ERROR,
+                source = 'build',
+            })
+            count = count + 1
+        end
+    end
+
+    for buf, diagnostics in pairs(by_buffer) do
+        vim.diagnostic.set(DIAGNOSTIC_NAMESPACE, buf, diagnostics)
+    end
+
+    return count
+end
+
+---@param source integer
+---@param win integer
+---@param title string
+---@param lines string[]
+---@param efm string
+---@return integer count
+local function publish(source, win, title, lines, efm)
+    local items = vim.fn.getqflist({ lines = lines, efm = efm }).items
+    local count = 0
+
+    for _, publisher in ipairs(publishers(source)) do
+        if publisher == 'quickfix' then
+            count = math.max(count, publish_quickfix(win, title, items))
+        elseif publisher == 'diagnostics' then
+            count = math.max(count, publish_diagnostics(items))
+        end
+    end
+
+    return count
+end
+
 ---@param source integer
 ---@param cmd string
----@param efm string
-local function terminal(source, cmd, efm)
+local function terminal(source, cmd)
     local saved = vim.api.nvim_get_current_win()
     local win = output_win()
     if win then
@@ -157,19 +253,14 @@ local function terminal(source, cmd, efm)
     vim.b[buf].term_normal = true
     vim.api.nvim_win_set_buf(win, buf)
 
-    local errors = vim.fn.tempname()
     log('running...')
-    vim.fn.jobstart(('%s 2> %s'):format(cmd, vim.fn.shellescape(errors)), {
+    vim.fn.jobstart(cmd, {
         term = true,
         on_exit = function(_, code)
             vim.schedule(function()
                 if vim.api.nvim_buf_is_valid(buf) then
-                    if code ~= 0 then
-                        report(saved, cmd, vim.fn.readfile(errors), efm)
-                    end
                     log(('exit %d'):format(code))
                 end
-                vim.fn.delete(errors)
             end)
         end,
     })
@@ -183,19 +274,25 @@ end
 ---@param win integer
 local function launch(buf, win)
     local efm = vim.bo[buf].errorformat
+    local command = run_command(buf)
+    if not command then
+        return
+    end
     local run, build
     vim.api.nvim_buf_call(buf, function()
-        run = vim.fn.expandcmd(vim.b[buf].run)
+        run = vim.fn.expandcmd(command)
         build = vim.bo.makeprg ~= '' and vim.fn.expandcmd(vim.bo.makeprg)
     end)
 
     local function start()
-        if not enabled(buf) or not vim.b[buf].run then
+        if not enabled(buf) or not run_command(buf) then
             return
         end
         win_call(win, function()
-            vim.cmd.cclose()
-            terminal(buf, run, efm)
+            if publishes(buf, 'quickfix') then
+                vim.cmd.cclose()
+            end
+            terminal(buf, run)
         end)
     end
 
@@ -204,6 +301,7 @@ local function launch(buf, win)
     end
 
     log('building...')
+    vim.diagnostic.reset(DIAGNOSTIC_NAMESPACE)
     local job
     job = vim.system(
         { '/bin/sh', '-c', 'exec ' .. build },
@@ -223,7 +321,7 @@ local function launch(buf, win)
                     vim.split((out.stdout or '') .. (out.stderr or ''), '\n', {
                         trimempty = true,
                     })
-                local count = report(win, build, lines, efm)
+                local count = publish(buf, win, build, lines, efm)
                 if count == 0 then
                     fail(
                         #lines > 0 and table.concat(lines, '\n')
@@ -251,7 +349,7 @@ function M.run(buf, win)
     if not enabled(buf) then
         return
     end
-    if not vim.b[buf].run then
+    if not run_command(buf) then
         fail(no_runner(buf))
         return
     end
@@ -289,7 +387,7 @@ end
 ---@param buf? integer
 function M.disable(buf)
     buf = buf or vim.api.nvim_get_current_buf()
-    if not vim.b[buf].run then
+    if not run_command(buf) then
         log(no_runner(buf))
         return
     end
@@ -333,7 +431,7 @@ function M.setup()
 
     vim.keymap.set('n', '<Plug>(run)', function()
         local buf = vim.api.nvim_get_current_buf()
-        if not vim.b[buf].run then
+        if not run_command(buf) then
             fail(no_runner(buf))
             return
         end
