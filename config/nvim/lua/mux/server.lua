@@ -241,6 +241,7 @@ local SET_THEME_EXPR = "execute('colorscheme ' . %s)"
 local SET_PEERS_EXPR =
     "luaeval('(function(p) vim.g.mux_peers = p; require([[mux.line]]).refresh(); return true end)(_A)', %s)"
 local CONTROL_EXPR = "luaeval('require([[mux.server]]).control(_A)', %s)"
+local OPEN_VIEW_EXPR = "luaeval('require([[mux.view]]).open(_A)', %s)"
 local RESTARTED_EXPR =
     "luaeval('(function(m) vim.api.nvim_create_autocmd([[UIEnter]], { once = true, callback = function() vim.defer_fn(function() vim.api.nvim_echo({ { m } }, true, {}) end, 50) end }); return true end)(_A)', %s)"
 
@@ -825,12 +826,17 @@ end
 ---@param target_server mux.Server
 ---@param cb? fun(ok?: true, err?: string)
 ---@param clear_last? boolean
+---@param view_name? string
 ---@return nil
-function M.attach(target_server, cb, clear_last)
+function M.attach(target_server, cb, clear_last, view_name)
     cb = cb or function() end
     local current = current_server
     if current and current.root == target_server.root then
-        cb(true)
+        if view_name then
+            cb(require('mux.view').open(view_name))
+        else
+            cb(true)
+        end
         return
     end
 
@@ -865,6 +871,26 @@ function M.attach(target_server, cb, clear_last)
         })
     end
 
+    local function open_view()
+        if not view_name then
+            connect_when_ready()
+            return
+        end
+
+        remote_expr(
+            target_server.socket,
+            OPEN_VIEW_EXPR:format(vim.fn.string(view_name)),
+            function(_, err)
+                if err then
+                    cb(nil, err)
+                    return
+                end
+
+                connect_when_ready()
+            end
+        )
+    end
+
     -- Connecting a UI to an address nothing answers exits it, but only our own
     -- sockets are ours to judge: the rest are addressed for the UI client.
     local judged = ours(target_server.socket)
@@ -878,12 +904,12 @@ function M.attach(target_server, cb, clear_last)
         end
 
         if not current then
-            connect_when_ready()
+            open_view()
             return
         end
 
         set_remote_last_root(target_server.socket, current.root, function()
-            connect_when_ready()
+            open_view()
         end, clear_last)
     end)
 end
@@ -912,8 +938,9 @@ end
 ---@param root string
 ---@param cb? fun(ok?: true, err?: string)
 ---@param clear_last? boolean
+---@param view_name? string
 ---@return nil
-function M.connect(root, cb, clear_last)
+function M.connect(root, cb, clear_last, view_name)
     cb = cb or function() end
     M.ensure_target(root, function(target_server, ensure_err)
         if not target_server then
@@ -921,7 +948,7 @@ function M.connect(root, cb, clear_last)
             return
         end
 
-        M.switch(target_server, cb, clear_last)
+        M.switch(target_server, cb, clear_last, view_name)
     end)
 end
 
@@ -929,8 +956,9 @@ end
 ---@param target_server mux.Server
 ---@param cb? fun(ok?: true, err?: string)
 ---@param clear_last? boolean
+---@param view_name? string
 ---@return nil
-function M.switch(target_server, cb, clear_last)
+function M.switch(target_server, cb, clear_last, view_name)
     cb = cb or function() end
     local self = current_server and peer_for(current_server.root)
 
@@ -948,11 +976,11 @@ function M.switch(target_server, cb, clear_last)
         not ours(target_server.socket)
         or socket_listening(target_server.socket)
     then
-        M.attach(target_server, cb, clear_last)
+        M.attach(target_server, cb, clear_last, view_name)
         return
     end
 
-    M.connect(target_server.root, cb, clear_last)
+    M.connect(target_server.root, cb, clear_last, view_name)
 end
 
 ---Match a server's colorscheme to this one's.
