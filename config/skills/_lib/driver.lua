@@ -163,8 +163,8 @@ function M.command(payload)
         }
     end)
 
-    if err then
-        return { ok = false, error = err }
+    if not result then
+        return { ok = false, error = err or 'command returned no result' }
     end
 
     return {
