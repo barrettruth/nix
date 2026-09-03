@@ -80,21 +80,23 @@ local function displayed(buf, tp)
     return false
 end
 
-local function close_orphans()
-    local orphans = {}
+---@param source? integer
+local function close_outputs(source)
+    local closing = {}
     for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
         local outputs = survey(tp)
         for _, win in ipairs(outputs) do
             local src = vim.b[vim.api.nvim_win_get_buf(win)].run_source
             local kept = src
+                and src ~= source
                 and vim.api.nvim_buf_is_valid(src)
                 and displayed(src, tp)
             if not kept then
-                orphans[#orphans + 1] = win
+                closing[#closing + 1] = win
             end
         end
     end
-    for _, win in ipairs(orphans) do
+    for _, win in ipairs(closing) do
         if
             vim.api.nvim_win_is_valid(win)
             and not pcall(vim.api.nvim_win_close, win, true)
@@ -296,6 +298,7 @@ function M.disable(buf)
         event = 'BufWritePost',
         buf = buf,
     })
+    close_outputs(buf)
     log('disabled')
 end
 
@@ -324,7 +327,7 @@ function M.setup()
             if vim.v.exiting ~= vim.NIL then
                 return
             end
-            vim.schedule(close_orphans)
+            vim.schedule(close_outputs)
         end,
     })
 
