@@ -8,4 +8,6 @@ vim.bo.errorformat = table.concat({
     [[%Z%[%^ ]%\@=%m]],
     [[%-G%.%#]],
 }, ',')
-vim.b.run = 'python3 %:S'
+local run = type(vim.b.run) == 'table' and vim.b.run or {}
+run.command = 'python3 %:S'
+vim.b.run = run
