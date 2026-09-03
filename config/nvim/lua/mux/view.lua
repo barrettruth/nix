@@ -17,6 +17,7 @@ local M = {}
 local JOB_EXIT_TIMEOUT_MS = 5000
 local MODES = { 'n', 'i', 't' }
 local PREFIX = '<a-x>'
+local ai_command = vim.fn.executable('codex') == 1 and 'codex' or 'devin'
 
 ---@type table<integer, string|false>
 local tab_view = {}
@@ -27,7 +28,7 @@ local term_pids = {}
 
 ---@type table<string, mux.ViewSpec>
 local views = {
-    codex = { key = 'c', restore = true, terminal = { 'codex' } },
+    ai = { key = 'a', restore = true, terminal = { ai_command } },
     edit = { key = 'e' },
     vcs = { key = 'v', restore = true },
     zsh = { key = 'z', restore = true, terminal = { vim.o.shell } },
