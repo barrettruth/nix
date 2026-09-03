@@ -61,16 +61,9 @@ local function picked(items, selected)
     return index and items[index]
 end
 
----@param selected string[]
----@param opts {last_query?: string}
+---@param query string
 ---@return nil
-local function create(selected, opts)
-    local query = vim.trim(selected[1] or opts.last_query or '')
-    if query == '' then
-        done(nil, 'path cannot be empty')
-        return
-    end
-
+local function create(query)
     local complete = false
     local target, err
     command.ensure(query, function(ensured, ensure_err)
@@ -170,12 +163,11 @@ local function open()
     require('fzf-lua').fzf_exec(contents, {
         prompt = 'mux> ',
         previewer = false,
-        header = ('%s vcs | %s ai | %s edit | %s zsh | %s create | %s reload | %s kill | %s open'):format(
+        header = ('%s vcs | %s create | %s edit | %s zsh | %s reload | %s kill | %s attach'):format(
             highlight('<c-v>', 'FzfLuaHeaderBind'),
             highlight('<c-a>', 'FzfLuaHeaderBind'),
             highlight('<c-e>', 'FzfLuaHeaderBind'),
             highlight('<c-z>', 'FzfLuaHeaderBind'),
-            highlight('<c-n>', 'FzfLuaHeaderBind'),
             highlight('<c-r>', 'FzfLuaHeaderBind'),
             highlight('<c-x>', 'FzfLuaHeaderBind'),
             highlight('<enter>', 'FzfLuaHeaderBind')
@@ -189,12 +181,28 @@ local function open()
         },
         actions = {
             ['ctrl-v'] = select_action('vcs'),
-            ['ctrl-a'] = select_action('ai'),
             ['ctrl-e'] = select_action('edit'),
             ['ctrl-z'] = select_action('zsh'),
-            ['ctrl-n'] = {
-                fn = create,
-                field_index = '{q}',
+            ['ctrl-a'] = {
+                fn = function(selected, opts)
+                    local query = vim.trim(opts.last_query or '')
+                    if query ~= '' then
+                        create(query)
+                        return
+                    end
+
+                    local candidate = picked(items, selected)
+                    if not candidate then
+                        done(nil, 'no path selected')
+                    elseif candidate.server then
+                        done(
+                            nil,
+                            'server already exists for ' .. candidate.root
+                        )
+                    else
+                        create(candidate.root)
+                    end
+                end,
                 postfix = 'clear-query+first',
                 reload = true,
             },
@@ -216,6 +224,7 @@ local function open()
                         server.kill(target, done)
                     end
                 end,
+                reload = true,
             },
         },
     })
