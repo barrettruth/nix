@@ -7,6 +7,7 @@ misattributed=0
 known_identity_name='Barrett Ruth'
 known_identity_emails='br@barrettruth.com
 br.barrettruth@gmail.com
+barrett.ruth@imc.com
 62671086+barrettruth@users.noreply.github.com'
 own_author_emails=$(
   {
