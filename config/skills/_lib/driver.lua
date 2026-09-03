@@ -155,22 +155,20 @@ function M.command(payload)
         return { ok = false, error = 'empty command' }
     end
 
-    local result, err = view.call(name, function()
+    local buffer, err = view.call(name, function()
         vim.cmd(command)
 
-        return {
-            buffer = vim.api.nvim_buf_get_name(0),
-        }
+        return vim.api.nvim_buf_get_name(0)
     end)
 
-    if not result then
+    if not buffer then
         return { ok = false, error = err or 'command returned no result' }
     end
 
     return {
         ok = true,
         view = name,
-        buffer = result.buffer,
+        buffer = buffer,
     }
 end
 
