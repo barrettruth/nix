@@ -30,12 +30,13 @@ local function done(ok, err)
 end
 
 ---@param candidate mux.Candidate
+---@param view_name? string
 ---@return nil
-local function select(candidate)
+local function select(candidate, view_name)
     if candidate.server then
-        server.switch(candidate.server, done)
+        server.switch(candidate.server, done, nil, view_name)
     else
-        server.connect(candidate.root, done)
+        server.connect(candidate.root, done, nil, view_name)
     end
 end
 
@@ -155,11 +156,26 @@ local function open()
         end)
     end
 
+    local function select_action(name)
+        return {
+            fn = function(selected)
+                local candidate = picked(items, selected)
+                if candidate then
+                    select(candidate, name)
+                end
+            end,
+        }
+    end
+
     require('fzf-lua').fzf_exec(contents, {
         prompt = 'mux> ',
         previewer = false,
-        header = ('%s create | %s reload | %s kill | %s open'):format(
+        header = ('%s vcs | %s ai | %s edit | %s zsh | %s create | %s reload | %s kill | %s open'):format(
+            highlight('<c-v>', 'FzfLuaHeaderBind'),
             highlight('<c-a>', 'FzfLuaHeaderBind'),
+            highlight('<c-e>', 'FzfLuaHeaderBind'),
+            highlight('<c-z>', 'FzfLuaHeaderBind'),
+            highlight('<c-n>', 'FzfLuaHeaderBind'),
             highlight('<c-r>', 'FzfLuaHeaderBind'),
             highlight('<c-x>', 'FzfLuaHeaderBind'),
             highlight('<enter>', 'FzfLuaHeaderBind')
@@ -172,20 +188,17 @@ local function open()
             ['--tiebreak'] = 'index',
         },
         actions = {
-            ['ctrl-a'] = {
+            ['ctrl-v'] = select_action('vcs'),
+            ['ctrl-a'] = select_action('ai'),
+            ['ctrl-e'] = select_action('edit'),
+            ['ctrl-z'] = select_action('zsh'),
+            ['ctrl-n'] = {
                 fn = create,
                 field_index = '{q}',
                 postfix = 'clear-query+first',
                 reload = true,
             },
-            enter = {
-                fn = function(selected)
-                    local candidate = picked(items, selected)
-                    if candidate then
-                        select(candidate)
-                    end
-                end,
-            },
+            enter = select_action(),
             ['ctrl-r'] = {
                 fn = function(selected)
                     local candidate = picked(items, selected)
