@@ -1,5 +1,6 @@
 vim.pack.add({
     'https://github.com/nvim-treesitter/nvim-treesitter-textobjects',
+    'https://github.com/Wansmer/treesj',
 })
 
 vim.treesitter.language.register('starlark', 'bzl')
@@ -160,5 +161,14 @@ return {
                 )
             end
         end,
+    },
+    {
+        'Wansmer/treesj',
+        after = function()
+            require('treesj').setup({ use_default_keymaps = false })
+        end,
+        keys = {
+            { 'gt', '<cmd>TSJToggle<cr>', desc = 'toggle split/join' },
+        },
     },
 }
