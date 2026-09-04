@@ -29,3 +29,5 @@ result-*
 .devin/
 .worktrees/
 .nvim.lua
+
+**/.claude/settings.local.json
