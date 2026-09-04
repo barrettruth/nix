@@ -174,7 +174,6 @@ local function open()
         ),
         fzf_opts = {
             ['--delimiter'] = '[\t]',
-            ['--nth'] = '2..',
             ['--with-nth'] = '2..',
             ['--no-multi'] = true,
             ['--tiebreak'] = 'index',
