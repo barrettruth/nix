@@ -23,7 +23,6 @@ vim.bo.makeprg = table.concat({
     '-Wextra',
     '-g',
     '-fdiagnostics-color=never',
-    '-fno-diagnostics-show-caret',
     '-o',
     binary,
     '%:S',
