@@ -33,8 +33,6 @@ for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
 end
 vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'join lines (keep cursor)' })
 
-vim.keymap.set('x', 'p', '"_dp', { desc = 'paste without yanking' })
-vim.keymap.set('x', 'P', '"_dP', { desc = 'paste before without yanking' })
 vim.keymap.set('x', 'x', '"_d', { desc = 'delete selection without yanking' })
 vim.keymap.set('n', 'x', '"_x', { desc = 'delete char without yanking' })
 

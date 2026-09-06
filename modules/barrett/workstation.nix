@@ -465,6 +465,7 @@ in
             uv
             python3
             bash-language-server
+            ts_query_ls
             vscode-langservers-extracted
             prettier
             shfmt
