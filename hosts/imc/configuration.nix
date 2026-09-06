@@ -61,7 +61,7 @@ let
 
     tui = {
       theme = "midnight";
-      vim_mode_default = true;
+      vim_mode_default = false;
       status_line = [
         "model-with-reasoning"
         "run-state"
