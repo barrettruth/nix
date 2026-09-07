@@ -7,8 +7,8 @@ if vim.bo.buftype ~= '' or vim.fn.expand('%:t:r') == '' then
     return
 end
 
-vim.g.compiler_gcc_ignore_unmatched_lines = true
 vim.cmd.compiler('gcc')
+vim.opt_local.errorformat:append('%-G%.%#')
 
 local binary = vim.fn.shellescape(
     vim.fs.joinpath(
