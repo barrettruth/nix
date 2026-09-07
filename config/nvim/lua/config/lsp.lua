@@ -136,7 +136,7 @@ function M.on_detach(client_id, bufnr)
         keys[server.key] = true
     end
     for key in pairs(keys) do
-        vim.keymap.del('n', key, { buffer = bufnr })
+        pcall(vim.keymap.del, 'n', key, { buffer = bufnr })
     end
     for _, remaining in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
         if remaining.id ~= client_id then
