@@ -642,17 +642,34 @@ function M.setup()
             vim.schedule(restore_column)
         end,
     })
-    vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufReadPost' }, {
+    vim.api.nvim_create_autocmd('BufFilePre', {
         group = group,
         callback = function(args)
             if M.is_cp_path(vim.api.nvim_buf_get_name(args.buf)) then
-                vim.diagnostic.enable(false, { bufnr = args.buf })
-                vim.b[args.buf].minicompletion_config =
-                    { delay = { signature = 10000000 } }
-                attach_keys(args.buf)
+                vim.diagnostic.enable(true, { bufnr = args.buf })
+                vim.b[args.buf].minicompletion_config = nil
+                local opts = { buffer = args.buf }
+                for action, lhs in pairs(vim.g.cp.mappings) do
+                    vim.keymap.del('n', '<Plug>(cp-' .. action .. ')', opts)
+                    vim.keymap.del('n', lhs, opts)
+                end
             end
         end,
     })
+    vim.api.nvim_create_autocmd(
+        { 'BufNewFile', 'BufReadPost', 'BufFilePost' },
+        {
+            group = group,
+            callback = function(args)
+                if M.is_cp_path(vim.api.nvim_buf_get_name(args.buf)) then
+                    vim.diagnostic.enable(false, { bufnr = args.buf })
+                    vim.b[args.buf].minicompletion_config =
+                        { delay = { signature = 10000000 } }
+                    attach_keys(args.buf)
+                end
+            end,
+        }
+    )
 
     vim.api.nvim_create_user_command('CP', function(opts)
         local arg = opts.args == '' and 'run' or opts.args
