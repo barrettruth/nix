@@ -121,19 +121,26 @@ end
 ---@param client_id integer
 ---@param bufnr integer
 function M.on_detach(client_id, bufnr)
-    local keys = { K = true }
-    for _, m in ipairs(mappings) do
-        keys[m[2]] = true
+    local client = assert(vim.lsp.get_client_by_id(client_id))
+    local keys = {}
+    if client:supports_method('textDocument/hover') then
+        keys.K = true
     end
-    for _, server in pairs(server_to_on_attach) do
+    for _, m in ipairs(mappings) do
+        if client:supports_method(m[1]) then
+            keys[m[2]] = true
+        end
+    end
+    local server = server_to_on_attach[client.name]
+    if server then
         keys[server.key] = true
     end
     for key in pairs(keys) do
-        pcall(vim.keymap.del, 'n', key, { buffer = bufnr })
+        vim.keymap.del('n', key, { buffer = bufnr })
     end
-    for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
-        if client.id ~= client_id then
-            M.on_attach(client, bufnr)
+    for _, remaining in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+        if remaining.id ~= client_id then
+            M.on_attach(remaining, bufnr)
         end
     end
 end
