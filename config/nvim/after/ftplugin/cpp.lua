@@ -32,4 +32,4 @@ local run = type(vim.b.run) == 'table' and vim.b.run or {}
 run.command = binary
 vim.b.run = run
 vim.b.undo_ftplugin = (vim.b.undo_ftplugin or '')
-    .. '\nsetl mp< efm< | unl! b:current_compiler b:run.command'
+    .. '\nsetl mp< efm< | unl! b:current_compiler b:run.command b:man_default_sects'
