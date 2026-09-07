@@ -23,6 +23,9 @@ vim.api.nvim_set_decoration_provider(ns, {
         end
         if stat.type == 'link' then
             local target = vim.uv.fs_readlink(path) or '?'
+            if target:sub(1, 1) == '/' then
+                target = vim.fn.fnamemodify(target, ':~')
+            end
             vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
                 virt_text = { { '-> ' .. target, 'Dimmed' } },
                 virt_text_pos = 'eol',
