@@ -11,3 +11,5 @@ vim.bo.errorformat = table.concat({
 local run = type(vim.b.run) == 'table' and vim.b.run or {}
 run.command = 'python3 %:S'
 vim.b.run = run
+vim.b.undo_ftplugin = (vim.b.undo_ftplugin or '')
+    .. '\nsetl efm< | unl! b:run.command'

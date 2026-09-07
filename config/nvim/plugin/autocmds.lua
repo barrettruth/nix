@@ -112,29 +112,3 @@ vim.api.nvim_create_autocmd('WinLeave', {
         end
     end,
 })
-
-vim.api.nvim_create_autocmd('FileType', {
-    pattern = { 'lua', 'vim' },
-    callback = function(ev)
-        vim.keymap.set(
-            'n',
-            '<leader>x',
-            ':.source<cr>',
-            { buf = ev.buf, desc = 'eval current line' }
-        )
-        vim.keymap.set(
-            'x',
-            '<leader>x',
-            ':source<cr>',
-            { buf = ev.buf, desc = 'eval selection' }
-        )
-    end,
-    group = aug,
-})
-
-vim.api.nvim_create_autocmd('FileType', {
-    pattern = 'directory',
-    callback = function(ev)
-        vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = ev.buf })
-    end,
-})
