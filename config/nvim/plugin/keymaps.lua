@@ -75,7 +75,7 @@ vim.keymap.set(
 vim.keymap.set('n', 'g:', ':lua =', { desc = 'eval a Lua expression' })
 
 vim.keymap.set('n', '<leader>iw', function()
-    vim.wo.wrap = not vim.wo.wrap
+    vim.opt_local.wrap = not vim.opt_local.wrap:get()
 end, { desc = 'toggle wrap' })
 vim.keymap.set('n', '<leader>ic', function()
     vim.o.cmdheight = vim.o.cmdheight == 0 and 1 or 0

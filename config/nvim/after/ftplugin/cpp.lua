@@ -1,5 +1,6 @@
-vim.opt.indentkeys:remove(':')
+vim.opt_local.indentkeys:remove(':')
 vim.opt_local.iskeyword:append(':')
+vim.b.undo_ftplugin = (vim.b.undo_ftplugin or '') .. '\nsetl indk< isk<'
 require('config.cppreference').setup()
 
 if vim.bo.buftype ~= '' or vim.fn.expand('%:t:r') == '' then
