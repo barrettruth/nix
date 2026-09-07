@@ -3,6 +3,8 @@ vim.pack.add({
     'https://github.com/lewis6991/gitsigns.nvim',
 })
 
+require('config.fugitive').setup()
+
 require('gitsigns').setup({
     signcolumn = false,
     signs_staged_enable = false,
