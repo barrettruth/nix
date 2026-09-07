@@ -15,19 +15,82 @@ local function fzf_or(fzf_cmd, fallback)
 end
 
 local server_to_on_attach = {
-    clangd = function(bufnr)
-        vim.keymap.set(
-            'n',
-            'gH',
-            '<cmd>LspClangdSwitchSourceHeader<cr>',
-            { buf = bufnr, desc = 'switch source/header' }
-        )
-    end,
-    vtsls = function(bufnr)
-        vim.keymap.set('n', 'gD', function()
-            vim.cmd.VtsExec('goto_source_definition')
-        end, { buf = bufnr, desc = 'goto source definition' })
-    end,
+    clangd = {
+        key = 'gH',
+        attach = function(bufnr)
+            vim.keymap.set(
+                'n',
+                'gH',
+                '<cmd>LspClangdSwitchSourceHeader<cr>',
+                { buf = bufnr, desc = 'switch source/header' }
+            )
+        end,
+    },
+    vtsls = {
+        key = 'gD',
+        attach = function(bufnr)
+            vim.keymap.set('n', 'gD', function()
+                vim.cmd.VtsExec('goto_source_definition')
+            end, { buf = bufnr, desc = 'goto source definition' })
+        end,
+    },
+}
+
+local mappings = {
+    {
+        'textDocument/codeAction',
+        'gra',
+        fzf_or('lsp_code_actions', vim.lsp.buf.code_action),
+        'code action',
+    },
+    {
+        'textDocument/declaration',
+        'gD',
+        fzf_or('lsp_declarations', vim.lsp.buf.declaration),
+        'declaration',
+    },
+    {
+        'textDocument/definition',
+        'gd',
+        fzf_or('lsp_definitions', vim.lsp.buf.definition),
+        'definition',
+    },
+    {
+        'textDocument/implementation',
+        'gri',
+        fzf_or('lsp_implementations', vim.lsp.buf.implementation),
+        'implementation',
+    },
+    {
+        'textDocument/references',
+        'grr',
+        fzf_or('lsp_references', vim.lsp.buf.references),
+        'references',
+    },
+    {
+        'textDocument/typeDefinition',
+        'grt',
+        fzf_or('lsp_typedefs', vim.lsp.buf.type_definition),
+        'type definition',
+    },
+    {
+        'textDocument/documentSymbol',
+        'go',
+        fzf_or('lsp_document_symbols', vim.lsp.buf.document_symbol),
+        'document symbols',
+    },
+    {
+        'workspace/symbol',
+        'gO',
+        fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
+        'workspace symbols',
+    },
+    {
+        'workspace/diagnostic',
+        'gw',
+        fzf_or('lsp_workspace_diagnostics', vim.diagnostic.setqflist),
+        'workspace diagnostics',
+    },
 }
 
 ---@param client vim.lsp.Client
@@ -42,63 +105,6 @@ function M.on_attach(client, bufnr)
         )
     end
 
-    local mappings = {
-        {
-            'textDocument/codeAction',
-            'gra',
-            fzf_or('lsp_code_actions', vim.lsp.buf.code_action),
-            'code action',
-        },
-        {
-            'textDocument/declaration',
-            'gD',
-            fzf_or('lsp_declarations', vim.lsp.buf.declaration),
-            'declaration',
-        },
-        {
-            'textDocument/definition',
-            'gd',
-            fzf_or('lsp_definitions', vim.lsp.buf.definition),
-            'definition',
-        },
-        {
-            'textDocument/implementation',
-            'gri',
-            fzf_or('lsp_implementations', vim.lsp.buf.implementation),
-            'implementation',
-        },
-        {
-            'textDocument/references',
-            'grr',
-            fzf_or('lsp_references', vim.lsp.buf.references),
-            'references',
-        },
-        {
-            'textDocument/typeDefinition',
-            'grt',
-            fzf_or('lsp_typedefs', vim.lsp.buf.type_definition),
-            'type definition',
-        },
-        {
-            'textDocument/documentSymbol',
-            'go',
-            fzf_or('lsp_document_symbols', vim.lsp.buf.document_symbol),
-            'document symbols',
-        },
-        {
-            'workspace/symbol',
-            'gO',
-            fzf_or('lsp_workspace_symbols', vim.lsp.buf.workspace_symbol),
-            'workspace symbols',
-        },
-        {
-            'workspace/diagnostic',
-            'gw',
-            fzf_or('lsp_workspace_diagnostics', vim.diagnostic.setqflist),
-            'workspace diagnostics',
-        },
-    }
-
     for _, m in ipairs(mappings) do
         local method, key, cmd, desc = unpack(m)
         if client:supports_method(method) then
@@ -106,9 +112,29 @@ function M.on_attach(client, bufnr)
         end
     end
 
-    local on_attach = server_to_on_attach[client.name]
-    if on_attach then
-        on_attach(bufnr)
+    local server = server_to_on_attach[client.name]
+    if server then
+        server.attach(bufnr)
+    end
+end
+
+---@param client_id integer
+---@param bufnr integer
+function M.on_detach(client_id, bufnr)
+    local keys = { K = true }
+    for _, m in ipairs(mappings) do
+        keys[m[2]] = true
+    end
+    for _, server in pairs(server_to_on_attach) do
+        keys[server.key] = true
+    end
+    for key in pairs(keys) do
+        pcall(vim.keymap.del, 'n', key, { buffer = bufnr })
+    end
+    for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+        if client.id ~= client_id then
+            M.on_attach(client, bufnr)
+        end
     end
 end
 

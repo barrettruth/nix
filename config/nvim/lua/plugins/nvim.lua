@@ -40,16 +40,25 @@ return {
                 },
             })
 
-            local function set_omnifunc(bufnr)
+            local function set_omnifunc(bufnr, excluded_client)
                 if not vim.api.nvim_buf_is_valid(bufnr) then
                     return
                 end
                 for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
-                    if client:supports_method('textDocument/completion') then
+                    if
+                        client.id ~= excluded_client
+                        and client:supports_method('textDocument/completion')
+                    then
                         vim.bo[bufnr].omnifunc =
                             'v:lua.MiniCompletion.completefunc_lsp'
                         return
                     end
+                end
+                if
+                    vim.bo[bufnr].omnifunc
+                    == 'v:lua.MiniCompletion.completefunc_lsp'
+                then
+                    vim.bo[bufnr].omnifunc = ''
                 end
             end
 
@@ -60,6 +69,13 @@ return {
                 ),
                 callback = function(ev)
                     set_omnifunc(ev.buf)
+                end,
+            })
+
+            vim.api.nvim_create_autocmd('LspDetach', {
+                group = 'AMiniCompletionLsp',
+                callback = function(ev)
+                    set_omnifunc(ev.buf, ev.data.client_id)
                 end,
             })
 

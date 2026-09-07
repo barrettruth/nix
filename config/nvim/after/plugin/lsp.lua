@@ -20,6 +20,8 @@ vim.diagnostic.config({
     },
 })
 
+local group = vim.api.nvim_create_augroup('ALsp', { clear = true })
+
 vim.api.nvim_create_autocmd('LspAttach', {
     callback = function(o)
         local client = vim.lsp.get_client_by_id(o.data.client_id)
@@ -27,7 +29,14 @@ vim.api.nvim_create_autocmd('LspAttach', {
             lsp.on_attach(client, o.buf)
         end
     end,
-    group = vim.api.nvim_create_augroup('ALsp', { clear = true }),
+    group = group,
+})
+
+vim.api.nvim_create_autocmd('LspDetach', {
+    callback = function(o)
+        lsp.on_detach(o.data.client_id, o.buf)
+    end,
+    group = group,
 })
 
 local servers = {
