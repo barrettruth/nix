@@ -23,6 +23,10 @@ vim.api.nvim_create_autocmd('FileType', {
     group = group,
     callback = function(ev)
         local lang = vim.treesitter.language.get_lang(vim.bo[ev.buf].filetype)
+        local active = vim.treesitter.highlighter.active[ev.buf]
+        if active and active.tree:lang() ~= lang then
+            vim.treesitter.stop(ev.buf)
+        end
         if lang and vim.treesitter.language.add(lang) then
             start(ev.buf, lang)
         end
