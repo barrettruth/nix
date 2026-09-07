@@ -34,6 +34,14 @@ local function zoom()
     vim.cmd('normal! zz')
 
     local group = vim.api.nvim_create_augroup('Zoom', { clear = true })
+    vim.api.nvim_create_autocmd('WinClosed', {
+        group = group,
+        pattern = tostring(zoom_winid),
+        callback = function()
+            zoom_winid = nil
+            vim.api.nvim_del_augroup_by_id(group)
+        end,
+    })
     local function refit()
         if not (zoom_winid and vim.api.nvim_win_is_valid(zoom_winid)) then
             return
