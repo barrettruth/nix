@@ -112,6 +112,7 @@ function M.setup()
             search(opts.args)
         end
     end, { force = true, nargs = '*' })
+    vim.b.undo_ftplugin = (vim.b.undo_ftplugin or '') .. '\nsil! delc CPP'
 end
 
 return M
