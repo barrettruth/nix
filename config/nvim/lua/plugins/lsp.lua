@@ -52,17 +52,17 @@ return {
 
             vim.api.nvim_create_autocmd('LspDetach', {
                 callback = function(o)
-                    for _, client in
-                        ipairs(vim.lsp.get_clients({ bufnr = o.buf }))
-                    do
-                        if
-                            client.id ~= o.data.client_id
-                            and client:supports_method('textDocument/rename')
-                        then
-                            return
-                        end
+                    local id = o.data.client_id
+                    local client = assert(vim.lsp.get_client_by_id(id))
+                    local method = 'textDocument/rename'
+                    if not client:supports_method(method) then
+                        return
                     end
-                    pcall(vim.keymap.del, 'n', 'grn', { buffer = o.buf })
+                    local clients =
+                        vim.lsp.get_clients({ bufnr = o.buf, method = method })
+                    if #clients == 1 then
+                        vim.keymap.del('n', 'grn', { buffer = o.buf })
+                    end
                 end,
                 group = group,
             })
