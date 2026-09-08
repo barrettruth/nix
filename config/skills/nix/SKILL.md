@@ -1,13 +1,18 @@
 ---
 name: nix
-description: Use when working in the nix configuration at ~/.config/nix — rebuilding a host, editing a module or package, running the repo's checks, or when an edit to a dotfile appears to have had no effect. Establish real state with read-only commands, then report concisely.
+description: Use when working with Nix, or in the nix configuration at ~/.config/nix — rebuilding a host, editing a module or package, running checks, or when an edit to a dotfile appears to have had no effect. Establish real state with read-only commands, then report concisely.
 ---
 
 # nix
 
-A flake-parts flake at `~/.config/nix` covering five hosts. The CI toolchain is
-installed globally by the same configuration it builds, so recipes run bare;
-`nix develop -c <cmd>` is the fallback when something is missing.
+Agent shells do not load direnv environments automatically. Whenever this skill
+is invoked in a repository, run commands through `direnv exec . <cmd>` if
+direnv is available and an `.envrc` applies. Otherwise use the repository's
+documented environment entry point.
+
+## Personal configuration
+
+The flake-parts flake at `~/.config/nix` covers five hosts.
 
 ## Rebuilding
 
