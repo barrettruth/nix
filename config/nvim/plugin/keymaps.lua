@@ -33,9 +33,6 @@ for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
 end
 vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'join lines (keep cursor)' })
 
-vim.keymap.set('x', 'x', '"_d', { desc = 'delete selection without yanking' })
-vim.keymap.set('n', 'x', '"_x', { desc = 'delete char without yanking' })
-
 vim.keymap.set('n', 'n', function()
     return vim.v.searchforward == 1 and 'n' or 'N'
 end, { expr = true, desc = 'next match (always forward)' })
