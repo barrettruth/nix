@@ -188,6 +188,7 @@ local function reset_output(win, source)
     attach_keys(buf)
     vim.api.nvim_win_set_buf(win, buf)
     vim.api.nvim_win_call(win, function()
+        vim.cmd.bcd(vim.fs.dirname(source))
         vim.fn.jobstart({ vim.o.shell }, {
             term = true,
             cwd = vim.fn.fnamemodify(source, ':h'),
@@ -419,6 +420,7 @@ function M.open_problem(problem)
     if not file then
         return
     end
+    file = vim.fs.joinpath(cwd, file)
 
     vim.api.nvim_set_current_win(edit_win(column()))
     if vim.bo.modified then
@@ -649,6 +651,9 @@ function M.setup()
                 vim.bo[args.buf].buftype == ''
                 and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
             then
+                vim.api.nvim_buf_call(args.buf, function()
+                    vim.cmd.bcd({ bang = true })
+                end)
                 vim.diagnostic.enable(true, { bufnr = args.buf })
                 vim.b[args.buf].minicompletion_config = nil
                 local opts = { buffer = args.buf }
@@ -664,10 +669,11 @@ function M.setup()
         {
             group = group,
             callback = function(args)
-                if
-                    vim.bo[args.buf].buftype == ''
-                    and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
-                then
+                local name = vim.api.nvim_buf_get_name(args.buf)
+                if vim.bo[args.buf].buftype == '' and M.is_cp_path(name) then
+                    vim.api.nvim_buf_call(args.buf, function()
+                        vim.cmd.bcd(vim.fs.dirname(name))
+                    end)
                     vim.diagnostic.enable(false, { bufnr = args.buf })
                     vim.b[args.buf].minicompletion_config =
                         { delay = { signature = 10000000 } }
