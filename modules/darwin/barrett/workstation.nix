@@ -389,6 +389,7 @@ in
       menuExtraClock = {
         Show24Hour = true;
         ShowAMPM = false;
+        ShowSeconds = true;
       };
       dock = {
         autohide = true;

@@ -1,3 +1,4 @@
+-- NOTE: consider replacing if https://github.com/vim/vim/issues/21243 gets resolved
 local M = {}
 
 ---@param options string[]
