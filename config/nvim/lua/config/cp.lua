@@ -645,7 +645,10 @@ function M.setup()
     vim.api.nvim_create_autocmd('BufFilePre', {
         group = group,
         callback = function(args)
-            if M.is_cp_path(vim.api.nvim_buf_get_name(args.buf)) then
+            if
+                vim.bo[args.buf].buftype == ''
+                and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
+            then
                 vim.diagnostic.enable(true, { bufnr = args.buf })
                 vim.b[args.buf].minicompletion_config = nil
                 local opts = { buffer = args.buf }
@@ -661,7 +664,10 @@ function M.setup()
         {
             group = group,
             callback = function(args)
-                if M.is_cp_path(vim.api.nvim_buf_get_name(args.buf)) then
+                if
+                    vim.bo[args.buf].buftype == ''
+                    and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
+                then
                     vim.diagnostic.enable(false, { bufnr = args.buf })
                     vim.b[args.buf].minicompletion_config =
                         { delay = { signature = 10000000 } }
