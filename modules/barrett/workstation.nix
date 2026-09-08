@@ -484,6 +484,7 @@ in
             fd
             git
             neovim
+            direnv-instant
             pandoc
             openssl
           ])

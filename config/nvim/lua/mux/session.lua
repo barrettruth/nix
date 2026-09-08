@@ -6,6 +6,14 @@ local saving = false
 local save_timer
 local did_setup = false
 
+local function direnv_windows()
+    return vim.iter(vim.api.nvim_list_wins())
+        :filter(function(win)
+            return vim.b[vim.api.nvim_win_get_buf(win)].mux_direnv_socket ~= nil
+        end)
+        :totable()
+end
+
 ---@return mux.Server? server
 ---@return string? err
 local function current()
@@ -57,12 +65,27 @@ function M.mark_dirty()
 end
 
 ---Persist the current user view layout to the server session file.
+---@param force? boolean
 ---@return true? ok
 ---@return string? err
-function M.save()
+function M.save(force)
     local server, err = current()
     if not server then
         return nil, err
+    end
+
+    local direnv = direnv_windows()
+    if #direnv > 0 and not force then
+        schedule_save()
+        return true
+    end
+
+    if #direnv > 0 then
+        saving = true
+        for _, win in ipairs(direnv) do
+            pcall(vim.api.nvim_win_close, win, true)
+        end
+        saving = false
     end
 
     dirty = false
@@ -176,7 +199,7 @@ function M.setup()
     vim.api.nvim_create_autocmd('VimLeavePre', {
         group = group,
         callback = function()
-            M.save()
+            M.save(true)
         end,
     })
 end

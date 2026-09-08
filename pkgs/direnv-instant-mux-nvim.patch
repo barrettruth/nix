@@ -1,0 +1,89 @@
+diff --git a/src/daemon.rs b/src/daemon.rs
+index ebbacea..278e1f1 100644
+--- a/src/daemon.rs
++++ b/src/daemon.rs
+@@ -37,2 +37,5 @@ pub fn get_runtime_dir(envrc_dir: &Path) -> PathBuf {
+     envrc_dir.hash(&mut hasher);
++    if env::var("DIRENV_INSTANT_NVIM").as_deref() == Ok("1") {
++        env::var("NVIM").ok().hash(&mut hasher);
++    }
+     let dir_hash = hasher.finish();
+diff --git a/hooks/zsh.sh b/hooks/zsh.sh
+index 8ec4bfe..e46b7e4 100644
+--- a/hooks/zsh.sh
++++ b/hooks/zsh.sh
+@@ -34,2 +34,7 @@ TRAPUSR1() {
+ 
++  if [[ ${DIRENV_INSTANT_NVIM:-} == 1 ]] && [[ -n ${NVIM:-} ]]; then
++    command nvim --server "$NVIM" \
++      --remote-expr 'luaeval("require([[mux.direnv]]).refresh()")' >/dev/null 2>&1 &!
++  fi
++
+   # Chain to previous handler if one existed
+diff --git a/src/mux.rs b/src/mux.rs
+index 2eb15b0..93c2d64 100644
+--- a/src/mux.rs
++++ b/src/mux.rs
+@@ -14,2 +14,4 @@ const KITTY_VAR: &str = "KITTY_LISTEN_ON";
+ const KITTY_LAUNCH_ARGS_VAR: &str = "DIRENV_INSTANT_KITTY_LAUNCH_ARGS";
++const NVIM_VAR: &str = "NVIM";
++const NVIM_MUX_VAR: &str = "DIRENV_INSTANT_NVIM";
+ const DEFAULT_KITTY_LAUNCH_ARGS: [&str; 4] = ["--location", "vsplit", "--keep-focus", "--self"];
+@@ -24,2 +26,3 @@ pub enum Multiplexer {
+     Herdr,
++    Nvim,
+ }
+@@ -28,2 +31,6 @@ impl Multiplexer {
+     pub fn detect() -> Option<Self> {
++        if env::var(NVIM_MUX_VAR).is_ok_and(|x| x == "1") && env::var(NVIM_VAR).is_ok() {
++            return Some(Self::Nvim);
++        }
++
+         if env::var("TMUX").is_ok() {
+@@ -62,2 +69,3 @@ impl Multiplexer {
+             Multiplexer::Herdr => return spawn_herdr(&bin, ctx),
++            Multiplexer::Nvim => return spawn_nvim(&bin, ctx),
+             Multiplexer::Tmux => {
+@@ -190,2 +198,42 @@ fn shell_quote(s: &str) -> String {
+ 
++fn spawn_nvim(bin: &str, ctx: &DaemonContext) -> io::Result<()> {
++    let lua = format!(
++        r#"require("mux.direnv").watch({{bin="{}", log="{}", socket="{}", shell_pid={}}})"#,
++        escape_lua_string(bin),
++        escape_lua_string(&ctx.temp_stderr.to_string_lossy()),
++        escape_lua_string(&ctx.socket_path.to_string_lossy()),
++        ctx.parent_pid,
++    );
++    nvim_remote(&lua)
++}
++
++fn nvim_remote(lua: &str) -> io::Result<()> {
++    let socket = env::var(NVIM_VAR).map_err(|e| Error::other(e.to_string()))?;
++    let expr = format!("luaeval('{}')", escape_vim_single_string(lua));
++    Command::new("nvim")
++        .args(["--server", &socket, "--remote-expr", &expr])
++        .spawn()
++        .map(|_| ())
++}
++
++fn escape_lua_string(s: &str) -> String {
++    let mut escaped = String::with_capacity(s.len());
++    for c in s.chars() {
++        match c {
++            '\\' => escaped.push_str("\\\\"),
++            '"' => escaped.push_str("\\\""),
++            '\n' => escaped.push_str("\\n"),
++            '\r' => escaped.push_str("\\r"),
++            '\t' => escaped.push_str("\\t"),
++            c if c.is_ascii_control() => escaped.push_str(&format!("\\{:03}", c as u32)),
++            c => escaped.push(c),
++        }
++    }
++    escaped
++}
++
++fn escape_vim_single_string(s: &str) -> String {
++    s.replace('\'', "''")
++}
++
+ fn kitty_launch_args() -> Vec<String> {

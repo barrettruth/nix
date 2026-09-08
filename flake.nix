@@ -21,6 +21,10 @@
       url = "github:charliemeyer2000/devin-cli-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    direnv-instant = {
+      url = "github:Mic92/direnv-instant";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     font-berkeley-mono = {
       url = "git+ssh://git@github.com/barrettruth/font-berkeley-mono.git";
       flake = false;

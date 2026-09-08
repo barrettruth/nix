@@ -1,1 +1,1 @@
-require('mux.direnv').load()
+require('mux.direnv').setup()

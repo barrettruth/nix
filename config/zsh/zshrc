@@ -10,7 +10,12 @@ zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-za-z}'
 
 (( $+commands[jj] )) && source <(COMPLETE=zsh jj)
-(( $+commands[direnv] )) && eval "$(direnv hook zsh)"
+if command -v direnv-instant >/dev/null; then
+  export DIRENV_INSTANT_USE_CACHE=0
+  [[ -n $__DIRENV_INSTANT_HOOKED ]] || eval "$(direnv-instant hook zsh)"
+elif command -v direnv >/dev/null; then
+  eval "$(direnv hook zsh)"
+fi
 
 export GPG_TTY=$(tty)
 export THEME="${THEME:-midnight}"

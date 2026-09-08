@@ -734,6 +734,12 @@ function M.ensure(root, cb)
     pcall(vim.fn.mkdir, state_dir(), 'p')
     pending[real] = { callbacks = { cb } }
 
+    local env, env_err = require('mux.direnv').environment_for(real)
+    if env_err then
+        finish_pending(real, nil, env_err)
+        return
+    end
+
     local proc, spawn_err = spawn_nvim({
         '--headless',
         '--listen',
@@ -741,7 +747,9 @@ function M.ensure(root, cb)
         ('+lua require("mux.server").setup(%q)'):format(real),
     }, {
         cwd = real,
+        clear_env = env ~= nil,
         detach = true,
+        env = env,
         stdout = false,
         stderr = false,
     })
@@ -1206,7 +1214,7 @@ function M.reload()
     end
 
     local session = require('mux.session')
-    local ok, err = session.save()
+    local ok, err = session.save(true)
     if not ok then
         return nil, err
     end
@@ -1262,7 +1270,7 @@ function M.setup(root)
     end
 
     current_server = server
-    require('mux.direnv').load(server.root)
+    vim.env.DIRENV_INSTANT_NVIM = '1'
     vim.o.sessionoptions =
         'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
     require('mux.session').setup()

@@ -483,6 +483,19 @@ end
 ---@param buf integer
 ---@return nil
 local function cleanup_terminal(buf)
+    if vim.b[buf].mux_direnv_socket then
+        for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+            if vim.api.nvim_win_is_valid(win) then
+                vim.api.nvim_win_close(win, true)
+            end
+        end
+        if vim.api.nvim_buf_is_valid(buf) then
+            vim.api.nvim_buf_delete(buf, { force = true })
+        end
+        require('mux.session').mark_dirty()
+        return
+    end
+
     for _, win in ipairs(vim.fn.win_findbuf(buf)) do
         if vim.api.nvim_win_is_valid(win) then
             local tp = vim.api.nvim_win_get_tabpage(win)
@@ -697,11 +710,11 @@ function M.setup()
     vim.api.nvim_create_autocmd('TermClose', {
         group = group,
         callback = function(args)
-            if vim.api.nvim_buf_is_valid(args.buf) then
-                vim.schedule(function()
+            vim.schedule(function()
+                if vim.api.nvim_buf_is_valid(args.buf) then
                     cleanup_terminal(args.buf)
-                end)
-            end
+                end
+            end)
         end,
     })
 

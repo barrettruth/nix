@@ -6,6 +6,11 @@ let
       neovim = final.callPackage ../pkgs/neovim {
         neovimPackage = inputs.neovim-nightly.packages.${final.stdenv.hostPlatform.system}.neovim;
       };
+      direnv-instant =
+        inputs.direnv-instant.packages.${final.stdenv.hostPlatform.system}.default.overrideAttrs
+          (old: {
+            patches = (old.patches or [ ]) ++ [ ../pkgs/direnv-instant-mux-nvim.patch ];
+          });
       mcp-gdrive = final.callPackage ../pkgs/mcp-gdrive { };
       barrett-berkeley-mono = final.callPackage ../pkgs/berkeley-mono.nix {
         src = inputs.font-berkeley-mono;
@@ -35,7 +40,12 @@ in
     {
       _module.args.pkgs = pkgs;
       packages = {
-        inherit (pkgs) neovim mcp-gdrive barrett-berkeley-mono;
+        inherit (pkgs)
+          barrett-berkeley-mono
+          direnv-instant
+          mcp-gdrive
+          neovim
+          ;
       };
     };
 }

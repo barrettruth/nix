@@ -1,72 +1,219 @@
 local M = {}
 
-local TIMEOUT_MS = 2000
-
 local loading = {}
 
-function M.load(from)
-    local root = vim.fs.root(from or vim.fn.getcwd(-1, -1, -1), '.envrc')
-    if not root or loading[root] or vim.env.DIRENV_DIR == '-' .. root then
+local function root()
+    local server = require('mux.server').state().server
+    local target = (server and server.root) or vim.fn.getcwd(-1, -1, -1)
+
+    return vim.uv.fs_realpath(target) or vim.fs.normalize(target)
+end
+
+local function apply(result)
+    if result.code ~= 0 then
+        local detail = vim.trim(result.stderr or ''):match('[^\n]+')
+        vim.notify(
+            'direnv: '
+                .. (detail or ('failed with exit %d'):format(result.code)),
+            vim.log.levels.WARN
+        )
         return
     end
 
-    loading[root] = true
-    local name = vim.fn.fnamemodify(root, ':t')
-    local progress = {
-        kind = 'progress',
-        source = 'direnv',
-        title = 'direnv',
-        status = 'running',
-    }
-    local result
-
-    local function finish()
-        loading[root] = nil
-        local failed = result.code ~= 0
-        local loaded = false
-        for key, value in pairs(failed and {} or vim.json.decode(result.stdout)) do
-            vim.env[key] = value ~= vim.NIL and value or nil
-            loaded = loaded or not vim.startswith(key, 'DIRENV_')
-        end
-
-        if progress.id then
-            progress.status = failed and 'failed' or 'success'
-            vim.api.nvim_echo({}, false, progress)
-        end
-
-        local level, msg = vim.log.levels.WARN, nil
-        if failed then
-            msg = ('%s failed (exit %d)'):format(name, result.code)
-        elseif not loaded then
-            msg = ('%s is blocked, run direnv allow'):format(name)
-        elseif progress.id then
-            msg = ('loaded %s, :restart to apply'):format(name)
-        else
-            level, msg = vim.log.levels.INFO, ('loaded %s'):format(name)
-        end
-        vim.notify('direnv: ' .. msg, level)
+    local output = vim.trim(result.stdout or '')
+    if output == '' then
+        return
     end
 
+    local ok, exported = pcall(vim.json.decode, output)
+    if not ok or type(exported) ~= 'table' then
+        vim.notify('direnv: invalid export', vim.log.levels.WARN)
+        return
+    end
+
+    local changed = false
+    for key, value in pairs(exported) do
+        local next_value = value ~= vim.NIL and value or nil
+        if
+            vim.env[key] ~= next_value and not vim.startswith(key, 'DIRENV_')
+        then
+            changed = true
+        end
+        vim.env[key] = next_value
+    end
+
+    if changed then
+        vim.notify(
+            'direnv: environment changed; restart to update running jobs',
+            vim.log.levels.INFO
+        )
+    end
+end
+
+function M.refresh()
+    local target = root()
+    if loading[target] then
+        loading[target] = 'pending'
+        return
+    end
+    if vim.fn.executable('direnv') ~= 1 then
+        return
+    end
+
+    loading[target] = 'running'
     vim.system({ 'direnv', 'export', 'json' }, {
-        cwd = root,
+        cwd = target,
         env = { DIRENV_LOG_FORMAT = '' },
         text = true,
-    }, function(completed)
-        result = completed
-        if progress.id then
-            vim.schedule(finish)
+    }, function(result)
+        vim.schedule(function()
+            local pending = loading[target] == 'pending'
+            loading[target] = nil
+            if target ~= root() then
+                return
+            end
+            if pending then
+                M.refresh()
+                return
+            end
+            apply(result)
+        end)
+    end)
+end
+
+function M.environment_for(target)
+    local envrc = vim.fs.root(target, '.envrc')
+    if not vim.env.DIRENV_DIR or vim.env.DIRENV_DIR == '-' .. (envrc or '') then
+        return
+    end
+
+    local result = vim.system({ 'direnv', 'export', 'json' }, {
+        cwd = '/',
+        env = { DIRENV_LOG_FORMAT = '' },
+        text = true,
+        timeout = 1000,
+    }):wait()
+    if result.code ~= 0 then
+        return nil, 'direnv could not unload the inherited environment'
+    end
+
+    local ok, exported = pcall(vim.json.decode, result.stdout)
+    if not ok or type(exported) ~= 'table' then
+        return nil, 'direnv returned an invalid unload environment'
+    end
+
+    local env = vim.fn.environ()
+    for key, value in pairs(exported) do
+        env[key] = value ~= vim.NIL and value or nil
+    end
+
+    return env
+end
+
+local function terminal_window(shell_pid)
+    local fallback
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if
+            vim.bo[buf].buftype == 'terminal'
+            and not vim.b[buf].mux_direnv_socket
+        then
+            local ok, pid = pcall(vim.fn.jobpid, vim.bo[buf].channel)
+            for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+                if
+                    vim.api.nvim_win_is_valid(win)
+                    and vim.api.nvim_win_get_config(win).relative == ''
+                then
+                    if ok and pid == shell_pid then
+                        return win
+                    end
+                    fallback = fallback or win
+                end
+            end
+        end
+    end
+
+    return fallback
+end
+
+local function watcher_exists(socket)
+    return vim.iter(vim.api.nvim_list_bufs()):any(function(buf)
+        return vim.b[buf].mux_direnv_socket == socket
+            and #vim.fn.win_findbuf(buf) > 0
+    end)
+end
+
+function M.watch(params)
+    if
+        type(params) ~= 'table'
+        or type(params.log) ~= 'string'
+        or type(params.socket) ~= 'string'
+        or not tonumber(params.shell_pid)
+    then
+        return false
+    end
+
+    vim.schedule(function()
+        if watcher_exists(params.socket) then
+            return
+        end
+
+        local target = terminal_window(tonumber(params.shell_pid))
+        if not target then
+            return
+        end
+
+        local current = vim.api.nvim_get_current_win()
+        local mode = vim.api.nvim_get_mode().mode
+        local height = math.max(
+            3,
+            math.min(12, math.floor(vim.api.nvim_win_get_height(target) * 0.3))
+        )
+        vim.api.nvim_win_call(target, function()
+            vim.cmd(('belowright %dsplit'):format(height))
+            vim.cmd.enew()
+            local win = vim.api.nvim_get_current_win()
+            local buf = vim.api.nvim_get_current_buf()
+            local bin = type(params.bin) == 'string'
+                    and params.bin ~= ''
+                    and params.bin
+                or 'direnv-instant'
+            local job = vim.fn.jobstart(
+                { bin, 'watch', params.log, params.socket },
+                { term = true, cwd = root() }
+            )
+            if job <= 0 then
+                vim.api.nvim_win_close(win, true)
+                return
+            end
+
+            vim.b[buf].mux_direnv_socket = params.socket
+            vim.bo[buf].buflisted = false
+            vim.wo[win].cursorline = false
+        end)
+
+        if vim.api.nvim_win_is_valid(current) then
+            vim.api.nvim_set_current_win(current)
+            if mode:sub(1, 1) == 't' then
+                vim.cmd.startinsert()
+            end
         end
     end)
 
-    vim.wait(TIMEOUT_MS, function()
-        return result ~= nil
-    end, nil, true)
-    if result then
-        finish()
-    else
-        progress.id =
-            vim.api.nvim_echo({ { 'loading ' .. name } }, false, progress)
-    end
+    return true
+end
+
+function M.setup()
+    local group = vim.api.nvim_create_augroup('Direnv', { clear = true })
+    vim.api.nvim_create_autocmd(
+        { 'BufWritePost', 'DirChanged', 'FocusGained' },
+        {
+            group = group,
+            callback = function()
+                M.refresh()
+            end,
+        }
+    )
+    M.refresh()
 end
 
 return M
