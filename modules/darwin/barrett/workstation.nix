@@ -370,8 +370,12 @@ in
       ${act.installDirMode "0755" screenshotDir}
 
       ${lib.optionalString chrome.unpackedMidnight ''
-        ${act.installDirMode "0755" "${homeDirectory}/.config/chromium"}
-        ${act.mkSymlink "${midnightExtension}" unpackedDir}
+        if [ -L "${unpackedDir}" ]; then
+          rm "${unpackedDir}"
+        fi
+        ${act.installDirMode "0755" unpackedDir}
+        ${act.runAsUser} ${pkgs.rsync}/bin/rsync -rlpt --delete --chmod=Du+w,Fu+w \
+          "${midnightExtension}/" "${unpackedDir}/"
       ''}
 
       ${asUser} ${seedChromeShortcuts} || true
