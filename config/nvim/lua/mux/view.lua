@@ -18,6 +18,7 @@ local JOB_EXIT_TIMEOUT_MS = 5000
 local MODES = { 'n', 'i', 't' }
 local PREFIX = '<a-x>'
 local ai_command = vim.fn.executable('codex') == 1 and 'codex' or 'devin'
+local zsh = vim.fn.exepath('zsh')
 
 ---@type table<integer, string|false>
 local tab_view = {}
@@ -31,7 +32,7 @@ local views = {
     ai = { key = 'a', restore = true, terminal = { ai_command } },
     edit = { key = 'e' },
     vcs = { key = 'v', restore = true },
-    zsh = { key = 'z', restore = true, terminal = { vim.o.shell } },
+    zsh = { key = 'z', restore = true, terminal = { zsh } },
 }
 
 local did_setup = false
@@ -180,7 +181,16 @@ local function materialize(name)
     local spec = views[name]
 
     if spec.terminal then
-        vim.fn.jobstart(spec.terminal, { term = true, cwd = cwd })
+        local command = spec.terminal
+        local err
+        if name == 'zsh' then
+            command, err = require('mux.direnv').unload(command)
+        end
+        if not command then
+            vim.notify('mux: ' .. err, vim.log.levels.ERROR)
+            return
+        end
+        vim.fn.jobstart(command, { term = true, cwd = cwd })
         restore_terminal_focus()
     elseif name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
@@ -609,11 +619,23 @@ local function setup_keymaps()
         walk(vim.v.count1)
     end, { desc = 'mux: next view', silent = true })
 
-    vim.keymap.set(MODES, PREFIX .. "'", '<cmd>vertical terminal<cr>', {
+    vim.keymap.set(MODES, PREFIX .. "'", function()
+        vim.cmd.vnew()
+        materialize('zsh')
+        if vim.bo.buftype == 'terminal' then
+            vim.cmd.startinsert()
+        end
+    end, {
         desc = 'mux: vertical terminal',
         silent = true,
     })
-    vim.keymap.set(MODES, PREFIX .. '-', '<cmd>split | terminal<cr>', {
+    vim.keymap.set(MODES, PREFIX .. '-', function()
+        vim.cmd.new()
+        materialize('zsh')
+        if vim.bo.buftype == 'terminal' then
+            vim.cmd.startinsert()
+        end
+    end, {
         desc = 'mux: terminal',
         silent = true,
     })

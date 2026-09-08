@@ -1,6 +1,5 @@
 local M = {}
 
-local RESOLVE_MS = 10000
 local FORWARD_MS = 10000
 
 ---@param fmt string
@@ -41,10 +40,9 @@ end
 
 local CONNECT_TIMEOUT = 'ConnectTimeout=5'
 
-local ENSURE = [[cd -- %s && nvim --headless -c 'lua local d, r = false, nil; ]]
-    .. [[require("mux.server").ensure(vim.fn.getcwd(), function(s, e) r = s or { error = e }; d = true end); ]]
-    .. [[vim.wait(25000, function() return d end, 50); ]]
-    .. [[io.write(vim.json.encode(r or { error = "timed out" }))' -c qa]]
+local ENSURE = [[cd -- %s && nvim --headless -c 'lua ]]
+    .. [[require("mux.server").ensure(vim.fn.getcwd(), function(s, e) ]]
+    .. [[io.write(vim.json.encode(s or { error = e })); io.flush(); vim.cmd.qall() end)']]
 
 ---One multiplexed connection per host holds every forward to it, so opening a
 ---second project there costs no handshake and leaks no second process.
@@ -72,28 +70,37 @@ end
 
 ---@param host string
 ---@param args string[]
----@param timeout integer
----@return string? stdout
----@return string? err
-local function ssh(host, args, timeout)
+---@param cb fun(stdout?: string, err?: string)
+---@return nil
+local function ssh(host, args, cb)
     local argv = { 'ssh', '-o', 'BatchMode=yes', '-o', CONNECT_TIMEOUT }
     vim.list_extend(argv, control(host))
     argv[#argv + 1] = host
     vim.list_extend(argv, args)
-    local res = vim.system(argv, { text = true }):wait(timeout)
-    if not res then
-        return nil, ('ssh %s timed out'):format(host)
+    local ok, err = pcall(vim.system, argv, { text = true }, function(res)
+        vim.schedule(function()
+            if res.code == 0 then
+                cb(res.stdout)
+                return
+            end
+
+            local lines = vim.split(
+                vim.trim(res.stderr or ''),
+                '\n',
+                { trimempty = true }
+            )
+            local detail = lines[#lines]
+            cb(
+                nil,
+                detail and vim.trim(detail) or ('ssh %s failed'):format(host)
+            )
+        end)
+    end)
+    if not ok then
+        vim.schedule(function()
+            cb(nil, tostring(err))
+        end)
     end
-
-    if res.code ~= 0 then
-        local lines =
-            vim.split(vim.trim(res.stderr or ''), '\n', { trimempty = true })
-        local err = lines[#lines]
-
-        return nil, err and vim.trim(err) or ('ssh %s failed'):format(host)
-    end
-
-    return res.stdout
 end
 
 local function quote(s)
@@ -184,79 +191,84 @@ function M.ensure(host, path, cb)
     local report = progress()
     log('%s ensure %s', host, path)
     report('running', '%s resolving %s', host, path)
-    local out, err = ssh(host, { ENSURE:format(shell_quote(path)) }, RESOLVE_MS)
-
-    if not out then
-        log('%s resolve failed %dms: %s', host, since(started), err)
-        report('failed', '%s %s', host, err)
-        cb(nil, err)
-        return
-    end
-
-    local ok, remote = pcall(vim.json.decode, vim.trim(out))
-
-    if not ok or type(remote) ~= 'table' then
-        log('%s resolve failed %dms: no answer', host, since(started))
-        report('failed', '%s gave no answer', host)
-        cb(nil, ('%s gave no answer for %s'):format(host, path))
-        return
-    end
-
-    if remote.error then
-        log('%s resolve failed %dms: %s', host, since(started), remote.error)
-        report('failed', '%s %s', host, remote.error)
-        cb(nil, ('%s: %s'):format(host, remote.error))
-        return
-    end
-
-    log('%s resolved %s %dms', host, remote.root, since(started))
-
-    local dir = ('%s/%s'):format(server.state().runtime_dir, host)
-    local socket = ('%s/%s'):format(
-        dir,
-        vim.fn.fnamemodify(remote.socket, ':t')
-    )
-    local within, too_long = server.within_sun_path(socket)
-
-    if not within then
-        log('%s %s', host, too_long)
-        cb(nil, too_long)
-        return
-    end
-
-    if not server.socket_listening(socket) then
-        vim.fn.mkdir(dir, 'p')
-        vim.fn.delete(socket)
-        local ferr = forward(host, socket, remote.socket, report)
-
-        if ferr then
-            report('failed', '%s %s', host, ferr)
-            cb(nil, ('cannot forward %s: %s'):format(host, ferr))
+    ssh(host, { ENSURE:format(shell_quote(path)) }, function(out, err)
+        if not out then
+            log('%s resolve failed %dms: %s', host, since(started), err)
+            report('failed', '%s %s', host, err)
+            cb(nil, err)
             return
         end
 
-        if
-            not vim.wait(FORWARD_MS, function()
-                return server.socket_listening(socket)
-            end, 100)
-        then
-            log('%s forward never answered %s', host, socket)
-            report('failed', '%s forwarded but never answered', host)
-            cb(nil, ('%s forwarded but never answered'):format(host))
+        local ok, remote = pcall(vim.json.decode, vim.trim(out))
+
+        if not ok or type(remote) ~= 'table' then
+            log('%s resolve failed %dms: no answer', host, since(started))
+            report('failed', '%s gave no answer', host)
+            cb(nil, ('%s gave no answer for %s'):format(host, path))
             return
         end
-    else
-        log('%s forward reused %s', host, socket)
-    end
 
-    server.theme(socket)
-    report('success', '%s %s', host, remote.root)
-    cb({
-        root = remote.root,
-        session = remote.session,
-        socket = socket,
-        host = host,
-    })
+        if remote.error then
+            log(
+                '%s resolve failed %dms: %s',
+                host,
+                since(started),
+                remote.error
+            )
+            report('failed', '%s %s', host, remote.error)
+            cb(nil, ('%s: %s'):format(host, remote.error))
+            return
+        end
+
+        log('%s resolved %s %dms', host, remote.root, since(started))
+
+        local dir = ('%s/%s'):format(server.state().runtime_dir, host)
+        local socket = ('%s/%s'):format(
+            dir,
+            vim.fn.fnamemodify(remote.socket, ':t')
+        )
+        local within, too_long = server.within_sun_path(socket)
+
+        if not within then
+            log('%s %s', host, too_long)
+            cb(nil, too_long)
+            return
+        end
+
+        if not server.socket_listening(socket) then
+            vim.fn.mkdir(dir, 'p')
+            vim.fn.delete(socket)
+            local ferr = forward(host, socket, remote.socket, report)
+
+            if ferr then
+                report('failed', '%s %s', host, ferr)
+                cb(nil, ('cannot forward %s: %s'):format(host, ferr))
+                return
+            end
+
+            if
+                not vim.wait(FORWARD_MS, function()
+                    return server.socket_listening(socket)
+                end, 100)
+            then
+                log('%s forward never answered %s', host, socket)
+                report('failed', '%s forwarded but never answered', host)
+                cb(nil, ('%s forwarded but never answered'):format(host))
+                return
+            end
+        else
+            log('%s forward reused %s', host, socket)
+        end
+
+        server.theme(socket)
+        report('success', '%s %s', host, remote.root)
+        cb({
+            root = remote.root,
+            session = remote.session,
+            socket = socket,
+            host = host,
+        })
+    end)
 end
 
 ---Split an ssh-style `host:path` target, or report that it is a plain path.

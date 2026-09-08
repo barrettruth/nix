@@ -14,7 +14,6 @@
 
 ---@class mux.PendingEnsure
 ---@field callbacks mux.EnsureCallback[]
----@field timer? any
 ---@field proc? any
 
 local M = {}
@@ -29,7 +28,7 @@ local current_server
 ---@type table<string, mux.PendingEnsure>
 local pending = {}
 
-local READY_TIMEOUT_MS = 5000
+local HANDOFF_TIMEOUT_MS = 5000
 local READY_POLL_MS = 50
 local LIST_PROBE_MS = 100
 local CONNECT_PROBE_MS = 1000
@@ -248,9 +247,10 @@ local RESTARTED_EXPR =
 ---@param args string[]
 ---@param opts table
 ---@param cb? function
+---@param env_root? string
 ---@return any? proc
 ---@return string? err
-local function spawn_nvim(args, opts, cb)
+local function spawn_nvim(args, opts, cb, env_root)
     local prog = vim.fn.executable(vim.v.progpath) == 1 and vim.v.progpath
         or 'nvim'
     local argv = { prog }
@@ -265,13 +265,24 @@ local function spawn_nvim(args, opts, cb)
 
     vim.list_extend(argv, args)
 
+    local prog_index = 1
+    if env_root then
+        local nvim_argv = argv
+        local wrapped, err = require('mux.direnv').command(env_root, nvim_argv)
+        if not wrapped then
+            return nil, err
+        end
+        argv = wrapped
+        prog_index = #argv - #nvim_argv + 1
+    end
+
     local ok, proc = pcall(vim.system, argv, opts, cb)
     if ok then
         return proc
     end
 
     if prog ~= 'nvim' then
-        argv[1] = 'nvim'
+        argv[prog_index] = 'nvim'
         ok, proc = pcall(vim.system, argv, opts, cb)
         if ok then
             return proc
@@ -526,6 +537,125 @@ local function socket_listening(socket)
     return alive
 end
 
+---@param server mux.Server
+---@param cb mux.EnsureCallback
+---@return any? proc
+---@return string? err
+local function spawn_server(server, cb)
+    local done = false
+    local timer
+    local stderr = ''
+    local proc
+
+    ---@param found? mux.Server
+    ---@param err? string
+    local function finish(found, err)
+        if done then
+            return
+        end
+
+        done = true
+        if timer then
+            timer:stop()
+            timer:close()
+        end
+        if err and proc then
+            pcall(proc.kill, proc, 15)
+        end
+        vim.schedule(function()
+            cb(found, err)
+        end)
+    end
+
+    local spawn_err
+    proc, spawn_err = spawn_nvim({
+        '--headless',
+        '--listen',
+        server.socket,
+        ('+lua require("mux.server").setup(%q)'):format(server.root),
+    }, {
+        cwd = server.root,
+        detach = true,
+        text = true,
+        stdout = false,
+        stderr = function(_, data)
+            if data then
+                stderr = (stderr .. data):sub(-8192)
+            end
+        end,
+    }, function(result)
+        if done then
+            return
+        end
+
+        local detail = vim.trim(stderr):match('[^\n]+$')
+        finish(
+            nil,
+            detail or ('server exited with status %d'):format(result.code)
+        )
+    end, server.root)
+    if not proc then
+        return nil, spawn_err
+    end
+
+    local function poll()
+        if done then
+            return
+        end
+
+        if timer then
+            timer:stop()
+            timer:close()
+            timer = nil
+        end
+
+        local function reschedule()
+            if done then
+                return
+            end
+            timer = vim.uv.new_timer()
+            timer:start(READY_POLL_MS, 0, poll)
+        end
+
+        socket_listening_async(server.socket, function(listening)
+            if not listening then
+                reschedule()
+                return
+            end
+
+            probe_async(server.socket, LIST_PROBE_MS, function(found, err)
+                if found then
+                    if found.root == server.root then
+                        finish(found)
+                    else
+                        finish(
+                            nil,
+                            'socket belongs to different root: '
+                                .. server.socket
+                        )
+                    end
+                    return
+                end
+
+                if
+                    err
+                    and err ~= ''
+                    and err ~= 'not ready'
+                    and err ~= 'timeout'
+                then
+                    finish(nil, err)
+                    return
+                end
+
+                reschedule()
+            end)
+        end)
+    end
+    poll()
+
+    return proc
+end
+
 ---@param out mux.Server[]
 ---@param seen table<string, boolean>
 ---@param server mux.Server?
@@ -629,11 +759,6 @@ local function finish_pending(root, server, err)
             return
         end
 
-        if entry.timer then
-            entry.timer:stop()
-            entry.timer:close()
-        end
-
         for _, cb in ipairs(entry.callbacks) do
             local ok, cb_err = pcall(cb, server, err)
             if not ok then
@@ -734,25 +859,9 @@ function M.ensure(root, cb)
     pcall(vim.fn.mkdir, state_dir(), 'p')
     pending[real] = { callbacks = { cb } }
 
-    local env, env_err = require('mux.direnv').environment_for(real)
-    if env_err then
-        finish_pending(real, nil, env_err)
-        return
-    end
-
-    local proc, spawn_err = spawn_nvim({
-        '--headless',
-        '--listen',
-        paths.socket,
-        ('+lua require("mux.server").setup(%q)'):format(real),
-    }, {
-        cwd = real,
-        clear_env = env ~= nil,
-        detach = true,
-        env = env,
-        stdout = false,
-        stderr = false,
-    })
+    local proc, spawn_err = spawn_server(paths, function(server, err)
+        finish_pending(real, server, err)
+    end)
 
     if not proc then
         finish_pending(real, nil, spawn_err)
@@ -760,74 +869,6 @@ function M.ensure(root, cb)
     end
 
     pending[real].proc = proc
-    local started = vim.uv.now()
-    ---@return nil
-    local function poll()
-        local entry = pending[real]
-        if not entry then
-            return
-        end
-
-        if entry.timer then
-            local timer = entry.timer
-            entry.timer = nil
-            timer:stop()
-            timer:close()
-        end
-
-        if vim.uv.now() - started >= READY_TIMEOUT_MS then
-            pcall(proc.kill, proc, 15)
-            finish_pending(real, nil, 'server startup timed out: ' .. real)
-            return
-        end
-
-        ---@return nil
-        local function reschedule()
-            local entry2 = pending[real]
-            if not entry2 then
-                return
-            end
-
-            entry2.timer = vim.uv.new_timer()
-            entry2.timer:start(READY_POLL_MS, 0, poll)
-        end
-
-        socket_listening_async(paths.socket, function(listening)
-            if not listening then
-                reschedule()
-                return
-            end
-
-            probe_async(paths.socket, LIST_PROBE_MS, function(server, rerr)
-                if server then
-                    if server.root == real then
-                        finish_pending(real, server)
-                    else
-                        finish_pending(
-                            real,
-                            nil,
-                            'socket belongs to different root: ' .. paths.socket
-                        )
-                    end
-
-                    return
-                end
-
-                if
-                    rerr
-                    and rerr ~= ''
-                    and rerr ~= 'not ready'
-                    and rerr ~= 'timeout'
-                then
-                    finish_pending(real, nil, rerr)
-                    return
-                end
-
-                reschedule()
-            end)
-        end)
-    end
-    poll()
 end
 
 ---Connect this UI to a running server, recording the current root on it.
@@ -1120,88 +1161,70 @@ local function hand_off(server)
         return
     end
 
-    vim.fn.serverstop(server.socket)
-    local proc, spawn_err = spawn_nvim({
-        '--headless',
-        '--listen',
-        server.socket,
-        ('+lua require("mux.server").setup(%q)'):format(server.root),
-    }, {
-        cwd = server.root,
-        detach = true,
-        stdout = false,
-        stderr = false,
-    })
-
-    if
-        not proc
-        or not vim.wait(READY_TIMEOUT_MS, function()
-            return socket_listening(server.socket)
-        end, READY_POLL_MS)
-    then
-        if proc then
-            pcall(proc.kill, proc, 15)
-        end
-
+    local function failed(err)
         pcall(vim.fn.serverstart, server.socket)
         vim.notify(
             ('mux: cannot restart %s: %s'):format(
                 name,
-                spawn_err or 'replacement never answered'
+                err or 'replacement never answered'
             ),
             vim.log.levels.ERROR
         )
-        return
     end
 
-    local carry = {}
-
-    if vim.g.mux_peers then
-        carry[#carry + 1] =
-            SET_PEERS_EXPR:format(vim.fn.string(vim.g.mux_peers))
-    end
-
-    if vim.g.mux_last_root then
-        carry[#carry + 1] =
-            SET_LAST_ROOT_EXPR:format(vim.fn.string(vim.g.mux_last_root))
-    end
-
-    if attached then
-        carry[#carry + 1] = RESTARTED_EXPR:format(
-            vim.fn.string(('mux: %s restarted'):format(name))
-        )
-    end
-
-    for _, expr in ipairs(carry) do
-        local handoff = spawn_nvim({
-            '--server',
-            server.socket,
-            '--remote-expr',
-            expr,
-        }, { text = true })
-        if handoff then
-            handoff:wait(READY_TIMEOUT_MS)
-        end
-    end
-
-    if attached then
-        local ok, connect_err =
-            pcall(vim.cmd.connect, vim.fn.fnameescape(address))
-        if not ok then
-            pcall(proc.kill, proc, 15)
-            pcall(vim.fn.serverstart, server.socket)
-            vim.notify(
-                ('mux: cannot restart %s: %s'):format(
-                    name,
-                    tostring(connect_err)
-                ),
-                vim.log.levels.ERROR
-            )
+    vim.fn.serverstop(server.socket)
+    local proc, spawn_err
+    proc, spawn_err = spawn_server(server, function(replacement, err)
+        if not replacement then
+            failed(err)
             return
         end
-    end
 
-    vim.cmd.qall({ bang = true })
+        local carry = {}
+
+        if vim.g.mux_peers then
+            carry[#carry + 1] =
+                SET_PEERS_EXPR:format(vim.fn.string(vim.g.mux_peers))
+        end
+
+        if vim.g.mux_last_root then
+            carry[#carry + 1] =
+                SET_LAST_ROOT_EXPR:format(vim.fn.string(vim.g.mux_last_root))
+        end
+
+        if attached then
+            carry[#carry + 1] = RESTARTED_EXPR:format(
+                vim.fn.string(('mux: %s restarted'):format(name))
+            )
+        end
+
+        for _, expr in ipairs(carry) do
+            local handoff = spawn_nvim({
+                '--server',
+                server.socket,
+                '--remote-expr',
+                expr,
+            }, { text = true })
+            if handoff then
+                handoff:wait(HANDOFF_TIMEOUT_MS)
+            end
+        end
+
+        if attached then
+            local ok, connect_err =
+                pcall(vim.cmd.connect, vim.fn.fnameescape(address))
+            if not ok then
+                pcall(proc.kill, proc, 15)
+                failed(tostring(connect_err))
+                return
+            end
+        end
+
+        vim.cmd.qall({ bang = true })
+    end)
+    if not proc then
+        failed(spawn_err)
+    end
 end
 
 ---Save the user session before restarting this mux server.

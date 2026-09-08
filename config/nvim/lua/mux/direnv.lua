@@ -9,6 +9,48 @@ local function root()
     return vim.uv.fs_realpath(target) or vim.fs.normalize(target)
 end
 
+---@param args string[]
+---@return string[]? command
+---@return string? err
+function M.unload(args)
+    local direnv = vim.fn.exepath('direnv')
+    if direnv == '' then
+        return nil, 'direnv is not executable'
+    end
+
+    local command = { direnv, 'exec', '/' }
+    vim.list_extend(command, args)
+
+    return command
+end
+
+---@param target string
+---@param args string[]
+---@return string[]? command
+---@return string? err
+function M.command(target, args)
+    local zsh = vim.fn.exepath('zsh')
+    if zsh == '' then
+        return nil, 'zsh is not executable'
+    end
+
+    local command, err = M.unload({
+        zsh,
+        '-c',
+        'exec "$@"',
+        'mux-direnv',
+        vim.fn.exepath('direnv'),
+        'exec',
+        target,
+    })
+    if not command then
+        return nil, err
+    end
+    vim.list_extend(command, args)
+
+    return command
+end
+
 local function apply(result)
     if result.code ~= 0 then
         local detail = vim.trim(result.stderr or ''):match('[^\n]+')
@@ -79,35 +121,6 @@ function M.refresh()
             apply(result)
         end)
     end)
-end
-
-function M.environment_for(target)
-    local envrc = vim.fs.root(target, '.envrc')
-    if not vim.env.DIRENV_DIR or vim.env.DIRENV_DIR == '-' .. (envrc or '') then
-        return
-    end
-
-    local result = vim.system({ 'direnv', 'export', 'json' }, {
-        cwd = '/',
-        env = { DIRENV_LOG_FORMAT = '' },
-        text = true,
-        timeout = 1000,
-    }):wait()
-    if result.code ~= 0 then
-        return nil, 'direnv could not unload the inherited environment'
-    end
-
-    local ok, exported = pcall(vim.json.decode, result.stdout)
-    if not ok or type(exported) ~= 'table' then
-        return nil, 'direnv returned an invalid unload environment'
-    end
-
-    local env = vim.fn.environ()
-    for key, value in pairs(exported) do
-        env[key] = value ~= vim.NIL and value or nil
-    end
-
-    return env
 end
 
 local function terminal_window(shell_pid)
