@@ -15,7 +15,7 @@ end
 function M.unload(args)
     local direnv = vim.fn.exepath('direnv')
     if direnv == '' then
-        return nil, 'direnv is not executable'
+        return args
     end
 
     local command = { direnv, 'exec', '/' }
