@@ -174,6 +174,39 @@ local function find(name)
     end
 end
 
+---@param buf integer
+---@param status integer
+---@return nil
+local function finish_terminal(buf, status)
+    if status ~= 0 or not vim.api.nvim_buf_is_valid(buf) then
+        return
+    end
+
+    for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+        if vim.api.nvim_win_is_valid(win) then
+            local tp = vim.api.nvim_win_get_tabpage(win)
+            local name = tab_view[tp]
+            local spec = name and views[name]
+            local has_other_terminal = vim.iter(
+                vim.api.nvim_tabpage_list_wins(tp)
+            )
+                :any(function(other_win)
+                    local other = vim.api.nvim_win_get_buf(other_win)
+
+                    return other ~= buf and vim.bo[other].buftype == 'terminal'
+                end)
+
+            if spec and spec.terminal and not has_other_terminal then
+                vim.api.nvim_set_current_tabpage(tp)
+                M.close()
+                return
+            end
+        end
+    end
+
+    vim.api.nvim_buf_delete(buf, { force = true })
+end
+
 ---@param name string
 ---@return nil
 local function materialize(name)
@@ -190,7 +223,14 @@ local function materialize(name)
             vim.notify('mux: ' .. err, vim.log.levels.ERROR)
             return
         end
-        vim.fn.jobstart(command, { term = true, cwd = cwd })
+        local buf = vim.api.nvim_get_current_buf()
+        vim.fn.jobstart(command, {
+            term = true,
+            cwd = cwd,
+            on_exit = vim.schedule_wrap(function(_, status)
+                finish_terminal(buf, status)
+            end),
+        })
         restore_terminal_focus()
     elseif name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
@@ -490,60 +530,6 @@ function M.list()
     return out
 end
 
----@param buf integer
----@return nil
-local function cleanup_terminal(buf)
-    if vim.b[buf].mux_direnv_socket then
-        for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-            if vim.api.nvim_win_is_valid(win) then
-                vim.api.nvim_win_close(win, true)
-            end
-        end
-        if vim.api.nvim_buf_is_valid(buf) then
-            vim.api.nvim_buf_delete(buf, { force = true })
-        end
-        require('mux.session').mark_dirty()
-        return
-    end
-
-    for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-        if vim.api.nvim_win_is_valid(win) then
-            local tp = vim.api.nvim_win_get_tabpage(win)
-            local name = tab_view[tp]
-            local spec = name and views[name]
-
-            if spec and spec.terminal then
-                local has_terminal = false
-
-                for _, other_win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
-                    local other = vim.api.nvim_win_get_buf(other_win)
-                    if other ~= buf and vim.bo[other].buftype == 'terminal' then
-                        has_terminal = true
-                        break
-                    end
-                end
-
-                if has_terminal then
-                    vim.api.nvim_win_close(win, true)
-                elseif #user_tabpages() <= 1 then
-                    M.retire()
-                    return
-                else
-                    vim.api.nvim_set_current_tabpage(tp)
-                    vim.cmd.tabclose()
-                    tab_view[tp] = nil
-                end
-            end
-        end
-    end
-
-    if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
-        vim.api.nvim_buf_delete(buf, { force = true })
-    end
-
-    require('mux.session').mark_dirty()
-end
-
 ---Signal a pty job's whole process group.
 ---Nvim setsid's pty children, so the job pid is its group leader. Signalling
 ---the job alone leaves grandchildren behind holding whatever the child held.
@@ -724,17 +710,6 @@ function M.setup()
                     then
                         reap_terminal(buf)
                     end
-                end
-            end)
-        end,
-    })
-
-    vim.api.nvim_create_autocmd('TermClose', {
-        group = group,
-        callback = function(args)
-            vim.schedule(function()
-                if vim.api.nvim_buf_is_valid(args.buf) then
-                    cleanup_terminal(args.buf)
                 end
             end)
         end,

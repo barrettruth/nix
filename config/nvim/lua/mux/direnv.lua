@@ -165,7 +165,15 @@ function M.watch(params)
                 or 'direnv-instant'
             local job = vim.fn.jobstart(
                 { bin, 'watch', params.log, params.socket },
-                { term = true, cwd = root() }
+                {
+                    term = true,
+                    cwd = root(),
+                    on_exit = vim.schedule_wrap(function()
+                        if vim.api.nvim_buf_is_valid(buf) then
+                            vim.api.nvim_buf_delete(buf, { force = true })
+                        end
+                    end),
+                }
             )
             if job <= 0 then
                 vim.api.nvim_win_close(win, true)
