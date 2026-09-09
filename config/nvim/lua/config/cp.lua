@@ -193,6 +193,10 @@ local function reset_output(win, source, command)
             vim.fn.jobstart(command, {
                 term = true,
                 cwd = vim.fn.fnamemodify(source, ':h'),
+                env = {
+                    DIRENV_LOG_FORMAT = '',
+                    NIX_CONFIG = 'warn-dirty = false',
+                },
             })
         end)
     end
@@ -612,6 +616,9 @@ function M.run(mode)
     write_path(input_path(source))
 
     ensure_column(source, {
+        'direnv',
+        'exec',
+        vim.fn.fnamemodify(source, ':h'),
         'just',
         mode,
         vim.fn.fnamemodify(source, ':t'),
