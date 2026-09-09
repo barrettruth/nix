@@ -17,9 +17,18 @@ local binary = vim.fn.shellescape(
     )
 )
 
-vim.bo.makeprg = table.concat({
+local makeprg = {
     'c++',
-    '-std=c++23',
+}
+local compile_flags = vim.fs.find('compile_flags.txt', {
+    path = vim.fs.dirname(vim.api.nvim_buf_get_name(0)),
+    upward = true,
+    type = 'file',
+})[1]
+if compile_flags then
+    makeprg[#makeprg + 1] = vim.fn.shellescape('@' .. compile_flags)
+end
+vim.list_extend(makeprg, {
     '-Wall',
     '-Wextra',
     '-g',
@@ -27,7 +36,8 @@ vim.bo.makeprg = table.concat({
     '-o',
     binary,
     '%:S',
-}, ' ')
+})
+vim.bo.makeprg = table.concat(makeprg, ' ')
 local run = type(vim.b.run) == 'table' and vim.b.run or {}
 run.command = binary
 vim.b.run = run

@@ -8,6 +8,11 @@ local languages = {
 }
 
 local MODES = { 'run', 'debug', 'judge' }
+local PROGRESS = {
+    run = 'running...',
+    debug = 'debugging...',
+    judge = 'judging...',
+}
 
 local COLUMN_RATIO = 0.35
 local INPUT_RATIO = 0.30
@@ -20,7 +25,26 @@ local INPUT_RATIO = 0.30
 ---@param msg string
 ---@param level? integer
 local function notify(msg, level)
-    vim.notify('[cp]: ' .. msg, level or vim.log.levels.INFO)
+    vim.notify('cp: ' .. msg, level or vim.log.levels.INFO)
+end
+
+---@param message string
+---@return fun(status: 'success'|'failed')
+local function progress(message)
+    local state = { kind = 'progress', source = 'cp', status = 'running' }
+    state.id = vim.api.nvim_echo({ { 'cp: ' .. message } }, false, state)
+
+    if #vim.api.nvim_list_uis() > 0 then
+        vim.cmd.redraw({ bang = true })
+    end
+
+    return function(status)
+        state.status = status
+        vim.api.nvim_echo({}, false, state)
+        if #vim.api.nvim_list_uis() > 0 then
+            vim.cmd.redraw({ bang = true })
+        end
+    end
 end
 
 ---@return { ext: string, solve: string }?
@@ -175,8 +199,9 @@ end
 ---@param win integer
 ---@param source string
 ---@param command? string[]
+---@param message? string
 ---@return integer buf
-local function reset_output(win, source, command)
+local function reset_output(win, source, command, message)
     local live = vim.api.nvim_win_get_buf(win)
     if not command and vim.b[live].cp_source == source then
         return live
@@ -190,15 +215,19 @@ local function reset_output(win, source, command)
     attach_keys(buf)
     vim.api.nvim_win_set_buf(win, buf)
     if command then
+        local finish = progress(assert(message))
         vim.api.nvim_win_call(win, function()
-            vim.fn.jobstart(command, {
+            local job = vim.fn.jobstart(command, {
                 term = true,
                 cwd = vim.fn.fnamemodify(source, ':h'),
-                env = {
-                    DIRENV_LOG_FORMAT = '',
-                    NIX_CONFIG = 'warn-dirty = false',
-                },
+                on_exit = vim.schedule_wrap(function(_, status)
+                    finish(status == 0 and 'success' or 'failed')
+                end),
             })
+            if job <= 0 then
+                finish('failed')
+                notify('failed to start', vim.log.levels.ERROR)
+            end
         end)
     end
     return buf
@@ -264,8 +293,9 @@ end
 
 ---@param source string
 ---@param command? string[]
+---@param message? string
 ---@return integer buf
-local function ensure_column(source, command)
+local function ensure_column(source, command, message)
     local saved_win = vim.api.nvim_get_current_win()
     local saved_view = vim.fn.winsaveview()
     ensure_input(source)
@@ -280,7 +310,7 @@ local function ensure_column(source, command)
         output_win, input_win = open_column(edit_win(cols), source)
     end
 
-    local buf = reset_output(output_win, source, command)
+    local buf = reset_output(output_win, source, command, message)
     retarget_input(input_win, source)
 
     if vim.api.nvim_win_is_valid(saved_win) then
@@ -621,13 +651,10 @@ function M.run(mode)
     write_path(input_path(source))
 
     ensure_column(source, {
-        'direnv',
-        'exec',
-        vim.fn.fnamemodify(source, ':h'),
         'just',
         mode,
         vim.fn.fnamemodify(source, ':t'),
-    })
+    }, PROGRESS[mode])
 end
 
 function M.setup()
