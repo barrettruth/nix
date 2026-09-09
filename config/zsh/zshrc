@@ -4,12 +4,19 @@ alias ll='l -la --classify=auto'
 alias mux='nvim -c Mux'
 alias nv=nvim
 
-autoload -U compinit && compinit -d "$XDG_STATE_HOME/zcompdump" -u
+_zcompdump="$XDG_STATE_HOME/zcompdump-${ZSH_VERSION}-${${__NIX_SET_ENVIRONMENT_SYSTEM:-unknown}:t}"
+autoload -U compinit
+if [[ -r "$_zcompdump" ]]; then
+  compinit -C -d "$_zcompdump"
+else
+  compinit -d "$_zcompdump" -u
+fi
+unset _zcompdump
 zmodload zsh/complist
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-za-z}'
 
-(( $+commands[jj] )) && source <(COMPLETE=zsh jj)
+(( $+commands[jj] && ! $+_comps[jj] )) && source <(COMPLETE=zsh jj)
 if command -v direnv-instant >/dev/null; then
   export DIRENV_INSTANT_USE_CACHE=0
   [[ -n $__DIRENV_INSTANT_HOOKED ]] || eval "$(direnv-instant hook zsh)"
@@ -17,7 +24,7 @@ elif command -v direnv >/dev/null; then
   eval "$(direnv hook zsh)"
 fi
 
-export GPG_TTY=$(tty)
+export GPG_TTY=$TTY
 export THEME="${THEME:-midnight}"
 export HISTFILE="${XDG_STATE_HOME}/zsh/history"
 

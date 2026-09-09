@@ -34,16 +34,27 @@ let
     [ -z "$theme" ] && theme="midnight"
   '';
 
+  jjCompletion = pkgs.runCommand "jj-zsh-completion" { } ''
+    mkdir -p "$out/share/zsh/site-functions"
+    COMPLETE=zsh ${pkgs.jujutsu}/bin/jj > "$out/share/zsh/site-functions/_jj"
+  '';
+
+  zoxideInit = pkgs.runCommand "zoxide-init-zsh" { } ''
+    ${pkgs.zoxide}/bin/zoxide init zsh > "$out"
+  '';
+
   zshInit = pkgs.writeText "zsh-init" ''
     source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    ZSH_AUTOSUGGEST_MANUAL_REBIND=1
     source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     ZSH_AUTOSUGGEST_STRATEGY=(history completion)
     fpath+=(${pkgs.pure-prompt}/share/zsh/site-functions)
+    fpath+=(${jjCompletion}/share/zsh/site-functions)
     source ${pkgs.fzf}/share/fzf/key-bindings.zsh
     source ${pkgs.fzf}/share/fzf/completion.zsh
-    eval "$(${pkgs.zoxide}/bin/zoxide init zsh)"
     alias ls="${pkgs.eza}/bin/eza --git"
     source ${repo}/config/zsh/zshrc
+    source ${zoxideInit}
   '';
 
   fzfThemes = pkgs.runCommand "fzf-theme-files" { } ''
