@@ -22,10 +22,10 @@ vim.keymap.set(
     '<cmd>resize -10<cr>',
     { desc = 'shrink window height' }
 )
-vim.keymap.set('n', "<leader>'", '<c-w>v<Plug>(nvim-dir-up)', {
+vim.keymap.set('n', "<c-'>'", '<c-w>v<Plug>(nvim-dir-up)', {
     desc = 'open parent directory in vertical split',
 })
-vim.keymap.set('n', '<leader>-', '<c-w>s<Plug>(nvim-dir-up)', {
+vim.keymap.set('n', '<c->-', '<c-w>s<Plug>(nvim-dir-up)', {
     desc = 'open parent directory in horizontal split',
 })
 
