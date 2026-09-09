@@ -145,13 +145,13 @@ return {
         { '<c-l>', '<cmd>FzfLua live_grep<cr>' },
         { '<c-b>', '<cmd>FzfLua buffers<cr>' },
         {
-            '<leader>ft',
+            '<c-s-t>',
             function()
                 require('fzf-lua').files({ cwd = vim.fn.expand('%:h') })
             end,
         },
         {
-            '<leader>fg',
+            '<c-s-g>',
             function()
                 require('fzf-lua').live_grep({ cwd = vim.fn.expand('%:h') })
             end,
