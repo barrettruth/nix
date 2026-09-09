@@ -80,9 +80,7 @@ let
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
-  isRetired = isDarwin && config.networking.hostName == "retired";
-
-  agentPackages = lib.optionals (!isRetired) [ pkgs.devin-cli ];
+  agentPackages = [ pkgs.devin-cli ];
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
@@ -225,6 +223,7 @@ let
     TERM = "xterm-ghostty";
     TERMINFO = "${XDG_DATA_HOME}/terminfo";
     BROWSER = if isDarwin then "open" else "chromium";
+    DEVIN_PERMISSION_MODE = "dangerous";
     LESSHISTFILE = "-";
     BARRETT_NIX_CONFIG_DIR = "${repo}/config";
     FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
@@ -269,9 +268,6 @@ let
     DOCKER_CONFIG = "${XDG_CONFIG_HOME}/docker";
     PSQL_HISTORY = "${XDG_STATE_HOME}/psql_history";
     SQLITE_HISTORY = "${XDG_STATE_HOME}/sqlite_history";
-  }
-  // lib.optionalAttrs (!isRetired) {
-    DEVIN_PERMISSION_MODE = "dangerous";
   };
 
   activationText = ''
@@ -309,7 +305,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/luarocks"}
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
-            ${lib.optionalString (!isRetired) (mkDir "${XDG_CONFIG_HOME}/devin")}
+            ${mkDir "${XDG_CONFIG_HOME}/devin"}
             ${mkDir clangdConfigDir}
             ${mkDir "${XDG_DATA_HOME}/nvim/site"}
             ${mkPrivateDir "${homeDirectory}/.ssh"}
@@ -333,23 +329,21 @@ let
             ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
             ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
-            ${lib.optionalString (!isRetired) ''
-              devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
-              devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
-              trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
-              if [ -f "$devinConfigPath" ]; then
-                ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$devinConfigPath" "${devinConfig}" > "$devinConfigTmp"
-              else
-                ${pkgs.coreutils}/bin/cp "${devinConfig}" "$devinConfigTmp"
-              fi
-              if [ -L "$devinConfigPath" ]; then
-                ${runAsUser} ${pkgs.coreutils}/bin/unlink "$devinConfigPath"
-              fi
-              ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g ${act.group} "$devinConfigTmp" "$devinConfigPath"
-              ${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"
-              trap - EXIT
-              ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
-            ''}
+            devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
+            devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
+            trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
+            if [ -f "$devinConfigPath" ]; then
+              ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$devinConfigPath" "${devinConfig}" > "$devinConfigTmp"
+            else
+              ${pkgs.coreutils}/bin/cp "${devinConfig}" "$devinConfigTmp"
+            fi
+            if [ -L "$devinConfigPath" ]; then
+              ${runAsUser} ${pkgs.coreutils}/bin/unlink "$devinConfigPath"
+            fi
+            ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g ${act.group} "$devinConfigTmp" "$devinConfigPath"
+            ${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"
+            trap - EXIT
+            ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
             ${mkSymlink "${pkgs.neovim.treesitter}/queries" "${XDG_DATA_HOME}/nvim/site/queries"}
