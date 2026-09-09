@@ -10,8 +10,6 @@ local languages = {
 local MODES = { 'run', 'debug', 'judge' }
 
 local RATIO = 0.35
-local CLEAR_POLL_MS = 10
-local CLEAR_TIMEOUT_MS = 500
 
 ---@class cp.Column
 ---@field output? integer
@@ -62,7 +60,9 @@ end
 ---@param path string?
 ---@return boolean
 function M.is_cp_path(path)
-    return path ~= nil and path ~= '' and vim.fs.relpath(M.root, path) ~= nil
+    return path ~= nil
+        and path:sub(1, 1) == '/'
+        and vim.fs.relpath(M.root, path) ~= nil
 end
 
 ---@param source string
@@ -173,10 +173,11 @@ end
 
 ---@param win integer
 ---@param source string
+---@param command? string[]
 ---@return integer buf
-local function reset_output(win, source)
+local function reset_output(win, source, command)
     local live = vim.api.nvim_win_get_buf(win)
-    if vim.b[live].cp_source == source and vim.b[live].terminal_job_id then
+    if not command and vim.b[live].cp_source == source then
         return live
     end
     local buf = vim.api.nvim_create_buf(false, true)
@@ -187,13 +188,14 @@ local function reset_output(win, source)
     vim.b[buf].term_normal = true
     attach_keys(buf)
     vim.api.nvim_win_set_buf(win, buf)
-    vim.api.nvim_win_call(win, function()
-        vim.cmd.bcd(vim.fs.dirname(source))
-        vim.fn.jobstart({ vim.o.shell }, {
-            term = true,
-            cwd = vim.fn.fnamemodify(source, ':h'),
-        })
-    end)
+    if command then
+        vim.api.nvim_win_call(win, function()
+            vim.fn.jobstart(command, {
+                term = true,
+                cwd = vim.fn.fnamemodify(source, ':h'),
+            })
+        end)
+    end
     return buf
 end
 
@@ -252,8 +254,9 @@ local function retarget_input(win, source)
 end
 
 ---@param source string
+---@param command? string[]
 ---@return integer buf
-local function ensure_column(source)
+local function ensure_column(source, command)
     local saved_win = vim.api.nvim_get_current_win()
     local saved_view = vim.fn.winsaveview()
     ensure_input(source)
@@ -268,7 +271,7 @@ local function ensure_column(source)
         output_win, input_win = open_column(edit_win(cols), source)
     end
 
-    local buf = reset_output(output_win, source)
+    local buf = reset_output(output_win, source, command)
     retarget_input(input_win, source)
 
     if vim.api.nvim_win_is_valid(saved_win) then
@@ -297,6 +300,22 @@ local function resolve_source()
             vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(cols.input))
         )
     end
+end
+
+---@return string?
+local function problem_dir()
+    local name = vim.api.nvim_buf_get_name(0)
+    if M.is_cp_path(name) then
+        return vim.fn.isdirectory(name) == 1 and name or vim.fs.dirname(name)
+    end
+
+    local source = resolve_source()
+    if source then
+        return vim.fs.dirname(source)
+    end
+
+    local cwd = vim.fn.getcwd()
+    return M.is_cp_path(cwd) and cwd or nil
 end
 
 ---@param wins integer[]
@@ -392,9 +411,14 @@ end
 local function complete_problem(arg_lead)
     local items = vim.list_extend({}, MODES)
     local lang = default_language()
-    if lang then
-        for _, file in ipairs(vim.fn.glob('*' .. lang.ext, false, true)) do
-            items[#items + 1] = vim.fn.fnamemodify(file, ':r')
+    local dir = problem_dir()
+    if lang and dir then
+        for _, file in
+            ipairs(
+                vim.fn.glob(vim.fs.joinpath(dir, '*' .. lang.ext), false, true)
+            )
+        do
+            items[#items + 1] = vim.fn.fnamemodify(file, ':t:r')
         end
     end
     return vim.tbl_filter(function(item)
@@ -404,8 +428,8 @@ end
 
 ---@param problem string
 function M.open_problem(problem)
-    local cwd = vim.fn.getcwd()
-    if not M.is_cp_path(cwd) then
+    local dir = problem_dir()
+    if not dir then
         notify('not in ~/dev/cp', vim.log.levels.ERROR)
         return
     end
@@ -420,7 +444,7 @@ function M.open_problem(problem)
     if not file then
         return
     end
-    file = vim.fs.joinpath(cwd, file)
+    file = vim.fs.joinpath(dir, file)
 
     vim.api.nvim_set_current_win(edit_win(column()))
     if vim.bo.modified then
@@ -587,35 +611,11 @@ function M.run(mode)
     write_path(source)
     write_path(input_path(source))
 
-    local buf = ensure_column(source)
-    local job = vim.b[buf].terminal_job_id
-    if not job then
-        return
-    end
-    local cmd = ('just %s %s\r'):format(mode, vim.fn.fnamemodify(source, ':t'))
-    local tick = vim.api.nvim_buf_get_changedtick(buf)
-    local timer = assert(vim.uv.new_timer())
-    local waited = 0
-
-    vim.api.nvim_chan_send(job, '\12')
-    timer:start(
-        CLEAR_POLL_MS,
-        CLEAR_POLL_MS,
-        vim.schedule_wrap(function()
-            waited = waited + CLEAR_POLL_MS
-            local settled = not vim.api.nvim_buf_is_valid(buf)
-                or vim.api.nvim_buf_get_changedtick(buf) ~= tick
-            if not settled and waited < CLEAR_TIMEOUT_MS then
-                return
-            end
-
-            timer:stop()
-            timer:close()
-            if vim.api.nvim_buf_is_valid(buf) then
-                pcall(vim.api.nvim_chan_send, job, cmd)
-            end
-        end)
-    )
+    ensure_column(source, {
+        'just',
+        mode,
+        vim.fn.fnamemodify(source, ':t'),
+    })
 end
 
 function M.setup()
@@ -651,15 +651,13 @@ function M.setup()
                 vim.bo[args.buf].buftype == ''
                 and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
             then
-                vim.api.nvim_buf_call(args.buf, function()
-                    vim.cmd.bcd({ bang = true })
-                end)
                 vim.diagnostic.enable(true, { bufnr = args.buf })
                 vim.b[args.buf].minicompletion_config = nil
                 local opts = { buffer = args.buf }
                 for action, lhs in pairs(vim.g.cp.mappings) do
-                    vim.keymap.del('n', '<Plug>(cp-' .. action .. ')', opts)
-                    vim.keymap.del('n', lhs, opts)
+                    local plug = '<Plug>(cp-' .. action .. ')'
+                    pcall(vim.keymap.del, 'n', plug, opts)
+                    pcall(vim.keymap.del, 'n', lhs, opts)
                 end
             end
         end,
@@ -671,9 +669,6 @@ function M.setup()
             callback = function(args)
                 local name = vim.api.nvim_buf_get_name(args.buf)
                 if vim.bo[args.buf].buftype == '' and M.is_cp_path(name) then
-                    vim.api.nvim_buf_call(args.buf, function()
-                        vim.cmd.bcd(vim.fs.dirname(name))
-                    end)
                     vim.diagnostic.enable(false, { bufnr = args.buf })
                     vim.b[args.buf].minicompletion_config =
                         { delay = { signature = 10000000 } }
