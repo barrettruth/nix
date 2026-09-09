@@ -163,7 +163,7 @@ return {
         { '<leader>fH', '<cmd>FzfLua highlights<cr>' },
         { '<leader>fh', '<cmd>FzfLua help_tags<cr>' },
         { '<leader>fm', '<cmd>FzfLua man_pages<cr>' },
-        { '<leader>fr', '<cmd>FzfLua resume<cr>' },
+        { '<c-r>', '<cmd>FzfLua resume<cr>' },
         {
             '<leader>fs',
             '<cmd>FzfLua files cwd=~/.config/nix/scripts<cr>',
