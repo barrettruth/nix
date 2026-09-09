@@ -247,10 +247,10 @@ local RESTARTED_EXPR =
 ---@param args string[]
 ---@param opts table
 ---@param cb? function
----@param env_root? string
+---@param clean_env? boolean
 ---@return any? proc
 ---@return string? err
-local function spawn_nvim(args, opts, cb, env_root)
+local function spawn_nvim(args, opts, cb, clean_env)
     local prog = vim.fn.executable(vim.v.progpath) == 1 and vim.v.progpath
         or 'nvim'
     local argv = { prog }
@@ -266,9 +266,9 @@ local function spawn_nvim(args, opts, cb, env_root)
     vim.list_extend(argv, args)
 
     local prog_index = 1
-    if env_root then
+    if clean_env then
         local nvim_argv = argv
-        local wrapped, err = require('mux.direnv').command(env_root, nvim_argv)
+        local wrapped, err = require('mux.direnv').unload(nvim_argv)
         if not wrapped then
             return nil, err
         end
@@ -546,6 +546,7 @@ local function spawn_server(server, cb)
     local timer
     local stderr = ''
     local proc
+    local clean_env = not current_server or current_server.root ~= server.root
 
     ---@param found? mux.Server
     ---@param err? string
@@ -593,7 +594,7 @@ local function spawn_server(server, cb)
             nil,
             detail or ('server exited with status %d'):format(result.code)
         )
-    end, server.root)
+    end, clean_env)
     if not proc then
         return nil, spawn_err
     end

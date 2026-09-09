@@ -24,33 +24,6 @@ function M.unload(args)
     return command
 end
 
----@param target string
----@param args string[]
----@return string[]? command
----@return string? err
-function M.command(target, args)
-    local zsh = vim.fn.exepath('zsh')
-    if zsh == '' then
-        return nil, 'zsh is not executable'
-    end
-
-    local command, err = M.unload({
-        zsh,
-        '-c',
-        'exec "$@"',
-        'mux-direnv',
-        vim.fn.exepath('direnv'),
-        'exec',
-        target,
-    })
-    if not command then
-        return nil, err
-    end
-    vim.list_extend(command, args)
-
-    return command
-end
-
 local function apply(result)
     if result.code ~= 0 then
         local detail = vim.trim(result.stderr or ''):match('[^\n]+')
