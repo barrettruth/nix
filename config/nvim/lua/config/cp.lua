@@ -9,7 +9,8 @@ local languages = {
 
 local MODES = { 'run', 'debug', 'judge' }
 
-local RATIO = 0.35
+local COLUMN_RATIO = 0.35
+local INPUT_RATIO = 0.30
 
 ---@class cp.Column
 ---@field output? integer
@@ -208,8 +209,12 @@ end
 local function size_column(output_win, input_win)
     local rows = vim.api.nvim_win_get_height(output_win)
         + vim.api.nvim_win_get_height(input_win)
-    vim.api.nvim_win_resize(output_win, math.floor(vim.o.columns * RATIO), -1)
-    vim.api.nvim_win_resize(input_win, -1, math.floor(rows * RATIO))
+    vim.api.nvim_win_resize(
+        output_win,
+        math.floor(vim.o.columns * COLUMN_RATIO),
+        -1
+    )
+    vim.api.nvim_win_resize(input_win, -1, math.floor(rows * INPUT_RATIO))
 end
 
 ---@param output_win integer
