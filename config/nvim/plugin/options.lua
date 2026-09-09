@@ -20,6 +20,7 @@ vim.opt.fillchars = {
     eob = ' ',
     vert = '│',
     diff = '╱',
+    fold = ' ',
     foldopen = 'v',
     foldclose = '>',
     foldsep = ' ',
