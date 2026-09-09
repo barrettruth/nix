@@ -1,6 +1,8 @@
 local M = {}
 
-M.root = vim.fs.normalize('~/dev/cp')
+local config = vim.g.cp or {}
+
+M.root = nil
 
 local languages = {
     cpp = { ext = '.cc', solve = '^%s*void%s+solve%(%).*{%s*$' },
@@ -14,8 +16,8 @@ local PROGRESS = {
     judge = 'judging...',
 }
 
-local COLUMN_RATIO = 0.35
-local INPUT_RATIO = 0.30
+local COLUMN_RATIO = 0.30
+local INPUT_RATIO = 0.35
 
 ---@class cp.Column
 ---@field output? integer
@@ -47,37 +49,42 @@ local function progress(message)
     end
 end
 
----@return { ext: string, solve: string }?
+---@return { ext: string, solve: string }
 ---@return string
 local function default_language()
-    local name = (vim.g.cp or {}).language
-    return languages[name], tostring(name)
+    return assert(languages[config.language]), config.language
 end
 
 ---@param buf integer
+---@param lhs string
 ---@param action string
 ---@param rhs fun()
 ---@param desc string
-local function map(buf, action, rhs, desc)
+local function map(buf, lhs, action, rhs, desc)
     local plug = '<Plug>(cp-' .. action .. ')'
     vim.keymap.set('n', plug, rhs, { buffer = buf, desc = desc })
-    local lhs = ((vim.g.cp or {}).mappings or {})[action]
-    if lhs and lhs ~= '' then
-        vim.keymap.set('n', lhs, plug, { buffer = buf, remap = true })
-    end
+    vim.keymap.set('n', lhs, plug, {
+        buffer = buf,
+        desc = desc,
+        remap = true,
+    })
 end
 
 ---@param buf integer
 local function attach_keys(buf)
-    for _, mode in ipairs(MODES) do
-        map(buf, mode, function()
-            M.run(mode)
-        end, mode .. ' CP problem')
-    end
-    map(buf, 'problem', function()
+    map(buf, '<leader>r', 'run', function()
+        M.run('run')
+    end, 'run CP problem')
+    map(buf, '<leader>d', 'debug', function()
+        M.run('debug')
+    end, 'debug CP problem')
+    map(buf, '<leader>j', 'judge', function()
+        M.run('judge')
+    end, 'judge CP problem')
+    map(buf, 'gX', 'problem', function()
         M.open_url('problem')
     end, 'open CP problem')
-    map(buf, 'submit', function()
+    map(buf, 'gS', 'submit', function()
         M.open_url('submit')
     end, 'open CP submission')
 end
@@ -85,9 +92,30 @@ end
 ---@param path string?
 ---@return boolean
 function M.is_cp_path(path)
-    return path ~= nil
+    return M.root ~= nil
+        and path ~= nil
         and path:sub(1, 1) == '/'
         and vim.fs.relpath(M.root, path) ~= nil
+end
+
+---@param buf integer
+---@return boolean
+local function is_cp_buffer(buf)
+    return vim.api.nvim_buf_is_loaded(buf)
+        and vim.bo[buf].buftype == ''
+        and M.is_cp_path(vim.api.nvim_buf_get_name(buf))
+end
+
+---@param buf integer
+local function attach_buffer(buf)
+    if not is_cp_buffer(buf) then
+        return
+    end
+
+    attach_keys(buf)
+    vim.b[buf].minicompletion_config = {
+        delay = { signature = 10000000 },
+    }
 end
 
 ---@param source string
@@ -451,7 +479,7 @@ local function complete_problem(arg_lead)
     local items = vim.list_extend({}, MODES)
     local lang = default_language()
     local dir = problem_dir()
-    if lang and dir then
+    if dir then
         for _, file in
             ipairs(
                 vim.fn.glob(vim.fs.joinpath(dir, '*' .. lang.ext), false, true)
@@ -469,15 +497,11 @@ end
 function M.open_problem(problem)
     local dir = problem_dir()
     if not dir then
-        notify('not in ~/dev/cp', vim.log.levels.ERROR)
+        notify('not in CP project', vim.log.levels.ERROR)
         return
     end
 
-    local lang, name = default_language()
-    if not lang then
-        notify('unknown language: ' .. name, vim.log.levels.ERROR)
-        return
-    end
+    local lang = default_language()
 
     local file = normalize_problem(problem, lang)
     if not file then
@@ -641,7 +665,7 @@ function M.run(mode)
         local name = vim.api.nvim_buf_get_name(0)
         notify(
             M.is_cp_path(name) and ('unsupported filetype: ' .. vim.bo.filetype)
-                or 'not in ~/dev/cp',
+                or 'not in CP project',
             vim.log.levels.ERROR
         )
         return
@@ -658,6 +682,17 @@ function M.run(mode)
 end
 
 function M.setup()
+    if type(config) ~= 'table' then
+        error('vim.g.cp must be a table')
+    end
+    if type(config.root) ~= 'string' or config.root == '' then
+        error('vim.g.cp.root must be a non-empty string')
+    end
+    if type(config.language) ~= 'string' or not languages[config.language] then
+        error("vim.g.cp.language must be 'cpp' or 'python'")
+    end
+    M.root = vim.fs.normalize(config.root)
+
     local group = vim.api.nvim_create_augroup('Cp', { clear = true })
     vim.api.nvim_create_autocmd({ 'BufWinLeave', 'BufWipeout', 'WinClosed' }, {
         group = group,
@@ -690,14 +725,22 @@ function M.setup()
                 vim.bo[args.buf].buftype == ''
                 and M.is_cp_path(vim.api.nvim_buf_get_name(args.buf))
             then
-                vim.diagnostic.enable(true, { bufnr = args.buf })
-                vim.b[args.buf].minicompletion_config = nil
                 local opts = { buffer = args.buf }
-                for action, lhs in pairs(vim.g.cp.mappings) do
-                    local plug = '<Plug>(cp-' .. action .. ')'
-                    pcall(vim.keymap.del, 'n', plug, opts)
+                for _, lhs in ipairs({
+                    '<Plug>(cp-run)',
+                    '<Plug>(cp-debug)',
+                    '<Plug>(cp-judge)',
+                    '<Plug>(cp-problem)',
+                    '<Plug>(cp-submit)',
+                    '<leader>r',
+                    '<leader>d',
+                    '<leader>j',
+                    'gX',
+                    'gS',
+                }) do
                     pcall(vim.keymap.del, 'n', lhs, opts)
                 end
+                vim.b[args.buf].minicompletion_config = nil
             end
         end,
     })
@@ -706,13 +749,7 @@ function M.setup()
         {
             group = group,
             callback = function(args)
-                local name = vim.api.nvim_buf_get_name(args.buf)
-                if vim.bo[args.buf].buftype == '' and M.is_cp_path(name) then
-                    vim.diagnostic.enable(false, { bufnr = args.buf })
-                    vim.b[args.buf].minicompletion_config =
-                        { delay = { signature = 10000000 } }
-                    attach_keys(args.buf)
-                end
+                attach_buffer(args.buf)
             end,
         }
     )
@@ -730,6 +767,10 @@ function M.setup()
             return complete_problem(arg_lead)
         end,
     })
+
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        attach_buffer(buf)
+    end
 end
 
 return M
