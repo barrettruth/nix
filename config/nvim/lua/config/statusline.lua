@@ -100,16 +100,17 @@ end
 
 ---@return string
 function M.render()
-    local path = branch()
-    local name = vim.fn.expand('%')
-    if name ~= '' then
-        path = path
-            .. ('%%#Directory#%s%%* '):format(
-                vim.fn.expand('%:~'):gsub('%%', '%%%%')
-            )
-    end
+    local name = vim.fn.expand('%:~'):gsub('%%', '%%%%')
     local buftype = vim.bo.buftype
     local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
+    if vim.api.nvim_get_current_win() ~= tonumber(vim.g.actual_curwin) then
+        return (' %s %s%%= '):format(name, flags)
+    end
+
+    local path = branch()
+    if name ~= '' then
+        path = path .. ('%%#Directory#%s%%* '):format(name)
+    end
     local filetype = vim.bo.filetype ~= '' and vim.bo.filetype or buftype
     return (' %s%s%%=%s%s%%c:%%l/%%L %s '):format(
         path,
