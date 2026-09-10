@@ -2,9 +2,13 @@
 
 local aug = vim.api.nvim_create_augroup('Resize', { clear = true })
 
----@type table<integer, table<integer, [number, number]>>
+---@class ResizeSnapshot
+---@field columns integer
+---@field lines integer
+---@field ratios table<integer, [number, number]>
+
+---@type table<integer, ResizeSnapshot>
 local tab_ratios = {}
-local cols, lines = vim.o.columns, vim.o.lines
 local applying = false
 
 ---@param tab integer
@@ -28,12 +32,19 @@ local function layout(tab)
     return wins, math.max(1, right - left), math.max(1, bottom - top)
 end
 
+---@param snapshot ResizeSnapshot
+---@return boolean
+local function same_screen(snapshot)
+    return snapshot.columns == vim.o.columns and snapshot.lines == vim.o.lines
+end
+
 local function capture_ratios()
-    if applying or vim.o.columns ~= cols or vim.o.lines ~= lines then
+    local tab = vim.api.nvim_get_current_tabpage()
+    local snapshot = tab_ratios[tab]
+    if applying or (snapshot and not same_screen(snapshot)) then
         return
     end
 
-    local tab = vim.api.nvim_get_current_tabpage()
     local wins, width, height = layout(tab)
     local ratios = {}
     for _, win in ipairs(wins) do
@@ -42,58 +53,68 @@ local function capture_ratios()
             vim.api.nvim_win_get_height(win) / height,
         }
     end
-    tab_ratios[tab] = ratios
+    tab_ratios[tab] = {
+        columns = vim.o.columns,
+        lines = vim.o.lines,
+        ratios = ratios,
+    }
+end
+
+local function resize()
+    local tab = vim.api.nvim_get_current_tabpage()
+    local snapshot = tab_ratios[tab]
+    if not snapshot or same_screen(snapshot) then
+        capture_ratios()
+        return
+    end
+
+    local wins, width, height = layout(tab)
+    local ratios = snapshot.ratios
+    applying = true
+    if
+        #wins ~= vim.tbl_count(ratios)
+        or vim.iter(wins):any(function(win)
+            return ratios[win] == nil
+        end)
+    then
+        tab_ratios[tab] = nil
+    else
+        for _, win in ipairs(wins) do
+            local ratio = ratios[win]
+            local win_width = vim.api.nvim_win_get_width(win) == width and -1
+                or math.max(1, math.floor(ratio[1] * width + 0.5))
+            local win_height = vim.api.nvim_win_get_height(win) == height and -1
+                or math.max(1, math.floor(ratio[2] * height + 0.5))
+            if win_width ~= -1 or win_height ~= -1 then
+                pcall(vim.api.nvim_win_resize, win, win_width, win_height)
+            end
+        end
+        snapshot.columns, snapshot.lines = vim.o.columns, vim.o.lines
+    end
+    vim.schedule(function()
+        applying = false
+    end)
 end
 
 capture_ratios()
 
-vim.api.nvim_create_autocmd({ 'WinResized', 'TabEnter' }, {
+vim.api.nvim_create_autocmd('WinResized', {
     group = aug,
     callback = capture_ratios,
 })
 
-vim.api.nvim_create_autocmd('VimResized', {
+vim.api.nvim_create_autocmd({ 'VimResized', 'TabEnter' }, {
+    group = aug,
+    callback = resize,
+})
+
+vim.api.nvim_create_autocmd('TabClosed', {
     group = aug,
     callback = function()
-        applying = true
-        for tab, ratios in pairs(tab_ratios) do
-            if vim.api.nvim_tabpage_is_valid(tab) then
-                local wins, width, height = layout(tab)
-                if
-                    #wins ~= vim.tbl_count(ratios)
-                    or vim.iter(wins):any(function(win)
-                        return ratios[win] == nil
-                    end)
-                then
-                    tab_ratios[tab] = nil
-                else
-                    for _, win in ipairs(wins) do
-                        local ratio = ratios[win]
-                        local win_width = vim.api.nvim_win_get_width(win)
-                                    == width
-                                and -1
-                            or math.max(1, math.floor(ratio[1] * width + 0.5))
-                        local win_height = vim.api.nvim_win_get_height(win)
-                                    == height
-                                and -1
-                            or math.max(1, math.floor(ratio[2] * height + 0.5))
-                        if win_width ~= -1 or win_height ~= -1 then
-                            pcall(
-                                vim.api.nvim_win_resize,
-                                win,
-                                win_width,
-                                win_height
-                            )
-                        end
-                    end
-                end
-            else
+        for tab in pairs(tab_ratios) do
+            if not vim.api.nvim_tabpage_is_valid(tab) then
                 tab_ratios[tab] = nil
             end
         end
-        cols, lines = vim.o.columns, vim.o.lines
-        vim.schedule(function()
-            applying = false
-        end)
     end,
 })
