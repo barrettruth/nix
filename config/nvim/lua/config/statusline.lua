@@ -104,7 +104,7 @@ function M.render()
     local buftype = vim.bo.buftype
     local flags = buftype == 'terminal' and '%h%r' or '%h%m%r'
     if vim.api.nvim_get_current_win() ~= tonumber(vim.g.actual_curwin) then
-        return (' %s %s%%= '):format(name, flags)
+        return (' %%#Directory#%s%%* %s%%= '):format(name, flags)
     end
 
     local path = branch()
