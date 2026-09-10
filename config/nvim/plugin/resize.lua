@@ -69,12 +69,22 @@ vim.api.nvim_create_autocmd('VimResized', {
                 else
                     for _, win in ipairs(wins) do
                         local ratio = ratios[win]
-                        pcall(
-                            vim.api.nvim_win_resize,
-                            win,
-                            math.max(1, math.floor(ratio[1] * width + 0.5)),
-                            math.max(1, math.floor(ratio[2] * height + 0.5))
-                        )
+                        local win_width = vim.api.nvim_win_get_width(win)
+                                    == width
+                                and -1
+                            or math.max(1, math.floor(ratio[1] * width + 0.5))
+                        local win_height = vim.api.nvim_win_get_height(win)
+                                    == height
+                                and -1
+                            or math.max(1, math.floor(ratio[2] * height + 0.5))
+                        if win_width ~= -1 or win_height ~= -1 then
+                            pcall(
+                                vim.api.nvim_win_resize,
+                                win,
+                                win_width,
+                                win_height
+                            )
+                        end
                     end
                 end
             else
