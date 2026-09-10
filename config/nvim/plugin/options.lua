@@ -36,8 +36,6 @@ vim.opt.iskeyword:append('-')
 
 vim.opt.jumpoptions:append('view')
 
-vim.o.laststatus = 3
-
 vim.o.linebreak = true
 
 vim.o.list = true

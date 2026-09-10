@@ -3,8 +3,6 @@
 ---@type integer?
 local zoom_winid = nil
 
----Editor row 0 is the tabline and the row above the cmdline is the global
----statusline, so a float spanning either end paints over it.
 ---@return vim.api.keyset.win_config
 local function config()
     local tabline = vim.o.showtabline == 2
