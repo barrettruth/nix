@@ -122,7 +122,7 @@ end
 
 ---@return nil
 function M.setup()
-    vim.o.statusline = "%!v:lua.require'config.statusline'.render()"
+    vim.o.statusline = "%{%v:lua.require'config.statusline'.render()%}"
 
     local aug = vim.api.nvim_create_augroup('StatusLine', { clear = true })
 
