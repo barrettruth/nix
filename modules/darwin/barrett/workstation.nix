@@ -412,6 +412,7 @@ in
       NSGlobalDomain."com.apple.swipescrolldirection" = true;
       NSGlobalDomain.NSAutomaticWindowAnimationsEnabled = false;
       NSGlobalDomain.NSWindowResizeTime = 0.001;
+      CustomUserPreferences."com.apple.TextInputMenu".visible = true;
       CustomUserPreferences."com.apple.loginwindow" = {
         TALLogoutSavesState = false;
         LoginwindowLaunchesRelaunchApps = false;
