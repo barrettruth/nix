@@ -59,9 +59,16 @@ vim.api.nvim_create_autocmd('VimResized', {
         for tab, ratios in pairs(tab_ratios) do
             if vim.api.nvim_tabpage_is_valid(tab) then
                 local wins, width, height = layout(tab)
-                for _, win in ipairs(wins) do
-                    local ratio = ratios[win]
-                    if ratio then
+                if
+                    #wins ~= vim.tbl_count(ratios)
+                    or vim.iter(wins):any(function(win)
+                        return ratios[win] == nil
+                    end)
+                then
+                    tab_ratios[tab] = nil
+                else
+                    for _, win in ipairs(wins) do
+                        local ratio = ratios[win]
                         pcall(
                             vim.api.nvim_win_resize,
                             win,
