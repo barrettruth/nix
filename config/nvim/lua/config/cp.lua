@@ -18,7 +18,6 @@ local PROGRESS = {
 
 local COLUMN_RATIO = 0.30
 local INPUT_RATIO = 0.35
-local writing = 0
 
 ---@class cp.Column
 ---@field output? integer
@@ -166,14 +165,9 @@ end
 local function write_path(path)
     local buf = loaded_buf(path)
     if buf and vim.bo[buf].modified then
-        writing = writing + 1
-        local ok, err = pcall(vim.api.nvim_buf_call, buf, function()
+        vim.api.nvim_buf_call(buf, function()
             vim.cmd.write()
         end)
-        writing = writing - 1
-        if not ok then
-            error(err)
-        end
     end
 end
 
@@ -354,23 +348,14 @@ local function ensure_column(source, command, message)
     return buf
 end
 
----@param buf integer
 ---@return string?
-local function source_for_buffer(buf)
-    local name = vim.api.nvim_buf_get_name(buf)
-    if languages[vim.bo[buf].filetype] and M.is_cp_path(name) then
+local function resolve_source()
+    local name = vim.api.nvim_buf_get_name(0)
+    if languages[vim.bo.filetype] and M.is_cp_path(name) then
         return name
     end
     if is_input_path(name) then
         return source_for_input(name)
-    end
-end
-
----@return string?
-local function resolve_source()
-    local source = source_for_buffer(0)
-    if source then
-        return source
     end
 
     local cols = column()
@@ -674,19 +659,6 @@ function M.open_url(kind)
 end
 
 ---@param mode 'run'|'debug'|'judge'
----@param source string
-local function run_source(mode, source)
-    write_path(source)
-    write_path(input_path(source))
-
-    ensure_column(source, {
-        'just',
-        mode,
-        vim.fn.fnamemodify(source, ':t'),
-    }, PROGRESS[mode])
-end
-
----@param mode 'run'|'debug'|'judge'
 function M.run(mode)
     local source = resolve_source()
     if not source then
@@ -699,7 +671,14 @@ function M.run(mode)
         return
     end
 
-    run_source(mode, source)
+    write_path(source)
+    write_path(input_path(source))
+
+    ensure_column(source, {
+        'just',
+        mode,
+        vim.fn.fnamemodify(source, ':t'),
+    }, PROGRESS[mode])
 end
 
 function M.setup()
@@ -729,20 +708,6 @@ function M.setup()
             then
                 vim.api.nvim_buf_call(args.buf, function()
                     vim.cmd.write()
-                end)
-            end
-        end,
-    })
-    vim.api.nvim_create_autocmd('BufWritePost', {
-        group = group,
-        callback = function(args)
-            if writing ~= 0 then
-                return
-            end
-            local source = source_for_buffer(args.buf)
-            if source then
-                vim.schedule(function()
-                    run_source('run', source)
                 end)
             end
         end,
