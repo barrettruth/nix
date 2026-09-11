@@ -8,6 +8,8 @@
 
 A flake-parts flake covering five hosts.
 
+Run Nix commands through `direnv exec .`, including `nix develop`.
+
 ### Rebuilding
 
 | host         | recipe                                     | shape                                                                                                     |

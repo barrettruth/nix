@@ -268,11 +268,7 @@ local function spawn_nvim(args, opts, cb, clean_env)
     local prog_index = 1
     if clean_env then
         local nvim_argv = argv
-        local wrapped, err = require('mux.direnv').unload(nvim_argv)
-        if not wrapped then
-            return nil, err
-        end
-        argv = wrapped
+        argv = require('mux.direnv').unload(nvim_argv)
         prog_index = #argv - #nvim_argv + 1
     end
 

@@ -125,3 +125,213 @@ index 2eb15b0..93c2d64 100644
 +}
 +
  fn kitty_launch_args() -> Vec<String> {
+diff --git a/src/daemon.rs b/src/daemon.rs
+--- a/src/daemon.rs
++++ b/src/daemon.rs
+@@ -5,7 +5,7 @@
+ use nix::sys::signal::{Signal, kill};
+ use nix::sys::socket::{ControlMessage, MsgFlags, sendmsg};
+ use nix::sys::time::{TimeVal, TimeValLike};
+-use nix::sys::wait::{WaitPidFlag, WaitStatus, waitpid};
++use nix::sys::wait::{WaitStatus, waitpid};
+ use nix::unistd::{ForkResult, Pid, dup2_stderr, dup2_stdin, dup2_stdout, fork, read, setsid};
+ use std::collections::hash_map::DefaultHasher;
+ use std::ffi::OsString;
+@@ -207,60 +210,65 @@
+     pty_master: Arc<Mutex<Option<OwnedFd>>>,
+ ) {
+     for stream in listener.incoming().flatten() {
+-        let mut reader = BufReader::new(&stream);
+-        let mut line = String::new();
+-        if reader.read_line(&mut line).is_ok() {
+-            if let Some(stripped) = line.strip_prefix("NOTIFY ") {
+-                if let Ok(pid) = stripped.trim().parse::<i32>() {
+-                    let mut pids = notify_pids.lock().expect("Failed to lock");
+-                    if !pids.contains(&pid) {
+-                        pids.push(pid);
++        let notify_pids = notify_pids.clone();
++        let should_stop = should_stop.clone();
++        let pty_master = pty_master.clone();
++        thread::spawn(move || {
++            let mut reader = BufReader::new(&stream);
++            let mut line = String::new();
++            if reader.read_line(&mut line).is_ok() {
++                if let Some(stripped) = line.strip_prefix("NOTIFY ") {
++                    if let Ok(pid) = stripped.trim().parse::<i32>() {
++                        let mut pids = notify_pids.lock().expect("Failed to lock");
++                        if !pids.contains(&pid) {
++                            pids.push(pid);
++                        }
+                     }
+-                }
+-            } else if let Some(stripped) = line.strip_prefix("STOP ") {
+-                // Pid-scoped stop: ignore pids we never registered, shut
+-                // down when the last registered shell detaches.
+-                if let Ok(pid) = stripped.trim().parse::<i32>() {
+-                    let mut pids = notify_pids.lock().expect("Failed to lock");
+-                    if let Some(i) = pids.iter().position(|p| *p == pid) {
+-                        pids.remove(i);
+-                        if pids.is_empty() {
+-                            should_stop.store(true, Ordering::Relaxed);
+-                            break;
++                } else if let Some(stripped) = line.strip_prefix("STOP ") {
++                    // Pid-scoped stop: ignore pids we never registered, shut
++                    // down when the last registered shell detaches.
++                    if let Ok(pid) = stripped.trim().parse::<i32>() {
++                        let mut pids = notify_pids.lock().expect("Failed to lock");
++                        if let Some(i) = pids.iter().position(|p| *p == pid) {
++                            pids.remove(i);
++                            if pids.is_empty() {
++                                should_stop.store(true, Ordering::Relaxed);
++                                return;
++                            }
++                        }
++                    }
++                } else if line.starts_with("STOP") {
++                    should_stop.store(true, Ordering::Relaxed);
++                    return;
++                } else if line.starts_with("WATCH") {
++                    // Send PTY master fd to watch command via SCM_RIGHTS
++                    if let Some(ref owned_fd) = *pty_master.lock().expect("Failed to lock") {
++                        let iov = [IoSlice::new(b"OK\n")];
++                        let fds = [owned_fd.as_raw_fd()];
++                        let cmsg = ControlMessage::ScmRights(&fds);
++                        if let Err(e) =
++                            sendmsg::<()>(stream.as_raw_fd(), &iov, &[cmsg], MsgFlags::empty(), None)
++                        {
++                            eprintln!(
++                                "direnv-instant: Failed to send PTY fd to WATCH client: {}",
++                                e
++                            );
++                        }
++                    } else {
++                        // PTY master not available, send error response
++                        eprintln!("direnv-instant: WATCH requested but PTY master not available");
++                        let iov = [IoSlice::new(b"ERR\n")];
++                        if let Err(e) =
++                            sendmsg::<()>(stream.as_raw_fd(), &iov, &[], MsgFlags::empty(), None)
++                        {
++                            eprintln!(
++                                "direnv-instant: Failed to send error response to WATCH client: {}",
++                                e
++                            );
+                         }
+                     }
+                 }
+-            } else if line.starts_with("STOP") {
+-                should_stop.store(true, Ordering::Relaxed);
+-                break;
+-            } else if line.starts_with("WATCH") {
+-                // Send PTY master fd to watch command via SCM_RIGHTS
+-                if let Some(ref owned_fd) = *pty_master.lock().expect("Failed to lock") {
+-                    let iov = [IoSlice::new(b"OK\n")];
+-                    let fds = [owned_fd.as_raw_fd()];
+-                    let cmsg = ControlMessage::ScmRights(&fds);
+-                    if let Err(e) =
+-                        sendmsg::<()>(stream.as_raw_fd(), &iov, &[cmsg], MsgFlags::empty(), None)
+-                    {
+-                        eprintln!(
+-                            "direnv-instant: Failed to send PTY fd to WATCH client: {}",
+-                            e
+-                        );
+-                    }
+-                } else {
+-                    // PTY master not available, send error response
+-                    eprintln!("direnv-instant: WATCH requested but PTY master not available");
+-                    let iov = [IoSlice::new(b"ERR\n")];
+-                    if let Err(e) =
+-                        sendmsg::<()>(stream.as_raw_fd(), &iov, &[], MsgFlags::empty(), None)
+-                    {
+-                        eprintln!(
+-                            "direnv-instant: Failed to send error response to WATCH client: {}",
+-                            e
+-                        );
+-                    }
+-                }
+             }
+-        }
++        });
+     }
+ }
+@@ -415,6 +423,3 @@
+-    let success = matches!(
+-        waitpid(child, Some(WaitPidFlag::empty())),
+-        Ok(WaitStatus::Exited(_, 0))
+-    );
++    let success = matches!(waitpid(child, None), Ok(WaitStatus::Exited(_, 0)));
+ 
+     // Check if stderr file has actual content (not just empty file we created)
+@@ -432,13 +437,14 @@
+-    // Only rename env file on success and if it has content
+-    let has_env = success
+-        && ctx
+-            .temp_file
+-            .metadata()
+-            .map(|m| m.len() > 0)
+-            .unwrap_or(false);
+-    if has_env {
+-        let _ = std::fs::rename(&ctx.temp_file, &ctx.env_file);
+-    }
+-    // Otherwise Cleanup Drop will remove it
++    // Publish emitted environment changes, including failure rollbacks.
++    let has_env = ctx
++        .temp_file
++        .metadata()
++        .map(|m| m.len() > 0)
++        .unwrap_or(false);
++    if has_env {
++        let _ = std::fs::rename(&ctx.temp_file, &ctx.env_file);
++    } else if !success {
++        let _ = remove_file(&ctx.env_file);
++    }
++    // Otherwise Cleanup Drop will remove it
+ 
+     // Notify shells if we have anything to show
+diff --git a/src/commands/start.rs b/src/commands/start.rs
+--- a/src/commands/start.rs
++++ b/src/commands/start.rs
+@@ -28,5 +28,16 @@
+     // Find .envrc directory
+-    let envrc_dir = match find_envrc() {
++    let envrc_dir = find_envrc();
++
++    // Check if we need to restart daemon (different directory)
++    if let Ok(current) = env::var("__DIRENV_INSTANT_CURRENT_DIR") {
++        let current_dir = PathBuf::from(&current);
++        if envrc_dir.as_ref() != Some(&current_dir) {
++            // Detach rather than force-stop: other shells in the old
++            // directory may still be waiting on that daemon.
++            detach_daemon(&get_socket_path(&current_dir), parent_pid);
++        }
++    }
++    let envrc_dir = match envrc_dir {
+         Some(dir) => dir,
+         None => {
+             shell.unset_var("__DIRENV_INSTANT_CURRENT_DIR");
+@@ -34,16 +45,6 @@
+             return;
+         }
+     };
+-
+-    // Check if we need to restart daemon (different directory)
+-    if let Ok(current) = env::var("__DIRENV_INSTANT_CURRENT_DIR") {
+-        let current_dir = PathBuf::from(&current);
+-        if current_dir != envrc_dir {
+-            // Detach rather than force-stop: other shells in the old
+-            // directory may still be waiting on that daemon.
+-            detach_daemon(&get_socket_path(&current_dir), parent_pid);
+-        }
+-    }
+     shell.export_var(
+         "__DIRENV_INSTANT_CURRENT_DIR",
+         &envrc_dir.display().to_string(),
+@@ -96,4 +97,9 @@
+ fn run_direnv_sync(direnv: &str, shell: Shell, show_errors: bool) {
++    for key in ["__DIRENV_INSTANT_ENV_FILE", "__DIRENV_INSTANT_STDERR_FILE"] {
++        if env::var_os(key).is_some() {
++            shell.unset_var(key);
++        }
++    }
+     let mut cmd = direnv_export_command(direnv, shell);
+     if !show_errors {
+         cmd.stderr(Stdio::null());

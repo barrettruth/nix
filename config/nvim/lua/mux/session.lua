@@ -9,7 +9,7 @@ local did_setup = false
 local function direnv_windows()
     return vim.iter(vim.api.nvim_list_wins())
         :filter(function(win)
-            return vim.b[vim.api.nvim_win_get_buf(win)].mux_direnv_socket ~= nil
+            return vim.b[vim.api.nvim_win_get_buf(win)].mux_direnv ~= nil
         end)
         :totable()
 end

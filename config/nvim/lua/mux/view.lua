@@ -214,15 +214,9 @@ local function materialize(name)
     local spec = views[name]
 
     if spec.terminal then
-        local command = spec.terminal
-        local err
-        if name == 'zsh' then
-            command, err = require('mux.direnv').unload(command)
-        end
-        if not command then
-            vim.notify('mux: ' .. err, vim.log.levels.ERROR)
-            return
-        end
+        local command = name == 'zsh'
+                and require('mux.direnv').unload(spec.terminal)
+            or spec.terminal
         local buf = vim.api.nvim_get_current_buf()
         vim.fn.jobstart(command, {
             term = true,
