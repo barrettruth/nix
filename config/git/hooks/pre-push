@@ -82,7 +82,10 @@ is_own_commit() {
 }
 
 identity_is_known() {
-  printf '%s\n' "$known_identity_emails" | grep -Fxiq "$1"
+  {
+    printf '%s\n' "$known_identity_emails"
+    printf '%s\n' "$own_author_emails"
+  } | grep -Fxiq "$1"
 }
 
 has_foreign_identity() {
