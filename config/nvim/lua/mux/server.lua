@@ -1301,6 +1301,17 @@ function M.setup(root)
         group = vim.api.nvim_create_augroup('mux-ui', { clear = true }),
         callback = function()
             vim.cmd('silent! %detach')
+            if not ready then
+                return
+            end
+            require('zoxide').run({ 'add', '--', real }, function(_, add_err)
+                if add_err then
+                    vim.notify(
+                        'mux: could not record visit: ' .. add_err,
+                        vim.log.levels.WARN
+                    )
+                end
+            end)
         end,
     })
 

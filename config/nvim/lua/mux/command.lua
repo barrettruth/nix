@@ -69,8 +69,9 @@ function M.ensure(arg, cb)
         server.ensure_target(root, cb)
     end
 
-    if arg == '' then
-        ensure(vim.fn.getcwd())
+    local dir = vim.fs.abspath(arg)
+    if vim.uv.fs_stat(dir) then
+        ensure(dir)
     else
         require('zoxide').query(arg, false, ensure)
     end
