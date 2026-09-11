@@ -96,7 +96,7 @@ let
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
   devinConfig = (pkgs.formats.json { }).generate "devin-config.json" {
-    agent.model = "claude-opus-5-xhigh-fast";
+    agent.model = "gpt-6-astra-xhigh";
     attribution = false;
     devin.org_id = "org-f27ebacf926a440d96985a94ab9b66bf";
     hooks = {
