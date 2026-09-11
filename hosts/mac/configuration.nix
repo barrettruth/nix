@@ -37,6 +37,8 @@ let
       "ddkjiahejlhfcafbddmgiahcphecmpfh"
       # React Developer Tools
       "fmkadmapgofadopljbjfkapdkoienihi"
+      # C/C++ Search Extension
+      "ifpcmhciihicaljnhgobnhoehoabidhd"
     ];
     PolicyListMultipleSourceMergeList = [ "ExtensionInstallForcelist" ];
     NTPFooterManagementNoticeEnabled = false;

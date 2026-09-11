@@ -122,6 +122,8 @@ in
       "ddkjiahejlhfcafbddmgiahcphecmpfh"
       # React Developer Tools
       "fmkadmapgofadopljbjfkapdkoienihi"
+      # C/C++ Search Extension
+      "ifpcmhciihicaljnhgobnhoehoabidhd"
     ];
   };
 
