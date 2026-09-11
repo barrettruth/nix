@@ -90,18 +90,20 @@ def facts(root: Path) -> list[str]:
             found.append("just recipes: " + summary + ".")
 
     entry = enter(root)
-    if entry and (root / ".envrc").is_file():
-        found.append(
-            ".envrc is present but direnv is not active in this environment;"
-            + " repo tooling runs under `"
-            + entry
-            + "`."
+    if entry:
+        setup = (
+            ".envrc is present"
+            if (root / ".envrc").is_file()
+            else "The flake defines devShells"
         )
-    elif entry:
         found.append(
-            "The flake defines devShells; a tool missing from PATH is supplied by `"
+            setup
+            + "; use `"
             + entry
-            + "`."
+            + "` only for commands that depend on the project's tools or settings,"
+            + " when that environment is not already active. Read the setup first"
+            + " and select the shell required by the project. VCS operations and"
+            + " file inspection normally run directly."
         )
 
     return found
@@ -150,10 +152,12 @@ def command_not_found() -> None:
         return
     emit(
         "PostToolUse",
-        "That command is missing from PATH, but this checkout supplies tooling"
-        + " through `"
+        "That command is missing from PATH. Inspect the project's environment"
+        + " definition or instructions first. If they supply the tool and that"
+        + " environment is not already active, retry through `"
         + entry
-        + "`. Re-run it that way before concluding the tool is unavailable.",
+        + "`, selecting the shell required by the project. The presence of an"
+        + " environment definition does not imply it supplies every missing tool.",
     )
 
 
