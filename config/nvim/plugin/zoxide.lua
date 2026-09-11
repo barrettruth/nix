@@ -56,7 +56,7 @@ local function open(opts)
     end
 
     local ok, err = pcall(vim.api.nvim_cmd, {
-        cmd = 'edit',
+        cmd = 'split',
         args = { dir },
         magic = { file = false, bar = false },
         mods = opts.smods,
@@ -92,5 +92,5 @@ vim.api.nvim_create_user_command('Zoxide', open, {
     nargs = '_',
     bar = true,
     complete = complete,
-    desc = 'open directory with zoxide',
+    desc = 'open directory in a split with zoxide',
 })
