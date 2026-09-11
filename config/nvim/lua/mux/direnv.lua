@@ -397,7 +397,7 @@ function M.watch(params)
                 {
                     term = true,
                     cwd = root(),
-                    on_exit = vim.schedule_wrap(function(_, code)
+                    on_exit = vim.schedule_wrap(function()
                         if
                             watching[params.socket] ~= operation
                             or operation.result
@@ -409,26 +409,6 @@ function M.watch(params)
                             watching[params.socket] = nil
                         elseif vim.api.nvim_buf_is_valid(buf) then
                             vim.b[buf].terminal_job_id = nil
-                            local function unavailable()
-                                if
-                                    watching[params.socket] == operation
-                                    and not operation.result
-                                    and vim.api.nvim_buf_is_valid(buf)
-                                    and vim.v.exiting == vim.NIL
-                                then
-                                    operation.report(
-                                        'failed',
-                                        nil,
-                                        nil,
-                                        'could not observe load completion'
-                                    )
-                                end
-                            end
-                            if code == 0 then
-                                vim.defer_fn(unavailable, 5000)
-                            else
-                                unavailable()
-                            end
                         end
                     end),
                 }
@@ -440,13 +420,8 @@ function M.watch(params)
                     'direnv: failed to start output reader\r\n'
                 )
                 vim.fn.chanclose(channel)
-                operation.report(
-                    'failed',
-                    nil,
-                    nil,
-                    'could not start output reader'
-                )
-            elseif operation.target then
+            end
+            if operation.target then
                 operation.report('running')
             end
         end)
@@ -492,16 +467,21 @@ function M.finish_watch(params)
     end
     if params.status == 'failed' then
         local read, lines = pcall(vim.fn.readfile, params.log, 'b')
-        local output = read and table.concat(lines, '\n')
-            or 'direnv: diagnostic output is no longer available\n'
-        local buf = new_progress(params.socket)
-        operation.buf = buf
-        local channel = vim.api.nvim_open_term(buf, {})
-        vim.api.nvim_chan_send(
-            channel,
-            output .. ('\r\n[Process exited %d]\r\n'):format(params.code)
-        )
-        vim.fn.chanclose(channel)
+        if
+            read
+            or not (operation.buf and vim.api.nvim_buf_is_valid(operation.buf))
+        then
+            local output = read and table.concat(lines, '\n')
+                or 'direnv: diagnostic output is no longer available\n'
+            local buf = new_progress(params.socket)
+            operation.buf = buf
+            local channel = vim.api.nvim_open_term(buf, {})
+            vim.api.nvim_chan_send(
+                channel,
+                output .. ('\r\n[Process exited %d]\r\n'):format(params.code)
+            )
+            vim.fn.chanclose(channel)
+        end
     else
         close_progress(operation.buf or progress_buffer(params.socket))
     end

@@ -82,7 +82,7 @@ index 2eb15b0..93c2d64 100644
              Multiplexer::Herdr => return spawn_herdr(&bin, ctx),
 +            Multiplexer::Nvim => return spawn_nvim(&bin, ctx),
              Multiplexer::Tmux => {
-@@ -190,2 +198,42 @@ fn shell_quote(s: &str) -> String {
+@@ -190,2 +198,45 @@ fn shell_quote(s: &str) -> String {
  
 +fn spawn_nvim(bin: &str, ctx: &DaemonContext) -> io::Result<()> {
 +    let lua = format!(
@@ -98,10 +98,13 @@ index 2eb15b0..93c2d64 100644
 +fn nvim_remote(lua: &str) -> io::Result<()> {
 +    let socket = env::var(NVIM_VAR).map_err(|e| Error::other(e.to_string()))?;
 +    let expr = format!("luaeval('{}')", escape_vim_single_string(lua));
-+    Command::new("nvim")
++    let mut child = Command::new("nvim")
 +        .args(["--server", &socket, "--remote-expr", &expr])
-+        .spawn()
-+        .map(|_| ())
++        .spawn()?;
++    std::thread::spawn(move || {
++        let _ = child.wait();
++    });
++    Ok(())
 +}
 +
 +fn escape_lua_string(s: &str) -> String {
