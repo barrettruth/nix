@@ -15,6 +15,7 @@
 ---@class mux.PendingEnsure
 ---@field callbacks mux.EnsureCallback[]
 ---@field proc? any
+---@field progress? vim.api.keyset.echo_opts
 
 local M = {}
 
@@ -756,6 +757,21 @@ local function finish_pending(root, server, err)
             return
         end
 
+        if entry.progress then
+            entry.progress.status = server and 'success' or 'failed'
+            if not server then
+                err = ('failed %s: %s'):format(
+                    entry.progress.title,
+                    err or 'server did not become ready'
+                )
+            end
+            vim.api.nvim_echo(
+                server and { { 'mux: ready ' .. entry.progress.title } } or {},
+                false,
+                entry.progress
+            )
+        end
+
         for _, cb in ipairs(entry.callbacks) do
             local ok, cb_err = pcall(cb, server, err)
             if not ok then
@@ -854,7 +870,22 @@ function M.ensure(root, cb)
 
     pcall(vim.fn.mkdir, runtime_dir(), 'p')
     pcall(vim.fn.mkdir, state_dir(), 'p')
-    pending[real] = { callbacks = { cb } }
+    local entry = { callbacks = { cb } }
+    pending[real] = entry
+    if #vim.api.nvim_list_uis() > 0 then
+        entry.progress = {
+            kind = 'progress',
+            source = 'mux',
+            title = vim.fn.fnamemodify(real, ':t'),
+            status = 'running',
+        }
+        entry.progress.id = vim.api.nvim_echo(
+            { { 'mux: starting ' .. entry.progress.title } },
+            false,
+            entry.progress
+        )
+        vim.cmd.redraw()
+    end
 
     local proc, spawn_err = spawn_server(paths, function(server, err)
         finish_pending(real, server, err)
@@ -865,7 +896,7 @@ function M.ensure(root, cb)
         return
     end
 
-    pending[real].proc = proc
+    entry.proc = proc
 end
 
 ---Connect this UI to a running server, recording the current root on it.
