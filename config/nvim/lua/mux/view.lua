@@ -231,6 +231,12 @@ local function materialize(name)
                 finish_terminal(buf, status)
             end),
         })
+        if name == 'ai' then
+            vim.opt_local.winhighlight:append({
+                Search = 'None',
+                CurSearch = 'None',
+            })
+        end
         restore_terminal_focus()
     elseif name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(cwd))
