@@ -7,3 +7,5 @@
   does, and leave a file that has none without any.
 - Establish authorship with `git blame` before proposing that a comment be
   rewritten; the deliberate ones read like accidents.
+- Directory-browser actions are primitive mappings to existing Ex or shell
+  commands, not custom file-operation commands.
