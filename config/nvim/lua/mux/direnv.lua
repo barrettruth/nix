@@ -65,51 +65,24 @@ local function progress_buffer(key)
 end
 
 local function close_progress(buf)
-    if buf and vim.api.nvim_buf_is_valid(buf) then
-        vim.api.nvim_buf_delete(buf, { force = true })
-    end
+    require('mux.view').close_buffer(buf)
 end
 
 local function new_progress(key)
-    close_progress(progress_buffer(key))
+    local view = require('mux.view')
+    local previous = progress_buffer(key)
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(buf, 'direnv://' .. key)
     vim.b[buf].mux_direnv = key
     vim.b[buf].term_normal = true
     vim.bo[buf].bufhidden = 'wipe'
     vim.keymap.set('n', 'q', function()
         close_progress(buf)
     end, { buffer = buf })
-    return buf
-end
 
-local function show_progress(buf, target)
-    local current = vim.api.nvim_get_current_win()
-    local mode = vim.api.nvim_get_mode().mode
-    target = target or current
-    if vim.api.nvim_win_get_config(target).relative ~= '' then
-        target = vim.iter(vim.api.nvim_tabpage_list_wins(0)):find(function(win)
-            return vim.api.nvim_win_get_config(win).relative == ''
-        end)
-    end
-    local height = math.max(
-        3,
-        math.min(12, math.floor(vim.api.nvim_win_get_height(target) * 0.3))
-    )
-    local win
-    vim.api.nvim_win_call(target, function()
-        vim.cmd(('belowright %dsplit'):format(height))
-        win = vim.api.nvim_get_current_win()
-        vim.api.nvim_win_set_buf(win, buf)
-        vim.wo[win].cursorline = false
-    end)
-    if vim.api.nvim_win_is_valid(current) then
-        vim.api.nvim_set_current_win(current)
-        if mode:sub(1, 1) == 't' then
-            vim.cmd.startinsert()
-        end
-    end
-    return win
+    local win = assert(view.mount('direnv', buf, previous))
+    vim.wo[win].cursorline = false
+    vim.api.nvim_buf_set_name(buf, 'direnv://' .. key)
+    return buf, win
 end
 
 local function export(target, callback)
@@ -132,7 +105,6 @@ local function export(target, callback)
             return
         end
         buf = new_progress(target)
-        show_progress(buf)
         channel = vim.api.nvim_open_term(buf, {
             on_input = function(_, _, _, data)
                 if data:find('\003', 1, true) then
@@ -332,13 +304,11 @@ function M.watch(params)
             return
         end
 
-        local target = terminal_window(tonumber(params.shell_pid))
-        if not target then
+        if not terminal_window(tonumber(params.shell_pid)) then
             return
         end
 
-        local buf = new_progress(params.socket)
-        local win = show_progress(buf, target)
+        local buf, win = new_progress(params.socket)
         local bin = type(params.bin) == 'string'
                 and params.bin ~= ''
                 and params.bin

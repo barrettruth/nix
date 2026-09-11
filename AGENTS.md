@@ -107,6 +107,10 @@ offline desktop.
 
 ## Gotchas
 
+- Deferred upstream issue: Neovim nightly `6cbde6a` emits `SessionWritePre`
+  for `:mkview` as well as `:mksession`. Correcting that event's scope is a
+  separate follow-up; do not add Lua command-detection heuristics here.
+
 - ACME on the VPS: a stale `out/acme-success` marker makes
   `acme-<domain>.service` exit 0 without ordering, and the unit is
   `RemainAfterExit`, so `systemctl start` is a no-op — use `restart`. The unit
