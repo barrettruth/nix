@@ -16,6 +16,19 @@ python3 ~/.config/nix/config/skills/mux/scripts/socket.py [--root <repo-root>]
 
 Prints the socket, or exits 1 naming the project it found no server for.
 
+## Create
+
+Exiting 1 means that root has no server. Spawn one through any live server,
+which reuses its Neovim binary and `--cmd` arguments and unloads direnv for the
+new root — a hand-run `nvim --headless --listen` gets none of that.
+
+```sh
+nvim --server "$sock" \
+  --remote-expr "luaeval('require([[mux.server]]).ensure(_A, function() end)', '<new-root>')"
+```
+
+`ensure` only spawns; `switch` is what moves a UI, so focus stays put.
+
 ## Read
 
 `--remote-expr` evaluates and waits for an answer, which comes once the session
