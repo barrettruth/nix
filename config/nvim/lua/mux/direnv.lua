@@ -1,6 +1,7 @@
 local M = {}
 
 local loading = {}
+local watching = {}
 
 local function root()
     local server = require('mux.server').state().server
@@ -23,12 +24,42 @@ function M.unload(args)
     return command
 end
 
-local function warn(result)
-    local detail = vim.trim(result.stderr):match('[^\n]+')
-    vim.notify(
-        'direnv: ' .. (detail or ('failed with exit %d'):format(result.code)),
-        vim.log.levels.WARN
-    )
+local function progress(target)
+    local label = vim.fs.basename(target) or target
+    local state = { kind = 'progress', source = 'direnv', title = label }
+    local verbs = {
+        running = 'loading',
+        success = 'loaded',
+        failed = 'failed',
+        cancel = 'cancelled',
+    }
+    return function(status, changed, quiet, detail)
+        if state.status and state.status ~= 'running' then
+            return
+        end
+        if status == 'running' and state.id then
+            return
+        end
+        state.status = status
+        if
+            not state.id
+            and (quiet or (status ~= 'running' and status ~= 'failed'))
+        then
+            return
+        end
+        local message = 'direnv: ' .. verbs[status] .. ' ' .. label
+        if changed and status == 'success' then
+            message = message .. '; restart running jobs to use changes'
+        end
+        if detail then
+            message = message .. ': ' .. detail
+        end
+        state.id = vim.api.nvim_echo(
+            quiet and {} or { { message } },
+            status == 'failed' and not quiet,
+            state
+        )
+    end
 end
 
 local function apply(output)
@@ -50,12 +81,7 @@ local function apply(output)
         vim.env[key] = next_value
     end
 
-    if changed then
-        vim.notify(
-            'direnv: environment changed; restart to update running jobs',
-            vim.log.levels.INFO
-        )
-    end
+    return changed
 end
 
 local function progress_buffer(key)
@@ -68,14 +94,14 @@ local function close_progress(buf)
     require('mux.view').close_buffer(buf)
 end
 
-local function new_progress(key)
+local function new_progress(key, on_close)
     local view = require('mux.view')
     local previous = progress_buffer(key)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.b[buf].mux_direnv = key
     vim.b[buf].term_normal = true
     vim.bo[buf].bufhidden = 'wipe'
-    vim.keymap.set('n', 'q', function()
+    vim.keymap.set('n', 'q', on_close or function()
         close_progress(buf)
     end, { buffer = buf })
 
@@ -85,11 +111,32 @@ local function new_progress(key)
     return buf, win
 end
 
+local function warn(target, result)
+    local message = vim.trim(result.stderr or '')
+    if message == '' then
+        message = ('failed with exit %d'):format(result.code)
+    end
+    local buf = new_progress(target)
+    local channel = vim.api.nvim_open_term(buf, {})
+    vim.api.nvim_chan_send(channel, message .. '\r\n')
+    vim.fn.chanclose(channel)
+    progress(target)('failed', nil, nil, message:match('[^\n]+'))
+end
+
 local function export(target, callback)
     local result = { stdout = '' }
     local stderr = {}
     local buf, job, channel, timer
+    local previous = progress_buffer(target)
+    local report = progress(target)
     local delay = (tonumber(vim.env.DIRENV_INSTANT_MUX_DELAY) or 4) * 1000
+
+    local function cancel()
+        if result.code == nil then
+            result.cancelled = true
+        end
+        close_progress(buf)
+    end
 
     local function show()
         if
@@ -104,13 +151,11 @@ local function export(target, callback)
         if result.code == nil and not timer:is_closing() then
             return
         end
-        buf = new_progress(target)
+        buf = new_progress(target, cancel)
         channel = vim.api.nvim_open_term(buf, {
             on_input = function(_, _, _, data)
                 if data:find('\003', 1, true) then
-                    vim.schedule(function()
-                        close_progress(buf)
-                    end)
+                    vim.schedule(cancel)
                 end
             end,
         })
@@ -118,10 +163,15 @@ local function export(target, callback)
             buffer = buf,
             once = true,
             callback = function()
-                vim.fn.jobstop(job)
+                if result.code == nil then
+                    vim.fn.jobstop(job)
+                end
             end,
         })
         vim.api.nvim_chan_send(channel, table.concat(stderr))
+        if result.code == nil then
+            report('running')
+        end
     end
 
     timer = vim.defer_fn(show, delay)
@@ -132,31 +182,43 @@ local function export(target, callback)
             timer:close()
         end
         if vim.v.exiting ~= vim.NIL then
+            report('cancel', nil, true)
             callback()
             return
         end
         if target ~= root() or (buf and not vim.api.nvim_buf_is_valid(buf)) then
+            report('cancel', nil, not result.cancelled)
             close_progress(buf)
             callback()
-        elseif code == 0 then
-            if buf or result.stdout ~= '' then
-                close_progress(progress_buffer(target))
+            return
+        end
+        local applied, changed = pcall(apply, result.stdout)
+        if not applied then
+            result.code = 1
+            local message = 'direnv: could not apply exported environment\n'
+            stderr[#stderr + 1] = message
+            if channel then
+                vim.api.nvim_chan_send(channel, message)
             end
-            callback(result)
+        end
+        if result.code == 0 then
+            report('success', changed)
+            close_progress(buf or previous)
         else
             if #stderr == 0 then
                 stderr[1] = ('direnv: export failed with exit %d\n'):format(
-                    code
+                    result.code
                 )
             end
             show()
             vim.api.nvim_chan_send(
                 channel,
-                ('\r\n[Process exited %d]\r\n'):format(code)
+                ('\r\n[Process exited %d]\r\n'):format(result.code)
             )
             vim.fn.chanclose(channel)
-            callback(result)
+            report('failed')
         end
+        callback(result)
     end
 
     job = vim.fn.jobstart({ 'direnv', 'export', 'json' }, {
@@ -206,16 +268,10 @@ function M.refresh()
     local function release()
         loading[target] = nil
     end
-    local function finish(output)
+    local function finish()
         local pending = loading[target] == 'pending'
         release()
-        if not current() then
-            return
-        end
-        if output then
-            apply(output)
-        end
-        if pending then
+        if current() and pending then
             M.refresh()
         end
     end
@@ -232,7 +288,7 @@ function M.refresh()
                 if not current() then
                     release()
                 elseif result.code ~= 0 then
-                    warn(result)
+                    warn(target, result)
                     finish()
                 else
                     callback(result.stdout)
@@ -243,7 +299,7 @@ function M.refresh()
     local function load()
         export(target, function(result)
             if result then
-                finish(result.stdout)
+                finish()
             else
                 release()
             end
@@ -289,26 +345,48 @@ local function terminal_window(shell_pid)
     end
 end
 
+local function valid_watch(params)
+    return type(params) == 'table'
+        and type(params.log) == 'string'
+        and type(params.socket) == 'string'
+        and (params.target == nil or type(params.target) == 'string')
+        and tonumber(params.shell_pid) ~= nil
+end
+
+local function watch_operation(params)
+    local previous = watching[params.socket]
+    if previous then
+        previous.report('cancel', nil, true)
+    end
+    local operation = {
+        log = params.log,
+        target = type(params.target) == 'string' and params.target or nil,
+        report = progress(params.target or root()),
+    }
+    watching[params.socket] = operation
+    return operation
+end
+
 function M.watch(params)
-    if
-        type(params) ~= 'table'
-        or type(params.log) ~= 'string'
-        or type(params.socket) ~= 'string'
-        or not tonumber(params.shell_pid)
-    then
+    if not valid_watch(params) then
         return false
     end
 
     vim.schedule(function()
-        if progress_buffer(params.socket) then
+        local existing = watching[params.socket]
+        if existing and existing.log == params.log then
+            return
+        end
+        if
+            not vim.uv.fs_stat(params.log)
+            or not terminal_window(tonumber(params.shell_pid))
+        then
             return
         end
 
-        if not terminal_window(tonumber(params.shell_pid)) then
-            return
-        end
-
+        local operation = watch_operation(params)
         local buf, win = new_progress(params.socket)
+        operation.buf = buf
         local bin = type(params.bin) == 'string'
                 and params.bin ~= ''
                 and params.bin
@@ -319,17 +397,115 @@ function M.watch(params)
                 {
                     term = true,
                     cwd = root(),
-                    on_exit = vim.schedule_wrap(function()
-                        close_progress(buf)
+                    on_exit = vim.schedule_wrap(function(_, code)
+                        if
+                            watching[params.socket] ~= operation
+                            or operation.result
+                        then
+                            return
+                        end
+                        if not operation.target then
+                            close_progress(buf)
+                            watching[params.socket] = nil
+                        elseif vim.api.nvim_buf_is_valid(buf) then
+                            vim.b[buf].terminal_job_id = nil
+                            local function unavailable()
+                                if
+                                    watching[params.socket] == operation
+                                    and not operation.result
+                                    and vim.api.nvim_buf_is_valid(buf)
+                                    and vim.v.exiting == vim.NIL
+                                then
+                                    operation.report(
+                                        'failed',
+                                        nil,
+                                        nil,
+                                        'could not observe load completion'
+                                    )
+                                end
+                            end
+                            if code == 0 then
+                                vim.defer_fn(unavailable, 5000)
+                            else
+                                unavailable()
+                            end
+                        end
                     end),
                 }
             )
             if job <= 0 then
-                close_progress(buf)
+                local channel = vim.api.nvim_open_term(buf, {})
+                vim.api.nvim_chan_send(
+                    channel,
+                    'direnv: failed to start output reader\r\n'
+                )
+                vim.fn.chanclose(channel)
+                operation.report(
+                    'failed',
+                    nil,
+                    nil,
+                    'could not start output reader'
+                )
+            elseif operation.target then
+                operation.report('running')
             end
         end)
     end)
 
+    return true
+end
+
+function M.finish_watch(params)
+    if
+        not valid_watch(params)
+        or type(params.target) ~= 'string'
+        or not vim.tbl_contains(
+            { 'success', 'failed', 'cancel' },
+            params.status
+        )
+        or not tonumber(params.code)
+    then
+        return false
+    end
+    local operation = watching[params.socket]
+    if operation and operation.log == params.log and operation.result then
+        return true
+    end
+    if not operation or operation.log ~= params.log then
+        if
+            not vim.uv.fs_stat(params.log)
+            or not terminal_window(tonumber(params.shell_pid))
+            or (
+                operation
+                and not operation.result
+                and vim.uv.fs_stat(operation.log)
+            )
+        then
+            return false
+        end
+        operation = watch_operation(params)
+    end
+    operation.result = params.status
+    if vim.v.exiting ~= vim.NIL then
+        operation.report('cancel', nil, true)
+        return true
+    end
+    if params.status == 'failed' then
+        local read, lines = pcall(vim.fn.readfile, params.log, 'b')
+        local output = read and table.concat(lines, '\n')
+            or 'direnv: diagnostic output is no longer available\n'
+        local buf = new_progress(params.socket)
+        operation.buf = buf
+        local channel = vim.api.nvim_open_term(buf, {})
+        vim.api.nvim_chan_send(
+            channel,
+            output .. ('\r\n[Process exited %d]\r\n'):format(params.code)
+        )
+        vim.fn.chanclose(channel)
+    else
+        close_progress(operation.buf or progress_buffer(params.socket))
+    end
+    operation.report(params.status)
     return true
 end
 

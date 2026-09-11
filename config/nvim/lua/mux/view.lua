@@ -38,7 +38,7 @@ local did_setup = false
 ---@param job integer
 local function stop_job(job)
     local ok, pid = pcall(vim.fn.jobpid, job)
-    if ok then
+    if ok and pid > 0 then
         vim.uv.kill(-pid, 'sigterm')
     end
     vim.fn.jobstop(job)
@@ -420,9 +420,7 @@ function M.mount(name, buf, previous)
             )
         end
     else
-        win, tab = create(name, false, buf)
-        M.focus(tab)
-        vim.cmd.stopinsert()
+        win = create(name, false, buf)
     end
     M.close_buffer(previous)
     return win
