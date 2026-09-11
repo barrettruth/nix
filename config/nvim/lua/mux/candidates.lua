@@ -35,51 +35,31 @@ function M.list(cb)
         return
     end
 
-    local ok, proc = pcall(vim.system, {
-        'zoxide',
-        'query',
-        '--list',
-    }, { text = true }, function(result)
-        vim.schedule(function()
-            if result.code ~= 0 then
-                local err = vim.trim(result.stderr or '')
-                if err == '' then
-                    err = 'zoxide exited ' .. result.code
-                end
-                cb(candidates, err)
-                return
-            end
+    require('zoxide').query('', true, function(output, err)
+        if not output then
+            cb(candidates, err)
+            return
+        end
 
-            for rank, path in
-                ipairs(
-                    vim.split(result.stdout or '', '\n', { trimempty = true })
-                )
-            do
-                local root = command.resolve(path)
-                if root then
-                    local index = indexes[root]
-                    if index then
-                        candidates[index].zoxide_rank = candidates[index].zoxide_rank
-                            or rank
-                    else
-                        candidates[#candidates + 1] = {
-                            root = root,
-                            zoxide_rank = rank,
-                        }
-                        indexes[root] = #candidates
-                    end
+        for rank, path in ipairs(vim.split(output, '\n', { trimempty = true })) do
+            local root = command.resolve(path)
+            if root then
+                local index = indexes[root]
+                if index then
+                    candidates[index].zoxide_rank = candidates[index].zoxide_rank
+                        or rank
+                else
+                    candidates[#candidates + 1] = {
+                        root = root,
+                        zoxide_rank = rank,
+                    }
+                    indexes[root] = #candidates
                 end
             end
+        end
 
-            cb(candidates)
-        end)
+        cb(candidates)
     end)
-
-    if not ok then
-        vim.schedule(function()
-            cb(candidates, tostring(proc))
-        end)
-    end
 end
 
 return M

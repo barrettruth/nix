@@ -17,24 +17,9 @@ end
 ---@return string? root
 ---@return string? err
 function M.resolve(arg)
-    local raw = arg
-    if raw == '' then
-        raw = vim.fn.getcwd()
-    else
-        raw = vim.fn.expand(raw)
-        if not raw:match('^/') then
-            raw = vim.fn.getcwd() .. '/' .. raw
-        end
-    end
-
-    local real = vim.uv.fs_realpath(raw)
+    local real = vim.uv.fs_realpath(arg)
     if not real then
-        for _, entry in ipairs(server.list()) do
-            if entry.root == raw then
-                return raw
-            end
-        end
-        return nil, 'path does not exist: ' .. raw
+        return nil, 'path does not exist: ' .. arg
     end
 
     local stat = vim.uv.fs_stat(real)
@@ -55,7 +40,7 @@ function M.resolve(arg)
         real = parent
     end
 
-    return nil, 'no git/jj root: ' .. raw
+    return nil, 'no git/jj root: ' .. arg
 end
 
 ---@param arg string?
@@ -69,13 +54,26 @@ function M.ensure(arg, cb)
         return
     end
 
-    local root, err = M.resolve(arg)
-    if not root then
-        cb(nil, err)
-        return
+    local function ensure(dir, query_err)
+        if not dir or dir == '' then
+            cb(nil, 'zoxide: ' .. (query_err or 'no match found'))
+            return
+        end
+
+        local root, err = M.resolve(dir)
+        if not root then
+            cb(nil, err)
+            return
+        end
+
+        server.ensure_target(root, cb)
     end
 
-    server.ensure_target(root, cb)
+    if arg == '' then
+        ensure(vim.fn.getcwd())
+    else
+        require('zoxide').query(arg, false, ensure)
+    end
 end
 
 ---Connect this UI to the mux server for a resolved project root.
