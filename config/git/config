@@ -19,7 +19,14 @@
 [core]
 	editor = nvim
 	whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
-	hooksPath = ~/.config/git/hooks
+
+[hook "barrett-commit-msg"]
+	event = commit-msg
+	command = ~/.config/git/hooks/commit-msg
+
+[hook "barrett-pre-push"]
+	event = pre-push
+	command = ~/.config/git/hooks/pre-push
 
 [color]
 	ui = auto
