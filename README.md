@@ -12,8 +12,8 @@ My personal nix configuration leveraging:
 - [flakes](https://wiki.nixos.org/wiki/Flakes) & [flake-parts](https://github.com/hercules-ci/flake-parts)
 - [nix-darwin](https://github.com/nix-darwin/nix-darwin)
 
-Hosts a Dell XPS 9500 laptop, a NixOS PC, a NixOS VPS, and two Apple silicon
-MacBooks.
+Hosts a Dell XPS 9500 laptop, a NixOS PC, a NixOS VPS, and an Apple silicon
+MacBook.
 
 ## Configuration Structure
 
@@ -21,7 +21,7 @@ MacBooks.
 flake.nix
 hosts/
 modules/
-  hosts/{desktop,retired,laptop,mac,vps}
+  hosts/{desktop,laptop,mac,vps}
   barrett/                       cross-platform workstation
   darwin/                        nix-darwin modules
   nixos/
@@ -40,4 +40,3 @@ pkgs/                            custom derivations
 - **desktop**: headless NixOS server and remote build host. Forgejo at [`forge.barrettruth.com`](https://forgejo.org/) and `finance.barrettruth.com`.
 - **vps**: NixOS VPS. [Vaultwarden](https://github.com/dani-garcia/vaultwarden) at `vault.barrettruth.com`, [Authelia](https://www.authelia.com/) at `auth.barrettruth.com`, [Headscale](https://headscale.net/) at `headscale.barrettruth.com`, and a miscellany of static sites (`barrettruth.com`, `barrettruth.sh`, `philipmruth.com`, `vimdoc-language-server.com`, `ts.barrettruth.com`). `forge.barrettruth.com` and `git.barrettruth.com`.
 - **mac**: Apple silicon MacBook
-- **retired**: work MacBook at [RETIRED](https://retired.com)

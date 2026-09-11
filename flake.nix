@@ -58,7 +58,12 @@
         ./modules/hosts/vps.nix
         ./modules/hosts/desktop.nix
         ./modules/hosts/mac.nix
-        ./modules/hosts/imc.nix
-      ];
+      ]
+      ++ (
+        let
+          imcModule = ./modules/hosts + "/imc.nix";
+        in
+        if builtins.pathExists imcModule then [ imcModule ] else [ ]
+      );
     };
 }

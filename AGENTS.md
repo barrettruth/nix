@@ -12,7 +12,7 @@ A flake-parts flake covering five hosts.
 
 | host         | recipe                                     | shape                                                                                                     |
 | ------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| mac, retired     | `just rebuild-mac`, `just rebuild-retired`     | darwin, local: `nix build`, then `sudo nix-env --profile /nix/var/nix/profiles/system --set` and activate |
+| mac          | `just rebuild-mac`                         | darwin, local: `nix build`, then `sudo nix-env --profile /nix/var/nix/profiles/system --set` and activate |
 | desktop, vps | `just rebuild-desktop`, `just rebuild-vps` | nixos, built and switched on the host over ssh                                                            |
 | laptop       | `just rebuild-laptop`                      | nixos, built on `desktop-builder`, activated with sudo                                                    |
 
@@ -117,5 +117,5 @@ offline desktop.
   those machines keep resolving it to the dead host.
 - Each service serves one public hostname off one database, so exactly one host
   may import a given `services/` file at a time.
-- sudo works on every mac (`mac`, `retired`) — TouchID-gated, approved at the
+- sudo works on the mac — TouchID-gated, approved at the
   machine. Run privileged commands directly; do not hand them back.
