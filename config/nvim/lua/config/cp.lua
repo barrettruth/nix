@@ -1,7 +1,5 @@
 local M = {}
 
-local config = vim.g.cp or {}
-
 M.root = nil
 
 local languages = {
@@ -52,7 +50,8 @@ end
 ---@return { ext: string, solve: string }
 ---@return string
 local function default_language()
-    return assert(languages[config.language]), config.language
+    local language = vim.g.cp.language
+    return assert(languages[language]), language
 end
 
 ---@param buf integer
@@ -682,6 +681,7 @@ function M.run(mode)
 end
 
 function M.setup()
+    local config = vim.g.cp or {}
     if type(config) ~= 'table' then
         error('vim.g.cp must be a table')
     end

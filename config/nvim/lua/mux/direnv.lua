@@ -204,6 +204,11 @@ local function export(target, callback)
         if result.code == 0 then
             report('success', changed)
             close_progress(buf or previous)
+            if changed then
+                vim.lsp.enable(vim.tbl_map(function(config)
+                    return config.name
+                end, vim.lsp.get_configs({ enabled = true })))
+            end
         else
             if #stderr == 0 then
                 stderr[1] = ('direnv: export failed with exit %d\n'):format(

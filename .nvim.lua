@@ -3,19 +3,24 @@ vim.pack.add({
     'https://github.com/nvimdev/guard-collection',
 }, { confirm = false, load = true })
 
+local root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h')
 local ft = require('guard.filetype')
 local lint = require('guard.lint')
 
-ft('lua')
-    :fmt('stylua')
-    :extra('--config-path', 'config/nvim/stylua.toml')
-    :lint('selene')
-ft('python'):fmt('black')
-
-local deadnix = {
-    cmd = 'deadnix',
-    args = { '-o', 'json' },
+ft('nix'):fmt({
+    cmd = 'nix',
+    args = { 'fmt', '--', '--tree-root', root, '--stdin' },
+    stdin = true,
     fname = true,
+}):lint({
+    cmd = 'deadnix',
+    args = {
+        '--no-lambda-pattern-names',
+        '--output-format',
+        'json',
+        '/dev/stdin',
+    },
+    stdin = true,
     parse = lint.from_json({
         get_diagnostics = function(raw)
             return vim.json.decode(raw).results
@@ -26,55 +31,54 @@ local deadnix = {
             lnum_end = 'line',
             col_end = 'endColumn',
             message = 'message',
+            severity = function()
+                return 'warning'
+            end,
         },
         source = 'deadnix',
     }),
-}
+})
 
-local statix = {
-    cmd = 'statix',
-    args = { 'check', '-o', 'json' },
+ft('sh,bash'):fmt({
+    cmd = 'shfmt',
+    args = { '-i', '2', '--filename' },
+    stdin = true,
+    fname = true,
+}):lint({
+    cmd = 'shellcheck',
+    args = { '--format', 'json1' },
     fname = true,
     parse = lint.from_json({
         get_diagnostics = function(raw)
-            local data = vim.json.decode(raw)
-            local results = {}
-            for _, entry in ipairs(data.report or {}) do
-                for _, diagnostic in ipairs(entry.diagnostics or {}) do
-                    results[#results + 1] = {
-                        from_line = diagnostic.at.from.line,
-                        from_col = diagnostic.at.from.column,
-                        to_line = diagnostic.at.to.line,
-                        to_col = diagnostic.at.to.column,
-                        message = entry.note,
-                        severity = entry.severity,
-                    }
-                end
-            end
-            return results
+            return vim.json.decode(raw).comments
         end,
         attributes = {
-            lnum = 'from_line',
-            col = 'from_col',
-            lnum_end = 'to_line',
-            col_end = 'to_col',
-            message = 'message',
+            lnum_end = 'endLine',
+            col_end = 'endColumn',
+            severity = 'level',
         },
-        severities = {
-            Error = lint.severities.error,
-            Warn = lint.severities.warning,
-            Hint = lint.severities.info,
-        },
-        source = 'statix',
+        source = 'shellcheck',
     }),
-}
+})
 
-ft('nix')
-    :fmt({
-        cmd = 'nix',
-        args = { 'fmt', '--', '--stdin' },
-        stdin = true,
-        fname = true,
-    })
-    :lint(deadnix)
-    :append(statix)
+ft('python'):fmt({
+    cmd = 'black',
+    args = { '--quiet', '-', '--stdin-filename' },
+    stdin = true,
+    fname = true,
+})
+
+ft('lua'):fmt({
+    cmd = 'stylua',
+    args = { '--config-path', root .. '/config/nvim/stylua.toml', '-' },
+    stdin = true,
+})
+
+ft('markdown,yaml'):fmt({
+    cmd = 'prettier',
+    args = { '--stdin-filepath' },
+    stdin = true,
+    fname = true,
+})
+
+vim.lsp.enable({ 'lua_ls', 'basedpyright', 'ty', 'nixd' })

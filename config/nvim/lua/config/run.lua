@@ -441,6 +441,7 @@ function M.setup()
     vim.keymap.set('n', '<Plug>(run-disable)', function()
         M.disable()
     end, { desc = 'disable the runner for the current file' })
+    vim.keymap.set('n', '<leader>R', '<Plug>(run-disable)', { remap = true })
 end
 
 return M
