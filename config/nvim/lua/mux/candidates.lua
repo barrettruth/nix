@@ -2,6 +2,7 @@
 ---@field root string
 ---@field server? mux.Server
 ---@field zoxide_rank? integer
+---@field zoxide_paths? string[]
 
 ---@alias mux.CandidatesCallback fun(candidates: mux.Candidate[], err?: string)
 
@@ -45,21 +46,49 @@ function M.list(cb)
             local root = command.resolve(path)
             if root then
                 local index = indexes[root]
-                if index then
-                    candidates[index].zoxide_rank = candidates[index].zoxide_rank
-                        or rank
-                else
-                    candidates[#candidates + 1] = {
-                        root = root,
-                        zoxide_rank = rank,
-                    }
-                    indexes[root] = #candidates
+                if not index then
+                    index = #candidates + 1
+                    candidates[index] = { root = root }
+                    indexes[root] = index
                 end
+                local candidate = candidates[index]
+                candidate.zoxide_rank = candidate.zoxide_rank or rank
+                candidate.zoxide_paths = candidate.zoxide_paths or {}
+                candidate.zoxide_paths[#candidate.zoxide_paths + 1] = path
             end
         end
 
         cb(candidates)
     end)
+end
+
+---@param candidate mux.Candidate
+---@param cb fun(ok?: true, err?: string)
+function M.remove(candidate, cb)
+    local paths = candidate.zoxide_paths or {}
+    local function remove_path(index)
+        if not paths[index] then
+            server.remove(candidate.root, cb, candidate.server)
+            return
+        end
+        require('zoxide').run(
+            { 'remove', '--', paths[index] },
+            function(output, err)
+                if
+                    output ~= nil
+                    or (
+                        err
+                        and vim.startswith(err, 'path not found in database: ')
+                    )
+                then
+                    remove_path(index + 1)
+                else
+                    cb(nil, err)
+                end
+            end
+        )
+    end
+    remove_path(1)
 end
 
 return M

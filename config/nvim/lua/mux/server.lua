@@ -1166,6 +1166,58 @@ function M.kill(target, cb)
     control_target(target, 'kill', cb or function() end)
 end
 
+---@param root string
+---@param cb fun(ok?: true, err?: string)
+---@param target? mux.Server
+function M.remove(root, cb, target)
+    local local_target, err = paths_for(root)
+    if not local_target then
+        cb(nil, err)
+        return
+    end
+    target = target or local_target
+    local socket, route_err = control_socket(target)
+    if not socket then
+        cb(nil, route_err)
+        return
+    end
+    local function finish(ok, remove_err)
+        if not ok and socket_listening(socket) then
+            cb(nil, remove_err)
+            return
+        end
+        local files = {}
+        if ours(socket) then
+            files[#files + 1] = socket
+            if vim.fn.fnamemodify(socket, ':h') == runtime_dir() then
+                files[#files + 1] = local_target.session
+            end
+        end
+        for _, file in ipairs(files) do
+            local removed, unlink_err, code = vim.uv.fs_unlink(file)
+            if not removed and code ~= 'ENOENT' then
+                cb(nil, unlink_err)
+                return
+            end
+        end
+        if vim.g.mux_peers then
+            vim.g.mux_peers = vim.json.encode(vim.tbl_filter(function(peer)
+                return peer.root ~= root
+            end, peers()))
+        end
+        if vim.g.mux_last_root == root then
+            vim.g.mux_last_root = nil
+        end
+        require('mux.line').refresh()
+        cb(true)
+    end
+    if ours(socket) and not socket_listening(socket) then
+        finish(true)
+    else
+        M.kill(target, finish)
+    end
+end
+
 ---@param target mux.Server
 ---@param cb? fun(ok?: true, err?: string)
 ---@return nil

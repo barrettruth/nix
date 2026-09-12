@@ -128,8 +128,9 @@ local function entries(items)
     return rendered
 end
 
+---@param query? string
 ---@return nil
-local function open()
+local function open(query)
     local items = {}
 
     local function contents(cb)
@@ -163,7 +164,7 @@ local function open()
     require('fzf-lua').fzf_exec(contents, {
         prompt = 'mux> ',
         previewer = false,
-        header = ('%s vcs | %s create | %s edit | %s zsh | %s reload | %s kill | %s attach'):format(
+        header = ('%s vcs | %s create | %s edit | %s zsh | %s reload | %s remove | %s attach'):format(
             highlight('<c-v>', 'FzfLuaHeaderBind'),
             highlight('<c-a>', 'FzfLuaHeaderBind'),
             highlight('<c-e>', 'FzfLuaHeaderBind'),
@@ -173,6 +174,7 @@ local function open()
             highlight('<enter>', 'FzfLuaHeaderBind')
         ),
         fzf_opts = {
+            ['--query'] = query,
             ['--delimiter'] = '[\t]',
             ['--with-nth'] = '2..',
             ['--no-multi'] = true,
@@ -216,14 +218,30 @@ local function open()
                 end,
             },
             ['ctrl-x'] = {
-                fn = function(selected)
+                fn = function(selected, opts)
                     local candidate = picked(items, selected)
-                    local target = candidate and active(candidate)
-                    if target then
-                        server.kill(target, done)
+                    require('fzf-lua').win.close()
+                    if not candidate then
+                        return
                     end
+                    local current = server.state().server
+                    local removing_current = current
+                        and current.root == candidate.root
+                    candidates.remove(candidate, function(ok, err)
+                        done(ok, err)
+                        if not removing_current or not ok then
+                            vim.schedule(function()
+                                if
+                                    vim.v.exiting == vim.NIL
+                                    and #vim.api.nvim_list_uis() > 0
+                                then
+                                    open(opts.last_query)
+                                end
+                            end)
+                        end
+                    end)
                 end,
-                reload = true,
+                reuse = true,
             },
         },
     })
