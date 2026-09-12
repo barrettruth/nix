@@ -53,12 +53,16 @@ local function active(candidate)
     )
 end
 
----@param items mux.Candidate[]
 ---@param selected string[]
 ---@return mux.Candidate?
-local function picked(items, selected)
-    local index = selected[1] and tonumber(selected[1]:match('^(%d+)\t'))
-    return index and items[index]
+local function picked(selected)
+    local data = selected[1] and selected[1]:match('^([^\t]+)\t')
+    local ok, candidate = pcall(vim.json.decode, data or '')
+    return ok
+            and type(candidate) == 'table'
+            and type(candidate.root) == 'string'
+            and candidate
+        or nil
 end
 
 ---@param query string
@@ -116,8 +120,8 @@ local function entries(items)
             or ' '
         local padding =
             string.rep(' ', width - vim.fn.strdisplaywidth(labels[i]))
-        rendered[i] = ('%d\t%s %s%s  %s'):format(
-            i,
+        rendered[i] = ('%s\t%s %s%s  %s'):format(
+            vim.json.encode(candidate),
             marker,
             labels[i],
             padding,
@@ -131,12 +135,8 @@ end
 ---@param query? string
 ---@return nil
 local function open(query)
-    local items = {}
-
     local function contents(cb)
-        candidates.list(function(next_items, err)
-            items = next_items
-
+        candidates.list(function(items, err)
             if err then
                 local level = #items == 0 and vim.log.levels.ERROR
                     or vim.log.levels.WARN
@@ -153,7 +153,7 @@ local function open(query)
     local function select_action(name)
         return {
             fn = function(selected)
-                local candidate = picked(items, selected)
+                local candidate = picked(selected)
                 if candidate then
                     select(candidate, name)
                 end
@@ -192,7 +192,7 @@ local function open(query)
                         return
                     end
 
-                    local candidate = picked(items, selected)
+                    local candidate = picked(selected)
                     if not candidate then
                         done(nil, 'no path selected')
                     elseif candidate.server then
@@ -210,7 +210,7 @@ local function open(query)
             enter = select_action(),
             ['ctrl-r'] = {
                 fn = function(selected)
-                    local candidate = picked(items, selected)
+                    local candidate = picked(selected)
                     local target = candidate and active(candidate)
                     if target then
                         server.reload_target(target, done)
@@ -219,7 +219,7 @@ local function open(query)
             },
             ['ctrl-x'] = {
                 fn = function(selected, opts)
-                    local candidate = picked(items, selected)
+                    local candidate = picked(selected)
                     require('fzf-lua').win.close()
                     if not candidate then
                         return
