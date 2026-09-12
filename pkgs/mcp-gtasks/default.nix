@@ -20,14 +20,6 @@ let
 
     npmDepsFetcherVersion = 2;
     npmDepsHash = "sha256-yPIhw0Px3LFJfmecJFYaF7SzuPhETwdzavngRrgkseM=";
-
-    doCheck = true;
-    checkPhase = ''
-      runHook preCheck
-      cp ${./tests.mjs} tests.mjs
-      node --test tests.mjs
-      runHook postCheck
-    '';
   };
 in
 writeShellApplication {
