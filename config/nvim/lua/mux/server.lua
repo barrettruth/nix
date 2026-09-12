@@ -18,6 +18,7 @@
 ---@field progress? vim.api.keyset.echo_opts
 
 local M = {}
+local launcher = vim.g.mux_launcher or vim.fn.exepath('nvim')
 
 local ready = false
 local setup_started = false
@@ -252,40 +253,25 @@ local RESTARTED_EXPR =
 ---@return any? proc
 ---@return string? err
 local function spawn_nvim(args, opts, cb, clean_env)
-    local prog = vim.fn.executable(vim.v.progpath) == 1 and vim.v.progpath
-        or 'nvim'
-    local argv = { prog }
-    local parent = vim.v.argv
-
-    for i = 1, #parent - 1 do
-        if parent[i] == '--cmd' then
-            argv[#argv + 1] = '--cmd'
-            argv[#argv + 1] = parent[i + 1]
-        end
+    local prog = vim.fn.executable(launcher) == 1 and launcher
+        or vim.fn.exepath('nvim')
+    if prog == '' then
+        prog = vim.v.progpath
     end
-
+    local argv = {
+        prog,
+        '--cmd',
+        'let g:mux_launcher = ' .. vim.fn.string(prog),
+    }
     vim.list_extend(argv, args)
 
-    local prog_index = 1
     if clean_env then
-        local nvim_argv = argv
-        argv = require('mux.direnv').unload(nvim_argv)
-        prog_index = #argv - #nvim_argv + 1
+        argv = require('mux.direnv').unload(argv)
     end
-
     local ok, proc = pcall(vim.system, argv, opts, cb)
     if ok then
         return proc
     end
-
-    if prog ~= 'nvim' then
-        argv[prog_index] = 'nvim'
-        ok, proc = pcall(vim.system, argv, opts, cb)
-        if ok then
-            return proc
-        end
-    end
-
     return nil, tostring(proc)
 end
 

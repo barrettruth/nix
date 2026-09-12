@@ -18,9 +18,11 @@ Prints the socket, or exits 1 naming the project it found no server for.
 
 ## Create
 
-Exiting 1 means that root has no server. Spawn one through any live server,
-which reuses its Neovim binary and `--cmd` arguments and unloads direnv for the
-new root — a hand-run `nvim --headless --listen` gets none of that.
+Exiting 1 means that root has no server. Spawn one through a live server so mux
+uses its Neovim launcher and unloads direnv for the new root. The launcher supplies
+its current startup flags; parent `--cmd` arguments are not replayed.
+`g:mux_launcher` carries the launcher path across server spawns, independently of
+project changes to `PATH`.
 
 ```sh
 nvim --server "$sock" \
