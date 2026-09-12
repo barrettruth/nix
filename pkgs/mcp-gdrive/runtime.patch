@@ -1,0 +1,64 @@
+diff --git a/index.ts b/index.ts
+--- a/index.ts
++++ b/index.ts
+@@ -52,7 +52,7 @@
+ }
+ 
+ server.setRequestHandler(ListResourcesRequestSchema, async (request) => {
+-  await ensureAuthQuietly();
++  if (!(await ensureAuthQuietly())) return { resources: [] };
+   const pageSize = 10;
+   const params: any = {
+     pageSize,
+@@ -77,7 +77,7 @@
+ });
+ 
+ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+-  await ensureAuthQuietly();
++  await ensureAuth();
+   const fileId = request.params.uri.replace("gdrive:///", "");
+   const readFileTool = tools[1]; // gdrive_read_file is the second tool
+   const result = await readFileTool.handler({ fileId });
+@@ -129,12 +129,12 @@
+ 
+ async function startServer() {
+   try {
+-    console.log("Starting server");
++    console.error("Starting server");
+     const transport = new StdioServerTransport();
+     await server.connect(transport);
+ 
+     // Set up periodic token refresh that never prompts for auth
+-    setupTokenRefresh();
++    setupTokenRefresh().unref();
+   } catch (error) {
+     console.error("Error starting server:", error);
+     process.exit(1);
+diff --git a/auth.ts b/auth.ts
+--- a/auth.ts
++++ b/auth.ts
+@@ -124,14 +124,14 @@
+         oauth2Client.setCredentials(newCreds);
+         console.error("Token refreshed and saved successfully");
+       } catch (error) {
+-        console.error("Failed to refresh token:", error);
++        console.error("Failed to refresh token:", error instanceof Error ? error.message : "Unknown error");
+         return null;
+       }
+     }
+ 
+     return oauth2Client;
+   } catch (error) {
+-    console.error("Error loading credentials:", error);
++    console.error("Error loading credentials:", error instanceof Error ? error.message : "Unknown error");
+     return null;
+   }
+ }
+@@ -142,6 +142,7 @@
+     if (quietAuth) {
+       return quietAuth;
+     }
++    throw new Error("Google Drive authorization required.");
+   }
+ 
+   return await authenticateAndSaveCredentials();

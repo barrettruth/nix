@@ -2,6 +2,7 @@
   applyPatches,
   buildNpmPackage,
   fetchFromGitHub,
+  jq,
   lib,
   writeShellApplication,
 }:
@@ -18,7 +19,10 @@ let
         rev = "bd79fde46faff9e3d520b4a42ea787cfd7ab026c";
         hash = "sha256-CapRi/ylb2RRSIqf1xPcWFw74oHksDdYqfddKgGYlyA=";
       };
-      patches = [ ./package-lock.patch ];
+      patches = [
+        ./package-lock.patch
+        ./runtime.patch
+      ];
     };
 
     npmDepsFetcherVersion = 2;
@@ -27,6 +31,7 @@ let
 in
 writeShellApplication {
   name = "mcp-gdrive";
+  runtimeInputs = [ jq ];
   text = lib.replaceStrings [ "@mcpGdrive@" ] [ "${upstream}" ] (builtins.readFile ./wrapper.sh);
 
   meta = {

@@ -93,6 +93,7 @@ let
 
   agentPackages = [
     pkgs.devin-cli
+    pkgs.mcp-gdrive
     pkgs.mcp-gtasks
   ];
 
@@ -139,7 +140,39 @@ let
   };
 
   devinMcpConfig = (pkgs.formats.json { }).generate "devin-mcp-config.json" {
-    mcpServers.gtasks.command = lib.getExe pkgs.mcp-gtasks;
+    mcpServers = {
+      gtasks.command = lib.getExe pkgs.mcp-gtasks;
+      gdrive = {
+        command = lib.getExe pkgs.mcp-gdrive;
+        env = {
+          GOOGLE_OAUTH_CREDENTIALS = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
+          GDRIVE_CREDS_DIR = "${XDG_STATE_HOME}/mcp-gdrive";
+        };
+      };
+      gmail = {
+        command = "${pkgs.nodejs}/bin/npx";
+        args = [
+          "-y"
+          "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"
+        ];
+        env = {
+          GMAIL_OAUTH_PATH = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
+          GMAIL_CREDENTIALS_PATH = "${XDG_STATE_HOME}/mcp-gmail/tokens.json";
+        };
+      };
+      gcalendar = {
+        command = "${pkgs.nodejs}/bin/npx";
+        args = [
+          "-y"
+          "@cocal/google-calendar-mcp@2.6.2"
+          "start"
+        ];
+        env = {
+          GOOGLE_OAUTH_CREDENTIALS = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
+          GOOGLE_CALENDAR_MCP_TOKEN_PATH = "${XDG_STATE_HOME}/mcp-gcalendar/tokens.json";
+        };
+      };
+    };
   };
 
   installDevinConfig = name: defaults: merge: ''
@@ -376,6 +409,9 @@ let
             ''}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/mcp-gtasks"}
             ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gtasks"}
+            ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gdrive"}
+            ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gmail"}
+            ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gcalendar"}
             ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
