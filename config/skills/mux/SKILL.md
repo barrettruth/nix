@@ -79,13 +79,13 @@ structured arguments and deterministic view targeting. Do not inject
 
 ## Restart
 
-`:restart` rebinds the same socket and keeps the working directory, and is how
-a session takes up changed plugin code. Read the modified buffers first, then
-poll the socket until it answers again.
+Mux reload saves the session and starts its replacement through the managed
+launcher, keeping the project root and socket. Read the modified buffers first,
+then poll the socket until it answers again.
 
 ```sh
 nvim --server "$sock" --remote-expr 'len(getbufinfo({"bufmodified":1}))'
-nvim --server "$sock" --remote-send '<C-\><C-N>:restart<CR>'
+nvim --server "$sock" --remote-expr 'luaeval("require([[mux.server]]).reload()")'
 ```
 
 ## Rules
