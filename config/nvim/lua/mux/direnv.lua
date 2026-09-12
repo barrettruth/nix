@@ -330,27 +330,11 @@ function M.refresh()
     end)
 end
 
-local function terminal_window(shell_pid)
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.bo[buf].buftype == 'terminal' and not vim.b[buf].mux_direnv then
-            local ok, pid = pcall(vim.fn.jobpid, vim.bo[buf].channel)
-            if ok and pid == shell_pid then
-                for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-                    if vim.api.nvim_win_get_config(win).relative == '' then
-                        return win
-                    end
-                end
-            end
-        end
-    end
-end
-
 local function valid_watch(params)
     return type(params) == 'table'
         and type(params.log) == 'string'
         and type(params.socket) == 'string'
         and (params.target == nil or type(params.target) == 'string')
-        and tonumber(params.shell_pid) ~= nil
 end
 
 local function watch_operation(params)
@@ -377,10 +361,7 @@ function M.watch(params)
         if existing and existing.log == params.log then
             return
         end
-        if
-            not vim.uv.fs_stat(params.log)
-            or not terminal_window(tonumber(params.shell_pid))
-        then
+        if vim.v.exiting ~= vim.NIL or not vim.uv.fs_stat(params.log) then
             return
         end
 
@@ -449,7 +430,6 @@ function M.finish_watch(params)
     if not operation or operation.log ~= params.log then
         if
             not vim.uv.fs_stat(params.log)
-            or not terminal_window(tonumber(params.shell_pid))
             or (
                 operation
                 and not operation.result

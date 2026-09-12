@@ -55,7 +55,18 @@ local function prepare(server)
     if not labels then
         return nil, err
     end
-    vim.g.Mux = vim.json.encode({ root = server.root, tabs = labels })
+    local terminals = {}
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local kind = vim.b[buf].mux_terminal
+        if kind and vim.bo[buf].buftype == 'terminal' then
+            terminals[vim.api.nvim_buf_get_name(buf)] = kind
+        end
+    end
+    vim.g.Mux = vim.json.encode({
+        root = server.root,
+        tabs = labels,
+        terminals = terminals,
+    })
     return true
 end
 
@@ -180,7 +191,8 @@ function M.setup()
             end
             local previous = restoring
             restoring = true
-            local ok, err = pcall(require('mux.view').restore, mux.tabs)
+            local ok, err =
+                pcall(require('mux.view').restore, mux.tabs, mux.terminals)
             restoring = previous
             if not ok then
                 error(err)

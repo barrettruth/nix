@@ -9,3 +9,7 @@
   rewritten; the deliberate ones read like accidents.
 - Directory-browser actions are primitive mappings to existing Ex or shell
   commands, not custom file-operation commands.
+- A mux view is a tab, not a terminal singleton. Multiple zsh buffers must work
+  in any view. Editor and review helpers preserve other splits. Session restore
+  recreates terminal panes and commands, not running process state.
+- Direnv progress belongs to the mux server, not the shell that started the load.

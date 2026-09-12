@@ -78,7 +78,10 @@ local function normalize(tab)
     end
     local owned, user = false, false
     for _, buf in ipairs(buffers(tab)) do
-        if vim.b[buf].mux_view == name then
+        if
+            (spec.terminal and vim.b[buf].mux_terminal)
+            or vim.b[buf].mux_view == name
+        then
             owned = true
         elseif
             vim.bo[buf].buftype == ''
@@ -183,13 +186,10 @@ end
 
 ---@return boolean
 local function restore_terminal_focus()
-    local tp = vim.api.nvim_get_current_tabpage()
-    local name = vim.t[tp].mux_view
-    local spec = name and views[name]
     local buf = vim.api.nvim_get_current_buf()
     if
-        not (spec and spec.terminal)
-        or vim.bo[buf].buftype ~= 'terminal'
+        vim.bo[buf].buftype ~= 'terminal'
+        or vim.b[buf].term_normal
         or vim.w.term_mode == 'nt'
     then
         return false
@@ -248,52 +248,55 @@ local function finish_terminal(buf, status)
 end
 
 ---@param name string
+---@return integer buf
+local function spawn_terminal(name)
+    local command = assert(views[name].terminal)
+    if name == 'zsh' then
+        command = require('mux.direnv').unload(command)
+    end
+    local current = vim.api.nvim_get_current_buf()
+    local buf = (
+        vim.api.nvim_buf_get_name(current) ~= '' or vim.bo[current].modified
+    )
+            and vim.api.nvim_create_buf(false, true)
+        or current
+    vim.b[buf].mux_terminal = name
+    local win = vim.api.nvim_get_current_win()
+    if buf ~= current then
+        win = vim.api.nvim_open_win(buf, false, { split = 'below', win = win })
+    end
+    vim.api.nvim_win_call(win, function()
+        local args = vim.tbl_map(function(arg)
+            return "'" .. arg:gsub("'", [['"'"']]) .. "'"
+        end, command)
+        local job = vim.fn.jobstart(
+            'exec ' .. table.concat(args, ' '),
+            { term = true, cwd = root() }
+        )
+        if job <= 0 then
+            vim.b[buf].mux_terminal = nil
+            error('mux: failed to start ' .. name)
+        end
+    end)
+    restore_terminal_focus()
+    return buf
+end
+
+---@param name string
 ---@return nil
 local function materialize(name)
-    local cwd = root()
     local spec = views[name]
-
     if spec.terminal then
         for _, buf in ipairs(buffers(vim.api.nvim_get_current_tabpage())) do
-            if vim.b[buf].mux_view == name then
+            if vim.bo[buf].buftype == 'terminal' then
                 return
             end
         end
-        local command = name == 'zsh'
-                and require('mux.direnv').unload(spec.terminal)
-            or spec.terminal
-        local current = vim.api.nvim_get_current_buf()
-        local buf = (
-            vim.api.nvim_buf_get_name(current) ~= '' or vim.bo[current].modified
-        )
-                and vim.api.nvim_create_buf(false, true)
-            or current
-        vim.b[buf].mux_view = name
-        local win = vim.api.nvim_get_current_win()
-        if buf ~= current then
-            win = vim.api.nvim_open_win(
-                buf,
-                false,
-                { split = 'below', win = win }
-            )
-        end
-        vim.api.nvim_win_call(win, function()
-            vim.fn.jobstart(command, {
-                term = true,
-                cwd = cwd,
-                on_exit = vim.schedule_wrap(function(_, status)
-                    finish_terminal(buf, status)
-                end),
-            })
-        end)
-        restore_terminal_focus()
+        spawn_terminal(name)
     elseif name == 'edit' then
-        vim.cmd.edit(vim.fn.fnameescape(cwd))
+        vim.cmd.edit(vim.fn.fnameescape(root()))
     elseif name == 'vcs' then
-        pcall(function()
-            vim.cmd.Git()
-            vim.cmd.only()
-        end)
+        pcall(vim.cmd.Git)
     end
 end
 
@@ -556,8 +559,20 @@ end
 ---Restore saved labels or bootstrap the default edit view.
 ---`nil` means no saved session; `false` means ordinary Vim tab.
 ---@param names (string|false)[]?
+---@param terminals? table<string, string>
 ---@return nil
-function M.restore(names)
+function M.restore(names, terminals)
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local kind = terminals and terminals[vim.api.nvim_buf_get_name(buf)]
+        if
+            kind
+            and views[kind]
+            and views[kind].terminal
+            and vim.bo[buf].buftype == 'terminal'
+        then
+            vim.b[buf].mux_terminal = kind
+        end
+    end
     for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
         vim.t[tp].mux_view = nil
     end
@@ -725,7 +740,7 @@ local function setup_keymaps()
 
     vim.keymap.set(MODES, PREFIX .. "'", function()
         vim.cmd.vnew()
-        materialize('zsh')
+        spawn_terminal('zsh')
         if vim.bo.buftype == 'terminal' then
             vim.cmd.startinsert()
         end
@@ -735,7 +750,7 @@ local function setup_keymaps()
     })
     vim.keymap.set(MODES, PREFIX .. '-', function()
         vim.cmd.new()
-        materialize('zsh')
+        spawn_terminal('zsh')
         if vim.bo.buftype == 'terminal' then
             vim.cmd.startinsert()
         end
@@ -827,6 +842,20 @@ function M.setup()
             vim.bo[args.buf].bufhidden = 'wipe'
         end,
     })
+    vim.api.nvim_create_autocmd('TermClose', {
+        group = group,
+        callback = function(args)
+            local status = vim.v.event.status
+            vim.schedule(function()
+                if
+                    vim.api.nvim_buf_is_valid(args.buf)
+                    and vim.b[args.buf].mux_terminal
+                then
+                    finish_terminal(args.buf, status)
+                end
+            end)
+        end,
+    })
 
     vim.api.nvim_create_autocmd({ 'BufHidden', 'BufWipeout', 'WinClosed' }, {
         group = group,
@@ -835,7 +864,7 @@ function M.setup()
                 for _, buf in ipairs(vim.api.nvim_list_bufs()) do
                     if
                         vim.bo[buf].buftype == 'terminal'
-                        and (vim.b[buf].terminal_job_id or vim.b[buf].mux_view)
+                        and (vim.b[buf].terminal_job_id or vim.b[buf].mux_terminal or vim.b[buf].mux_view)
                         and #vim.fn.win_findbuf(buf) == 0
                     then
                         M.close_buffer(buf)

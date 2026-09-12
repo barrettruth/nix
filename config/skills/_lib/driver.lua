@@ -8,6 +8,37 @@ local COMMIT_READY_MS = 6000
 
 local M = {}
 
+---@generic T
+---@param name string
+---@param fn fun(): T
+---@return T? result
+---@return string? err
+local function call(name, fn)
+    return view.call(name, function()
+        if name ~= 'edit' and name ~= 'vcs' then
+            return fn()
+        end
+        local function usable(win)
+            local kind = vim.bo[vim.api.nvim_win_get_buf(win)].buftype
+            return vim.api.nvim_win_get_config(win).relative == ''
+                and kind ~= 'terminal'
+                and kind ~= 'quickfix'
+                and kind ~= 'prompt'
+        end
+        local current = vim.api.nvim_get_current_win()
+        local win = usable(current) and current
+            or vim.iter(vim.api.nvim_tabpage_list_wins(0)):find(usable)
+        if not win then
+            win = vim.api.nvim_open_win(
+                vim.api.nvim_create_buf(true, false),
+                false,
+                { split = 'below', win = current }
+            )
+        end
+        return vim.api.nvim_win_call(win, fn)
+    end)
+end
+
 ---@param payload { message?: string[] }
 ---@return table
 function M.commit(payload)
@@ -17,7 +48,7 @@ function M.commit(payload)
         return { ok = false, error = 'empty commit message' }
     end
 
-    local _, err = view.call('vcs', function()
+    local _, err = call('vcs', function()
         local existing = vim.fn.bufnr('COMMIT_EDITMSG')
 
         if existing > 0 then
@@ -25,7 +56,6 @@ function M.commit(payload)
         end
 
         pcall(vim.cmd, 'silent! Git')
-        pcall(vim.cmd, 'silent! only')
         pcall(vim.cmd, 'Git commit')
 
         return true
@@ -112,11 +142,10 @@ function M.edit(payload)
     local line = tonumber(payload.line)
     local column = tonumber(payload.column)
 
-    local result, err = view.call('edit', function()
+    local result, err = call('edit', function()
         pcall(vim.fn.setreg, '/', '')
         pcall(vim.fn.histdel, 'search')
         pcall(vim.cmd, 'silent! nohlsearch')
-        pcall(vim.cmd, 'silent! only')
         open_files(files, root)
 
         if #files == 1 and line and line >= 1 then
@@ -155,7 +184,7 @@ function M.command(payload)
         return { ok = false, error = 'empty command' }
     end
 
-    local buffer, err = view.call(name, function()
+    local buffer, err = call(name, function()
         vim.cmd(command)
 
         return vim.api.nvim_buf_get_name(0)
@@ -186,14 +215,8 @@ function M.review(payload)
         layout = 'unified'
     end
 
-    local _, err = view.call('vcs', function()
-        vim.cmd('silent! only')
+    local _, err = call('vcs', function()
         vim.cmd('Diff review ++layout=' .. layout .. ' ' .. base)
-
-        if layout ~= 'split' then
-            vim.cmd('silent! only')
-        end
-
         vim.cmd('redraw!')
 
         return true

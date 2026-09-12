@@ -1323,7 +1323,7 @@ function M.setup(root)
     current_server = server
     vim.env.DIRENV_INSTANT_NVIM = '1'
     vim.o.sessionoptions =
-        'buffers,curdir,folds,globals,help,tabpages,winsize,winpos'
+        'buffers,curdir,folds,globals,help,tabpages,terminal,winsize,winpos'
     require('mux.session').setup()
     require('mux.view').setup()
     require('mux.line').setup()
