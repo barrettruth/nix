@@ -32,6 +32,15 @@ local views = {
 
 local did_setup = false
 
+---@param buf integer
+---@return boolean
+local function owned_terminal(buf)
+    local owner = vim.b[buf].mux_terminal
+        or vim.b[buf].mux_view
+        or vim.b[buf].mux_direnv
+    return vim.bo[buf].buftype == 'terminal' and not not owner
+end
+
 ---Signal a pty job's whole process group.
 ---Nvim setsid's pty children, so the job pid is its group leader. Signalling
 ---the job alone leaves grandchildren behind holding whatever the child held.
@@ -571,6 +580,7 @@ function M.restore(names, terminals)
             and vim.bo[buf].buftype == 'terminal'
         then
             vim.b[buf].mux_terminal = kind
+            vim.bo[buf].bufhidden = 'wipe'
         end
     end
     for _, tp in ipairs(vim.api.nvim_list_tabpages()) do
@@ -701,7 +711,7 @@ local function stop_terminals()
     local jobs = {}
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         local job = vim.b[buf].terminal_job_id
-        if job then
+        if job and owned_terminal(buf) then
             jobs[#jobs + 1] = job
             stop_job(job)
         end
@@ -831,7 +841,11 @@ function M.setup()
         group = group,
         callback = function(args)
             local job = vim.b[args.buf].terminal_job_id
-            if job and #vim.fn.win_findbuf(args.buf) == 1 then
+            if
+                job
+                and owned_terminal(args.buf)
+                and #vim.fn.win_findbuf(args.buf) == 1
+            then
                 stop_job(job)
             end
         end,
@@ -839,7 +853,9 @@ function M.setup()
     vim.api.nvim_create_autocmd('TermOpen', {
         group = group,
         callback = function(args)
-            vim.bo[args.buf].bufhidden = 'wipe'
+            if owned_terminal(args.buf) then
+                vim.bo[args.buf].bufhidden = 'wipe'
+            end
         end,
     })
     vim.api.nvim_create_autocmd('TermClose', {
@@ -863,8 +879,7 @@ function M.setup()
             vim.schedule(function()
                 for _, buf in ipairs(vim.api.nvim_list_bufs()) do
                     if
-                        vim.bo[buf].buftype == 'terminal'
-                        and (vim.b[buf].terminal_job_id or vim.b[buf].mux_terminal or vim.b[buf].mux_view)
+                        owned_terminal(buf)
                         and #vim.fn.win_findbuf(buf) == 0
                     then
                         M.close_buffer(buf)
