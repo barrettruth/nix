@@ -22,7 +22,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     direnv-instant = {
-      url = "github:Mic92/direnv-instant";
+      url = "github:barrettruth/direnv-instant";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     font-berkeley-mono = {

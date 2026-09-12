@@ -6,11 +6,7 @@ let
       neovim = final.callPackage ../pkgs/neovim {
         neovimPackage = inputs.neovim-nightly.packages.${final.stdenv.hostPlatform.system}.neovim;
       };
-      direnv-instant =
-        inputs.direnv-instant.packages.${final.stdenv.hostPlatform.system}.default.overrideAttrs
-          (old: {
-            patches = (old.patches or [ ]) ++ [ ../pkgs/direnv-instant-mux-nvim.patch ];
-          });
+      direnv-instant = inputs.direnv-instant.packages.${final.stdenv.hostPlatform.system}.default;
       mcp-gdrive = final.callPackage ../pkgs/mcp-gdrive { };
       mcp-gtasks = final.callPackage ../pkgs/mcp-gtasks { };
       barrett-berkeley-mono = final.callPackage ../pkgs/berkeley-mono.nix {

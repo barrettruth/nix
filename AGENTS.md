@@ -29,6 +29,11 @@ keep the resulting `flake.lock` change in a commit of its own — a colocated jj
 repo snapshots the working copy on every command, so a stray lockfile rewrite is
 absorbed into whatever change is checked out.
 
+`direnv-instant` is maintained in `barrettruth/direnv-instant`, checked out at
+`~/dev/direnv-instant`. Its Neovim backend calls `config/nvim/lua/mux/direnv.lua`
+here; keep that RPC contract compatible. After publishing fork changes, update
+this input with `direnv exec . nix flake update direnv-instant`.
+
 ### Deployment shapes
 
 | deployed path                                                        | shape                                                    | where the change belongs                                            |
