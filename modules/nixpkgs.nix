@@ -12,6 +12,7 @@ let
             patches = (old.patches or [ ]) ++ [ ../pkgs/direnv-instant-mux-nvim.patch ];
           });
       mcp-gdrive = final.callPackage ../pkgs/mcp-gdrive { };
+      mcp-gtasks = final.callPackage ../pkgs/mcp-gtasks { };
       barrett-berkeley-mono = final.callPackage ../pkgs/berkeley-mono.nix {
         src = inputs.font-berkeley-mono;
       };
@@ -44,6 +45,7 @@ in
           barrett-berkeley-mono
           direnv-instant
           mcp-gdrive
+          mcp-gtasks
           neovim
           ;
       };

@@ -1,0 +1,493 @@
+diff --git a/src/auth.ts b/src/auth.ts
+index cdd99b8..68b82fb 100644
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -1,7 +1,8 @@
+-import { OAuth2Client } from "google-auth-library";
+-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+-import { join } from "path";
++import { CodeChallengeMethod, OAuth2Client } from "google-auth-library";
++import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync } from "fs";
++import { dirname, join } from "path";
+ import { createServer } from "http";
++import { randomBytes, timingSafeEqual } from "crypto";
+ import { URL } from "url";
+ import open from "open";
+ 
+@@ -75,8 +76,14 @@ export function loadTokens(): StoredTokens | null {
+ }
+ 
+ function saveTokens(tokens: StoredTokens): void {
+-  mkdirSync(TOKEN_DIR, { recursive: true });
+-  writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
++  mkdirSync(dirname(TOKEN_PATH), { recursive: true, mode: 0o700 });
++  const temporary = `${TOKEN_PATH}.${randomBytes(8).toString("hex")}`;
++  writeFileSync(temporary, JSON.stringify(tokens, null, 2), { mode: 0o600, flag: "wx" });
++  try {
++    renameSync(temporary, TOKEN_PATH);
++  } finally {
++    rmSync(temporary, { force: true });
++  }
+ }
+ 
+ export async function getAuthenticatedClient(): Promise<OAuth2Client> {
+@@ -104,7 +111,7 @@ export async function getAuthenticatedClient(): Promise<OAuth2Client> {
+       expiry_date: credentials.expiry_date || Date.now() + 3600 * 1000,
+     };
+     saveTokens(updated);
+-    client.setCredentials(credentials);
++    client.setCredentials(updated);
+   }
+ 
+   return client;
+@@ -124,7 +131,7 @@ export async function findAvailablePort(
+       await new Promise<void>((resolve, reject) => {
+         const server = createServer();
+         server.once("error", reject);
+-        server.listen(port, () => {
++        server.listen(port, "127.0.0.1", () => {
+           server.close(() => resolve());
+         });
+       });
+@@ -138,71 +145,142 @@ export async function findAvailablePort(
+   );
+ }
+ 
+-export async function runAuthFlow(): Promise<void> {
+-  const port = await findAvailablePort();
+-  const redirectUri = `http://localhost:${port}/oauth2callback`;
++export async function startAuthFlow(
++  startPort = REDIRECT_PORT_START,
++  endPort = REDIRECT_PORT_END
++) {
++  const port = await findAvailablePort(startPort, endPort);
++  const redirectUri = `http://127.0.0.1:${port}/oauth2callback`;
+   const client = createOAuth2Client(redirectUri);
+-
++  const state = randomBytes(32).toString("base64url");
++  const { codeVerifier, codeChallenge } = await client.generateCodeVerifierAsync();
+   const authUrl = client.generateAuthUrl({
+     access_type: "offline",
+     scope: SCOPES,
+     prompt: "consent",
++    state,
++    code_challenge: codeChallenge,
++    code_challenge_method: CodeChallengeMethod.S256,
+   });
+ 
+-  return new Promise((resolve, reject) => {
+-    const server = createServer(async (req, res) => {
+-      try {
+-        const url = new URL(req.url!, `http://localhost:${port}`);
+-        if (url.pathname !== "/oauth2callback") {
+-          res.writeHead(404);
+-          res.end("Not found");
+-          return;
+-        }
+-
+-        const code = url.searchParams.get("code");
+-        if (!code) {
+-          res.writeHead(400);
+-          res.end("No authorization code received");
+-          return;
+-        }
+-
+-        const { tokens: credentials } = await client.getToken(code);
+-        const stored: StoredTokens = {
+-          access_token: credentials.access_token!,
+-          refresh_token: credentials.refresh_token!,
+-          scope: credentials.scope || SCOPES.join(" "),
+-          token_type: credentials.token_type || "Bearer",
+-          expiry_date: credentials.expiry_date || Date.now() + 3600 * 1000,
+-        };
+-        saveTokens(stored);
+-
+-        res.writeHead(200, { "Content-Type": "text/html" });
+-        res.end(
+-          "<html><body><h2>Authentication successful! You can close this tab.</h2></body></html>"
+-        );
+-
+-        server.close();
+-        process.stderr.write("Authentication successful! Tokens saved.\n");
+-        resolve();
+-      } catch (err) {
+-        res.writeHead(500);
+-        res.end("Authentication failed");
+-        server.close();
+-        reject(err);
+-      }
+-    });
++  let resolveCompletion!: () => void;
++  let rejectCompletion!: (error: Error) => void;
++  const completed = new Promise<void>((resolve, reject) => {
++    resolveCompletion = resolve;
++    rejectCompletion = reject;
++  });
++  let active = true;
++  let exchanging = false;
++  let timeout: ReturnType<typeof setTimeout> | undefined;
++  const finish = (error?: Error) => {
++    if (!active) return;
++    active = false;
++    clearTimeout(timeout);
++    server.close();
++    if (error) rejectCompletion(error);
++    else resolveCompletion();
++  };
++
++  const server = createServer(async (req, res) => {
++    res.setHeader("Cache-Control", "no-store");
++    let url: URL;
++    try {
++      url = new URL(req.url!, redirectUri);
++    } catch {
++      res.writeHead(400);
++      res.end("Invalid callback URL");
++      return;
++    }
++    if (req.method !== "GET" || url.pathname !== "/oauth2callback") {
++      res.writeHead(404);
++      res.end("Not found");
++      return;
++    }
++    const receivedState = Buffer.from(url.searchParams.get("state") || "");
++    const expectedState = Buffer.from(state);
++    if (receivedState.length !== expectedState.length || !timingSafeEqual(receivedState, expectedState)) {
++      res.writeHead(400);
++      res.end("Invalid OAuth state");
++      return;
++    }
++    if (!active || exchanging) {
++      res.writeHead(409);
++      res.end("Authentication already in progress");
++      return;
++    }
++    if (url.searchParams.has("error")) {
++      res.writeHead(400);
++      res.end("Authorization denied");
++      finish(new Error("OAuth authorization denied"));
++      return;
++    }
++    const code = url.searchParams.get("code");
++    if (!code) {
++      res.writeHead(400);
++      res.end("No authorization code received");
++      return;
++    }
+ 
+-    server.listen(port, () => {
+-      process.stderr.write(`\nOpening browser for authentication...\n`);
+-      process.stderr.write(`If the browser doesn't open, visit:\n${authUrl}\n\n`);
+-      open(authUrl).catch(() => {
+-        process.stderr.write("Could not open browser automatically.\n");
++    exchanging = true;
++    try {
++      const { tokens: credentials } = await client.getToken({
++        code,
++        codeVerifier,
++        redirect_uri: redirectUri,
+       });
++      if (!active) {
++        res.writeHead(410);
++        res.end("Authentication expired");
++        return;
++      }
++      if (!credentials.access_token || !credentials.refresh_token) {
++        throw new Error("Incomplete OAuth token response");
++      }
++      saveTokens({
++        access_token: credentials.access_token,
++        refresh_token: credentials.refresh_token,
++        scope: credentials.scope || SCOPES.join(" "),
++        token_type: credentials.token_type || "Bearer",
++        expiry_date: credentials.expiry_date || Date.now() + 3600 * 1000,
++      });
++      res.writeHead(200, { "Content-Type": "text/html" });
++      res.end(
++        "<html><body><h2>Authentication successful! You can close this tab.</h2></body></html>"
++      );
++      process.stderr.write("Authentication successful! Tokens saved.\n");
++      finish();
++    } catch {
++      res.writeHead(500);
++      res.end("Authentication failed");
++      finish(new Error("OAuth token exchange failed"));
++    }
++  });
++
++  await new Promise<void>((resolve, reject) => {
++    server.once("error", reject);
++    server.listen(port, "127.0.0.1", () => {
++      server.removeListener("error", reject);
++      resolve();
+     });
++  });
++  server.on("error", finish);
++  timeout = setTimeout(() => finish(new Error("Authentication timed out after 5 minutes")), 5 * 60 * 1000);
++  timeout.unref();
+ 
+-    setTimeout(() => {
+-      server.close();
+-      reject(new Error("Authentication timed out after 5 minutes"));
+-    }, 5 * 60 * 1000);
++  return {
++    authUrl,
++    redirectUri,
++    completed,
++    cancel: () => finish(new Error("Authentication cancelled")),
++  };
++}
++
++export async function runAuthFlow(): Promise<void> {
++  const flow = await startAuthFlow();
++  process.stderr.write(`\nOpening browser for authentication...\n`);
++  process.stderr.write(`If the browser doesn't open, visit:\n${flow.authUrl}\n\n`);
++  open(flow.authUrl).catch(() => {
++    process.stderr.write("Could not open browser automatically.\n");
+   });
++  return flow.completed;
+ }
+diff --git a/src/server.ts b/src/server.ts
+index 312bc95..a639c3e 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -49,8 +49,10 @@ list by name, call \`list-task-lists\` first to resolve the name to an ID before
+ 
+ ## Pagination
+ 
+-Each list call returns at most 100 items. There is no pagination support, so results may be \
+-truncated for users with large task lists.`;
++Each list call returns one page of at most 100 items. Pass \
++\`nextPageToken\` back as \`pageToken\` until it is absent when a complete listing is needed. \
++\`totalCount\` counts only the returned page. Include undated tasks in broad requests by omitting \
++due-date filters. For completed tasks, set both \`showCompleted\` and \`showHidden\` to true.`;
+ 
+ export class GoogleTasksMcpServer {
+   private server: McpServer;
+@@ -122,7 +124,7 @@ export class GoogleTasksMcpServer {
+       {
+         description: authenticate.definition.description,
+         inputSchema: authenticate.definition.inputSchema,
+-        annotations: { readOnlyHint: true },
++        annotations: { readOnlyHint: false },
+       },
+       async () => {
+         const result = await authenticate.handler();
+diff --git a/src/tools/authenticate.ts b/src/tools/authenticate.ts
+index 6b8b3aa..bf63fe6 100644
+--- a/src/tools/authenticate.ts
++++ b/src/tools/authenticate.ts
+@@ -1,20 +1,9 @@
+-import {
+-  createOAuth2Client,
+-  hasValidTokens,
+-  findAvailablePort,
+-  SCOPES,
+-  TOKEN_DIR,
+-  TOKEN_PATH,
+-} from "../auth.js";
+-import { createServer, Server } from "http";
+-import { URL } from "url";
+-import { writeFileSync, mkdirSync } from "fs";
++import { hasValidTokens, startAuthFlow } from "../auth.js";
+ 
+ const REDIRECT_PORT_START = 3510;
+ const REDIRECT_PORT_END = 3515;
+ 
+-let pendingServer: Server | null = null;
+-let authResolve: (() => void) | null = null;
++let pendingFlow: ReturnType<typeof startAuthFlow> | null = null;
+ 
+ export const definition = {
+   name: "authenticate",
+@@ -23,76 +12,6 @@ export const definition = {
+   inputSchema: {},
+ } as const;
+ 
+-function startCallbackServer(
+-  port: number,
+-  redirectUri: string
+-): Promise<void> {
+-  const client = createOAuth2Client(redirectUri);
+-
+-  return new Promise<void>((_resolve) => {
+-    authResolve = _resolve;
+-
+-    const server = createServer(async (req, res) => {
+-      try {
+-        const url = new URL(req.url!, `http://localhost:${port}`);
+-        if (url.pathname !== "/oauth2callback") {
+-          res.writeHead(404);
+-          res.end("Not found");
+-          return;
+-        }
+-
+-        const code = url.searchParams.get("code");
+-        if (!code) {
+-          res.writeHead(400);
+-          res.end("No authorization code received");
+-          return;
+-        }
+-
+-        const { tokens: credentials } = await client.getToken(code);
+-        mkdirSync(TOKEN_DIR, { recursive: true });
+-        writeFileSync(
+-          TOKEN_PATH,
+-          JSON.stringify(
+-            {
+-              access_token: credentials.access_token,
+-              refresh_token: credentials.refresh_token,
+-              scope: credentials.scope || SCOPES.join(" "),
+-              token_type: credentials.token_type || "Bearer",
+-              expiry_date:
+-                credentials.expiry_date || Date.now() + 3600 * 1000,
+-            },
+-            null,
+-            2
+-          )
+-        );
+-
+-        res.writeHead(200, { "Content-Type": "text/html" });
+-        res.end(
+-          "<html><body><h2>Authentication successful! You can close this tab.</h2></body></html>"
+-        );
+-
+-        pendingServer = null;
+-        server.close();
+-        process.stderr.write("Authentication completed via callback.\n");
+-        if (authResolve) authResolve();
+-      } catch {
+-        res.writeHead(500);
+-        res.end("Authentication failed");
+-      }
+-    });
+-
+-    pendingServer = server;
+-    server.listen(port);
+-
+-    setTimeout(() => {
+-      if (pendingServer) {
+-        pendingServer.close();
+-        pendingServer = null;
+-      }
+-    }, 5 * 60 * 1000);
+-  });
+-}
+-
+ export async function handler() {
+   if (hasValidTokens()) {
+     return {
+@@ -101,31 +20,24 @@ export async function handler() {
+     };
+   }
+ 
+-  if (pendingServer) {
+-    return {
+-      status: "awaiting_authentication",
+-      message:
+-        "Authentication already in progress. Visit the auth_url in your browser.",
+-    };
++  if (!pendingFlow) {
++    // Start callback server in background (don't await)
++    pendingFlow = startAuthFlow(REDIRECT_PORT_START, REDIRECT_PORT_END);
++    void pendingFlow
++      .then((flow) => flow.completed)
++      .catch(() => {
++        process.stderr.write("Authentication did not complete.\n");
++      })
++      .finally(() => {
++        pendingFlow = null;
++      });
+   }
+-
+-  const port = await findAvailablePort(REDIRECT_PORT_START, REDIRECT_PORT_END);
+-  const redirectUri = `http://localhost:${port}/oauth2callback`;
+-  const client = createOAuth2Client(redirectUri);
+-
+-  const authUrl = client.generateAuthUrl({
+-    access_type: "offline",
+-    scope: SCOPES,
+-    prompt: "consent",
+-  });
+-
+-  // Start callback server in background (don't await)
+-  startCallbackServer(port, redirectUri);
++  const flow = await pendingFlow;
+ 
+   return {
+     status: "awaiting_authentication",
+-    auth_url: authUrl,
+-    callback_url: `http://localhost:${port}/oauth2callback`,
++    auth_url: flow.authUrl,
++    callback_url: flow.redirectUri,
+     instructions:
+       "Visit the auth_url in your browser to authenticate with Google Tasks. After completing sign-in, call this tool again to verify.",
+     expires_in_minutes: 5,
+diff --git a/src/tools/list-task-lists.ts b/src/tools/list-task-lists.ts
+index 0b9ffc7..8e0b07c 100644
+--- a/src/tools/list-task-lists.ts
++++ b/src/tools/list-task-lists.ts
+@@ -1,20 +1,23 @@
+ import { tasks_v1 } from "googleapis";
++import { z } from "zod";
+ 
+ export const definition = {
+   name: "list-task-lists",
+-  description: "List all task lists for the authenticated user.",
+-  inputSchema: {},
++  description: "List task lists for the authenticated user, following nextPageToken for more pages.",
++  inputSchema: {
++    pageToken: z.string().optional().describe("Continuation token from a previous response."),
++  },
+ } as const;
+ 
+ export async function handler(
+-  _args: Record<string, unknown>,
++  args: { pageToken?: string },
+   service: tasks_v1.Tasks
+ ) {
+-  const res = await service.tasklists.list({ maxResults: 100 });
++  const res = await service.tasklists.list({ maxResults: 100, pageToken: args.pageToken });
+   const lists = (res.data.items || []).map((tl) => ({
+     id: tl.id,
+     title: tl.title,
+     updated: tl.updated,
+   }));
+-  return { taskLists: lists, totalCount: lists.length };
++  return { taskLists: lists, totalCount: lists.length, nextPageToken: res.data.nextPageToken };
+ }
+diff --git a/src/tools/list-tasks.ts b/src/tools/list-tasks.ts
+index ddfa157..9d992d5 100644
+--- a/src/tools/list-tasks.ts
++++ b/src/tools/list-tasks.ts
+@@ -26,6 +26,7 @@ export const definition = {
+       .boolean()
+       .default(false)
+       .describe("Whether to include hidden tasks."),
++    pageToken: z.string().optional().describe("Continuation token from a previous response."),
+     maxResults: z
+       .number()
+       .int()
+@@ -43,6 +44,7 @@ type Args = {
+   showCompleted: boolean;
+   showHidden: boolean;
+   maxResults: number;
++  pageToken?: string;
+ };
+ 
+ export async function handler(args: Args, service: tasks_v1.Tasks) {
+@@ -51,6 +53,7 @@ export async function handler(args: Args, service: tasks_v1.Tasks) {
+     maxResults: args.maxResults,
+     showCompleted: args.showCompleted,
+     showHidden: args.showHidden,
++    pageToken: args.pageToken,
+   };
+   if (args.dueMin) params.dueMin = args.dueMin;
+   if (args.dueMax) params.dueMax = args.dueMax;
+@@ -67,5 +70,5 @@ export async function handler(args: Args, service: tasks_v1.Tasks) {
+     updated: t.updated,
+     webViewLink: t.webViewLink,
+   }));
+-  return { tasks, totalCount: tasks.length };
++  return { tasks, totalCount: tasks.length, nextPageToken: res.data.nextPageToken };
+ }

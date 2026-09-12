@@ -31,15 +31,24 @@ absorbed into whatever change is checked out.
 
 ### Deployment shapes
 
-| deployed path                                                 | shape                                                    | where the change belongs                                            |
-| ------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
-| `~/.config/nvim`, `~/.config/git/hooks`, `~/.config/devin/*`  | symlink to the repo                                      | edit in place; live immediately                                     |
-| `~/.config/zsh/.zshrc`, `~/.config/git/config`                | generated wrapper that sources or includes the repo file | content goes in the repo file; what gets sourced goes in the `.nix` |
-| `~/.config/jj/config.toml`, ghostty on darwin, chromium theme | generated wholly by `pkgs.writeText`                     | edit the block in `modules/barrett/workstation.nix`, then rebuild   |
+| deployed path                                                        | shape                                                    | where the change belongs                                            |
+| -------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| `~/.config/nvim`, `~/.config/git/hooks`, `~/.config/devin/AGENTS.md` | symlink to the repo                                      | edit in place; live immediately                                     |
+| `~/.config/devin/config.json`, `~/.config/devin/mcp_config.json`     | generated defaults merged into writable files            | edit `modules/barrett/workstation.nix`, then rebuild                |
+| `~/.config/zsh/.zshrc`, `~/.config/git/config`                       | generated wrapper that sources or includes the repo file | content goes in the repo file; what gets sourced goes in the `.nix` |
+| `~/.config/jj/config.toml`, ghostty on darwin, chromium theme        | generated wholly by `pkgs.writeText`                     | edit the block in `modules/barrett/workstation.nix`, then rebuild   |
 
-Skills are a fourth case: activation links `config/skills/*/` into
+Skills are a separate case: activation links `config/skills/*/` into
 `~/.agents/skills/`, so a _new_ skill directory appears only after a rebuild,
 while edits inside an existing one are live.
+
+Devin settings merge recursively; MCP activation preserves unmanaged server names
+and replaces each Nix-managed server object. Both files remain owner-only and
+writable. Invalid configuration aborts the merge without replacing the file.
+
+`mcp-gtasks auth` uses a Desktop-app OAuth JSON at
+`~/.config/mcp-gtasks/oauth.json` and stores tokens under
+`~/.local/state/mcp-gtasks/`. Neither builds nor activation authenticate.
 
 ### Checks
 

@@ -91,7 +91,10 @@ let
   chromiumThemeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
   chromiumThemeJs = pkgs.writeText "chromium-theme.js" themeGenerators.mkChromeThemeJs;
 
-  agentPackages = [ pkgs.devin-cli ];
+  agentPackages = [
+    pkgs.devin-cli
+    pkgs.mcp-gtasks
+  ];
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
@@ -134,6 +137,26 @@ let
     theme_auto_detect = "always";
     version = 1;
   };
+
+  devinMcpConfig = (pkgs.formats.json { }).generate "devin-mcp-config.json" {
+    mcpServers.gtasks.command = lib.getExe pkgs.mcp-gtasks;
+  };
+
+  installDevinConfig = name: defaults: merge: ''
+    (
+      configPath="${XDG_CONFIG_HOME}/devin/${name}"
+      configTmp="$(${pkgs.coreutils}/bin/mktemp "$configPath.XXXXXX")" || exit 1
+      trap '${pkgs.coreutils}/bin/rm -f "$configTmp"' EXIT
+      if [ -e "$configPath" ] || [ -L "$configPath" ]; then
+        ${pkgs.jq}/bin/jq -es '${merge}' "$configPath" "${defaults}" > "$configTmp" || exit 1
+      else
+        ${pkgs.coreutils}/bin/cp "${defaults}" "$configTmp" || exit 1
+      fi
+      ${pkgs.coreutils}/bin/chmod 0600 "$configTmp" || exit 1
+      ${pkgs.coreutils}/bin/chown ${username}:${act.group} "$configTmp" || exit 1
+      ${pkgs.coreutils}/bin/mv -fT "$configTmp" "$configPath" || exit 1
+    ) || exit 1
+  '';
 
   jjConf = pkgs.writeText "jj-config" ''
     [user]
@@ -340,20 +363,19 @@ let
             ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
             ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
             ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
-            devinConfigPath="${XDG_CONFIG_HOME}/devin/config.json"
-            devinConfigTmp="$(${pkgs.coreutils}/bin/mktemp "${XDG_CONFIG_HOME}/devin/config.json.XXXXXX")"
-            trap '${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"' EXIT
-            if [ -f "$devinConfigPath" ]; then
-              ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$devinConfigPath" "${devinConfig}" > "$devinConfigTmp"
-            else
-              ${pkgs.coreutils}/bin/cp "${devinConfig}" "$devinConfigTmp"
-            fi
-            if [ -L "$devinConfigPath" ]; then
-              ${runAsUser} ${pkgs.coreutils}/bin/unlink "$devinConfigPath"
-            fi
-            ${pkgs.coreutils}/bin/install -m 0600 -o ${username} -g ${act.group} "$devinConfigTmp" "$devinConfigPath"
-            ${pkgs.coreutils}/bin/rm -f "$devinConfigTmp"
-            trap - EXIT
+            ${installDevinConfig "config.json" devinConfig ''
+              if length == 2 and all(.[]; type == "object") then
+                .[0] * .[1]
+              else error("Invalid Devin configuration") end
+            ''}
+            ${installDevinConfig "mcp_config.json" devinMcpConfig ''
+              if length == 2 and all(.[]; type == "object")
+                and (.[0].mcpServers | . == null or type == "object") then
+                .[0] + {mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers)}
+              else error("Invalid Devin MCP configuration") end
+            ''}
+            ${mkPrivateDir "${XDG_CONFIG_HOME}/mcp-gtasks"}
+            ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gtasks"}
             ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
