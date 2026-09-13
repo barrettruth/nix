@@ -395,7 +395,6 @@ let
             ${mkSymlink "${repo}/config/luarocks/config.lua" "${XDG_CONFIG_HOME}/luarocks/config.lua"}
             ${mkSymlink "${repo}/config/github/ruleset.json" "${XDG_CONFIG_HOME}/github/ruleset.json"}
             ${mkSymlink "${repo}/config/direnv/direnvrc" "${XDG_CONFIG_HOME}/direnv/direnvrc"}
-            ${mkSymlink "${repo}/config/direnv/config.toml" "${XDG_CONFIG_HOME}/direnv/config.toml"}
             ${installDevinConfig "config.json" devinConfig ''
               if length == 2 and all(.[]; type == "object") then
                 .[0] * .[1]
@@ -558,7 +557,6 @@ in
               coreutils
               gnused
               curl
-              direnv
             ]
           )
           ++ lib.optionals isLinux [
@@ -572,6 +570,8 @@ in
           export PATH="${scriptsPath}:${homeDirectory}/.local/bin:$PATH"
           export PATH="${XDG_DATA_HOME}/cargo/bin:${XDG_DATA_HOME}/go/bin:${XDG_DATA_HOME}/pnpm:$PATH"
         '';
+
+        programs.direnv.enableZshIntegration = false;
 
         programs.zsh.enable = true;
         programs.zsh.shellInit = ''
@@ -595,16 +595,6 @@ in
         ];
 
         environment.sessionVariables = sessionVariables;
-
-        programs.direnv = {
-          enable = true;
-          enableZshIntegration = false;
-          nix-direnv.enable = true;
-          settings.global = {
-            hide_env_diff = true;
-            log_filter = "^direnv: ((loading|using flake|export )|nix-direnv: Using cached dev shell)";
-          };
-        };
 
         programs.gnupg.agent.pinentryPackage = pkgs.pinentry-curses;
 

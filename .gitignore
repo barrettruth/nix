@@ -7,7 +7,6 @@ id_ed25519
 id_rsa
 *_private_key
 *.pem
-!pkgs/**/*.pem
 fonts/*
 config/chromium/extension/theme.css
 config/chromium/extension/theme.js

@@ -1,4 +1,6 @@
 {
+  imports = [ ../../common/direnv.nix ];
+
   nix = {
     enable = true;
     channel.enable = false;
