@@ -94,8 +94,8 @@ let
   agentPackages = [
     pkgs.devin-cli
     pkgs.mcp-gdrive
-    pkgs.mcp-gtasks
-  ];
+  ]
+  ++ lib.optional cfg.mcp.gtasks.enable pkgs.mcp-gtasks;
 
   agentSkillDirs = [ "${homeDirectory}/.agents/skills" ];
 
@@ -139,40 +139,46 @@ let
     version = 1;
   };
 
-  devinMcpConfig = (pkgs.formats.json { }).generate "devin-mcp-config.json" {
-    mcpServers = {
-      gtasks.command = lib.getExe pkgs.mcp-gtasks;
-      gdrive = {
-        command = lib.getExe pkgs.mcp-gdrive;
-        env = {
-          GOOGLE_OAUTH_CREDENTIALS = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
-          GDRIVE_CREDS_DIR = "${XDG_STATE_HOME}/mcp-gdrive";
-        };
-      };
-      gmail = {
-        command = "${pkgs.nodejs}/bin/npx";
-        args = [
-          "-y"
-          "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"
-        ];
-        env = {
-          GMAIL_OAUTH_PATH = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
-          GMAIL_CREDENTIALS_PATH = "${XDG_STATE_HOME}/mcp-gmail/tokens.json";
-        };
-      };
-      gcalendar = {
-        command = "${pkgs.nodejs}/bin/npx";
-        args = [
-          "-y"
-          "@cocal/google-calendar-mcp@2.6.2"
-          "start"
-        ];
-        env = {
-          GOOGLE_OAUTH_CREDENTIALS = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
-          GOOGLE_CALENDAR_MCP_TOKEN_PATH = "${XDG_STATE_HOME}/mcp-gcalendar/tokens.json";
-        };
+  devinMcpServers = {
+    gtasks.command = lib.getExe pkgs.mcp-gtasks;
+    gdrive = {
+      command = lib.getExe pkgs.mcp-gdrive;
+      env = {
+        GOOGLE_OAUTH_CREDENTIALS = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
+        GDRIVE_CREDS_DIR = "${XDG_STATE_HOME}/mcp-gdrive";
       };
     };
+    gmail = {
+      command = "${pkgs.nodejs}/bin/npx";
+      args = [
+        "-y"
+        "@gongrzhe/server-gmail-autoauth-mcp@1.1.11"
+      ];
+      env = {
+        GMAIL_OAUTH_PATH = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
+        GMAIL_CREDENTIALS_PATH = "${XDG_STATE_HOME}/mcp-gmail/tokens.json";
+      };
+    };
+    gcalendar = {
+      command = "${pkgs.nodejs}/bin/npx";
+      args = [
+        "-y"
+        "@cocal/google-calendar-mcp@2.6.2"
+        "start"
+      ];
+      env = {
+        GOOGLE_OAUTH_CREDENTIALS = "${XDG_CONFIG_HOME}/mcp-gtasks/oauth.json";
+        GOOGLE_CALENDAR_MCP_TOKEN_PATH = "${XDG_STATE_HOME}/mcp-gcalendar/tokens.json";
+      };
+    };
+  };
+
+  enabledDevinMcpServers = removeAttrs devinMcpServers (
+    lib.optional (!cfg.mcp.gtasks.enable) "gtasks"
+  );
+
+  devinMcpConfig = (pkgs.formats.json { }).generate "devin-mcp-config.json" {
+    mcpServers = enabledDevinMcpServers;
   };
 
   installDevinConfig = name: defaults: merge: ''
@@ -403,7 +409,11 @@ let
             ${installDevinConfig "mcp_config.json" devinMcpConfig ''
               if length == 2 and all(.[]; type == "object")
                 and (.[0].mcpServers | . == null or type == "object") then
-                .[0] + {mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers)}
+                .[0] + {mcpServers: (
+                  reduce ${builtins.toJSON (builtins.attrNames devinMcpServers)}[] as $server
+                    (.[0].mcpServers // {}; del(.[$server]))
+                  + .[1].mcpServers
+                )}
               else error("Invalid Devin MCP configuration") end
             ''}
             ${mkPrivateDir "${XDG_CONFIG_HOME}/mcp-gtasks"}
@@ -504,6 +514,12 @@ in
   };
 
   options.barrett.workstation.enable = lib.mkEnableOption "Barrett workstation extras";
+
+  options.barrett.workstation.mcp.gtasks.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Whether to install and configure the Google Tasks MCP server.";
+  };
 
   options.barrett.workstation.scriptsPath = lib.mkOption {
     type = lib.types.str;
