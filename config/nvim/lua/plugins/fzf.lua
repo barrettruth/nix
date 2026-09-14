@@ -143,7 +143,7 @@ return {
     cmd = 'FzfLua',
     keys = {
         {
-            '<c-t>',
+            '<c-f>',
             function()
                 local fzf = require('fzf-lua')
                 local cwd = vim.fn.getcwd()
@@ -154,7 +154,7 @@ return {
         { '<c-g>', '<cmd>FzfLua live_grep<cr>' },
         { '<c-b>', '<cmd>FzfLua buffers<cr>' },
         {
-            '<c-s-t>',
+            '<c-s-f>',
             function()
                 require('fzf-lua').files({ cwd = vim.fn.expand('%:h') })
             end,

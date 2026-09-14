@@ -99,7 +99,7 @@ return {
             vim.keymap.set('i', '<c-p>', function()
                 return pumvisible() and '<c-p>' or ''
             end, { expr = true, desc = 'complete previous' })
-            vim.keymap.set('i', '<c-t>', '<c-x><c-f>', {
+            vim.keymap.set('i', '<c-f>', '<c-x><c-f>', {
                 desc = 'file completion',
             })
             vim.keymap.set('i', '<c-;>', '<c-x><c-v>', {

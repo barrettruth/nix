@@ -44,6 +44,11 @@ bindkey '^P' up-line-or-history
 bindkey '^N' down-line-or-history
 bindkey '^J' backward-char
 bindkey '^K' forward-char
+for keymap in emacs viins vicmd; do
+  bindkey -M "$keymap" -r '^T'
+  bindkey -M "$keymap" '^F' fzf-file-widget
+done
+unset keymap
 
 export PURE_PROMPT_SYMBOL=">"
 export PURE_PROMPT_VICMD_SYMBOL="<"
