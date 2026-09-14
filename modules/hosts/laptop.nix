@@ -20,12 +20,14 @@ in
       ../nixos/barrett
       ../nixos/common/nix.nix
       ../nixos/common/nix-ld.nix
+      ../nixos/common/privacy.nix
       ../nixos/common/ssh.nix
       ../nixos/common/sops.nix
       ../nixos/common/tailscale.nix
       (
         { ... }:
         {
+          barrett.privacy.enable = true;
           barrett.workstation.enable = true;
           barrett.ui.enable = true;
           barrett.ui.gpu = "nvidia-prime";

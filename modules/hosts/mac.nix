@@ -17,6 +17,7 @@ in
     modules = [
       ../darwin/common/activation.nix
       ../darwin/common/nix.nix
+      ../darwin/common/privacy.nix
       ../darwin/common/sops.nix
       ../darwin/common/ssh.nix
       ../darwin/common/tailscale.nix
@@ -24,6 +25,7 @@ in
       ../barrett/workstation.nix
       ../../hosts/mac/configuration.nix
       {
+        barrett.privacy.enable = true;
         nixpkgs.hostPlatform = platform;
         nixpkgs.overlays = overlays ++ darwinOverlays;
         nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) sharedUnfree;
