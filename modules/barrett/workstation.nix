@@ -279,6 +279,8 @@ let
     lg = ["log"]
     t = ["tag"]
     ws = ["workspace"]
+
+    ${user.extraJjConfig}
   '';
 
   personalGitConf = pkgs.writeText "git-personal" ''
@@ -528,6 +530,10 @@ in
       type = lib.types.lines;
       default = "";
       description = "Git configuration appended for this host, overriding the shared file.";
+    };
+    extraJjConfig = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
     };
     extraSshConfig = lib.mkOption {
       type = lib.types.lines;
