@@ -10,9 +10,14 @@ let
   tailnet = config.services.tailscale.enable;
   policy = pkgs.writeShellApplication {
     name = "ivpn-policy";
-    runtimeInputs = [ pkgs.jq pkgs.coreutils ];
-    text = (builtins.readFile ../../scripts/ivpn-runtime.bash) + "\n" + (
-      lib.replaceStrings
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.coreutils
+    ];
+    text =
+      (builtins.readFile ../../scripts/ivpn-runtime.bash)
+      + "\n"
+      + (lib.replaceStrings
         [ "@ivpn@" "@state_dir@" "@exceptions@" "@auto_connect@" "@always_on@" "@bypass_file@" ]
         [
           (lib.escapeShellArg (
@@ -28,7 +33,7 @@ let
           (lib.escapeShellArg cfg.bypassFile)
         ]
         (builtins.readFile ../../scripts/ivpn-policy.bash)
-    );
+      );
   };
 in
 {
@@ -40,7 +45,9 @@ in
       type = lib.types.str;
       readOnly = true;
       internal = true;
-      default = lib.optionalString (pkgs.stdenv.hostPlatform.isDarwin && cfg.alwaysOn) "/var/run/ivpn/bypass";
+      default = lib.optionalString (
+        pkgs.stdenv.hostPlatform.isDarwin && cfg.alwaysOn
+      ) "/var/run/ivpn/bypass";
       description = "Root-owned expiry of an explicit temporary bypass; empty when unavailable.";
     };
     stateDirectory = lib.mkOption {

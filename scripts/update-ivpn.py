@@ -14,7 +14,6 @@ import tempfile
 from typing import Any, cast
 from urllib.request import urlopen
 
-
 ROOT = Path(__file__).resolve().parent.parent
 PIN = ROOT / "pkgs/ivpn-bin/default.nix"
 PUBLIC_KEY = ROOT / "pkgs/ivpn-bin/update-public.pem"
@@ -80,14 +79,18 @@ def main() -> None:
     if match is None or not VERSION.fullmatch(match[1]):
         raise ValueError("Cannot identify the current IVPN version")
     current = match[1]
-    release = object_from_json(run("gh", "api", "repos/ivpn/desktop-app/releases/latest"))
+    release = object_from_json(
+        run("gh", "api", "repos/ivpn/desktop-app/releases/latest")
+    )
     version = str(release["tag_name"]).removeprefix("v")
     if not VERSION.fullmatch(version) or release["draft"] or release["prerelease"]:
         raise ValueError("The latest release is not a stable IVPN version")
     if tuple(map(int, version.split("."))) <= tuple(map(int, current.split("."))):
         print(f"update: IVPN already at {current}")
         return
-    published = datetime.fromisoformat(str(release["published_at"]).replace("Z", "+00:00"))
+    published = datetime.fromisoformat(
+        str(release["published_at"]).replace("Z", "+00:00")
+    )
     if datetime.now(timezone.utc) - published < timedelta(days=7):
         print(f"update: IVPN {version} is less than seven days old; keeping {current}")
         return
@@ -112,7 +115,9 @@ def main() -> None:
                 or metadata["downloadLink"] != url
                 or metadata["signature"] != signature_url
             ):
-                raise ValueError(f"The published {system} download does not match the release")
+                raise ValueError(
+                    f"The published {system} download does not match the release"
+                )
             artifact = object_from_json(
                 run("nix", "store", "prefetch-file", "--json", url, timeout=600)
             )
@@ -132,7 +137,9 @@ def main() -> None:
             updated,
         )
     if PIN.read_text() != original:
-        raise ValueError("The IVPN pin changed during download; refusing to overwrite it")
+        raise ValueError(
+            "The IVPN pin changed during download; refusing to overwrite it"
+        )
     with tempfile.NamedTemporaryFile(mode="w", dir=PIN.parent, delete=False) as output:
         temporary = Path(output.name)
         try:
