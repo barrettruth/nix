@@ -6,8 +6,7 @@ description: Use when working inside a jujutsu (jj) repository, or when asked ab
 # jj
 
 These repositories are jujutsu on top of git. jj releases monthly and
-renames things freely, so the installed binary is the source of truth. Confirm a
-flag with `jj <command> --help` before relying on recall.
+renames things freely.
 
 ## How to answer
 
