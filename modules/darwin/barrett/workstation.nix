@@ -258,13 +258,11 @@ in
         key = "p";
         path = onePasswordApp;
         bundleId = onePasswordBundleId;
+        space = 9;
       }
     ];
 
-    barrett.mac.floatingApps = [
-      "com.apple.finder"
-      onePasswordBundleId
-    ];
+    barrett.mac.floatingApps = [ "com.apple.finder" ];
 
     networking.applicationFirewall = {
       enable = true;
