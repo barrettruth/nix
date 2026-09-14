@@ -9,6 +9,7 @@ let
       direnv-instant = inputs.direnv-instant.packages.${final.stdenv.hostPlatform.system}.default;
       mcp-gdrive = final.callPackage ../pkgs/mcp-gdrive { };
       mcp-gtasks = final.callPackage ../pkgs/mcp-gtasks { };
+      vercel-cli = final.callPackage ../pkgs/vercel-cli { };
       barrett-berkeley-mono = final.callPackage ../pkgs/berkeley-mono.nix {
         src = inputs.font-berkeley-mono;
       };
@@ -16,6 +17,8 @@ let
   ];
 
   sharedUnfree = [
+    "1password"
+    "1password-cli"
     "apple_cursor"
     "barrett-berkeley-mono"
     "devin"
@@ -43,6 +46,7 @@ in
           mcp-gdrive
           mcp-gtasks
           neovim
+          vercel-cli
           ;
       };
     };

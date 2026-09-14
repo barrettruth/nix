@@ -607,6 +607,7 @@ in
             direnv-instant
             pandoc
             openssl
+            vercel-cli
           ])
           ++ lib.optional (!isDarwin) (if hasDisplay then pkgs.ghostty else pkgs.ghostty.terminfo)
           ++ lib.optionals isDarwin (

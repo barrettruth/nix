@@ -1,0 +1,8 @@
+{
+  "name": "vercel-cli",
+  "version": "59.17.0",
+  "private": true,
+  "dependencies": {
+    "vercel": "59.17.0"
+  }
+}
