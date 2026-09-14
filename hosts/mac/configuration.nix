@@ -21,6 +21,11 @@ let
     BrowserSignin = 0;
     SyncDisabled = true;
     HttpsOnlyMode = "force_enabled";
+    SafeBrowsingProtectionLevel = 1;
+    ExtensionSettings.ddkjiahejlhfcafbddmgiahcphecmpfh = {
+      installation_mode = "force_installed";
+      update_url = "https://clients2.google.com/service/update2/crx";
+    };
     BookmarkBarEnabled = false;
     PasswordManagerEnabled = false;
     AutofillAddressEnabled = false;
