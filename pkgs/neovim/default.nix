@@ -1,24 +1,25 @@
 {
   lib,
-  buildEnv,
+  curl,
+  gnutar,
   neovimPackage,
-  vimPlugins,
+  stdenv,
+  tree-sitter,
   wrapNeovimUnstable,
 }:
 let
-  grammars = lib.filter lib.isDerivation (builtins.attrValues vimPlugins.nvim-treesitter-parsers);
-  queries = lib.filter (query: query != null) (
-    map (grammar: grammar.associatedQuery or null) grammars
-  );
-  treesitter = buildEnv {
-    name = "nvim-treesitter-runtime";
-    paths = grammars ++ queries;
-  };
   wrapped = wrapNeovimUnstable neovimPackage {
     wrapRc = false;
     wrapperArgs = [
-      "--add-flags"
-      ''--cmd "lua dofile('${vimPlugins.nvim-treesitter}/plugin/filetypes.lua')"''
+      "--prefix"
+      "PATH"
+      ":"
+      (lib.makeBinPath [
+        tree-sitter
+        stdenv.cc
+        curl
+        gnutar
+      ])
     ];
   };
 in
@@ -31,8 +32,5 @@ wrapped.overrideAttrs (
   {
     inherit pname version;
     name = "${pname}-${version}";
-    passthru = (old.passthru or { }) // {
-      inherit treesitter;
-    };
   }
 )

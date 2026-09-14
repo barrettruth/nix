@@ -1,37 +1,128 @@
 vim.pack.add({
+    {
+        src = 'https://github.com/nvim-treesitter/nvim-treesitter',
+        version = 'main',
+    },
     'https://github.com/nvim-treesitter/nvim-treesitter-textobjects',
     'https://github.com/Wansmer/treesj',
 })
 
 vim.treesitter.language.register('starlark', 'bzl')
 
+local ts = require('nvim-treesitter')
+ts.setup({ install_dir = vim.fn.stdpath('data') .. '/treesitter' })
+
 local group = vim.api.nvim_create_augroup('ATreesitter', { clear = true })
+local pending = {}
+
+local function language(buf)
+    if not vim.api.nvim_buf_is_loaded(buf) then
+        return
+    end
+    local bt = vim.bo[buf].buftype
+    if bt == 'terminal' or bt == 'prompt' or bt == 'quickfix' then
+        return
+    end
+    local lang = vim.treesitter.language.get_lang(vim.bo[buf].filetype)
+    local parser = lang and require('nvim-treesitter.parsers')[lang]
+    return parser and parser.tier ~= 4 and lang or nil
+end
+
+local function ready(lang)
+    local installed = ts.get_installed()
+    for _, dependency in ipairs(
+        require('nvim-treesitter.config').norm_languages({ lang })
+    ) do
+        if not vim.list_contains(installed, dependency) then
+            return false
+        end
+    end
+    return true
+end
 
 ---@param buf integer
 ---@param lang string
 local function start(buf, lang)
-    if
-        vim.api.nvim_buf_is_loaded(buf)
-        and vim.treesitter.language.get_lang(vim.bo[buf].filetype) == lang
-        and not vim.treesitter.highlighter.active[buf]
-    then
-        pcall(vim.treesitter.start, buf, lang)
+    if language(buf) == lang and not vim.treesitter.highlighter.active[buf] then
+        pcall(function()
+            local parser = vim.treesitter.get_parser(buf, lang)
+            if parser then
+                parser:invalidate(true)
+                vim.treesitter.start(buf, lang)
+            end
+        end)
+    end
+end
+
+local function refresh()
+    vim.treesitter.query.get:clear()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local lang = language(buf)
+        if lang and ready(lang) then
+            vim.treesitter.stop(buf)
+            start(buf, lang)
+        end
+    end
+    vim.cmd.redraw()
+end
+
+local installer = require('nvim-treesitter.install')
+for _, action in ipairs({ 'install', 'update' }) do
+    local operation = installer[action]
+    installer[action] = function(...)
+        local task = operation(...)
+        task:await(vim.schedule_wrap(function(err, success)
+            if err or success == false then
+                vim.notify(
+                    'Tree-sitter ' .. action .. ' failed; see :TSLog',
+                    vim.log.levels.ERROR
+                )
+            end
+            refresh()
+        end))
+        return task
+    end
+end
+
+local function ensure(buf)
+    local lang = language(buf)
+    local active = vim.treesitter.highlighter.active[buf]
+    if active and active.tree:lang() ~= lang then
+        vim.treesitter.stop(buf)
+    end
+    if not lang then
+        return
+    end
+    if ready(lang) then
+        start(buf, lang)
+    elseif not pending[lang] then
+        local task = ts.install({ lang })
+        pending[lang] = task
+        task:await(function()
+            pending[lang] = nil
+        end)
     end
 end
 
 vim.api.nvim_create_autocmd('FileType', {
     group = group,
     callback = function(ev)
-        local lang = vim.treesitter.language.get_lang(vim.bo[ev.buf].filetype)
-        local active = vim.treesitter.highlighter.active[ev.buf]
-        if active and active.tree:lang() ~= lang then
-            vim.treesitter.stop(ev.buf)
-        end
-        if lang and vim.treesitter.language.add(lang) then
-            start(ev.buf, lang)
+        ensure(ev.buf)
+    end,
+})
+vim.api.nvim_create_autocmd('PackChanged', {
+    group = group,
+    callback = function(ev)
+        if ev.data.spec.name == 'nvim-treesitter' and ev.data.kind == 'update' then
+            ts.update()
         end
     end,
 })
+vim.schedule(function()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        ensure(buf)
+    end
+end)
 
 return {
     {

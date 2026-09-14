@@ -454,8 +454,14 @@ let
             ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gcalendar"}
             ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
-            ${mkSymlink "${pkgs.neovim.treesitter}/parser" "${XDG_DATA_HOME}/nvim/site/parser"}
-            ${mkSymlink "${pkgs.neovim.treesitter}/queries" "${XDG_DATA_HOME}/nvim/site/queries"}
+            for entry in parser queries; do
+              path="${XDG_DATA_HOME}/nvim/site/$entry"
+              case "$(readlink "$path" 2>/dev/null)" in
+                /nix/store/*-nvim-treesitter-runtime/"$entry")
+                  ${runAsUser} ${pkgs.coreutils}/bin/rm "$path"
+                  ;;
+              esac
+            done
         ${mkSymlink "${chromiumThemeCss}" "${repo}/config/chromium/extension/theme.css"}
         ${mkSymlink "${chromiumThemeJs}" "${repo}/config/chromium/extension/theme.js"}
 
