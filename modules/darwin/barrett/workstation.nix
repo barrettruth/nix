@@ -231,6 +231,11 @@ in
 
     barrett.mac.floatingApps = [ "com.apple.finder" ];
 
+    networking.applicationFirewall = {
+      enable = true;
+      enableStealthMode = true;
+    };
+
     system.stateVersion = 6;
     system.primaryUser = username;
 
@@ -378,8 +383,9 @@ in
       if [ -L "${unpackedDir}" ]; then
         rm "${unpackedDir}"
       fi
-      ${act.installDirMode "0755" unpackedDir}
-      ${act.runAsUser} ${pkgs.rsync}/bin/rsync -rlpt --delete --chmod=Du+w,Fu+w \
+      ${act.installDir "${homeDirectory}/.config/chromium"}
+      ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g wheel "${unpackedDir}"
+      ${pkgs.rsync}/bin/rsync -rlpt --delete --chmod=D755,F644 --chown=root:wheel \
         "${midnightExtension}/" "${unpackedDir}/"
 
       ${asUser} ${seedBrowserShortcuts} || true
