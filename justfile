@@ -36,9 +36,6 @@ _rebuild-nixos host +args:
 update:
     @scripts/update
 
-update-ivpn:
-    @python3 scripts/update-ivpn.py
-
 paths := "'.devin/skills/**' 'scripts/**' 'modules/**' 'config/**' 'pkgs/**'"
 
 lua_dirs := "config/nvim config/skills/_lib"
