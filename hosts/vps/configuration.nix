@@ -95,12 +95,12 @@
     clientMaxBodySize = "512m";
   };
 
-  services.journald.extraConfig = ''
-    SystemMaxUse=1G
-    SystemKeepFree=2G
-    RuntimeMaxUse=256M
-    MaxRetentionSec=14day
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "1G";
+    SystemKeepFree = "2G";
+    RuntimeMaxUse = "256M";
+    MaxRetentionSec = "14day";
+  };
 
   services.logrotate = {
     enable = true;
