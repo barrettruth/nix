@@ -23,7 +23,23 @@ let
 
   scriptsPath = "${repo}/scripts";
   listFiles = "command -v list >/dev/null 2>&1 && exec list --files || exec find . -type f -print";
+  listAllFiles = "command -v list >/dev/null 2>&1 && exec list --all --files || exec find . -type f -print";
   listDirectories = "command -v list >/dev/null 2>&1 && exec list --directories || exec find . -type d -print";
+  listAllDirectories = "command -v list >/dev/null 2>&1 && exec list --all --directories || exec find . -type d -print";
+  fzfToggle =
+    name: all:
+    pkgs.writeShellScript name ''
+      if [ "$FZF_PROMPT" = 'all> ' ]; then
+        command=$FZF_DEFAULT_COMMAND
+        prompt='> '
+      else
+        command=${"$"}${all}
+        prompt='all> '
+      fi
+      printf 'reload(%s)+change-prompt(%s)\n' "$command" "$prompt"
+    '';
+  fzfFilesToggle = fzfToggle "fzf-toggle-files" "FZF_CTRL_T_ALL_COMMAND";
+  fzfDirectoriesToggle = fzfToggle "fzf-toggle-directories" "FZF_ALT_C_ALL_COMMAND";
 
   inherit (act) runAsUser mkSymlink;
 
@@ -314,7 +330,11 @@ let
     ];
     FZF_DEFAULT_COMMAND = listFiles;
     FZF_CTRL_T_COMMAND = listFiles;
+    FZF_CTRL_T_ALL_COMMAND = listAllFiles;
+    FZF_CTRL_T_OPTS = "--bind=ctrl-t:transform:${fzfFilesToggle}";
     FZF_ALT_C_COMMAND = listDirectories;
+    FZF_ALT_C_ALL_COMMAND = listAllDirectories;
+    FZF_ALT_C_OPTS = "--bind=ctrl-t:transform:${fzfDirectoriesToggle}";
 
     GIT_CONFIG_GLOBAL = "${XDG_CONFIG_HOME}/git/config";
     WGETRC = "${XDG_CONFIG_HOME}/wgetrc";

@@ -2,6 +2,7 @@
 
 at_root=
 directories=
+all=
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -11,6 +12,10 @@ while [ "$#" -gt 0 ]; do
     ;;
   --directories)
     directories=1
+    shift
+    ;;
+  --all)
+    all=1
     shift
     ;;
   *) break ;;
@@ -38,6 +43,8 @@ fi
 if [ -n "$directories" ]; then
   if command -v fd >/dev/null 2>&1; then
     if [ -n "$root" ]; then
+      [ -z "$all" ] || exec fd --type directory --hidden --no-ignore \
+        --exclude .git --exclude .jj "$@"
       exec fd --type directory --hidden --no-require-git \
         --exclude .git --exclude .jj "$@"
     fi
@@ -57,8 +64,13 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 if [ -n "$root" ]; then
-  set -- --hidden --no-config --no-ignore-dot --no-require-git \
-    --glob '!.git/' --glob '!.jj/' "$@"
+  if [ -n "$all" ]; then
+    set -- --hidden --no-config --no-ignore \
+      --glob '!.git/' --glob '!.jj/' "$@"
+  else
+    set -- --hidden --no-config --no-ignore-dot --no-require-git \
+      --glob '!.git/' --glob '!.jj/' "$@"
+  fi
 else
   set -- --hidden --no-config --no-ignore "$@"
 fi

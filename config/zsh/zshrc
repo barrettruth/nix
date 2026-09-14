@@ -4,6 +4,14 @@ alias ll='l -la --classify=auto'
 alias mux='nvim -c Mux'
 alias nv=nvim
 
+fzf() {
+    if [[ -t 0 && ${FZF_DEFAULT_OPTS-} != *'ctrl-t:transform:'* ]]; then
+        FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-}" command fzf "$@"
+    else
+        command fzf "$@"
+    fi
+}
+
 _zcompdump="$XDG_STATE_HOME/zcompdump-${ZSH_VERSION}-${${__NIX_SET_ENVIRONMENT_SYSTEM:-unknown}:t}"
 autoload -U compinit
 if [[ -r "$_zcompdump" ]]; then
@@ -95,13 +103,18 @@ export FZF_COMPLETION_TRIGGER=\;
 fzf-config-widget() {
     local config_root="$XDG_CONFIG_HOME/nix"
     local list_files='find . -type f -print'
+    local list_all_files="$list_files"
     local root_files="$list_files"
+    local root_all_files="$list_files"
     if command -v list >/dev/null 2>&1; then
         list_files='list --files'
+        list_all_files='list --all --files'
         root_files='list --root --files'
+        root_all_files='list --root --all --files'
     fi
     local command="{ $list_files; (cd \"$config_root\" && $root_files | sed \"s|^|$config_root/|\"); } | awk '!seen[\$0]++' | sed \"s|$HOME|~|g\""
-    local file="$(FZF_CTRL_T_COMMAND="$command" __fzf_select)"
+    local all_command="{ $list_all_files; (cd \"$config_root\" && $root_all_files | sed \"s|^|$config_root/|\"); } | awk '!seen[\$0]++' | sed \"s|$HOME|~|g\""
+    local file="$(FZF_CTRL_T_COMMAND="$command" FZF_CTRL_T_ALL_COMMAND="$all_command" __fzf_select)"
     [ -n "$file" ] || { zle reset-prompt; return; }
     file="${file/#\\~/~}"
     LBUFFER+="$file"

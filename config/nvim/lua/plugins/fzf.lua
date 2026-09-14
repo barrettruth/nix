@@ -88,9 +88,10 @@ return {
                         a.file_sel_to_qf(...)
                         vim.cmd.cclose()
                     end,
-                    ['ctrl-h'] = function(...)
-                        require('fzf-lua.actions').toggle_hidden(...)
-                    end,
+                    ['ctrl-t'] = {
+                        fn = actions.toggle_ignore,
+                        reuse = true,
+                    },
                     ['ctrl-v'] = function(...)
                         require('fzf-lua.actions').file_vsplit(...)
                     end,
