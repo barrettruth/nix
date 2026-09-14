@@ -10,11 +10,8 @@ let
     name = "ivpn-guard";
     runtimeInputs = [ pkgs.coreutils ];
     text = lib.replaceStrings
-      [ "@ivpn@" "@policy@" ]
-      [
-        (lib.escapeShellArg "/Applications/IVPN.app/Contents/MacOS/cli/ivpn")
-        (lib.escapeShellArg (lib.getExe cfg.policy))
-      ]
+      [ "@ivpn@" ]
+      [ (lib.escapeShellArg "/Applications/IVPN.app/Contents/MacOS/cli/ivpn") ]
       (builtins.readFile ../../../scripts/ivpn-guard.bash);
   };
   installIvpn = pkgs.writeShellApplication {
