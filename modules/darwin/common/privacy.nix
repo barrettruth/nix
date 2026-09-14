@@ -6,40 +6,6 @@
 }:
 let
   cfg = config.barrett.privacy;
-  runtimeLibrary = builtins.readFile ../../../scripts/ivpn-runtime.bash;
-  runtimeTool =
-    name: source:
-    pkgs.writeShellApplication {
-      inherit name;
-      runtimeInputs = [ pkgs.coreutils ];
-      text =
-        runtimeLibrary
-        + "\n"
-        + (lib.replaceStrings
-          [ "@ivpn@" "@bypass_file@" ]
-          [
-            (lib.escapeShellArg "/Applications/IVPN.app/Contents/MacOS/cli/ivpn")
-            (lib.escapeShellArg cfg.bypassFile)
-          ]
-          (builtins.readFile source)
-        );
-    };
-  guard = runtimeTool "ivpn-guard" ../../../scripts/ivpn-guard.bash;
-  alert = runtimeTool "ivpn-alert" ../../../scripts/ivpn-alert.bash;
-  bypassRoot = runtimeTool "ivpn-bypass-root" ../../../scripts/ivpn-bypass.bash;
-  bypassDialog = pkgs.writeText "ivpn-bypass.applescript" ''
-    set choice to button returned of (display dialog "A five-minute bypass allows ordinary network access outside IVPN and may expose your real IP. You can also restore protection immediately." buttons {"Cancel", "Restore protection", "Allow five minutes"} default button "Cancel" cancel button "Cancel" with title "IVPN protection")
-    if choice is "Restore protection" then
-      set commandText to ${builtins.toJSON "${lib.getExe bypassRoot} restore"}
-    else
-      set commandText to ${builtins.toJSON "${lib.getExe bypassRoot} start"}
-    end if
-    set resultText to do shell script commandText with administrator privileges
-    display notification resultText with title "IVPN"
-  '';
-  bypassUi = pkgs.writeShellScriptBin "ivpn-bypass" ''
-    exec /usr/bin/osascript ${bypassDialog}
-  '';
   installIvpn = pkgs.writeShellApplication {
     name = "install-ivpn";
     runtimeInputs = [
@@ -57,10 +23,7 @@ in
 
   config = lib.mkIf cfg.enable {
     networking.dns = [ "::1" ];
-    environment.systemPackages = [ ivpnCli ] ++ lib.optional cfg.alwaysOn bypassUi;
-    services.skhd.skhdConfig = lib.mkIf cfg.alwaysOn ''
-      lalt + shift - i : ${lib.getExe bypassUi}
-    '';
+    environment.systemPackages = [ ivpnCli ];
     barrett.mac.apps = [
       {
         key = "i";
@@ -88,27 +51,6 @@ in
         ThrottleInterval = 10;
         StandardOutPath = "/var/log/ivpn-policy.log";
         StandardErrorPath = "/var/log/ivpn-policy.log";
-      };
-    };
-
-    launchd.daemons.ivpn-guard = lib.mkIf cfg.alwaysOn {
-      command = lib.getExe guard;
-      serviceConfig = {
-        RunAtLoad = true;
-        StartInterval = 15;
-        ThrottleInterval = 15;
-        WatchPaths = [ "/Library/LaunchDaemons/net.ivpn.client.Helper.plist" ];
-        StandardOutPath = "/var/log/ivpn-guard.log";
-        StandardErrorPath = "/var/log/ivpn-guard.log";
-      };
-    };
-
-    launchd.user.agents.ivpn-alert = lib.mkIf cfg.alwaysOn {
-      command = lib.getExe alert;
-      serviceConfig = {
-        RunAtLoad = true;
-        StartInterval = 300;
-        ThrottleInterval = 300;
       };
     };
 

@@ -5,10 +5,6 @@ ivpn=@ivpn@
 state_dir=@state_dir@
 exceptions=@exceptions@
 
-if @always_on@ && ivpn_bypass_active @bypass_file@; then
-  exit 0
-fi
-
 if [ ! -x "$ivpn" ] || [ ! -s "$state_dir/port.txt" ] || [ ! -s "$state_dir/settings.json" ]; then
   if @always_on@; then
     printf '%s\n' 'IVPN protection unavailable: the app or its privileged helper is not ready.' >&2
