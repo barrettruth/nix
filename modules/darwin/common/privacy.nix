@@ -6,6 +6,17 @@
 }:
 let
   cfg = config.barrett.privacy;
+  guard = pkgs.writeShellApplication {
+    name = "ivpn-guard";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = lib.replaceStrings
+      [ "@ivpn@" "@policy@" ]
+      [
+        (lib.escapeShellArg "/Applications/IVPN.app/Contents/MacOS/cli/ivpn")
+        (lib.escapeShellArg (lib.getExe cfg.policy))
+      ]
+      (builtins.readFile ../../../scripts/ivpn-guard.bash);
+  };
   installIvpn = pkgs.writeShellApplication {
     name = "install-ivpn";
     runtimeInputs = [
@@ -51,6 +62,18 @@ in
         ThrottleInterval = 10;
         StandardOutPath = "/var/log/ivpn-policy.log";
         StandardErrorPath = "/var/log/ivpn-policy.log";
+      };
+    };
+
+    launchd.daemons.ivpn-guard = lib.mkIf cfg.alwaysOn {
+      command = lib.getExe guard;
+      serviceConfig = {
+        RunAtLoad = true;
+        StartInterval = 15;
+        ThrottleInterval = 15;
+        WatchPaths = [ "/Library/LaunchDaemons/net.ivpn.client.Helper.plist" ];
+        StandardOutPath = "/var/log/ivpn-guard.log";
+        StandardErrorPath = "/var/log/ivpn-guard.log";
       };
     };
 
