@@ -124,6 +124,8 @@ in
       "fmkadmapgofadopljbjfkapdkoienihi"
       # C/C++ Search Extension
       "ifpcmhciihicaljnhgobnhoehoabidhd"
+      # DuckDuckGo No-AI Search
+      "faoilnlkccdjdkpljainiiimmijofmpd"
     ];
   };
 
