@@ -305,7 +305,7 @@ local function materialize(name)
     elseif name == 'edit' then
         vim.cmd.edit(vim.fn.fnameescape(root()))
     elseif name == 'vcs' then
-        pcall(vim.cmd.Git)
+        pcall(vim.cmd.Git, { args = { '++curwin' } })
     end
 end
 
