@@ -13,7 +13,7 @@ let
     runtimeInputs = [ pkgs.jq ];
     text =
       lib.replaceStrings
-        [ "@ivpn@" "@state_dir@" "@exceptions@" "@auto_connect@" ]
+        [ "@ivpn@" "@state_dir@" "@exceptions@" "@auto_connect@" "@always_on@" ]
         [
           (lib.escapeShellArg (
             if pkgs.stdenv.hostPlatform.isDarwin then
@@ -24,6 +24,7 @@ let
           (lib.escapeShellArg cfg.stateDirectory)
           (lib.escapeShellArg (lib.optionalString tailnet "100.64.0.0/10,fd7a:115c:a1e0::/48"))
           (lib.boolToString cfg.autoConnect)
+          (lib.boolToString cfg.alwaysOn)
         ]
         (builtins.readFile ../../scripts/ivpn-policy.bash);
   };
@@ -32,6 +33,7 @@ in
   options.barrett.privacy = {
     enable = lib.mkEnableOption "IVPN with Quad9 encrypted DNS";
     autoConnect = lib.mkEnableOption "automatic IVPN connections on app and daemon startup";
+    alwaysOn = lib.mkEnableOption "the persistent IVPN firewall, including when the VPN is disconnected";
     stateDirectory = lib.mkOption {
       type = lib.types.str;
       readOnly = true;

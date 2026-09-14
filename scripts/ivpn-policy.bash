@@ -39,8 +39,12 @@ has_profile() {
   ' "$state_dir/settings.json" >/dev/null
 }
 
-if ! matches --arg exceptions "$exceptions" ".persistent == false and .lan == false and .exceptions == \$exceptions"; then
-  "$ivpn" firewall -persistent_off -lan_block -exceptions "$exceptions" >/dev/null
+persistent_flag=-persistent_off
+if @always_on@; then
+  persistent_flag=-persistent_on
+fi
+if ! matches --argjson persistent @always_on@ --arg exceptions "$exceptions" ".persistent == \$persistent and .lan == false and .exceptions == \$exceptions"; then
+  "$ivpn" firewall "$persistent_flag" -lan_block -exceptions "$exceptions" >/dev/null
 fi
 
 if ! matches '.antitracker == false and (.dns.Servers | length) == 1

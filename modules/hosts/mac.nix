@@ -28,6 +28,7 @@ in
         barrett.privacy = {
           enable = true;
           autoConnect = true;
+          alwaysOn = true;
         };
         nixpkgs.hostPlatform = platform;
         nixpkgs.overlays = overlays ++ darwinOverlays;
