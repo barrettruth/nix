@@ -7,11 +7,49 @@ return {
     after = function()
         local fzf = require('fzf-lua')
         local actions = require('fzf-lua.actions')
+        local has_rg = vim.fn.executable('rg') == 1
+        local has_list = has_rg and vim.fn.executable('list') == 1
+        local files_cmd = has_list and 'list --files'
+            or has_rg and 'rg --files --no-config'
+            or 'find . -type f -print'
+        local grep_opts = {
+            hidden = has_rg or nil,
+            no_header_i = true,
+            no_esc = true,
+            actions = {
+                ['ctrl-r'] = {
+                    fn = function(selected, opts)
+                        actions.toggle_flag(
+                            selected,
+                            vim.tbl_extend('force', opts, {
+                                toggle_flag = '--fixed-strings',
+                            })
+                        )
+                    end,
+                    desc = 'toggle regex',
+                },
+            },
+        }
+        if has_list then
+            grep_opts.cmd = table.concat({
+                'list',
+                '--column',
+                '--line-number',
+                '--no-heading',
+                '--color=always',
+                '--smart-case',
+                '--max-columns=4096',
+                '--fixed-strings',
+                '-e',
+            }, ' ')
+            grep_opts.rg_glob = false
+        end
 
         local opts = {
             ui_select = {},
             files = {
-                cmd = vim.env.FZF_CTRL_T_COMMAND,
+                cmd = files_cmd,
+                hidden = true,
                 no_header_i = true,
             },
             fzf_colors = true,
@@ -21,28 +59,7 @@ return {
                     ['ctrl-a'] = 'select-all',
                 },
             },
-            grep = {
-                no_header_i = true,
-                no_esc = true,
-                RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
-                rg_opts = fzf.defaults.grep.rg_opts:gsub(
-                    '%-e$',
-                    "--fixed-strings --glob='!.git/' --glob='!.jj/' -e"
-                ),
-                actions = {
-                    ['ctrl-r'] = {
-                        fn = function(selected, opts)
-                            actions.toggle_flag(
-                                selected,
-                                vim.tbl_extend('force', opts, {
-                                    toggle_flag = '--fixed-strings',
-                                })
-                            )
-                        end,
-                        desc = 'toggle regex',
-                    },
-                },
-            },
+            grep = grep_opts,
             lsp = {
                 includeDeclaration = false,
                 jump1 = true,
@@ -87,10 +104,6 @@ return {
             },
             border = 'single',
             git = {
-                files = {
-                    cmd = 'git ls-files --cached --others --exclude-standard',
-                    git_icons = false,
-                },
                 worktrees = {
                     keymap = {
                         fzf = {
@@ -131,15 +144,8 @@ return {
             function()
                 local fzf = require('fzf-lua')
                 local cwd = vim.fn.getcwd()
-                local git_root = vim.fs.root(cwd, '.git')
-                local jj_root = vim.fs.root(cwd, '.jj')
-                if git_root then
-                    fzf.git_files({ cwd_prompt = false })
-                elseif jj_root then
-                    fzf.files({ cwd = jj_root, cwd_prompt = false })
-                else
-                    fzf.files()
-                end
+                local root = vim.fs.root(cwd, { '.git', '.jj' }) or cwd
+                fzf.files({ cwd = root, cwd_prompt = false })
             end,
         },
         { '<c-g>', '<cmd>FzfLua live_grep<cr>' },

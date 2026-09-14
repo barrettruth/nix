@@ -22,6 +22,8 @@ let
   repo = "${XDG_CONFIG_HOME}/nix";
 
   scriptsPath = "${repo}/scripts";
+  listFiles = "command -v list >/dev/null 2>&1 && exec list --files --hidden || exec find . -type f -print";
+  listDirectories = "command -v list >/dev/null 2>&1 && exec list --directories --hidden || exec find . -type d -print";
 
   inherit (act) runAsUser mkSymlink;
 
@@ -307,9 +309,9 @@ let
       "--no-scrollbar"
       "--no-info"
     ];
-    FZF_DEFAULT_COMMAND = "rg --files --hidden";
-    FZF_CTRL_T_COMMAND = "rg --files --hidden";
-    FZF_ALT_C_COMMAND = "fd --type d --hidden";
+    FZF_DEFAULT_COMMAND = listFiles;
+    FZF_CTRL_T_COMMAND = listFiles;
+    FZF_ALT_C_COMMAND = listDirectories;
 
     GIT_CONFIG_GLOBAL = "${XDG_CONFIG_HOME}/git/config";
     WGETRC = "${XDG_CONFIG_HOME}/wgetrc";

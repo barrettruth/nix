@@ -88,7 +88,15 @@ add-zle-hook-widget zle-line-init _cursor_init
 export FZF_COMPLETION_TRIGGER=\;
 
 fzf-config-widget() {
-    local file="$(FZF_CTRL_T_COMMAND="fd --type file --hidden . \"$XDG_CONFIG_HOME\"/nix | sed \"s|$HOME|~|g\"" __fzf_select)"
+    local config_root="$XDG_CONFIG_HOME/nix"
+    local list_files='find . -type f -print'
+    local root_files="$list_files"
+    if command -v list >/dev/null 2>&1; then
+        list_files='list --files --hidden'
+        root_files='list --root --files --hidden'
+    fi
+    local command="{ $list_files; (cd \"$config_root\" && $root_files | sed \"s|^|$config_root/|\"); } | awk '!seen[\$0]++' | sed \"s|$HOME|~|g\""
+    local file="$(FZF_CTRL_T_COMMAND="$command" __fzf_select)"
     [ -n "$file" ] || { zle reset-prompt; return; }
     file="${file/#\\~/~}"
     LBUFFER+="$file"

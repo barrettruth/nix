@@ -1,0 +1,70 @@
+#!/bin/sh
+
+at_root=
+directories=
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  --root)
+    at_root=1
+    shift
+    ;;
+  --directories)
+    directories=1
+    shift
+    ;;
+  *) break ;;
+  esac
+done
+
+find_vcs_root() {
+  dir=$(pwd -P) || return 1
+  while :; do
+    if [ -e "$dir/.git" ] || [ -e "$dir/.jj" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    parent=$(dirname "$dir")
+    [ "$parent" != "$dir" ] || return 1
+    dir=$parent
+  done
+}
+
+root=$(find_vcs_root) || root=
+if [ -n "$root" ] && [ -n "$at_root" ]; then
+  cd "$root" || exit 1
+fi
+
+if ! command -v rg >/dev/null 2>&1; then
+  if [ -n "$directories" ]; then
+    exec find . -type d -print
+  fi
+  case " $* " in
+  *' --files '*)
+    exec find . -type f -print
+    ;;
+  esac
+  printf '%s\n' 'list: ripgrep is required for content search' >&2
+  exit 127
+fi
+
+if [ -n "$root" ]; then
+  set -- --no-config --no-ignore-dot --no-require-git \
+    --glob '!.git/' --glob '!.jj/' "$@"
+else
+  set -- --no-config --no-ignore "$@"
+fi
+
+if [ -n "$directories" ]; then
+  rg --files "$@" |
+    awk -F/ '{
+      path = $1
+      for (i = 2; i <= NF; i++) {
+        print path
+        path = path "/" $i
+      }
+    }' |
+    LC_ALL=C sort -u
+else
+  exec rg "$@"
+fi

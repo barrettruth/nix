@@ -1,16 +1,16 @@
 local ns = vim.api.nvim_create_namespace('dir_classify')
 local glyph = { fifo = '|', socket = '=', char = '%', block = '#' }
-local git_cache = vim.ringbuf(16)
-local git_cache_ttl = 3e9
-local git_failure_ttl = 1e9
-local git_cache_max_names = 2048
-local git_cache_max_weight = 256 * 1024
+local vcs_cache = vim.ringbuf(16)
+local vcs_cache_ttl = 3e9
+local vcs_failure_ttl = 1e9
+local vcs_cache_max_names = 2048
+local vcs_cache_max_weight = 256 * 1024
 
 local function cache_get(dir, mtime)
     local now = vim.uv.hrtime()
     local entries = {}
     local hit
-    for entry in git_cache do
+    for entry in vcs_cache do
         if entry.expires > now then
             if entry.dir == dir then
                 if
@@ -28,13 +28,13 @@ local function cache_get(dir, mtime)
         entries[#entries + 1] = hit
     end
     for _, entry in ipairs(entries) do
-        git_cache:push(entry)
+        vcs_cache:push(entry)
     end
     return hit
 end
 
 local function cache_put(dir, mtime, visible, ttl)
-    git_cache:push({
+    vcs_cache:push({
         dir = dir,
         mtime_sec = mtime.sec,
         mtime_nsec = mtime.nsec,
@@ -43,9 +43,14 @@ local function cache_put(dir, mtime, visible, ttl)
     })
 end
 
-local function git_visible(dir)
+local function vcs_visible(dir)
     local stat = vim.uv.fs_stat(dir)
-    if not stat then
+    if
+        not stat
+        or vim.fn.executable('list') ~= 1
+        or vim.fn.executable('rg') ~= 1
+        or not vim.fs.root(dir, { '.git', '.jj' })
+    then
         return false
     end
 
@@ -82,17 +87,12 @@ local function git_visible(dir)
     end
 
     local ok, process = pcall(vim.system, {
-        'git',
-        '-C',
-        dir,
-        'ls-files',
-        '-z',
-        '--cached',
-        '--others',
-        '--exclude-standard',
-        '--',
-        '.',
+        'list',
+        '--files',
+        '--hidden',
+        '--null',
     }, {
+        cwd = dir,
         stdout = function(err, data)
             read_error = read_error or err
             read(data)
@@ -101,31 +101,31 @@ local function git_visible(dir)
     })
     local result = ok and process:wait() or nil
     if not result or result.code ~= 0 or read_error then
-        cache_put(dir, stat.mtime, false, git_failure_ttl)
+        cache_put(dir, stat.mtime, false, vcs_failure_ttl)
         return false
     end
 
-    if names <= git_cache_max_names and weight <= git_cache_max_weight then
-        cache_put(dir, stat.mtime, visible, git_cache_ttl)
+    if names <= vcs_cache_max_names and weight <= vcs_cache_max_weight then
+        cache_put(dir, stat.mtime, visible, vcs_cache_ttl)
     end
     return visible
 end
 
 vim.api.nvim_create_autocmd('User', {
-    group = vim.api.nvim_create_augroup('dir_git_visible', { clear = true }),
+    group = vim.api.nvim_create_augroup('dir_vcs_visible', { clear = true }),
     pattern = 'DirReadPost',
     callback = function(args)
-        if vim.b[args.buf].dir_git_visible == false then
+        if vim.b[args.buf].dir_vcs_visible == false then
             return
         end
 
         local dir = vim.api.nvim_buf_get_name(args.buf)
-        local visible = git_visible(dir)
+        local visible = vcs_visible(dir)
         if not visible then
-            vim.b[args.buf].dir_git_visible = false
+            vim.b[args.buf].dir_vcs_visible = false
             return
         end
-        vim.b[args.buf].dir_git_visible = true
+        vim.b[args.buf].dir_vcs_visible = true
 
         local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, true)
         local filtered = vim.tbl_filter(function(line)
