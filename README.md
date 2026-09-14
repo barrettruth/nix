@@ -44,8 +44,9 @@ pkgs/                            custom derivations
 ## TODO
 
 - Repair `desktop`
-  - Configure IVPN, routing, Tailscale, Forgejo
+  - Configure IVPN, routing, Tailscale, Forgejo, 1Password
   - Encrypt disk
 - Configure `laptop`
-  - Configure IVPN, Tailscale
+  - Configure IVPN, Tailscale, 1Password
   - Encrypt disk
+- By (duplicated) file storage - or just get another ssd?
