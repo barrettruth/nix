@@ -244,6 +244,7 @@ let
     rs = ["restack"]
     s = ["status"]
     f = ["git", "fetch"]
+    push = ["git", "push"]
     pu = ["git", "push"]
     sync = ["util", "exec", "--", "sh", "-c", "jj git fetch && jj restack && jj stack"]
     sy = ["sync"]
