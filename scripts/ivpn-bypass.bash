@@ -9,6 +9,10 @@ if [ "$(id -u)" -ne 0 ]; then
   printf '%s\n' 'A temporary IVPN bypass requires administrator approval.' >&2
   exit 1
 fi
+if [ "$bypass_file" != "/var/run/ivpn/bypass" ]; then
+  printf '%s\n' 'Temporary bypass is not configured for this host.' >&2
+  exit 1
+fi
 if ivpn_bypass_active "$bypass_file"; then
   printf '%s\n' 'The existing five-minute bypass is still active; it was not extended.'
   exit 0
@@ -23,7 +27,8 @@ install -d -m 0700 -o root -g wheel "$dir"
 tmp=$(mktemp "$dir/.bypass.XXXXXX")
 trap 'rm -f -- "$tmp"' EXIT
 issued=$(date +%s)
-printf '%s %s\n' "$issued" "$((issued + ivpn_bypass_seconds))" >"$tmp"
+duration=$(ivpn_bypass_duration)
+printf '%s %s\n' "$issued" "$((issued + duration))" >"$tmp"
 chmod 0600 "$tmp"
 mv -f -- "$tmp" "$bypass_file"
 
@@ -38,7 +43,10 @@ trap restore_on_error ERR
 if timeout --kill-after=2 10 "$ivpn" firewall -status >/dev/null 2>&1; then
   timeout --kill-after=2 10 "$ivpn" autoconnect -on_launch off >/dev/null
   timeout --kill-after=2 10 "$ivpn" firewall -persistent_off >/dev/null
-  timeout --kill-after=2 10 "$ivpn" disconnect >/dev/null
+  status=$(timeout --kill-after=2 10 "$ivpn" status 2>/dev/null) || true
+  if [[ ! "$status" =~ VPN[[:space:]]*:[[:space:]]*DISCONNECTED ]]; then
+    timeout --kill-after=2 10 "$ivpn" disconnect >/dev/null
+  fi
   timeout --kill-after=2 10 "$ivpn" firewall -off >/dev/null
 else
   timeout --kill-after=2 15 "$firewall_script" -disable >/dev/null

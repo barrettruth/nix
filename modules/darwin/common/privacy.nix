@@ -7,24 +7,30 @@
 let
   cfg = config.barrett.privacy;
   runtimeLibrary = builtins.readFile ../../../scripts/ivpn-runtime.bash;
-  runtimeTool = name: source: pkgs.writeShellApplication {
-    inherit name;
-    runtimeInputs = [ pkgs.coreutils ];
-    text = runtimeLibrary + "\n" + (lib.replaceStrings
-      [ "@ivpn@" "@bypass_file@" ]
-      [
-        (lib.escapeShellArg "/Applications/IVPN.app/Contents/MacOS/cli/ivpn")
-        (lib.escapeShellArg cfg.bypassFile)
-      ]
-      (builtins.readFile source));
-  };
+  runtimeTool =
+    name: source:
+    pkgs.writeShellApplication {
+      inherit name;
+      runtimeInputs = [ pkgs.coreutils ];
+      text =
+        runtimeLibrary
+        + "\n"
+        + (lib.replaceStrings
+          [ "@ivpn@" "@bypass_file@" ]
+          [
+            (lib.escapeShellArg "/Applications/IVPN.app/Contents/MacOS/cli/ivpn")
+            (lib.escapeShellArg cfg.bypassFile)
+          ]
+          (builtins.readFile source)
+        );
+    };
   guard = runtimeTool "ivpn-guard" ../../../scripts/ivpn-guard.bash;
   alert = runtimeTool "ivpn-alert" ../../../scripts/ivpn-alert.bash;
   bypassRoot = runtimeTool "ivpn-bypass-root" ../../../scripts/ivpn-bypass.bash;
   bypassDialog = pkgs.writeText "ivpn-bypass.applescript" ''
     display dialog "Allow ordinary network access outside IVPN for five minutes? Your real IP may be exposed. Protection is restored by the guard after the deadline." buttons {"Cancel", "Allow five minutes"} default button "Cancel" cancel button "Cancel" with title "IVPN temporary bypass"
-    do shell script ${builtins.toJSON (lib.getExe bypassRoot)} with administrator privileges
-    display notification "Temporary bypass active for five minutes. Firewall recovery may take one guard interval afterward." with title "IVPN"
+    set resultText to do shell script ${builtins.toJSON (lib.getExe bypassRoot)} with administrator privileges
+    display notification resultText with title "IVPN"
   '';
   bypassUi = pkgs.writeShellScriptBin "ivpn-bypass" ''
     exec /usr/bin/osascript ${bypassDialog}
