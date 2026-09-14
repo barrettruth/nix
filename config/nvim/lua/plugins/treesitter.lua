@@ -30,9 +30,9 @@ end
 
 local function ready(lang)
     local installed = ts.get_installed()
-    for _, dependency in ipairs(
-        require('nvim-treesitter.config').norm_languages({ lang })
-    ) do
+    for _, dependency in
+        ipairs(require('nvim-treesitter.config').norm_languages({ lang }))
+    do
         if not vim.list_contains(installed, dependency) then
             return false
         end
@@ -113,7 +113,10 @@ vim.api.nvim_create_autocmd('FileType', {
 vim.api.nvim_create_autocmd('PackChanged', {
     group = group,
     callback = function(ev)
-        if ev.data.spec.name == 'nvim-treesitter' and ev.data.kind == 'update' then
+        if
+            ev.data.spec.name == 'nvim-treesitter'
+            and ev.data.kind == 'update'
+        then
             ts.update()
         end
     end,
