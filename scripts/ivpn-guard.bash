@@ -4,6 +4,10 @@ set -euo pipefail
 ivpn=@ivpn@
 firewall_script=/Applications/IVPN.app/Contents/Resources/etc/firewall.sh
 
+if ivpn_bypass_active @bypass_file@; then
+  exit 0
+fi
+
 block_without_daemon() {
   timeout --kill-after=2 15 "$firewall_script" -enable >/dev/null
 }
