@@ -15,6 +15,11 @@ let
     DefaultSearchProviderSearchURL = "https://noai.duckduckgo.com/?q={searchTerms}";
     DefaultSearchProviderSuggestURL = "https://noai.duckduckgo.com/ac/?q={searchTerms}&type=list";
     SearchSuggestEnabled = false;
+    SpellCheckServiceEnabled = false;
+    MetricsReportingEnabled = false;
+    UrlKeyedAnonymizedDataCollectionEnabled = false;
+    BrowserSignin = 0;
+    SyncDisabled = true;
     HttpsOnlyMode = "force_enabled";
     BookmarkBarEnabled = false;
     PasswordManagerEnabled = false;
