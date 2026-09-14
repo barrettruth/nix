@@ -14,7 +14,7 @@ let
     DefaultSearchProviderName = "DuckDuckGo No-AI";
     DefaultSearchProviderSearchURL = "https://noai.duckduckgo.com/?q={searchTerms}";
     DefaultSearchProviderSuggestURL = "https://noai.duckduckgo.com/ac/?q={searchTerms}&type=list";
-    SearchSuggestEnabled = true;
+    SearchSuggestEnabled = false;
     HttpsOnlyMode = "force_enabled";
     BookmarkBarEnabled = false;
     PasswordManagerEnabled = false;
