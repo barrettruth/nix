@@ -34,6 +34,27 @@ let
 
   unpackedDir = "${homeDirectory}/.config/chromium/extension";
 
+  onePasswordApp = "/Applications/1Password.app";
+
+  onePasswordBundleId = "com.1password.1password";
+
+  # 1Password writes native messaging manifests for the browsers it recognises,
+  # a list Chromium is absent from, so the extension reaches the app through this.
+  onePasswordNativeMessagingHost = (pkgs.formats.json { }).generate "com.1password.1password.json" {
+    name = onePasswordBundleId;
+    description = "1Password BrowserSupport";
+    path = "${onePasswordApp}/Contents/Library/LoginItems/1Password Browser Helper.app/Contents/MacOS/1Password-BrowserSupport";
+    type = "stdio";
+    allowed_origins = map (id: "chrome-extension://${id}/") [
+      # 1Password Beta – Password Manager
+      "khgocmkkpikpnmmkgmdnfckapcdkgfaf"
+      # 1Password – Password Manager
+      "aeblfdkhhhdcdjpifhhbdiojplfjncoa"
+    ];
+  };
+
+  nativeMessagingDir = "${browser.supportDirectory}/NativeMessagingHosts";
+
   launchApps = config.barrett.mac.apps;
 
   aerospace = "${config.services.aerospace.package}/bin/aerospace";
@@ -48,7 +69,7 @@ let
       switch = lib.optionalString (app.space != null) "${aerospace} workspace ${toString app.space}; ";
       args = lib.optionalString (app.args != [ ]) " --args ${lib.concatStringsSep " " app.args}";
     in
-    ''lalt - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"${args}''
+    ''${app.modifier} - ${app.key} : ${switch}/usr/bin/open -a "${app.path}"${args}''
   ) (lib.filter (app: app.key != null) launchApps);
 
   aerospaceBindings = lib.concatStringsSep "\n" (
@@ -138,7 +159,12 @@ in
           key = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "skhd key, pressed with lalt. Null pins the app without a binding.";
+            description = "skhd key, pressed with `modifier`. Null pins the app without a binding.";
+          };
+          modifier = lib.mkOption {
+            type = lib.types.str;
+            default = "lalt";
+            description = "skhd modifier chord the app's key is pressed with.";
           };
           path = lib.mkOption {
             type = lib.types.str;
@@ -227,9 +253,18 @@ in
         inherit (browser) bundleId;
         autostart = true;
       }
+      {
+        modifier = "lalt + shift";
+        key = "p";
+        path = onePasswordApp;
+        bundleId = onePasswordBundleId;
+      }
     ];
 
-    barrett.mac.floatingApps = [ "com.apple.finder" ];
+    barrett.mac.floatingApps = [
+      "com.apple.finder"
+      onePasswordBundleId
+    ];
 
     networking.applicationFirewall = {
       enable = true;
@@ -245,6 +280,9 @@ in
     };
 
     programs.zsh.enable = true;
+
+    programs._1password.enable = true;
+    programs._1password-gui.enable = true;
 
     barrett.workstation.enable = true;
 
@@ -387,6 +425,9 @@ in
       ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g wheel "${unpackedDir}"
       ${pkgs.rsync}/bin/rsync -rlpt --delete --chmod=D755,F644 --chown=root:wheel \
         "${midnightExtension}/" "${unpackedDir}/"
+
+      ${act.installDir nativeMessagingDir}
+      ${act.mkSymlink "${onePasswordNativeMessagingHost}" "${nativeMessagingDir}/com.1password.1password.json"}
 
       ${asUser} ${seedBrowserShortcuts} || true
 
