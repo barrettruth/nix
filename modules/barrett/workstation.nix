@@ -235,6 +235,9 @@ let
     diff-editor = ":builtin"
     merge-editor = "vimdiff"
 
+    [fsmonitor]
+    backend = "watchman"
+
     [git]
     sign-on-push = true
     fetch = ["glob:*"]
@@ -581,6 +584,7 @@ in
             glab
             gh
             jujutsu
+            watchman
             fzf
             eza
             zoxide
