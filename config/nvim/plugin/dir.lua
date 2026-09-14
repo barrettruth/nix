@@ -89,7 +89,6 @@ local function vcs_visible(dir)
     local ok, process = pcall(vim.system, {
         'list',
         '--files',
-        '--hidden',
         '--null',
     }, {
         cwd = dir,

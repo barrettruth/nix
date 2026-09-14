@@ -35,8 +35,8 @@ return {
                 mappings = {
                     force_twostep = '',
                     force_fallback = '',
-                    scroll_down = '<c-f>',
-                    scroll_up = '<c-b>',
+                    scroll_down = '<c-d>',
+                    scroll_up = '<c-u>',
                 },
             })
 

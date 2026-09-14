@@ -92,8 +92,8 @@ fzf-config-widget() {
     local list_files='find . -type f -print'
     local root_files="$list_files"
     if command -v list >/dev/null 2>&1; then
-        list_files='list --files --hidden'
-        root_files='list --root --files --hidden'
+        list_files='list --files'
+        root_files='list --root --files'
     fi
     local command="{ $list_files; (cd \"$config_root\" && $root_files | sed \"s|^|$config_root/|\"); } | awk '!seen[\$0]++' | sed \"s|$HOME|~|g\""
     local file="$(FZF_CTRL_T_COMMAND="$command" __fzf_select)"

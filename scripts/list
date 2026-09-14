@@ -35,10 +35,18 @@ if [ -n "$root" ] && [ -n "$at_root" ]; then
   cd "$root" || exit 1
 fi
 
-if ! command -v rg >/dev/null 2>&1; then
-  if [ -n "$directories" ]; then
-    exec find . -type d -print
+if [ -n "$directories" ]; then
+  if command -v fd >/dev/null 2>&1; then
+    if [ -n "$root" ]; then
+      exec fd --type directory --hidden --no-require-git \
+        --exclude .git --exclude .jj "$@"
+    fi
+    exec fd --type directory --hidden --no-ignore "$@"
   fi
+  exec find . -type d -print
+fi
+
+if ! command -v rg >/dev/null 2>&1; then
   case " $* " in
   *' --files '*)
     exec find . -type f -print
@@ -49,22 +57,10 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 if [ -n "$root" ]; then
-  set -- --no-config --no-ignore-dot --no-require-git \
+  set -- --hidden --no-config --no-ignore-dot --no-require-git \
     --glob '!.git/' --glob '!.jj/' "$@"
 else
-  set -- --no-config --no-ignore "$@"
+  set -- --hidden --no-config --no-ignore "$@"
 fi
 
-if [ -n "$directories" ]; then
-  rg --files "$@" |
-    awk -F/ '{
-      path = $1
-      for (i = 2; i <= NF; i++) {
-        print path
-        path = path "/" $i
-      }
-    }' |
-    LC_ALL=C sort -u
-else
-  exec rg "$@"
-fi
+exec rg "$@"

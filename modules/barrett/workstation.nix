@@ -22,8 +22,8 @@ let
   repo = "${XDG_CONFIG_HOME}/nix";
 
   scriptsPath = "${repo}/scripts";
-  listFiles = "command -v list >/dev/null 2>&1 && exec list --files --hidden || exec find . -type f -print";
-  listDirectories = "command -v list >/dev/null 2>&1 && exec list --directories --hidden || exec find . -type d -print";
+  listFiles = "command -v list >/dev/null 2>&1 && exec list --files || exec find . -type f -print";
+  listDirectories = "command -v list >/dev/null 2>&1 && exec list --directories || exec find . -type d -print";
 
   inherit (act) runAsUser mkSymlink;
 
@@ -270,6 +270,8 @@ let
     [user]
       name = ${identity.fullName}
       email = ${config.barrett.user.gitEmail}
+    [core]
+      excludesFile = ${XDG_CONFIG_HOME}/git/ignore
     [safe]
       directory = ${XDG_CACHE_HOME}/nix/tarball-cache-v2
     [include]
@@ -304,8 +306,8 @@ let
     FZF_DEFAULT_OPTS_FILE = "${XDG_CONFIG_HOME}/fzf/themes/theme";
     FZF_DEFAULT_OPTS = lib.concatStringsSep " " [
       "--bind=ctrl-a:select-all"
-      "--bind=ctrl-f:half-page-down"
-      "--bind=ctrl-b:half-page-up"
+      "--bind=ctrl-d:half-page-down"
+      "--bind=ctrl-u:half-page-up"
       "--no-scrollbar"
       "--no-info"
     ];
@@ -374,7 +376,6 @@ let
             ${mkDir "${XDG_DATA_HOME}/gh/extensions/gh-stack"}
             ${mkDir "${XDG_CONFIG_HOME}/jj"}
             ${mkDir "${XDG_CONFIG_HOME}/rg"}
-            ${mkDir "${XDG_CONFIG_HOME}/fd"}
             ${mkDir "${XDG_CONFIG_HOME}/npm"}
             ${mkDir "${XDG_CONFIG_HOME}/python"}
             ${mkDir "${XDG_CONFIG_HOME}/luarocks"}
@@ -397,7 +398,9 @@ let
             ${mkSymlink "${pkgs.gh-stack}/bin/gh-stack" "${XDG_DATA_HOME}/gh/extensions/gh-stack/gh-stack"}
             ${mkSymlink "${jjConf}" "${XDG_CONFIG_HOME}/jj/config.toml"}
             ${mkSymlink "${repo}/config/rg/config" "${XDG_CONFIG_HOME}/rg/config"}
-            ${mkSymlink "${repo}/config/fd/ignore" "${XDG_CONFIG_HOME}/fd/ignore"}
+            if [ "$(readlink "${XDG_CONFIG_HOME}/fd/ignore" 2>/dev/null)" = "${repo}/config/fd/ignore" ]; then
+              rm -f "${XDG_CONFIG_HOME}/fd/ignore"
+            fi
             ${mkSymlink "${repo}/config/python/pythonrc" "${XDG_CONFIG_HOME}/python/pythonrc"}
             ${mkSymlink "${repo}/config/wgetrc" "${XDG_CONFIG_HOME}/wgetrc"}
             ${mkSymlink "${repo}/config/luarocks/config.lua" "${XDG_CONFIG_HOME}/luarocks/config.lua"}

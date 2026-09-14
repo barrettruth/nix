@@ -54,10 +54,7 @@ return {
             },
             fzf_colors = true,
             keymap = {
-                fzf = {
-                    true,
-                    ['ctrl-a'] = 'select-all',
-                },
+                fzf = {},
             },
             grep = grep_opts,
             lsp = {
@@ -104,6 +101,12 @@ return {
             },
             border = 'single',
             git = {
+                commits = {
+                    actions = {
+                        true,
+                        ['ctrl-d'] = false,
+                    },
+                },
                 worktrees = {
                     keymap = {
                         fzf = {
@@ -112,7 +115,7 @@ return {
                         },
                     },
                     actions = {
-                        ['ctrl-d'] = {
+                        ['ctrl-x'] = {
                             fn = actions.git_worktree_del,
                             reload = true,
                         },
@@ -126,7 +129,7 @@ return {
                         },
                     },
                     actions = {
-                        ['ctrl-d'] = {
+                        ['ctrl-x'] = {
                             fn = actions.git_branch_del,
                             reload = true,
                         },
