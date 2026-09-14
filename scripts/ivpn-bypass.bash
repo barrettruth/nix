@@ -4,6 +4,11 @@ set -euo pipefail
 ivpn=@ivpn@
 bypass_file=@bypass_file@
 firewall_script=/Applications/IVPN.app/Contents/Resources/etc/firewall.sh
+action=${1:-start}
+if [ "$#" -gt 1 ] || { [ "$action" != start ] && [ "$action" != restore ]; }; then
+  printf '%s\n' 'Usage: ivpn-bypass-root [start|restore]' >&2
+  exit 2
+fi
 
 if [ "$(id -u)" -ne 0 ]; then
   printf '%s\n' 'A temporary IVPN bypass requires administrator approval.' >&2
@@ -13,6 +18,17 @@ if [ "$bypass_file" != "/var/run/ivpn/bypass" ]; then
   printf '%s\n' 'Temporary bypass is not configured for this host.' >&2
   exit 1
 fi
+if [ "$action" = restore ]; then
+  rm -f -- "$bypass_file"
+  timeout --kill-after=2 15 "$firewall_script" -enable >/dev/null
+  /bin/launchctl enable system/org.nixos.ivpn-guard
+  /bin/launchctl kickstart system/org.nixos.ivpn-guard
+  printf '%s\n' 'Temporary bypass cancelled; the firewall is enabled.'
+  exit 0
+fi
+
+/bin/launchctl print system/org.nixos.ivpn-guard >/dev/null
+/bin/launchctl enable system/org.nixos.ivpn-guard
 if ivpn_bypass_active "$bypass_file"; then
   printf '%s\n' 'The existing five-minute bypass is still active; it was not extended.'
   exit 0
@@ -38,6 +54,7 @@ restore_on_error() {
   /bin/launchctl kickstart system/org.nixos.ivpn-guard >/dev/null 2>&1 || true
 }
 trap restore_on_error ERR
+/bin/launchctl kill SIGTERM system/org.nixos.ivpn-guard >/dev/null 2>&1 || true
 /bin/launchctl kill SIGTERM system/org.nixos.ivpn-policy >/dev/null 2>&1 || true
 
 if timeout --kill-after=2 10 "$ivpn" firewall -status >/dev/null 2>&1; then

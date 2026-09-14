@@ -28,8 +28,13 @@ let
   alert = runtimeTool "ivpn-alert" ../../../scripts/ivpn-alert.bash;
   bypassRoot = runtimeTool "ivpn-bypass-root" ../../../scripts/ivpn-bypass.bash;
   bypassDialog = pkgs.writeText "ivpn-bypass.applescript" ''
-    display dialog "Allow ordinary network access outside IVPN for five minutes? Your real IP may be exposed. Protection is restored by the guard after the deadline." buttons {"Cancel", "Allow five minutes"} default button "Cancel" cancel button "Cancel" with title "IVPN temporary bypass"
-    set resultText to do shell script ${builtins.toJSON (lib.getExe bypassRoot)} with administrator privileges
+    set choice to button returned of (display dialog "A five-minute bypass allows ordinary network access outside IVPN and may expose your real IP. You can also restore protection immediately." buttons {"Cancel", "Restore protection", "Allow five minutes"} default button "Cancel" cancel button "Cancel" with title "IVPN protection")
+    if choice is "Restore protection" then
+      set commandText to ${builtins.toJSON "${lib.getExe bypassRoot} restore"}
+    else
+      set commandText to ${builtins.toJSON "${lib.getExe bypassRoot} start"}
+    end if
+    set resultText to do shell script commandText with administrator privileges
     display notification resultText with title "IVPN"
   '';
   bypassUi = pkgs.writeShellScriptBin "ivpn-bypass" ''
