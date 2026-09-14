@@ -9,44 +9,24 @@
 let
   username = "barrett";
 
-  # Mirrors programs.chromium.extraOpts on the laptop. macOS has no
-  # equivalent module, so the policies are rendered to the managed
-  # preferences domain by hand.
-  chromePolicies = {
-    BrowserSigninEnabled = 1;
-    SyncDisabled = false;
-    SpellCheckServiceEnabled = true;
+  browserPolicies = {
     SearchSuggestEnabled = true;
-    UrlKeyedAnonymizedDataCollectionEnabled = true;
     HttpsOnlyMode = "force_enabled";
     BookmarkBarEnabled = false;
     PasswordManagerEnabled = false;
     AutofillAddressEnabled = false;
     AutofillCreditCardEnabled = false;
-    TranslateEnabled = true;
     ImportBookmarks = false;
-    SafeBrowsingProtectionLevel = 1;
     DnsOverHttpsMode = "off";
     BlockThirdPartyCookies = true;
     CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
     RestoreOnStartup = 1;
-    ExtensionInstallForcelist = map (id: "${id};https://clients2.google.com/service/update2/crx") [
-      # Bitwarden Password Manager
-      "nngceckbapebfimnlniiiahkandclblb"
-      # uBlock Origin Lite
-      "ddkjiahejlhfcafbddmgiahcphecmpfh"
-      # React Developer Tools
-      "fmkadmapgofadopljbjfkapdkoienihi"
-      # C/C++ Search Extension
-      "ifpcmhciihicaljnhgobnhoehoabidhd"
-    ];
-    PolicyListMultipleSourceMergeList = [ "ExtensionInstallForcelist" ];
-    NTPFooterManagementNoticeEnabled = false;
-    NTPFooterExtensionAttributionEnabled = false;
   };
 
-  chromePolicyPlist = pkgs.writeText "com.google.Chrome.plist" (
-    lib.generators.toPlist { escape = true; } chromePolicies
+  browserPolicyDomain = config.barrett.mac.browser.bundleId;
+
+  browserPolicyPlist = pkgs.writeText "${browserPolicyDomain}.plist" (
+    lib.generators.toPlist { escape = true; } browserPolicies
   );
 
   tailnetHostsBlock = lib.concatStringsSep "\n" (
@@ -61,10 +41,10 @@ in
 
   system.activationScripts.extraActivation.text = ''
     install -d -m 0755 "/Library/Managed Preferences"
-    if ! cmp -s ${chromePolicyPlist} "/Library/Managed Preferences/com.google.Chrome.plist"; then
-      chrometmp=$(mktemp "/Library/Managed Preferences/.com.google.Chrome.plist.XXXXXX")
-      install -m 0644 ${chromePolicyPlist} "$chrometmp"
-      mv -f "$chrometmp" "/Library/Managed Preferences/com.google.Chrome.plist"
+    if ! cmp -s ${browserPolicyPlist} "/Library/Managed Preferences/${browserPolicyDomain}.plist"; then
+      browsertmp=$(mktemp "/Library/Managed Preferences/.${browserPolicyDomain}.plist.XXXXXX")
+      install -m 0644 ${browserPolicyPlist} "$browsertmp"
+      mv -f "$browsertmp" "/Library/Managed Preferences/${browserPolicyDomain}.plist"
       killall cfprefsd || true
     fi
 

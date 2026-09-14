@@ -17,13 +17,14 @@ let
   rightCommand = hidKeyboardUsage 231;
   f18 = hidKeyboardUsage 109;
 
-  chromePkg = pkgs.google-chrome;
-
   ghosttyApp = "/Applications/Nix Apps/Ghostty.app";
   trexApp = "/Applications/Nix Apps/TRex.app";
 
-  chrome = config.barrett.mac.chrome;
-  chromeApp = chrome.app;
+  browser = config.barrett.mac.browser;
+  browserFlags = browser.flags ++ [
+    "--silent-debugger-extension-api"
+    "--load-extension=${unpackedDir}"
+  ];
 
   midnightExtension = pkgs.callPackage ../../../pkgs/midnight-extension {
     themeCss = pkgs.writeText "chromium-theme.css" themeGenerators.mkChromeThemeCss;
@@ -108,14 +109,14 @@ let
     }
   '';
 
-  seedChromeShortcuts = pkgs.writeShellScript "seed-chrome-shortcuts" ''
+  seedBrowserShortcuts = pkgs.writeShellScript "seed-browser-shortcuts" ''
     set -eu
-    if /usr/bin/pgrep -qf "Google Chrome.app/Contents/MacOS/Google Chrome"; then
-      echo "seed-chrome-shortcuts: chrome is running, skipping" >&2
+    if /usr/bin/pgrep -qf ${lib.escapeShellArg "${baseNameOf browser.app}/Contents/MacOS/"}; then
+      echo "seed-browser-shortcuts: browser is running, skipping" >&2
       exit 0
     fi
-    for profile in "$HOME/Library/Application Support/Google/Chrome/Default" \
-                   "$HOME/Library/Application Support/Google/Chrome/Profile "*; do
+    for profile in "${browser.supportDirectory}/Default" \
+                   "${browser.supportDirectory}/Profile "*; do
       [ -f "$profile/Preferences" ] || continue
       ${pkgs.python3}/bin/python3 \
         "${config.barrett.user.homeDirectory}/.config/nix/config/chromium/seed_shortcuts.py" \
@@ -176,32 +177,37 @@ in
     description = "CFBundleIdentifiers left floating rather than tiled.";
   };
 
-  options.barrett.mac.chrome = {
+  options.barrett.mac.browser = {
     app = lib.mkOption {
       type = lib.types.str;
-      default = "/Applications/Nix Apps/Google Chrome.app";
-      description = "Absolute path of the Google Chrome application bundle.";
+      default = "/Applications/Nix Apps/Ungoogled Chromium.app";
+      description = "Absolute path of the browser application bundle.";
+    };
+    bundleId = lib.mkOption {
+      type = lib.types.str;
+      default = "org.chromium.Chromium";
+      description = "CFBundleIdentifier the window manager pins to a workspace.";
+    };
+    supportDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "${homeDirectory}/Library/Application Support/Chromium";
+      description = "Directory holding the browser's profiles.";
     };
     package = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
-      default = chromePkg;
-      description = "Chrome to install, or null when the machine already has one.";
+      default = pkgs.ungoogled-chromium;
+      description = "Browser to install, or null when the machine already has one.";
     };
     flags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "Switches the login agent passes on a cold start.";
     };
-    unpackedMidnight = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Stage Midnight for a manual unpacked load, for hosts that cannot reach a policy location.";
-    };
   };
 
   config = {
     barrett.mac.dock.apps = [
-      chromeApp
+      browser.app
       ghosttyApp
     ];
 
@@ -215,10 +221,10 @@ in
       }
       {
         key = "b";
-        path = chromeApp;
-        args = chrome.flags;
+        path = browser.app;
+        args = browserFlags;
         space = 2;
-        bundleId = "com.google.Chrome";
+        inherit (browser) bundleId;
         autostart = true;
       }
     ];
@@ -369,16 +375,14 @@ in
 
       ${act.installDirMode "0755" screenshotDir}
 
-      ${lib.optionalString chrome.unpackedMidnight ''
-        if [ -L "${unpackedDir}" ]; then
-          rm "${unpackedDir}"
-        fi
-        ${act.installDirMode "0755" unpackedDir}
-        ${act.runAsUser} ${pkgs.rsync}/bin/rsync -rlpt --delete --chmod=Du+w,Fu+w \
-          "${midnightExtension}/" "${unpackedDir}/"
-      ''}
+      if [ -L "${unpackedDir}" ]; then
+        rm "${unpackedDir}"
+      fi
+      ${act.installDirMode "0755" unpackedDir}
+      ${act.runAsUser} ${pkgs.rsync}/bin/rsync -rlpt --delete --chmod=Du+w,Fu+w \
+        "${midnightExtension}/" "${unpackedDir}/"
 
-      ${asUser} ${seedChromeShortcuts} || true
+      ${asUser} ${seedBrowserShortcuts} || true
 
       /nix/var/nix/profiles/default/bin/nix-env \
         --profile /nix/var/nix/profiles/system --delete-generations +5
@@ -425,7 +429,7 @@ in
     };
 
     environment.systemPackages =
-      lib.optional (config.barrett.mac.chrome.package != null) config.barrett.mac.chrome.package
+      lib.optional (browser.package != null) browser.package
       ++ (with pkgs; [
         trex
         ghostty
