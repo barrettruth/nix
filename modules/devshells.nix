@@ -25,6 +25,10 @@
           packages = commonPackages ++ [
             pkgs.age
             pkgs.dnsutils
+            pkgs.gh
+            pkgs.jq
+            pkgs.openssl
+            pkgs.python3
             pkgs.nixd
             pkgs.xxd
             pkgs.pre-commit

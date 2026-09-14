@@ -64,6 +64,20 @@ if [ -d "$app" ]; then
   if [ "$installed" = "$expected" ] && /usr/bin/codesign --verify --deep --strict "$app"; then
     exit 0
   fi
+  expected_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$candidate/Contents/Info.plist")
+  installed_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")
+  if [[ ! "$expected_version" =~ ^[0-9]+(\.[0-9]+)*$ || ! "$installed_version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+    printf '%s\n' 'Cannot compare IVPN versions safely; refusing replacement.' >&2
+    exit 1
+  fi
+  newest=$(printf '%s\n' "$expected_version" "$installed_version" | sort -V | tail -n 1)
+  if [ "$installed_version" != "$expected_version" ] && [ "$newest" = "$installed_version" ]; then
+    requirement=$(/usr/bin/codesign -d -r- "$candidate" 2>&1 | awk '/^designated => / { sub(/^designated => /, ""); print }')
+    [ -n "$requirement" ] || exit 1
+    /usr/bin/codesign --verify --deep --strict -R="$requirement" "$app"
+    printf 'Keeping newer signed IVPN %s; Nix currently pins %s.\n' "$installed_version" "$expected_version"
+    exit 0
+  fi
   if /usr/bin/pgrep -f '/IVPN[.]app/Contents/' >/dev/null || /usr/bin/pgrep -x 'IVPN Agent' >/dev/null; then
     printf '%s\n' 'IVPN or its background agent is running; refusing to replace the app.' >&2
     exit 1

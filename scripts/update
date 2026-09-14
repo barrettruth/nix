@@ -11,15 +11,16 @@ require() {
   done
 }
 
-require curl jq nix
+require gh jq nix python3 openssl
 
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 file="$root/pkgs/ungoogled-chromium-bin/default.nix"
 repo="ungoogled-software/ungoogled-chromium-macos"
 
 nix flake update --flake "$root"
+python3 "$root/scripts/update-ivpn.py"
 
-release=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest")
+release=$(gh api "repos/$repo/releases/latest")
 tag=$(printf '%s' "$release" | jq -r '.tag_name')
 version=${tag%-*}
 revision=${tag##*-}
