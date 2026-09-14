@@ -1,0 +1,58 @@
+#!/bin/sh
+
+set -eu
+
+require() {
+  for cmd in "$@"; do
+    command -v "$cmd" >/dev/null 2>&1 || {
+      echo "update: missing dependency: $cmd" >&2
+      exit 1
+    }
+  done
+}
+
+require curl jq nix
+
+root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+file="$root/pkgs/ungoogled-chromium-bin/default.nix"
+repo="ungoogled-software/ungoogled-chromium-macos"
+
+nix flake update --flake "$root"
+
+release=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest")
+tag=$(printf '%s' "$release" | jq -r '.tag_name')
+version=${tag%-*}
+revision=${tag##*-}
+
+sri() {
+  digest=$(printf '%s' "$release" |
+    jq -r --arg name "ungoogled-chromium_${tag}_$1-macos.dmg" \
+      '.assets[] | select(.name == $name) | .digest')
+  case "$digest" in
+  sha256:*) ;;
+  *)
+    echo "update: no sha256 digest for $1" >&2
+    exit 1
+    ;;
+  esac
+  nix hash convert --hash-algo sha256 --to sri "${digest#sha256:}"
+}
+
+arm64=$(sri arm64)
+x86_64=$(sri x86_64)
+
+current=$(sed -n 's/^  version = "\([0-9][0-9.]*\)";$/\1/p' "$file")
+if [ "$current" = "$version" ]; then
+  echo "update: browser already at $version-$revision"
+  exit 0
+fi
+
+tmp=$(mktemp)
+sed -e "s|^  version = \"[0-9][0-9.]*\";\$|  version = \"$version\";|" \
+  -e "s|^  revision = \"[0-9][0-9.]*\";\$|  revision = \"$revision\";|" \
+  -e "s|^    aarch64-darwin = \"sha256-.*\";\$|    aarch64-darwin = \"$arm64\";|" \
+  -e "s|^    x86_64-darwin = \"sha256-.*\";\$|    x86_64-darwin = \"$x86_64\";|" \
+  "$file" >"$tmp"
+mv "$tmp" "$file"
+
+echo "update: browser $current -> $version-$revision"
