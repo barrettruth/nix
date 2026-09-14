@@ -19,6 +19,7 @@ let
       (builtins.readFile source));
   };
   guard = runtimeTool "ivpn-guard" ../../../scripts/ivpn-guard.bash;
+  alert = runtimeTool "ivpn-alert" ../../../scripts/ivpn-alert.bash;
   bypassRoot = runtimeTool "ivpn-bypass-root" ../../../scripts/ivpn-bypass.bash;
   bypassDialog = pkgs.writeText "ivpn-bypass.applescript" ''
     display dialog "Allow ordinary network access outside IVPN for five minutes? Your real IP may be exposed. Protection is restored by the guard after the deadline." buttons {"Cancel", "Allow five minutes"} default button "Cancel" cancel button "Cancel" with title "IVPN temporary bypass"
@@ -65,7 +66,7 @@ in
     '';
 
     launchd.daemons.ivpn-policy = {
-      command = lib.getExe cfg.policy;
+      command = "${lib.getExe' pkgs.coreutils "timeout"} --kill-after=2 60 ${lib.getExe cfg.policy}";
       serviceConfig = {
         RunAtLoad = true;
         WatchPaths = [
@@ -88,6 +89,15 @@ in
         WatchPaths = [ "/Library/LaunchDaemons/net.ivpn.client.Helper.plist" ];
         StandardOutPath = "/var/log/ivpn-guard.log";
         StandardErrorPath = "/var/log/ivpn-guard.log";
+      };
+    };
+
+    launchd.user.agents.ivpn-alert = lib.mkIf cfg.alwaysOn {
+      command = lib.getExe alert;
+      serviceConfig = {
+        RunAtLoad = true;
+        StartInterval = 300;
+        ThrottleInterval = 300;
       };
     };
 
