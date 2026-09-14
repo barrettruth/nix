@@ -241,8 +241,6 @@ let
     name:
     mkCodexTheme {
       inherit name;
-      # Codex interprets the alpha byte as an ANSI palette selector. Palette
-      # indices follow Ghostty as it switches between Midnight and Daylight.
       background = "#00000001";
       foreground = "#00000001";
       muted = "#08000000";

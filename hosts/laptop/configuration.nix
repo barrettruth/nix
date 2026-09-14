@@ -116,6 +116,8 @@ in
       RestoreOnStartup = 1;
     };
     extensions = [
+      # 1Password Beta – Password Manager
+      "khgocmkkpikpnmmkgmdnfckapcdkgfaf"
       # Bitwarden Password Manager
       "nngceckbapebfimnlniiiahkandclblb"
       # uBlock Origin Lite

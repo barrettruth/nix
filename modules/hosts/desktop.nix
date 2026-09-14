@@ -27,7 +27,10 @@ in
       (
         { ... }:
         {
-          barrett.privacy.enable = true;
+          barrett.privacy = {
+            enable = true;
+            autoConnect = false;
+          };
           barrett.workstation.enable = true;
           nixpkgs.hostPlatform = platform;
           nixpkgs.overlays = overlays;

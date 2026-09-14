@@ -27,7 +27,10 @@ in
       (
         { ... }:
         {
-          barrett.privacy.enable = true;
+          barrett.privacy = {
+            enable = true;
+            autoConnect = true;
+          };
           barrett.workstation.enable = true;
           barrett.ui.enable = true;
           barrett.ui.gpu = "nvidia-prime";

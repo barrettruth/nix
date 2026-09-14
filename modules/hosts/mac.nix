@@ -25,7 +25,10 @@ in
       ../barrett/workstation.nix
       ../../hosts/mac/configuration.nix
       {
-        barrett.privacy.enable = true;
+        barrett.privacy = {
+          enable = true;
+          autoConnect = true;
+        };
         nixpkgs.hostPlatform = platform;
         nixpkgs.overlays = overlays ++ darwinOverlays;
         nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) sharedUnfree;
