@@ -10,6 +10,10 @@ let
   username = "barrett";
 
   browserPolicies = {
+    DefaultSearchProviderEnabled = true;
+    DefaultSearchProviderName = "DuckDuckGo No-AI";
+    DefaultSearchProviderSearchURL = "https://noai.duckduckgo.com/?q={searchTerms}";
+    DefaultSearchProviderSuggestURL = "https://noai.duckduckgo.com/ac/?q={searchTerms}&type=list";
     SearchSuggestEnabled = true;
     HttpsOnlyMode = "force_enabled";
     BookmarkBarEnabled = false;
@@ -17,7 +21,6 @@ let
     AutofillAddressEnabled = false;
     AutofillCreditCardEnabled = false;
     ImportBookmarks = false;
-    DnsOverHttpsMode = "off";
     BlockThirdPartyCookies = true;
     CookieAllowedForUrls = [ "[*.]shibidp.virginia.edu" ];
     RestoreOnStartup = 1;
