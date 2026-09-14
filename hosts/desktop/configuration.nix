@@ -50,7 +50,7 @@ in
   networking.wireless.iwd = {
     enable = true;
     settings = {
-      General.EnableNetworkConfiguration = true;
+      General.EnableNetworkConfiguration = false;
       Network.NameResolvingService = "resolvconf";
       Settings.AutoConnect = true;
     };

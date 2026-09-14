@@ -37,6 +37,9 @@
     };
 
     networking.wireless.iwd.settings.Network.NameResolvingService = lib.mkForce "systemd";
-    services.tailscale.extraSetFlags = [ "--accept-dns=false" ];
+    services.tailscale = {
+      extraUpFlags = [ "--accept-dns=false" ];
+      extraSetFlags = [ "--accept-dns=false" ];
+    };
   };
 }
