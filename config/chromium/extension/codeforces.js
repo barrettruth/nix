@@ -5,6 +5,7 @@
   const MISSING_REFRESH_AGE_MS = 15 * 60 * 1000;
   const REQUEST_INTERVAL_MS = 2100;
   const MAX_RESULTS = 8;
+  const EMPTY_SUGGESTION_DESCRIPTION = "<dim> </dim>";
   const CONTEST_LIST_URL =
     "https://codeforces.com/api/contest.list?gym=false&lang=en";
   const PROBLEM_LIST_URL =
@@ -19,8 +20,6 @@
   let cacheReadPromise = null;
   let refreshPromise = null;
   let inputRequestId = 0;
-  let currentInput = "";
-  let currentDefaultUrl = null;
 
   function wait(milliseconds) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -36,7 +35,11 @@
   }
 
   function setDefaultSuggestion(description) {
-    chrome.omnibox.setDefaultSuggestion({ description });
+    return chrome.omnibox.setDefaultSuggestion({ description });
+  }
+
+  function clearDefaultSuggestion() {
+    return setDefaultSuggestion(EMPTY_SUGGESTION_DESCRIPTION);
   }
 
   function roundNumber(contestName) {
@@ -263,6 +266,16 @@
     };
   }
 
+  async function urlForInput(input) {
+    const value = String(input || "").trim();
+    if (value.startsWith("https://codeforces.com/contest/")) return value;
+
+    const parsed = parseInput(value);
+    if (!parsed) return null;
+    const index = await indexForRound(parsed.number);
+    return resultsForRound(index, parsed.number, parsed.query)[0]?.url || null;
+  }
+
   async function navigate(url, disposition) {
     if (disposition === "currentTab") {
       const [tab] = await chrome.tabs.query({
@@ -279,82 +292,59 @@
     });
   }
 
-  setDefaultSuggestion("Enter a Codeforces round number");
+  clearDefaultSuggestion().catch(() => {});
 
   chrome.omnibox.onInputStarted.addListener(() => {
+    clearDefaultSuggestion().catch(() => {});
     warmIndex().catch(() => {});
   });
 
   chrome.omnibox.onInputChanged.addListener((input, suggest) => {
     const requestId = ++inputRequestId;
     const parsed = parseInput(input);
-    currentInput = String(input || "").trim();
-    currentDefaultUrl = null;
-
-    if (!currentInput) {
-      setDefaultSuggestion("Enter a Codeforces round number");
-      suggest([]);
-      return;
-    }
-    if (!parsed) {
-      setDefaultSuggestion("Enter a round number before the search text");
-      suggest([]);
-      return;
-    }
+    const clearPromise = clearDefaultSuggestion();
+    suggest([]);
+    if (!parsed) return;
 
     const { number, query } = parsed;
-    setDefaultSuggestion(`Loading Codeforces Round ${number}`);
-    indexForRound(number)
+    clearPromise
+      .then(() => indexForRound(number))
       .then((index) => {
         if (requestId !== inputRequestId) return;
         const contests = index?.rounds?.[number] || [];
-        if (!contests.length) {
-          setDefaultSuggestion(`No Codeforces Round ${number}`);
-          suggest([]);
-          return;
-        }
+        if (!contests.length) return;
 
         const results = resultsForRound(index, number, query);
-        if (!results.length) {
-          setDefaultSuggestion(
-            `No result in Codeforces Round ${number} matches ${escapeDescription(query)}`,
-          );
-          suggest([]);
-          return;
-        }
+        if (!results.length) return;
 
         const [first, ...rest] = results;
-        currentDefaultUrl = first.url;
-        setDefaultSuggestion(first.description);
-        suggest(
-          rest.map((result) => ({
-            content: result.url,
-            description: result.description,
-          })),
-        );
+        return setDefaultSuggestion(first.description).then(() => {
+          if (requestId !== inputRequestId) return;
+          suggest(
+            rest.map((result) => ({
+              content: result.url,
+              description: result.description,
+            })),
+          );
+        });
       })
       .catch(() => {
         if (requestId !== inputRequestId) return;
-        setDefaultSuggestion("Codeforces data is unavailable");
-        suggest([]);
+        clearDefaultSuggestion().catch(() => {});
       });
   });
 
   chrome.omnibox.onInputEntered.addListener((input, disposition) => {
-    const value = String(input || "").trim();
-    const url = value.startsWith("https://codeforces.com/contest/")
-      ? value
-      : value === currentInput
-        ? currentDefaultUrl
-        : null;
-    if (url) navigate(url, disposition).catch(() => {});
+    urlForInput(input)
+      .then((url) => {
+        if (url) return navigate(url, disposition);
+      })
+      .catch(() => {});
   });
 
   chrome.omnibox.onInputCancelled.addListener(() => {
     inputRequestId++;
-    currentInput = "";
-    currentDefaultUrl = null;
-    setDefaultSuggestion("Enter a Codeforces round number");
+    clearDefaultSuggestion().catch(() => {});
   });
 
   chrome.runtime.onInstalled.addListener(() => {
