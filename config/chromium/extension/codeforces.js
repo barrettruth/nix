@@ -166,11 +166,20 @@
     return index;
   }
 
+  function normalizeSearchText(value) {
+    return String(value || "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("en")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
   function contestResult(contest) {
     return {
       url: `https://codeforces.com/contest/${contest.id}`,
       description: `<match>${escapeDescription(contest.name)}</match> <dim>- contest</dim>`,
-      searchText: `${contest.name} contest`,
+      searchText: normalizeSearchText(`${contest.name} contest`),
     };
   }
 
@@ -178,17 +187,10 @@
     return {
       url: `https://codeforces.com/contest/${contest.id}/problem/${encodeURIComponent(problem.index)}`,
       description: `<match>${escapeDescription(problem.index)}</match> - ${escapeDescription(problem.name)} <dim>- ${escapeDescription(contest.name)}</dim>`,
-      searchText: `${problem.index} ${problem.name} ${contest.name}`,
+      searchText: normalizeSearchText(
+        `${problem.index} ${problem.name} ${contest.name}`,
+      ),
     };
-  }
-
-  function normalizeSearchText(value) {
-    return String(value || "")
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
   }
 
   function fallbackFuzzyScore(text, query) {
@@ -202,24 +204,24 @@
   }
 
   function fuzzyScore(result, query) {
-    const text = normalizeSearchText(result.searchText);
-    const normalizedQuery = normalizeSearchText(query);
-    if (!normalizedQuery) return 0;
+    const text = result.searchText;
+    if (!query) return 0;
 
     const quickScore = globalThis.quickScore?.quickScore;
     let score = quickScore
-      ? quickScore(text, normalizedQuery, [], text, normalizedQuery)
-      : fallbackFuzzyScore(text, normalizedQuery);
+      ? quickScore(text, query, [], text, query)
+      : fallbackFuzzyScore(text, query);
     if (!(score > 0)) return -1;
 
     const tokens = text.split(" ");
-    if (text === normalizedQuery) score += 4;
-    if (tokens.includes(normalizedQuery)) score += 2;
-    if (tokens.some((token) => token.startsWith(normalizedQuery))) score += 1;
+    if (text === query) score += 4;
+    if (tokens.includes(query)) score += 2;
+    if (tokens.some((token) => token.startsWith(query))) score += 1;
     return score;
   }
 
   function resultsForRound(index, number, query) {
+    const normalizedQuery = normalizeSearchText(query);
     const contests = index?.rounds?.[number] || [];
     const results = contests.map(contestResult);
     const problems = [];
@@ -237,12 +239,12 @@
       results.push(problemResult(contest, problem));
     }
 
-    if (!query) return results.slice(0, MAX_RESULTS);
+    if (!normalizedQuery) return results.slice(0, MAX_RESULTS);
     return results
       .map((result, position) => ({
         result,
         position,
-        score: fuzzyScore(result, query),
+        score: fuzzyScore(result, normalizedQuery),
       }))
       .filter((match) => match.score >= 0)
       .sort((a, b) => b.score - a.score || a.position - b.position)
