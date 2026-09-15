@@ -220,28 +220,25 @@ local function open(query)
             ['ctrl-x'] = {
                 fn = function(selected, opts)
                     local candidate = picked(selected)
-                    require('fzf-lua').win.close()
                     if not candidate then
                         return
                     end
-                    local current = server.state().server
-                    local removing_current = current
-                        and current.root == candidate.root
+
+                    local result
                     candidates.remove(candidate, function(ok, err)
-                        done(ok, err)
-                        if not removing_current or not ok then
-                            vim.schedule(function()
-                                if
-                                    vim.v.exiting == vim.NIL
-                                    and #vim.api.nvim_list_uis() > 0
-                                then
-                                    open(opts.last_query)
-                                end
-                            end)
-                        end
+                        result = { ok = ok, err = err }
                     end, opts.last_query or '')
+                    vim.wait(25000, function()
+                        return result ~= nil
+                    end, 50)
+
+                    if result then
+                        done(result.ok, result.err)
+                    else
+                        done(nil, 'timed out removing ' .. candidate.root)
+                    end
                 end,
-                reuse = true,
+                reload = true,
             },
         },
     })
