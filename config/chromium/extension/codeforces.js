@@ -19,7 +19,6 @@
   let memoryIndex = null;
   let cacheReadPromise = null;
   let refreshPromise = null;
-  let inputRequestId = 0;
 
   function wait(milliseconds) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -255,6 +254,13 @@
       .map((match) => match.result);
   }
 
+  function suggestionRows(results) {
+    return results.map((result) => ({
+      content: result.url,
+      description: result.description,
+    }));
+  }
+
   function parseInput(input) {
     const match = String(input || "")
       .trimStart()
@@ -300,37 +306,21 @@
   });
 
   chrome.omnibox.onInputChanged.addListener((input, suggest) => {
-    const requestId = ++inputRequestId;
     const parsed = parseInput(input);
-    const clearPromise = clearDefaultSuggestion();
-    suggest([]);
-    if (!parsed) return;
+    clearDefaultSuggestion().catch(() => {});
+    if (!parsed) {
+      suggest([]);
+      return;
+    }
 
     const { number, query } = parsed;
-    clearPromise
-      .then(() => indexForRound(number))
+    indexForRound(number)
       .then((index) => {
-        if (requestId !== inputRequestId) return;
-        const contests = index?.rounds?.[number] || [];
-        if (!contests.length) return;
-
         const results = resultsForRound(index, number, query);
-        if (!results.length) return;
-
-        const [first, ...rest] = results;
-        return setDefaultSuggestion(first.description).then(() => {
-          if (requestId !== inputRequestId) return;
-          suggest(
-            rest.map((result) => ({
-              content: result.url,
-              description: result.description,
-            })),
-          );
-        });
+        suggest(suggestionRows(results));
       })
       .catch(() => {
-        if (requestId !== inputRequestId) return;
-        clearDefaultSuggestion().catch(() => {});
+        suggest([]);
       });
   });
 
@@ -343,7 +333,6 @@
   });
 
   chrome.omnibox.onInputCancelled.addListener(() => {
-    inputRequestId++;
     clearDefaultSuggestion().catch(() => {});
   });
 
