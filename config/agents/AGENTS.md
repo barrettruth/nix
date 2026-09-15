@@ -1,5 +1,13 @@
 # Global Agent Rules
 
+- Always load and apply the `asd-ste100` skill before you write English prose.
+  This rule applies to every reply, commentary update, status message, plan,
+  and prose artifact. Use Strict mode for procedures, instructions, error
+  messages, tool descriptions, and safety text. Use STE-flavored mode for all
+  other prose. If the runtime permits only one active skill, read
+  `~/.agents/skills/asd-ste100/SKILL.md` directly and keep its rules active
+  while another task skill runs. Preserve code, commands, identifiers, paths,
+  quoted text, and user-requested verbatim content.
 - The user publishes by default. Draft freely — commit messages, PR titles and
   bodies, issue text, review comments, release notes — hand them over, and stop.
   Never post, push, comment, or offer to unless the user explicitly authorizes

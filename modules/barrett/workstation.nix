@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   pkgs,
   lib,
   identity,
@@ -407,6 +408,7 @@ let
             ${mkDir "${XDG_CONFIG_HOME}/luarocks"}
             ${mkDir "${XDG_CONFIG_HOME}/github"}
             ${mkDir "${XDG_CONFIG_HOME}/direnv"}
+            ${mkDir "${XDG_CONFIG_HOME}/codex"}
             ${mkDir "${XDG_CONFIG_HOME}/devin"}
             ${mkDir clangdConfigDir}
             ${mkDir "${XDG_DATA_HOME}/nvim/site"}
@@ -452,6 +454,7 @@ let
             ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gdrive"}
             ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gmail"}
             ${mkPrivateDir "${XDG_STATE_HOME}/mcp-gcalendar"}
+            ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/codex/AGENTS.md"}
             ${mkSymlink "${repo}/config/agents/AGENTS.md" "${XDG_CONFIG_HOME}/devin/AGENTS.md"}
             ${mkSymlink "${repo}/config/clangd/config.yaml" "${clangdConfigDir}/config.yaml"}
             for entry in parser queries; do
@@ -476,6 +479,9 @@ let
                 dir: ''${runAsUser} ${pkgs.coreutils}/bin/ln -sfnT "$skill" "${dir}/$name"''
               ) agentSkillDirs}
             done
+            ${lib.concatMapStringsSep "\n            " (
+              dir: mkSymlink "${inputs.asd-ste100-skill}" "${dir}/asd-ste100"
+            ) agentSkillDirs}
             ${mkSymlink "${repo}/.devin/skills/recover/scripts/recover.py" "${homeDirectory}/.local/bin/recover"}
 
             ${lib.concatMapStringsSep "\n            " (dir: ''

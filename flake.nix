@@ -25,6 +25,10 @@
       url = "github:barrettruth/direnv-instant";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    asd-ste100-skill = {
+      url = "github:danyuchn/asd-ste100-skill";
+      flake = false;
+    };
     font-berkeley-mono = {
       url = "git+ssh://git@github.com/barrettruth/font-berkeley-mono.git";
       flake = false;
