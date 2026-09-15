@@ -562,6 +562,12 @@ in
     description = "Whether to install and configure the Google Tasks MCP server.";
   };
 
+  options.barrett.workstation.vercel.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Whether to install the Vercel CLI.";
+  };
+
   options.barrett.workstation.scriptsPath = lib.mkOption {
     type = lib.types.str;
     readOnly = true;
@@ -607,8 +613,8 @@ in
             direnv-instant
             pandoc
             openssl
-            vercel-cli
           ])
+          ++ lib.optional cfg.vercel.enable pkgs.vercel-cli
           ++ lib.optional (!isDarwin) (if hasDisplay then pkgs.ghostty else pkgs.ghostty.terminfo)
           ++ lib.optionals isDarwin (
             with pkgs;
