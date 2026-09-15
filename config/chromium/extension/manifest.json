@@ -3,7 +3,7 @@
   "name": "Midnight",
   "key": "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAu/erMdWCzKR6qB4v+Xm+aait7szK6YJCoTaDYxokouSbMUlwRXLmgPd3SQCwAFinIldljsXJfngiT+P/bRHXiD7KnPnv76s8okD0BMz3STsb+0Iy4NLNCqXq+hM5pw0NeP4tH4Sgtad68JnCOs5ZzOLZJYYMFyZvOYl54/ZQT0tJlKWuzjmUitIkJNwi7ZGxv8+IHJOAEdvlhVPOkMxbYbxSA5WiiFGfwhctZhuq/kA41X3FA03MEfbCCgb2cjoCMtPfT+9nM38jNxpzsOMda2n64JwxYuG3qRo177vxGUBfPVuGEovQOwTm1HZpN0ZLcLR4zg/TMrasbPQ/2qJ5HPz7WfzPh3R9e2XbQ5MWAxg793Bh1uFSYzBRWIXGMGVaTqwUGy+z39s2hdjOxOcyioLQT6PnF6SKjkFoidc5/9IA1OHjSwuQEBa/Rzd2T5mEaI6PJl2PbTZQieWeRkzw2FL75xQPZQzZhdCbybczebykagJVYV82jmOB8s2dTsHZViSsurwt66KkT2lF+ipJicUjlI5m+dVQRjc3Nn7MxIz9Ex/LZ8/I9tNuAo6GX90xxWq63DyfRzGa00ggbp6OKYbsX7+2OsRY8ZAQL4j1Hguhce9Y5wadBsmb3+K0BQM3yBxY0ZHZED6uLAeKSsVoH5ACefIaU+QI39DP/x0wk/8CAwEAAQ==",
   "version": "1.0",
-  "description": "Tab numbering, dark mode, and history search",
+  "description": "Tab numbering, dark mode, history search, and Codeforces search",
   "permissions": [
     "tabs",
     "tabGroups",
@@ -18,6 +18,9 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "omnibox": {
+    "keyword": "cf"
   },
   "content_scripts": [
     {

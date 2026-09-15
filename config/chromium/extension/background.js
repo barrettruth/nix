@@ -1,6 +1,7 @@
 importScripts("theme.js");
 importScripts("quick-score.min.js");
 importScripts("search.js");
+importScripts("codeforces.js");
 
 const tabNumberCache = new Map();
 const groupLastActive = new Map();
