@@ -71,9 +71,10 @@ end
 
 ---@param buf integer
 local function attach_keys(buf)
-    map(buf, '<leader>r', 'run', function()
+    map(buf, '<leader>c', 'run', function()
         M.run('run')
     end, 'run CP problem')
+    map(buf, '<leader>C', 'close', M.close, 'close CP panes')
     map(buf, '<leader>d', 'debug', function()
         M.run('debug')
     end, 'debug CP problem')
@@ -657,6 +658,10 @@ function M.open_url(kind)
     end
 end
 
+function M.close()
+    close_column(column())
+end
+
 ---@param mode 'run'|'debug'|'judge'
 function M.run(mode)
     local source = resolve_source()
@@ -728,11 +733,13 @@ function M.setup()
                 local opts = { buffer = args.buf }
                 for _, lhs in ipairs({
                     '<Plug>(cp-run)',
+                    '<Plug>(cp-close)',
                     '<Plug>(cp-debug)',
                     '<Plug>(cp-judge)',
                     '<Plug>(cp-problem)',
                     '<Plug>(cp-submit)',
-                    '<leader>r',
+                    '<leader>c',
+                    '<leader>C',
                     '<leader>d',
                     '<leader>j',
                     'gX',
