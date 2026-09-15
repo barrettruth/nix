@@ -243,6 +243,7 @@ local SET_PEERS_EXPR =
     "luaeval('(function(p) vim.g.mux_peers = p; require([[mux.line]]).refresh(); return true end)(_A)', %s)"
 local CONTROL_EXPR = "luaeval('require([[mux.server]]).control(_A)', %s)"
 local OPEN_VIEW_EXPR = "luaeval('require([[mux.view]]).open(_A)', %s)"
+local OPEN_PICKER_EXPR = "luaeval('require([[mux.fzf]]).pick(_A)', %s)"
 local RESTARTED_EXPR =
     "luaeval('(function(m) vim.api.nvim_create_autocmd([[UIEnter]], { once = true, callback = function() vim.defer_fn(function() vim.api.nvim_echo({ { m } }, true, {}) end, 50) end }); return true end)(_A)', %s)"
 
@@ -1109,12 +1110,13 @@ end
 ---@param target mux.Server
 ---@param action 'kill'|'reload'
 ---@param cb fun(ok?: true, err?: string)
+---@param query? string
 ---@return nil
-local function control_target(target, action, cb)
+local function control_target(target, action, cb, query)
     if current_server and current_server.root == target.root then
         local ok, err
         if action == 'kill' then
-            ok, err = require('mux.view').retire()
+            ok, err = require('mux.view').retire(query)
         else
             ok, err = M.reload()
         end
@@ -1152,10 +1154,30 @@ function M.kill(target, cb)
     control_target(target, 'kill', cb or function() end)
 end
 
+---@param target mux.Server
+---@param query string
+---@param cb fun(ok?: true, err?: string)
+function M.pick_target(target, query, cb)
+    local socket, err = control_socket(target)
+    if not socket then
+        cb(nil, err)
+        return
+    end
+
+    remote_expr(
+        socket,
+        OPEN_PICKER_EXPR:format(vim.fn.string(query)),
+        function(_, pick_err)
+            cb(not pick_err and true or nil, pick_err)
+        end
+    )
+end
+
 ---@param root string
 ---@param cb fun(ok?: true, err?: string)
 ---@param target? mux.Server
-function M.remove(root, cb, target)
+---@param query? string
+function M.remove(root, cb, target, query)
     local local_target, err = paths_for(root)
     if not local_target then
         cb(nil, err)
@@ -1200,7 +1222,7 @@ function M.remove(root, cb, target)
     if ours(socket) and not socket_listening(socket) then
         finish(true)
     else
-        M.kill(target, finish)
+        control_target(target, 'kill', finish, query)
     end
 end
 

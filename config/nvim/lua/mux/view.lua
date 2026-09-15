@@ -136,7 +136,8 @@ function M.stop()
     return true
 end
 
-function M.retire()
+---@param query? string
+function M.retire(query)
     local server = require('mux.server')
     local state = server.state()
     local targets = {}
@@ -180,10 +181,20 @@ function M.retire()
         end
 
         server.switch(target, function(connected)
-            if connected then
+            if not connected then
+                handoff(index + 1)
+            elseif query == nil then
                 exit(false)
             else
-                handoff(index + 1)
+                server.pick_target(target, query, function(ok, pick_err)
+                    if not ok then
+                        vim.notify(
+                            'mux: ' .. tostring(pick_err),
+                            vim.log.levels.ERROR
+                        )
+                    end
+                    exit(false)
+                end)
             end
         end, true)
     end

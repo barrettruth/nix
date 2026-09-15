@@ -239,7 +239,7 @@ local function open(query)
                                 end
                             end)
                         end
-                    end)
+                    end, opts.last_query or '')
                 end,
                 reuse = true,
             },
@@ -247,13 +247,27 @@ local function open(query)
     })
 end
 
+---@param query? string
 ---@return nil
-function M.pick()
+function M.pick(query)
+    if #vim.api.nvim_list_uis() == 0 then
+        vim.api.nvim_create_autocmd('UIEnter', {
+            group = vim.api.nvim_create_augroup('mux-picker', { clear = true }),
+            once = true,
+            callback = function()
+                vim.schedule(function()
+                    M.pick(query)
+                end)
+            end,
+        })
+        return
+    end
+
     if not load_fzf() then
         return
     end
 
-    open()
+    open(query)
 end
 
 return M

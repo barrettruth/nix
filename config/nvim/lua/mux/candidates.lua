@@ -64,11 +64,12 @@ end
 
 ---@param candidate mux.Candidate
 ---@param cb fun(ok?: true, err?: string)
-function M.remove(candidate, cb)
+---@param query? string
+function M.remove(candidate, cb, query)
     local paths = candidate.zoxide_paths or {}
     local function remove_path(index)
         if not paths[index] then
-            server.remove(candidate.root, cb, candidate.server)
+            server.remove(candidate.root, cb, candidate.server, query)
             return
         end
         require('zoxide').run(
