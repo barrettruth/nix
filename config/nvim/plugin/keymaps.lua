@@ -40,6 +40,9 @@ for _, key in ipairs({ 'h', 'j', 'k', 'l' }) do
         { desc = 'go to window ' .. key }
     )
 end
+vim.keymap.set('t', [[<c-\>]], [[<c-\><c-n>]], {
+    desc = 'exit terminal mode',
+})
 vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'join lines (keep cursor)' })
 
 vim.keymap.set('n', 'n', function()
