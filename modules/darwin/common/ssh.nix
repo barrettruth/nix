@@ -20,9 +20,6 @@ in
   '';
 
   barrett.user.extraSshConfig = ''
-    Host *
-        IdentityAgent "${homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-
     Host forge.barrettruth.com git.barrettruth.com
         HostName 100.64.0.1
         Port 2222
